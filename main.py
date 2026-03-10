@@ -14,7 +14,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- DATABASE CONFIGURATION ---
-DATABASE_URL = os.getenv("DATABASE_URL")
+# We use a fallback here so Render has NO CHOICE but to connect
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", 
+    "postgresql://postgres.chymgteinnczqfjqknan:%40Chase246642@aws-1-us-east-1.pooler.supabase.com:6543/postgres"
+)
 
 # Production Fix: Ensure the dialect is 'postgresql' and not 'postgres'
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
