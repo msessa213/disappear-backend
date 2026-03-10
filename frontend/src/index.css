@@ -1,0 +1,58 @@
+:root {
+  font-family: 'Courier New', Courier, monospace; /* Changed to monospace for that 'hacker' vibe */
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #05070a; /* Match your dashboard bg */
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  display: block; /* Changed from flex to block for standard scrolling */
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+/* --- THE SPIN ANIMATION --- */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+/* -------------------------- */
+
+a {
+  font-weight: 500;
+  color: #38bdf8;
+  text-decoration: inherit;
+}
+
+button {
+  border-radius: 4px; /* Slightly sharper edges for the UI style */
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
