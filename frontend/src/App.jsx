@@ -4,6 +4,9 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import './App.css';
 
+// --- CONFIGURATION ---
+const API_BASE_URL = "https://disappear-backend.onrender.com"; 
+
 function App() {
   const [showShield, setShowShield] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
@@ -16,6 +19,18 @@ function App() {
   const [terminatingId, setTerminatingId] = useState(null); 
   const [notifications, setNotifications] = useState([]); 
   
+  const [reconActive, setReconActive] = useState(false);
+  const [reconLog, setReconLog] = useState([]);
+  const [isEmergencyWipe, setIsEmergencyWipe] = useState(false);
+
+  // Target Profile State for Customer Info
+  const [targetProfile, setTargetProfile] = useState({
+    fullName: "",
+    email: "",
+    dob: "",
+    address: ""
+  });
+
   const [newCardLabel, setNewCardLabel] = useState("");
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [chartRange, setChartRange] = useState("30D");
@@ -29,7 +44,6 @@ function App() {
 
   const triggerToast = (msg) => { setShowToast(msg); setTimeout(() => setShowToast(""), 2000); };
 
-  // --- NOTIFICATION ENGINE ---
   const pushNotification = (broker) => {
     const id = Date.now();
     const newNote = { id, msg: `THREAT DEFLECTED: [${broker}]` };
@@ -48,10 +62,9 @@ function App() {
     }));
   }, [chartRange, auditLog]);
 
-  // --- HEARTBEAT SYNC ---
   const syncDefenseData = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/dashboard/sync");
+      const res = await fetch(`${API_BASE_URL}/dashboard/sync`);
       const data = await res.json();
       
       if (data.recent_audit && data.recent_audit.length > 0 && showShield) {
@@ -59,18 +72,15 @@ function App() {
           pushNotification(data.recent_audit[0].broker);
         }
       }
-
       setAuditLog(data.recent_audit || []);
       setMaskedEmail(data.profile?.email_alias || "");
       setNodeCount(data.profile?.active_nodes || 0);
       setMapNodes(data.map_nodes || []); 
 
-      const finRes = await fetch("http://127.0.0.1:8000/financials/data");
+      const finRes = await fetch(`${API_BASE_URL}/financials/data`);
       const finData = await finRes.json();
       setCards(finData.cards || []);
-    } catch (e) {
-      console.log("Tactical link heartbeat pulse...");
-    }
+    } catch (e) { console.log("Heartbeat pulse..."); }
   };
 
   useEffect(() => {
@@ -82,30 +92,52 @@ function App() {
     return () => clearInterval(interval);
   }, [showShield, auditLog]);
 
+  const runDeepWebScan = () => {
+    setReconActive(true);
+    setReconLog(["INITIALIZING RECONNAISSANCE..."]);
+    const brokerPool = ["ACXIOM", "SPOKEO", "WHITEPAGES", "INTELIUS", "PEOPLELOOKER"];
+    let count = 0;
+    const interval = setInterval(() => {
+      const broker = brokerPool[Math.floor(Math.random() * brokerPool.length)];
+      setReconLog(prev => [...prev, `[MATCH] PII DATA LOCATED ON ${broker} SERVERS...`].slice(-8));
+      count++;
+      if (count > 15) {
+        clearInterval(interval);
+        setReconLog(prev => [...prev, "SCAN COMPLETE: 47 THREATS IDENTIFIED.", "SHIELD DEPLOYMENT RECOMMENDED."]);
+      }
+    }, 200);
+  };
+
+  const handleEmergencyBurn = async () => {
+    setIsEmergencyWipe(true);
+    triggerToast("INITIATING TOTAL PURGE...");
+    setTimeout(async () => {
+      try {
+        await fetch(`${API_BASE_URL}/financials/burn-all`, { method: "POST" });
+        localStorage.clear();
+        window.location.reload();
+      } catch (err) { triggerToast("PURGE ERROR"); setIsEmergencyWipe(false); }
+    }, 2000);
+  };
+
   const handleKillCard = async (id) => {
     setTerminatingId(id); 
     setTimeout(async () => {
       try {
-        await fetch(`http://127.0.0.1:8000/financials/kill/${id}`, { method: "DELETE" });
+        await fetch(`${API_BASE_URL}/financials/kill/${id}`, { method: "DELETE" });
         setCards(prev => prev.filter(c => c.id !== id));
         setTerminatingId(null);
         triggerToast("NODE BURNED");
-      } catch (e) { 
-        triggerToast("ERROR");
-        setTerminatingId(null);
-      }
+      } catch (e) { triggerToast("ERROR"); setTerminatingId(null); }
     }, 800); 
   };
 
   const startLoginFlow = () => { triggerToast("CHALLENGE REQUEST SENT..."); setShow2FA(true); };
-
   const verify2FA = () => {
     triggerToast("AUTHENTICATING...");
     setTimeout(() => {
       localStorage.setItem("disappear_session", "active");
-      setShow2FA(false);
-      setShowShield(true);
-      setProgress(100);
+      setShow2FA(false); setShowShield(true); setProgress(100);
       triggerToast("WELCOME BACK, AGENT");
     }, 1500);
   };
@@ -117,10 +149,8 @@ function App() {
     setTimeout(() => {
       try {
         const doc = new jsPDF();
-        doc.setFillColor(0, 71, 171);
-        doc.rect(0, 0, 210, 40, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(22);
+        doc.setFillColor(0, 71, 171); doc.rect(0, 0, 210, 40, 'F');
+        doc.setTextColor(255, 255, 255); doc.setFontSize(22);
         doc.text("DISAPPEAR | PRIVACY AUDIT", 15, 25);
         doc.save(`DISAPPEAR_AUDIT_${Date.now()}.pdf`);
         triggerToast("AUDIT DOWNLOADED");
@@ -129,27 +159,44 @@ function App() {
     }, 1500);
   };
 
-  useEffect(() => {
-    if (localStorage.getItem("disappear_session") === "active") {
-      setShowShield(true);
-      setProgress(100);
+  // UPDATED: Now sends the actual form data to the backend
+  const handleFinalPurchase = async () => {
+    if(!targetProfile.fullName || !targetProfile.email) {
+        triggerToast("PROFILE DATA REQUIRED");
+        return;
     }
-  }, []);
 
-  const handleFinalPurchase = () => {
-    setShowCheckout(false);
-    setIsScanning(true);
-    setProgress(60);
-    setTimeout(() => {
-      localStorage.setItem("disappear_session", "active");
-      setIsScanning(false);
-      setShowShield(true);
-      setProgress(100);
-    }, 3000);
+    try {
+        // Send profile to backend
+        const response = await fetch(`${API_BASE_URL}/financials/profile`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(targetProfile)
+        });
+
+        if (response.ok) {
+            setShowCheckout(false); 
+            setIsScanning(true); 
+            setProgress(60);
+            triggerToast("UPLOADING TARGET PROFILE...");
+            
+            setTimeout(() => {
+              localStorage.setItem("disappear_session", "active");
+              setIsScanning(false); 
+              setShowShield(true); 
+              setProgress(100);
+              triggerToast("REMOVALS INITIATED");
+            }, 3000);
+        } else {
+            triggerToast("UPLOAD FAILED");
+        }
+    } catch (error) {
+        triggerToast("SERVER UNREACHABLE");
+    }
   };
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${isEmergencyWipe ? 'wipe-shake' : ''}`}>
       <div className="progress-bar-container">
         <div className="progress-bar-fill" style={{ width: `${progress}%` }}></div>
         <span className="secure-connection-text">
@@ -167,6 +214,7 @@ function App() {
         ))}
       </div>
 
+      {/* MODAL: INFO */}
       {showInfo && (
         <div className="modal-overlay" onClick={() => setShowInfo(false)}>
           <div className="info-modal-content" onClick={e => e.stopPropagation()}>
@@ -181,6 +229,7 @@ function App() {
         </div>
       )}
 
+      {/* MODAL: 2FA LOGIN */}
       {show2FA && (
         <div className="modal-overlay">
           <div className="price-box" style={{maxWidth: '350px'}}>
@@ -193,6 +242,7 @@ function App() {
         </div>
       )}
 
+      {/* MODAL: MINT CARD */}
       {isMinting && (
         <div className="modal-overlay">
           <div className="price-box" style={{maxWidth: '350px'}}>
@@ -200,15 +250,11 @@ function App() {
             <input className="mask-btn" style={{width: '100%', margin: '20px 0', padding: '12px', color: 'white'}} placeholder="Merchant Name" value={newCardLabel} onChange={(e) => setNewCardLabel(e.target.value)} />
             <div style={{display: 'flex', gap: '10px'}}>
               <button className="main-button" style={{flex: 1}} onClick={() => {
-                 const res = fetch("http://127.0.0.1:8000/financials/mint", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                 fetch(`${API_BASE_URL}/financials/mint`, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ label: newCardLabel })
                   }).then(r => r.json()).then(newCard => {
-                    setCards([...cards, newCard]);
-                    setIsMinting(false);
-                    setNewCardLabel("");
-                    triggerToast("SHIELD MINTED");
+                    setCards([...cards, newCard]); setIsMinting(false); setNewCardLabel(""); triggerToast("SHIELD MINTED");
                   });
               }}>MINT</button>
               <button className="reset-btn" style={{margin: 0, flex: 1}} onClick={() => setIsMinting(false)}>CANCEL</button>
@@ -245,12 +291,42 @@ function App() {
         </div>
       )}
 
+      {/* SECURE CHECKOUT WITH TARGET PROFILE FORM */}
       {showCheckout && !isScanning && (
         <div className="pricing-card">
-          <div className="price-box">
-            <h3 className="tiger-text">SECURE CHECKOUT</h3>
-            <div className="biometric-section">SCANNING BIOMETRIC DATA...</div>
-            <button className="main-button" style={{width: '100%'}} onClick={handleFinalPurchase}>CONFIRM & ACTIVATE</button>
+          <div className="price-box" style={{maxWidth: '450px'}}>
+            <h3 className="tiger-text">TARGET PROFILE DATA</h3>
+            <p style={{fontSize: '0.7rem', color: '#94A3B8', marginBottom: '20px'}}>ENTER INFO FOR BROKER REMOVAL SERVICE</p>
+            
+            <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                <input className="mask-btn" style={{width: '100%', color: 'white'}} 
+                    placeholder="Full Legal Name" 
+                    value={targetProfile.fullName}
+                    onChange={(e) => setTargetProfile({...targetProfile, fullName: e.target.value})} />
+                
+                <input className="mask-btn" style={{width: '100%', color: 'white'}} 
+                    placeholder="Primary Email Address" 
+                    value={targetProfile.email}
+                    onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
+                
+                <input className="mask-btn" style={{width: '100%', color: 'white'}} 
+                    placeholder="Home Address" 
+                    value={targetProfile.address}
+                    onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
+                
+                <div style={{textAlign: 'left'}}>
+                    <label style={{fontSize: '0.6rem', color: '#94A3B8', marginLeft: '10px'}}>DATE OF BIRTH</label>
+                    <input className="mask-btn" style={{width: '100%', color: 'white'}} 
+                        type="date" 
+                        value={targetProfile.dob}
+                        onChange={(e) => setTargetProfile({...targetProfile, dob: e.target.value})} />
+                </div>
+            </div>
+
+            <button className="main-button" style={{width: '100%', marginTop: '25px'}} onClick={handleFinalPurchase}>
+                CONFIRM & INITIATE SCRUB
+            </button>
+            <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowCheckout(false)}>BACK</button>
           </div>
         </div>
       )}
@@ -262,16 +338,13 @@ function App() {
           <h2 className="shield-text">🛡️ SHIELD ACTIVE</h2>
           <div className="tools-grid">
             
-            {/* TOOL 1: EMAIL */}
+            {/* EMAIL TOOL */}
             <div className="masking-tool">
               <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                 <p className="tool-label">ENCRYPTED IDENTITY EMAIL</p>
                 <button className="filter-btn active" onClick={() => {
-                   fetch("http://127.0.0.1:8000/financials/regenerate", { method: "POST" })
-                   .then(r => r.json()).then(data => {
-                     setMaskedEmail(data.email_alias);
-                     triggerToast("IDENTITY EMAIL CYCLED");
-                   });
+                   fetch(`${API_BASE_URL}/financials/regenerate`, { method: "POST" })
+                   .then(r => r.json()).then(data => { setMaskedEmail(data.email_alias); triggerToast("EMAIL CYCLED"); });
                 }}>CYCLE ALIAS</button>
               </div>
               <div className="masked-display" style={{marginTop: '20px', position: 'relative'}} onClick={() => {navigator.clipboard.writeText(maskedEmail); triggerToast("COPIED")}}>
@@ -279,7 +352,7 @@ function App() {
               </div>
             </div>
 
-            {/* TOOL 2: VCC */}
+            {/* VCC TOOL */}
             <div className="masking-tool">
               <p className="tool-label">VIRTUAL SHIELD CARDS</p>
               <div className="card-manager-list">
@@ -293,10 +366,6 @@ function App() {
                       <code className="card-digits clickable-card" onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("COPIED")}}>
                         {c.number}
                       </code>
-                      <div className="card-extra-info">
-                        <span>EXP: <span className="blue-mono">12/28</span></span>
-                        <span>CVV: <span className="blue-mono">771</span></span>
-                      </div>
                     </div>
                   </div>
                 ))}
@@ -304,31 +373,38 @@ function App() {
               <button className="mask-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setIsMinting(true)}>+ MINT NEW SHIELD</button>
             </div>
 
-            {/* TOOL 3: GLOBAL MAP (FULL WIDTH) */}
+            {/* RECONNAISSANCE MODULE */}
+            <div className="masking-tool full-width-tool terminal-bg">
+               <div style={{padding: '0 30px'}}>
+                <p className="tool-label" style={{color: reconActive ? 'var(--alert-red)' : 'var(--tiger-blue)'}}>
+                  DEEP WEB RECONNAISSANCE {reconActive ? '[SCANNING...]' : '[READY]'}
+                </p>
+                <div className="recon-terminal">
+                  {reconLog.length === 0 ? "> SYSTEM IDLE. WAITING FOR INPUT..." : reconLog.map((line, i) => <div key={i} className="terminal-line">{`> ${line}`}</div>)}
+                </div>
+                <button className="pdf-btn" onClick={runDeepWebScan} disabled={reconActive} style={{borderColor: reconActive ? 'var(--alert-red)' : ''}}>
+                  {reconActive ? "ANALYZING BROKER NODES..." : "RUN GLOBAL THREAT SCAN"}
+                </button>
+               </div>
+            </div>
+
+            {/* MAP TOOL */}
             <div className="masking-tool full-width-tool">
               <p className="tool-label" style={{paddingLeft: '30px'}}>GLOBAL SHIELD NETWORK [ACTIVE NODES]</p>
               <div className="map-container-tactical">
                 <div className="map-grid-overlay"></div>
                 {mapNodes.map(node => (
-                  <div 
-                    key={node.id} 
-                    className={`map-node ${node.status === 'intercepting' ? 'node-alert' : ''}`}
-                    style={{ left: `${node.x}%`, top: `${node.y}%` }}
-                  >
+                  <div key={node.id} className={`map-node ${node.status === 'intercepting' ? 'node-alert' : ''}`} style={{ left: `${node.x}%`, top: `${node.y}%` }}>
                     <div className="node-tooltip">NODE_{node.id + 1000} | {node.status.toUpperCase()}</div>
                   </div>
                 ))}
-                <div className="map-legend">
-                  <span className="blue-mono">●</span> ENCRYPTED NODE &nbsp;&nbsp;
-                  <span style={{color: 'var(--alert-red)'}}>●</span> INTERCEPTION IN PROGRESS
-                </div>
               </div>
             </div>
 
-            {/* TOOL 4: SUPPRESSION CHART (FULL WIDTH) */}
+            {/* SUPPRESSION HISTORY */}
             <div className="masking-tool full-width-tool">
-              <div style={{display: 'flex', justifyContent: 'space-between', paddingRight: '30px'}}>
-                <p className="tool-label" style={{paddingLeft: '30px'}}>SUPPRESSION HISTORY</p>
+              <div style={{display: 'flex', justifyContent: 'space-between', padding: '0 30px'}}>
+                <p className="tool-label">SUPPRESSION HISTORY</p>
                 <div className="chart-filters">
                   {["30D", "90D", "6M", "1Y"].map(range => (
                     <button key={range} className={chartRange === range ? "filter-btn active" : "filter-btn"} onClick={() => setChartRange(range)}>{range}</button>
@@ -339,16 +415,15 @@ function App() {
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={historyData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#111" vertical={false} />
-                    <XAxis hide />
-                    <YAxis hide />
+                    <XAxis hide /><YAxis hide />
                     <Tooltip contentStyle={{background:'#000', border:'1px solid #0047AB', color: '#fff'}} />
-                    <Area type="monotone" dataKey="threats" stroke="#0047AB" fill="#0047AB" fillOpacity={0.2} animationDuration={1000} />
+                    <Area type="monotone" dataKey="threats" stroke="#0047AB" fill="#0047AB" fillOpacity={0.2} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            {/* TOOL 5: AUDIT LOG */}
+            {/* AUDIT LOG */}
             <div className="masking-tool">
               <p className="tool-label">LIVE SECURITY AUDIT</p>
               <div className="audit-list" style={{maxHeight: '200px', overflowY: 'auto', marginBottom: '15px'}}>
@@ -361,11 +436,17 @@ function App() {
                 ))}
               </div>
               <button className="pdf-btn" onClick={handleDownloadPDF} disabled={isGenerating}>
-                {isGenerating ? "ENCRYPTING DATA..." : "GENERATE AUDIT PDF"}
+                {isGenerating ? "ENCRYPTING..." : "GENERATE AUDIT PDF"}
               </button>
             </div>
           </div>
-          <button className="reset-btn" onClick={() => {localStorage.clear(); window.location.reload();}}>Logout Securely</button>
+
+          <div style={{display: 'flex', gap: '20px', marginTop: '40px'}}>
+            <button className="reset-btn" onClick={() => {localStorage.clear(); window.location.reload();}}>Logout Securely</button>
+            <button className="burn-all-btn" onClick={() => { if(window.confirm("CONFIRM TOTAL PURGE?")) handleEmergencyBurn(); }}>
+               EMERGENCY BURN [ALL ASSETS]
+            </button>
+          </div>
         </div>
       )}
     </div>
