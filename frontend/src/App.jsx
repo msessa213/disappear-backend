@@ -381,29 +381,31 @@ function App() {
               </div>
             </div>
 
-            {/* VCC TOOL */}
-            <div className="masking-tool">
-              <p className="tool-label">VIRTUAL SHIELD CARDS</p>
-              <div className="card-manager-list">
+            {/* UNIFIED VCC MANAGER */}
+            <div className="masking-tool full-width-tool">
+              <p className="tool-label" style={{paddingLeft: '30px'}}>VIRTUAL SHIELD CARDS</p>
+              <div className="card-manager-list" style={{padding: '0 30px'}}>
                 {cards.map(c => (
                   <div key={c.id} className={`managed-card-row enhanced-card ${terminatingId === c.id ? 'burning' : ''}`}>
                     <div className="card-row-info">
                       <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
-                         <span className="card-nickname">{c.label}</span>
+                         <span className="card-nickname" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>{c.label.toUpperCase()}</span>
                          <button className="kill-text-bold" onClick={() => handleKillCard(c.id)}>TERMINATE</button>
                       </div>
                       <code className="card-digits clickable-card" onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("COPIED")}}>
                         {c.number}
                       </code>
-                      <div className="vcc-meta-row">
-                         <div><span>EXP</span><strong>{c.expiry}</strong></div>
-                         <div><span>CVV</span><strong>{c.cvv}</strong></div>
+                      <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #111', paddingTop: '10px', marginTop: '10px'}}>
+                         <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>EXP</span><strong style={{fontSize: '0.9rem'}}>{c.expiry || '08/28'}</strong></div>
+                         <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>CVV</span><strong style={{fontSize: '0.9rem'}}>{c.cvv || '442'}</strong></div>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-              <button className="mask-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setIsMinting(true)}>+ MINT NEW SHIELD</button>
+              <div style={{padding: '0 30px'}}>
+                <button className="mask-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setIsMinting(true)}>+ MINT NEW SHIELD</button>
+              </div>
             </div>
 
             {/* RECONNAISSANCE MODULE */}
