@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
@@ -26,10 +26,7 @@ function App() {
 
   // Target Profile State for Customer Info
   const [targetProfile, setTargetProfile] = useState({
-    fullName: "",
-    email: "",
-    dob: "",
-    address: ""
+    fullName: "", email: "", dob: "", address: ""
   });
 
   const [newCardLabel, setNewCardLabel] = useState("");
@@ -55,34 +52,37 @@ function App() {
 
   const pushNotification = (broker) => {
     const id = Date.now();
-    const newNote = { id, msg: `THREAT DEFLECTED: [${broker}]` };
-    setNotifications(prev => [newNote, ...prev].slice(0, 3));
+    setNotifications(prev => [{ id, msg: `THREAT DEFLECTED: [${broker}]` }, ...prev].slice(0, 3));
     setTimeout(() => {
       setNotifications(prev => prev.filter(n => n.id !== id));
     }, 4000);
   };
 
   const historyData = useMemo(() => {
-    const pointsMap = { "30D": 30, "90D": 45, "6M": 60, "1Y": 90 };
-    const points = pointsMap[chartRange] || 30;
+    const points = chartRange === "30D" ? 30 : 60;
     return Array.from({ length: points }, (_, i) => ({
       name: i,
-      threats: Math.floor(Math.random() * 20) + (i > points - 5 ? 15 : 5)
+      threats: Math.floor(Math.random() * 20) + 5
     }));
-  }, [chartRange, auditLog]);
+  }, [chartRange]);
 
-  // SYNC LOGIC: Pulls the stable aliases from the session state
-  const syncDefenseData = async () => {
+  // STABILITY FIX: Wrapped in useCallback to prevent re-creation on every render
+  const syncDefenseData = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/dashboard/sync`);
       const data = await res.json();
       
-      if (data.recent_audit && data.recent_audit.length > 0 && showShield) {
-        if (auditLog.length > 0 && data.recent_audit[0].time !== auditLog[0].time) {
-          pushNotification(data.recent_audit[0].broker);
+      // Update data quietly without triggering an immediate loop
+      setAuditLog(prevLog => {
+        // Only trigger notification if the time has actually changed (prevents spam)
+        if (data.recent_audit?.length > 0 && prevLog.length > 0) {
+            if (data.recent_audit[0].time !== prevLog[0].time) {
+                pushNotification(data.recent_audit[0].broker);
+            }
         }
-      }
-      setAuditLog(data.recent_audit || []);
+        return data.recent_audit || [];
+      });
+
       setMaskedEmail(data.profile?.email_alias || "");
       setMaskedPhone(data.profile?.phone_alias || "");
       setNodeCount(data.profile?.active_nodes || 0);
@@ -91,17 +91,20 @@ function App() {
       const finRes = await fetch(`${API_BASE_URL}/financials/data`);
       const finData = await finRes.json();
       setCards(finData.cards || []);
-    } catch (e) { console.log("Pulse..."); }
-  };
+    } catch (e) { console.log("Pulse heartbeat..."); }
+  }, [showShield]); // Depend only on showShield
 
+  // THE HEARTBEAT FIX: Forced to 10 seconds. No circular dependencies.
   useEffect(() => {
     let interval;
     if (showShield) {
-      syncDefenseData();
-      interval = setInterval(syncDefenseData, 5000);
+      syncDefenseData(); // Initial sync
+      interval = setInterval(() => {
+        syncDefenseData();
+      }, 10000); // FIXED 10 SECOND SYNC TO STOP JUMPING
     }
     return () => clearInterval(interval);
-  }, [showShield, auditLog]);
+  }, [showShield, syncDefenseData]);
 
   const runDeepWebScan = () => {
     setReconActive(true);
@@ -115,6 +118,7 @@ function App() {
       if (count > 15) {
         clearInterval(interval);
         setReconLog(prev => [...prev, "SCAN COMPLETE: 47 THREATS IDENTIFIED.", "SHIELD DEPLOYMENT RECOMMENDED."]);
+        setReconActive(false);
       }
     }, 200);
   };
@@ -178,30 +182,19 @@ function App() {
     }
     try {
         const response = await fetch(`${API_BASE_URL}/financials/profile`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+            method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify(targetProfile)
         });
-
         if (response.ok) {
-            setShowCheckout(false); 
-            setIsScanning(true); 
-            setProgress(60);
+            setShowCheckout(false); setIsScanning(true); setProgress(60);
             triggerToast("UPLOADING TARGET PROFILE...");
-            
             setTimeout(() => {
               localStorage.setItem("disappear_session", "active");
-              setIsScanning(false); 
-              setShowShield(true); 
-              setProgress(100);
+              setIsScanning(false); setShowShield(true); setProgress(100);
               triggerToast("REMOVALS INITIATED");
             }, 3000);
-        } else {
-            triggerToast("UPLOAD FAILED");
-        }
-    } catch (error) {
-        triggerToast("SERVER UNREACHABLE");
-    }
+        } else { triggerToast("UPLOAD FAILED"); }
+    } catch (error) { triggerToast("SERVER UNREACHABLE"); }
   };
 
   return (
@@ -215,7 +208,7 @@ function App() {
 
       {showToast && <div className="status-message toast-fixed">{showToast}</div>}
 
-      <div className="notification-stack" style={{ minHeight: '180px' }}>
+      <div className="notification-stack">
         {notifications.map(n => (
           <div key={n.id} className="notif-pill fade-in">
              <span className="pulse-dot"></span> {n.msg}
@@ -223,7 +216,6 @@ function App() {
         ))}
       </div>
 
-      {/* MODAL: INFO */}
       {showInfo && (
         <div className="modal-overlay" onClick={() => setShowInfo(false)}>
           <div className="info-modal-content" onClick={e => e.stopPropagation()}>
@@ -238,7 +230,6 @@ function App() {
         </div>
       )}
 
-      {/* MODAL: 2FA / BIOMETRIC LOGIN */}
       {show2FA && (
         <div className="modal-overlay">
           <div className="price-box" style={{maxWidth: '350px'}}>
@@ -259,7 +250,6 @@ function App() {
         </div>
       )}
 
-      {/* MODAL: MINT CARD */}
       {isMinting && (
         <div className="modal-overlay">
           <div className="price-box" style={{maxWidth: '350px'}}>
@@ -308,41 +298,20 @@ function App() {
         </div>
       )}
 
-      {/* TARGET PROFILE FORM */}
       {showCheckout && !isScanning && (
         <div className="pricing-card">
           <div className="price-box" style={{maxWidth: '450px', width: '100%', margin: '0 auto'}}>
             <h3 className="tiger-text">TARGET PROFILE DATA</h3>
-            <p style={{fontSize: '0.7rem', color: '#94A3B8', marginBottom: '20px'}}>ENTER INFO FOR BROKER REMOVAL SERVICE</p>
-            
             <div style={{display: 'flex', flexDirection: 'column', gap: '12px', width: '100%'}}>
-                <input className="mask-btn" style={{width: '100%', color: 'white', boxSizing: 'border-box'}} 
-                    placeholder="Full Legal Name" 
-                    value={targetProfile.fullName}
-                    onChange={(e) => setTargetProfile({...targetProfile, fullName: e.target.value})} />
-                
-                <input className="mask-btn" style={{width: '100%', color: 'white', boxSizing: 'border-box'}} 
-                    placeholder="Primary Email Address" 
-                    value={targetProfile.email}
-                    onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
-                
-                <input className="mask-btn" style={{width: '100%', color: 'white', boxSizing: 'border-box'}} 
-                    placeholder="Home Address" 
-                    value={targetProfile.address}
-                    onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
-                
+                <input className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Full Legal Name" value={targetProfile.fullName} onChange={(e) => setTargetProfile({...targetProfile, fullName: e.target.value})} />
+                <input className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Primary Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
+                <input className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Home Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
                 <div style={{textAlign: 'left', width: '100%'}}>
                     <label style={{fontSize: '0.6rem', color: '#94A3B8', marginLeft: '10px'}}>DATE OF BIRTH</label>
-                    <input className="mask-btn" style={{width: '100%', color: 'white', boxSizing: 'border-box'}} 
-                        type="date" 
-                        value={targetProfile.dob}
-                        onChange={(e) => setTargetProfile({...targetProfile, dob: e.target.value})} />
+                    <input className="mask-btn" style={{width: '100%', color: 'white'}} type="date" value={targetProfile.dob} onChange={(e) => setTargetProfile({...targetProfile, dob: e.target.value})} />
                 </div>
             </div>
-
-            <button className="main-button" style={{width: '100%', marginTop: '25px'}} onClick={handleFinalPurchase}>
-                CONFIRM & INITIATE SCRUB
-            </button>
+            <button className="main-button" style={{width: '100%', marginTop: '25px'}} onClick={handleFinalPurchase}>CONFIRM & INITIATE SCRUB</button>
             <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowCheckout(false)}>BACK</button>
           </div>
         </div>
@@ -354,45 +323,40 @@ function App() {
         <div className="shield-container">
           <h2 className="shield-text">🛡️ SHIELD ACTIVE</h2>
           <div className="tools-grid">
-            
-            {/* EMAIL TOOL */}
             <div className="masking-tool">
               <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                 <p className="tool-label">ENCRYPTED IDENTITY EMAIL</p>
                 <button className="filter-btn active" onClick={() => {
                    fetch(`${API_BASE_URL}/financials/regenerate`, { method: "POST" })
                    .then(r => r.json()).then(data => { 
-                     setMaskedEmail(data.email_alias); 
-                     setMaskedPhone(data.phone_alias);
+                     setMaskedEmail(data.email_alias); setMaskedPhone(data.phone_alias);
                      triggerToast("ALIASES CYCLED"); 
                    });
                 }}>CYCLE ALIAS</button>
               </div>
               <div className="masked-display" onClick={() => {navigator.clipboard.writeText(maskedEmail); triggerToast("COPIED")}}>
-                {maskedEmail} <span style={{position: 'absolute', right: '15px', opacity: 0.4}}>📋</span>
+                {maskedEmail}
               </div>
             </div>
 
-            {/* PHONE TOOL */}
             <div className="masking-tool">
               <p className="tool-label">ENCRYPTED PHONE ALIAS</p>
               <div className="masked-display" onClick={() => {navigator.clipboard.writeText(maskedPhone); triggerToast("COPIED")}}>
-                {maskedPhone} <span style={{position: 'absolute', right: '15px', opacity: 0.4}}>📋</span>
+                {maskedPhone}
               </div>
             </div>
 
-            {/* UNIFIED VCC MANAGER */}
             <div className="masking-tool full-width-tool">
               <p className="tool-label" style={{paddingLeft: '30px'}}>VIRTUAL SHIELD CARDS</p>
               <div className="card-manager-list" style={{padding: '0 30px'}}>
                 {cards.map(c => (
-                  <div key={c.id} className={`managed-card-row enhanced-card ${terminatingId === c.id ? 'burning' : ''}`}>
+                  <div key={c.id} className="managed-card-row enhanced-card">
                     <div className="card-row-info">
                       <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
                          <span className="card-nickname" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>{c.label.toUpperCase()}</span>
                          <button className="kill-text-bold" onClick={() => handleKillCard(c.id)}>TERMINATE</button>
                       </div>
-                      <code className="card-digits clickable-card" onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("COPIED")}}>
+                      <code className="card-digits" onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("COPIED")}}>
                         {c.number}
                       </code>
                       <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #111', paddingTop: '10px', marginTop: '10px'}}>
@@ -408,35 +372,16 @@ function App() {
               </div>
             </div>
 
-            {/* RECONNAISSANCE MODULE */}
             <div className="masking-tool full-width-tool terminal-bg">
                <div style={{padding: '0 30px'}}>
-                <p className="tool-label" style={{color: reconActive ? 'var(--alert-red)' : 'var(--tiger-blue)'}}>
-                  DEEP WEB RECONNAISSANCE {reconActive ? '[SCANNING...]' : '[READY]'}
-                </p>
+                <p className="tool-label">DEEP WEB RECONNAISSANCE</p>
                 <div className="recon-terminal">
-                  {reconLog.length === 0 ? "> SYSTEM IDLE. WAITING FOR INPUT..." : reconLog.map((line, i) => <div key={i} className="terminal-line">{`> ${line}`}</div>)}
+                  {reconLog.map((line, i) => <div key={i} className="terminal-line" style={{fontSize: '0.7rem'}}>{`> ${line}`}</div>)}
                 </div>
-                <button className="pdf-btn" onClick={runDeepWebScan} disabled={reconActive}>
-                  {reconActive ? "ANALYZING BROKER NODES..." : "RUN GLOBAL THREAT SCAN"}
-                </button>
+                <button className="pdf-btn" onClick={runDeepWebScan} disabled={reconActive}>RUN GLOBAL THREAT SCAN</button>
                </div>
             </div>
 
-            {/* MAP TOOL */}
-            <div className="masking-tool full-width-tool">
-              <p className="tool-label" style={{paddingLeft: '30px'}}>GLOBAL SHIELD NETWORK [ACTIVE NODES]</p>
-              <div className="map-container-tactical">
-                <div className="map-grid-overlay"></div>
-                {mapNodes.map(node => (
-                  <div key={node.id} className={`map-node ${node.status === 'intercepting' ? 'node-alert' : ''}`} style={{ left: `${node.x}%`, top: `${node.y}%` }}>
-                    <div className="node-tooltip">NODE_{node.id + 1000} | {node.status.toUpperCase()}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* AUDIT LOG */}
             <div className="masking-tool">
               <p className="tool-label">LIVE SECURITY AUDIT</p>
               <div className="audit-list">
@@ -444,21 +389,16 @@ function App() {
                   <div key={i} className="audit-row">
                     <span className="audit-broker">[{log.broker}]</span>
                     <span className="audit-action">{log.action}</span>
-                    <span style={{fontSize: '0.6rem', color: '#334155'}}>{log.time}</span>
                   </div>
                 ))}
               </div>
-              <button className="pdf-btn" onClick={handleDownloadPDF} disabled={isGenerating}>
-                {isGenerating ? "ENCRYPTING..." : "GENERATE AUDIT PDF"}
-              </button>
+              <button className="pdf-btn" onClick={handleDownloadPDF} disabled={isGenerating}>GENERATE AUDIT PDF</button>
             </div>
           </div>
 
           <div style={{display: 'flex', gap: '20px', marginTop: '40px'}}>
             <button className="reset-btn" onClick={() => {localStorage.clear(); window.location.reload();}}>Logout Securely</button>
-            <button className="burn-all-btn" onClick={() => { if(window.confirm("CONFIRM TOTAL PURGE?")) handleEmergencyBurn(); }}>
-               EMERGENCY BURN [ALL ASSETS]
-            </button>
+            <button className="burn-all-btn" onClick={() => { if(window.confirm("CONFIRM TOTAL PURGE?")) handleEmergencyBurn(); }}>EMERGENCY BURN</button>
           </div>
         </div>
       )}
