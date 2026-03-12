@@ -1,6 +1,6 @@
-/* 1. CORE THEME & RESET */
+/* 1. CORE THEME & GLOBAL RESET */
 :root {
-  --tiger-blue: #0047AB;
+  --tiger-blue: #0047AB; /* Jesuit High School Blue */
   --bg-dark: #000000;
   --card-bg: #0A0A0A;
   --text-dim: #94A3B8;
@@ -10,7 +10,7 @@
 }
 
 * {
-  box-sizing: border-box; /* Forces padding to stay INSIDE the width */
+  box-sizing: border-box; /* Crucial: Includes padding and border in the width calculation */
   margin: 0;
   padding: 0;
 }
@@ -20,7 +20,7 @@ body, html, #root {
   min-height: 100vh;
   background-color: var(--bg-dark);
   color: white;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   overflow-x: hidden;
 }
 
@@ -33,60 +33,50 @@ body, html, #root {
 .app-container {
   width: 100%;
   max-width: 1000px;
-  padding: 80px 20px;
+  padding: 100px 20px 60px 20px;
   margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  text-align: center;
 }
 
-/* 2. THE ALIGNMENT FIX (PRICE-BOX REFACTOR) */
+/* 2. THE ALIGNMENT FIX (FLEX-LOCK REFACTOR) */
 .price-box {
   background-color: var(--card-bg);
   border: 1px solid var(--tiger-blue);
   padding: 40px;
   border-radius: 20px;
-  width: 450px; /* FIXED WIDTH PREVENTS MISALIGNMENT */
+  width: 450px; /* Fixed width prevents horizontal shifting */
   margin: 20px auto;
   box-shadow: 0 0 40px rgba(0, 71, 171, 0.2);
   
-  /* Flexbox forces perfect vertical alignment */
+  /* Flex-Lock system forces all children to center and align perfectly */
   display: flex;
   flex-direction: column;
   align-items: center; 
   gap: 15px; /* Identical vertical spacing between all elements */
 }
 
-/* UNIVERSAL ELEMENT STYLING - Forces all inputs and buttons to match exactly */
+/* Universal Element Styling: Forces inputs, labels, and buttons to match 100% */
 .price-box .mask-btn, 
 .price-box .main-button, 
 .price-box .reset-btn,
 .price-box input,
 .price-box .profile-input {
-  width: 100% !important; /* Forces 100% of the 450px container */
+  width: 100% !important; /* Force all to fill the container width exactly */
   max-width: 100% !important;
   display: block;
-  margin: 0 !important;
-  height: 55px; /* Uniform height for all boxes */
+  margin: 0 !important; /* Removes individual margins that cause stagger */
+  height: 55px; /* Uniform height for a professional look */
   font-size: 0.9rem;
 }
 
-.price-box input, .price-box .profile-input {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid var(--tiger-blue);
-  color: white;
-  padding: 0 20px;
-  border-radius: 8px;
-  text-align: center;
-}
-
-/* 3. DASHBOARD STABILITY (LOCKS HEIGHTS TO STOP JUMPING) */
+/* 3. DASHBOARD STABILITY (LOCK HEIGHTS TO STOP JUMPING) */
 .tools-grid {
   display: flex;
   flex-direction: column;
   gap: 20px;
   width: 100%;
   max-width: 750px;
+  margin: 0 auto;
 }
 
 .masking-tool {
@@ -94,7 +84,7 @@ body, html, #root {
   border: 1px solid var(--border-dim);
   padding: 30px;
   border-radius: 15px;
-  min-height: 145px; /* LOCKED HEIGHT PREVENTS JUMPING */
+  min-height: 145px; /* Locked height prevents "bouncing" during data sync */
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -102,14 +92,14 @@ body, html, #root {
 }
 
 .audit-list {
-  height: 250px; /* FIXED HEIGHT FOR LOGS */
-  overflow-y: hidden;
+  height: 250px; /* Fixed height for log area */
+  overflow-y: hidden; /* Prevents scrollbars from appearing and shifting the layout */
   display: flex;
   flex-direction: column;
 }
 
 .recon-terminal {
-  height: 180px; /* FIXED HEIGHT FOR TERMINAL */
+  height: 180px; /* Fixed height for the scan results */
   background: #000;
   border-left: 2px solid var(--tiger-blue);
   padding: 20px;
@@ -117,7 +107,18 @@ body, html, #root {
   overflow: hidden;
 }
 
-/* 4. PREMIUM VCC CARDS */
+.notification-stack {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  height: 200px; /* Pre-allocated space for alerts */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 15000;
+}
+
+/* 4. PREMIUM VCC CARDS (EXPIRY & CVV) */
 .vcc-horizontal-scroll {
   display: flex;
   gap: 20px;
@@ -125,26 +126,45 @@ body, html, #root {
   overflow-x: auto;
 }
 
-.vcc-card-premium {
+.managed-card-row {
   min-width: 320px;
   height: 190px;
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   border: 1px solid #334155;
   border-radius: 16px;
   padding: 25px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  transition: 0.5s ease;
 }
 
-.vcc-number-display {
-  font-family: 'Courier New', monospace;
-  font-size: 1.4rem;
-  letter-spacing: 3px;
+.vcc-meta-row {
+  display: flex;
+  gap: 40px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+
+.vcc-meta-row span {
+  font-size: 0.5rem;
+  color: #64748b;
+  display: block;
+}
+
+.vcc-meta-row strong {
+  font-size: 0.9rem;
   color: white;
 }
 
-/* 5. UI COMPONENTS & NOTIFICATIONS */
+/* 5. BRANDING & UI ELEMENTS */
+.brand-name {
+  color: var(--tiger-blue);
+  font-size: 4rem;
+  font-weight: 200;
+  letter-spacing: 15px;
+  text-transform: uppercase;
+  margin: 0;
+}
+
 .main-button {
   background-color: var(--tiger-blue);
   color: white;
@@ -154,23 +174,12 @@ body, html, #root {
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 2px;
-  transition: 0.3s;
+  transition: 0.4s;
 }
 
 .main-button:hover {
-  filter: brightness(1.2);
-  box-shadow: 0 0 20px rgba(0, 71, 171, 0.5);
-}
-
-.notification-stack {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  height: 200px; /* KEEPS STACK AREA STABLE */
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  z-index: 15000;
+  transform: scale(1.02);
+  box-shadow: 0 0 30px rgba(0, 71, 171, 0.6);
 }
 
 .notif-pill {
@@ -187,41 +196,10 @@ body, html, #root {
   to { transform: translateX(0); opacity: 1; }
 }
 
-/* 6. BRANDING */
-.brand-name {
-  color: var(--tiger-blue);
-  font-size: 4rem;
-  letter-spacing: 15px;
-  text-transform: uppercase;
-  margin-bottom: 10px;
-}
-
-.subtitle {
-  color: var(--text-dim);
-  font-size: 0.9rem;
-  letter-spacing: 5px;
-  margin-bottom: 50px;
-}
-
-/* 7. PROGRESS BAR */
-.progress-bar-container {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 4px;
-  background-color: #0F172A;
-  z-index: 10000;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  background-color: var(--tiger-blue);
-  transition: width 1s ease-in-out;
-}
-
-/* 8. TOASTS */
 .status-message.toast-fixed {
   position: fixed;
-  top: 30px; left: 50%;
+  top: 30px; 
+  left: 50%;
   transform: translateX(-50%);
   background-color: var(--tiger-blue);
   padding: 12px 30px;

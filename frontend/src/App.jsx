@@ -18,6 +18,7 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [terminatingId, setTerminatingId] = useState(null); 
   const [notifications, setNotifications] = useState([]); 
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   
   const [reconActive, setReconActive] = useState(false);
   const [reconLog, setReconLog] = useState([]);
@@ -35,6 +36,7 @@ function App() {
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [chartRange, setChartRange] = useState("30D");
   const [maskedEmail, setMaskedEmail] = useState("****************@mask.com");
+  const [maskedPhone, setMaskedPhone] = useState("+1 (***) ***-****"); 
   const [nodeCount, setNodeCount] = useState(0);
   const [auditLog, setAuditLog] = useState([]);
   const [mapNodes, setMapNodes] = useState([]); 
@@ -43,6 +45,13 @@ function App() {
   const [showToast, setShowToast] = useState("");
 
   const triggerToast = (msg) => { setShowToast(msg); setTimeout(() => setShowToast(""), 2000); };
+
+  // Mobile Detection Logic
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const pushNotification = (broker) => {
     const id = Date.now();
@@ -74,13 +83,14 @@ function App() {
       }
       setAuditLog(data.recent_audit || []);
       setMaskedEmail(data.profile?.email_alias || "");
+      setMaskedPhone(data.profile?.phone_alias || "");
       setNodeCount(data.profile?.active_nodes || 0);
       setMapNodes(data.map_nodes || []); 
 
       const finRes = await fetch(`${API_BASE_URL}/financials/data`);
       const finData = await finRes.json();
       setCards(finData.cards || []);
-    } catch (e) { console.log("Heartbeat pulse..."); }
+    } catch (e) { console.log("Pulse..."); }
   };
 
   useEffect(() => {
@@ -133,6 +143,7 @@ function App() {
   };
 
   const startLoginFlow = () => { triggerToast("CHALLENGE REQUEST SENT..."); setShow2FA(true); };
+  
   const verify2FA = () => {
     triggerToast("AUTHENTICATING...");
     setTimeout(() => {
@@ -159,15 +170,12 @@ function App() {
     }, 1500);
   };
 
-  // UPDATED: Now sends the actual form data to the backend
   const handleFinalPurchase = async () => {
     if(!targetProfile.fullName || !targetProfile.email) {
         triggerToast("PROFILE DATA REQUIRED");
         return;
     }
-
     try {
-        // Send profile to backend
         const response = await fetch(`${API_BASE_URL}/financials/profile`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -206,9 +214,9 @@ function App() {
 
       {showToast && <div className="status-message toast-fixed">{showToast}</div>}
 
-      <div className="notification-stack">
+      <div className="notification-stack" style={{ minHeight: '180px' }}>
         {notifications.map(n => (
-          <div key={n.id} className="notif-pill">
+          <div key={n.id} className="notif-pill fade-in">
              <span className="pulse-dot"></span> {n.msg}
           </div>
         ))}
@@ -229,14 +237,22 @@ function App() {
         </div>
       )}
 
-      {/* MODAL: 2FA LOGIN */}
+      {/* MODAL: 2FA / BIOMETRIC LOGIN */}
       {show2FA && (
         <div className="modal-overlay">
           <div className="price-box" style={{maxWidth: '350px'}}>
-            <h3 className="tiger-text">VERIFICATION REQUIRED</h3>
-            <p style={{fontSize: '0.7rem', color: '#94A3B8', margin: '10px 0'}}>ENTER 6-DIGIT ENCRYPTED TOKEN</p>
-            <input className="mask-btn" style={{width: '100%', margin: '20px 0', textAlign: 'center', letterSpacing: '10px', fontSize: '1.2rem', color: 'white'}} placeholder="******" maxLength="6" />
-            <button className="main-button" style={{width: '100%'}} onClick={verify2FA}>VERIFY IDENTITY</button>
+            <h3 className="tiger-text">{isMobile ? "BIOMETRIC AUTH" : "VERIFICATION REQUIRED"}</h3>
+            <p style={{fontSize: '0.7rem', color: '#94A3B8', margin: '10px 0'}}>
+              {isMobile ? "PLACE THUMB ON SCANNER" : "ENTER 6-DIGIT ENCRYPTED TOKEN"}
+            </p>
+            {isMobile ? (
+              <div className="biometric-scan-circle" onClick={verify2FA}>
+                <span style={{fontSize: '2.5rem'}}>🔒</span>
+              </div>
+            ) : (
+              <input className="mask-btn" style={{width: '100%', margin: '20px 0', textAlign: 'center', letterSpacing: '10px', fontSize: '1.2rem', color: 'white'}} placeholder="******" maxLength="6" />
+            )}
+            {!isMobile && <button className="main-button" style={{width: '100%'}} onClick={verify2FA}>VERIFY IDENTITY</button>}
             <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShow2FA(false)}>CANCEL</button>
           </div>
         </div>
@@ -264,7 +280,7 @@ function App() {
       )}
 
       {!showShield && !showPricing && !showCheckout && !isScanning && !show2FA && (
-        <div className="fade-in">
+        <div className="fade-in" style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
           <h1 className="brand-name">DISAPPEAR</h1>
           <p className="subtitle">Privacy-as-a-Service</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', marginTop: '40px' }}>
@@ -291,32 +307,32 @@ function App() {
         </div>
       )}
 
-      {/* SECURE CHECKOUT WITH TARGET PROFILE FORM */}
+      {/* TARGET PROFILE FORM (FIXED ALIGNMENT) */}
       {showCheckout && !isScanning && (
         <div className="pricing-card">
-          <div className="price-box" style={{maxWidth: '450px'}}>
+          <div className="price-box" style={{maxWidth: '450px', width: '100%', margin: '0 auto'}}>
             <h3 className="tiger-text">TARGET PROFILE DATA</h3>
             <p style={{fontSize: '0.7rem', color: '#94A3B8', marginBottom: '20px'}}>ENTER INFO FOR BROKER REMOVAL SERVICE</p>
             
-            <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
-                <input className="mask-btn" style={{width: '100%', color: 'white'}} 
+            <div style={{display: 'flex', flexDirection: 'column', gap: '12px', width: '100%'}}>
+                <input className="mask-btn" style={{width: '100%', color: 'white', boxSizing: 'border-box'}} 
                     placeholder="Full Legal Name" 
                     value={targetProfile.fullName}
                     onChange={(e) => setTargetProfile({...targetProfile, fullName: e.target.value})} />
                 
-                <input className="mask-btn" style={{width: '100%', color: 'white'}} 
+                <input className="mask-btn" style={{width: '100%', color: 'white', boxSizing: 'border-box'}} 
                     placeholder="Primary Email Address" 
                     value={targetProfile.email}
                     onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
                 
-                <input className="mask-btn" style={{width: '100%', color: 'white'}} 
+                <input className="mask-btn" style={{width: '100%', color: 'white', boxSizing: 'border-box'}} 
                     placeholder="Home Address" 
                     value={targetProfile.address}
                     onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
                 
-                <div style={{textAlign: 'left'}}>
+                <div style={{textAlign: 'left', width: '100%'}}>
                     <label style={{fontSize: '0.6rem', color: '#94A3B8', marginLeft: '10px'}}>DATE OF BIRTH</label>
-                    <input className="mask-btn" style={{width: '100%', color: 'white'}} 
+                    <input className="mask-btn" style={{width: '100%', color: 'white', boxSizing: 'border-box'}} 
                         type="date" 
                         value={targetProfile.dob}
                         onChange={(e) => setTargetProfile({...targetProfile, dob: e.target.value})} />
@@ -344,7 +360,11 @@ function App() {
                 <p className="tool-label">ENCRYPTED IDENTITY EMAIL</p>
                 <button className="filter-btn active" onClick={() => {
                    fetch(`${API_BASE_URL}/financials/regenerate`, { method: "POST" })
-                   .then(r => r.json()).then(data => { setMaskedEmail(data.email_alias); triggerToast("EMAIL CYCLED"); });
+                   .then(r => r.json()).then(data => { 
+                     setMaskedEmail(data.email_alias); 
+                     setMaskedPhone(data.phone_alias);
+                     triggerToast("ALIASES CYCLED"); 
+                   });
                 }}>CYCLE ALIAS</button>
               </div>
               <div className="masked-display" style={{marginTop: '20px', position: 'relative'}} onClick={() => {navigator.clipboard.writeText(maskedEmail); triggerToast("COPIED")}}>
@@ -352,7 +372,15 @@ function App() {
               </div>
             </div>
 
-            {/* VCC TOOL */}
+            {/* PHONE TOOL */}
+            <div className="masking-tool">
+              <p className="tool-label">ENCRYPTED PHONE ALIAS</p>
+              <div className="masked-display" style={{marginTop: '20px', position: 'relative'}} onClick={() => {navigator.clipboard.writeText(maskedPhone); triggerToast("COPIED")}}>
+                {maskedPhone} <span style={{position: 'absolute', right: '15px', opacity: 0.4}}>📋</span>
+              </div>
+            </div>
+
+            {/* VCC TOOL (FIXED WITH EXPIRY/CVV) */}
             <div className="masking-tool">
               <p className="tool-label">VIRTUAL SHIELD CARDS</p>
               <div className="card-manager-list">
@@ -366,6 +394,11 @@ function App() {
                       <code className="card-digits clickable-card" onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("COPIED")}}>
                         {c.number}
                       </code>
+                      {/* NEW: VCC META DATA */}
+                      <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #111', paddingTop: '10px', marginTop: '10px'}}>
+                         <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>EXP</span><strong>{c.expiry || '08/28'}</strong></div>
+                         <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>CVV</span><strong>{c.cvv || '442'}</strong></div>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -373,13 +406,13 @@ function App() {
               <button className="mask-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setIsMinting(true)}>+ MINT NEW SHIELD</button>
             </div>
 
-            {/* RECONNAISSANCE MODULE */}
+            {/* RECONNAISSANCE MODULE (LOCKED HEIGHT) */}
             <div className="masking-tool full-width-tool terminal-bg">
                <div style={{padding: '0 30px'}}>
                 <p className="tool-label" style={{color: reconActive ? 'var(--alert-red)' : 'var(--tiger-blue)'}}>
                   DEEP WEB RECONNAISSANCE {reconActive ? '[SCANNING...]' : '[READY]'}
                 </p>
-                <div className="recon-terminal">
+                <div className="recon-terminal" style={{height: '160px', overflowY: 'hidden'}}>
                   {reconLog.length === 0 ? "> SYSTEM IDLE. WAITING FOR INPUT..." : reconLog.map((line, i) => <div key={i} className="terminal-line">{`> ${line}`}</div>)}
                 </div>
                 <button className="pdf-btn" onClick={runDeepWebScan} disabled={reconActive} style={{borderColor: reconActive ? 'var(--alert-red)' : ''}}>
@@ -423,10 +456,10 @@ function App() {
               </div>
             </div>
 
-            {/* AUDIT LOG */}
+            {/* AUDIT LOG (LOCKED HEIGHT) */}
             <div className="masking-tool">
               <p className="tool-label">LIVE SECURITY AUDIT</p>
-              <div className="audit-list" style={{maxHeight: '200px', overflowY: 'auto', marginBottom: '15px'}}>
+              <div className="audit-list" style={{height: '220px', overflowY: 'hidden', marginBottom: '15px'}}>
                 {auditLog.map((log, i) => (
                   <div key={i} className="audit-row">
                     <span className="audit-broker">[{log.broker}]</span>
