@@ -71,6 +71,7 @@ function App() {
     }));
   }, [chartRange, auditLog]);
 
+  // SYNC LOGIC: Pulls the stable aliases from the session state
   const syncDefenseData = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/dashboard/sync`);
@@ -270,7 +271,7 @@ function App() {
                     method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ label: newCardLabel })
                   }).then(r => r.json()).then(newCard => {
-                    setCards([...cards, newCard]); setIsMinting(false); setNewCardLabel(""); triggerToast("SHIELD MINTED");
+                    setCards([newCard, ...cards]); setIsMinting(false); setNewCardLabel(""); triggerToast("SHIELD MINTED");
                   });
               }}>MINT</button>
               <button className="reset-btn" style={{margin: 0, flex: 1}} onClick={() => setIsMinting(false)}>CANCEL</button>
@@ -307,7 +308,7 @@ function App() {
         </div>
       )}
 
-      {/* TARGET PROFILE FORM (FIXED ALIGNMENT) */}
+      {/* TARGET PROFILE FORM */}
       {showCheckout && !isScanning && (
         <div className="pricing-card">
           <div className="price-box" style={{maxWidth: '450px', width: '100%', margin: '0 auto'}}>
@@ -367,7 +368,7 @@ function App() {
                    });
                 }}>CYCLE ALIAS</button>
               </div>
-              <div className="masked-display" style={{marginTop: '20px', position: 'relative'}} onClick={() => {navigator.clipboard.writeText(maskedEmail); triggerToast("COPIED")}}>
+              <div className="masked-display" onClick={() => {navigator.clipboard.writeText(maskedEmail); triggerToast("COPIED")}}>
                 {maskedEmail} <span style={{position: 'absolute', right: '15px', opacity: 0.4}}>📋</span>
               </div>
             </div>
@@ -375,12 +376,12 @@ function App() {
             {/* PHONE TOOL */}
             <div className="masking-tool">
               <p className="tool-label">ENCRYPTED PHONE ALIAS</p>
-              <div className="masked-display" style={{marginTop: '20px', position: 'relative'}} onClick={() => {navigator.clipboard.writeText(maskedPhone); triggerToast("COPIED")}}>
+              <div className="masked-display" onClick={() => {navigator.clipboard.writeText(maskedPhone); triggerToast("COPIED")}}>
                 {maskedPhone} <span style={{position: 'absolute', right: '15px', opacity: 0.4}}>📋</span>
               </div>
             </div>
 
-            {/* VCC TOOL (FIXED WITH EXPIRY/CVV) */}
+            {/* VCC TOOL */}
             <div className="masking-tool">
               <p className="tool-label">VIRTUAL SHIELD CARDS</p>
               <div className="card-manager-list">
@@ -394,10 +395,9 @@ function App() {
                       <code className="card-digits clickable-card" onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("COPIED")}}>
                         {c.number}
                       </code>
-                      {/* NEW: VCC META DATA */}
-                      <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #111', paddingTop: '10px', marginTop: '10px'}}>
-                         <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>EXP</span><strong>{c.expiry || '08/28'}</strong></div>
-                         <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>CVV</span><strong>{c.cvv || '442'}</strong></div>
+                      <div className="vcc-meta-row">
+                         <div><span>EXP</span><strong>{c.expiry}</strong></div>
+                         <div><span>CVV</span><strong>{c.cvv}</strong></div>
                       </div>
                     </div>
                   </div>
@@ -406,16 +406,16 @@ function App() {
               <button className="mask-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setIsMinting(true)}>+ MINT NEW SHIELD</button>
             </div>
 
-            {/* RECONNAISSANCE MODULE (LOCKED HEIGHT) */}
+            {/* RECONNAISSANCE MODULE */}
             <div className="masking-tool full-width-tool terminal-bg">
                <div style={{padding: '0 30px'}}>
                 <p className="tool-label" style={{color: reconActive ? 'var(--alert-red)' : 'var(--tiger-blue)'}}>
                   DEEP WEB RECONNAISSANCE {reconActive ? '[SCANNING...]' : '[READY]'}
                 </p>
-                <div className="recon-terminal" style={{height: '160px', overflowY: 'hidden'}}>
+                <div className="recon-terminal">
                   {reconLog.length === 0 ? "> SYSTEM IDLE. WAITING FOR INPUT..." : reconLog.map((line, i) => <div key={i} className="terminal-line">{`> ${line}`}</div>)}
                 </div>
-                <button className="pdf-btn" onClick={runDeepWebScan} disabled={reconActive} style={{borderColor: reconActive ? 'var(--alert-red)' : ''}}>
+                <button className="pdf-btn" onClick={runDeepWebScan} disabled={reconActive}>
                   {reconActive ? "ANALYZING BROKER NODES..." : "RUN GLOBAL THREAT SCAN"}
                 </button>
                </div>
@@ -434,32 +434,10 @@ function App() {
               </div>
             </div>
 
-            {/* SUPPRESSION HISTORY */}
-            <div className="masking-tool full-width-tool">
-              <div style={{display: 'flex', justifyContent: 'space-between', padding: '0 30px'}}>
-                <p className="tool-label">SUPPRESSION HISTORY</p>
-                <div className="chart-filters">
-                  {["30D", "90D", "6M", "1Y"].map(range => (
-                    <button key={range} className={chartRange === range ? "filter-btn active" : "filter-btn"} onClick={() => setChartRange(range)}>{range}</button>
-                  ))}
-                </div>
-              </div>
-              <div style={{ width: '100%', height: '220px', background: '#000', marginTop: '15px' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={historyData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#111" vertical={false} />
-                    <XAxis hide /><YAxis hide />
-                    <Tooltip contentStyle={{background:'#000', border:'1px solid #0047AB', color: '#fff'}} />
-                    <Area type="monotone" dataKey="threats" stroke="#0047AB" fill="#0047AB" fillOpacity={0.2} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* AUDIT LOG (LOCKED HEIGHT) */}
+            {/* AUDIT LOG */}
             <div className="masking-tool">
               <p className="tool-label">LIVE SECURITY AUDIT</p>
-              <div className="audit-list" style={{height: '220px', overflowY: 'hidden', marginBottom: '15px'}}>
+              <div className="audit-list">
                 {auditLog.map((log, i) => (
                   <div key={i} className="audit-row">
                     <span className="audit-broker">[{log.broker}]</span>
