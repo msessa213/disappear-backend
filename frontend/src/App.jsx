@@ -2,6 +2,12 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+
+// --- NEW IMPORTS ---
+import Manifesto from './Manifesto';
+import Privacy from './Privacy';
+import Terms from './Terms';
+
 import './App.css';
 
 // --- CONFIGURATION ---
@@ -20,13 +26,16 @@ function App() {
   const [notifications, setNotifications] = useState([]); 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   
+  // State to manage legal document modals
+  const [showLegal, setShowLegal] = useState(null); 
+
   const [reconActive, setReconActive] = useState(false);
   const [reconLog, setReconLog] = useState([]);
   const [isEmergencyWipe, setIsEmergencyWipe] = useState(false);
 
-  // Target Profile State for Customer Info
+  // Updated Profile State with termsAccepted toggle
   const [targetProfile, setTargetProfile] = useState({
-    fullName: "", email: "", dob: "", address: ""
+    fullName: "", email: "", dob: "", address: "", termsAccepted: false
   });
 
   const [newCardLabel, setNewCardLabel] = useState("");
@@ -43,7 +52,6 @@ function App() {
 
   const triggerToast = (msg) => { setShowToast(msg); setTimeout(() => setShowToast(""), 2000); };
 
-  // Mobile Detection Logic
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
@@ -58,23 +66,12 @@ function App() {
     }, 4000);
   };
 
-  const historyData = useMemo(() => {
-    const points = chartRange === "30D" ? 30 : 60;
-    return Array.from({ length: points }, (_, i) => ({
-      name: i,
-      threats: Math.floor(Math.random() * 20) + 5
-    }));
-  }, [chartRange]);
-
-  // STABILITY FIX: Wrapped in useCallback to prevent re-creation on every render
   const syncDefenseData = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/dashboard/sync`);
       const data = await res.json();
       
-      // Update data quietly without triggering an immediate loop
       setAuditLog(prevLog => {
-        // Only trigger notification if the time has actually changed (prevents spam)
         if (data.recent_audit?.length > 0 && prevLog.length > 0) {
             if (data.recent_audit[0].time !== prevLog[0].time) {
                 pushNotification(data.recent_audit[0].broker);
@@ -92,16 +89,15 @@ function App() {
       const finData = await finRes.json();
       setCards(finData.cards || []);
     } catch (e) { console.log("Pulse heartbeat..."); }
-  }, [showShield]); // Depend only on showShield
+  }, [showShield]);
 
-  // THE HEARTBEAT FIX: Forced to 10 seconds. No circular dependencies.
   useEffect(() => {
     let interval;
     if (showShield) {
-      syncDefenseData(); // Initial sync
+      syncDefenseData();
       interval = setInterval(() => {
         syncDefenseData();
-      }, 10000); // FIXED 10 SECOND SYNC TO STOP JUMPING
+      }, 10000);
     }
     return () => clearInterval(interval);
   }, [showShield, syncDefenseData]);
@@ -216,6 +212,18 @@ function App() {
         ))}
       </div>
 
+      {/* LEGAL MODAL OVERLAY */}
+      {showLegal && (
+        <div className="modal-overlay" onClick={() => setShowLegal(null)}>
+          <div className="info-modal-content" onClick={e => e.stopPropagation()}>
+            {showLegal === 'manifesto' && <Manifesto />}
+            {showLegal === 'privacy' && <Privacy />}
+            {showLegal === 'terms' && <Terms />}
+            <button className="reset-btn" onClick={() => setShowLegal(null)}>CLOSE</button>
+          </div>
+        </div>
+      )}
+
       {showInfo && (
         <div className="modal-overlay" onClick={() => setShowInfo(false)}>
           <div className="info-modal-content" onClick={e => e.stopPropagation()}>
@@ -271,7 +279,7 @@ function App() {
       )}
 
       {!showShield && !showPricing && !showCheckout && !isScanning && !show2FA && (
-        <div className="fade-in" style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+        <div className="fade-in" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '80vh'}}>
           <h1 className="brand-name">DISAPPEAR</h1>
           <p className="subtitle">Privacy-as-a-Service</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', marginTop: '40px' }}>
@@ -279,8 +287,14 @@ function App() {
               <button className="main-button" onClick={() => setShowPricing(true)}>IDENTITY CLEANUP</button>
               <button className="login-btn-outline" onClick={startLoginFlow}>CLIENT LOGIN</button>
             </div>
-            <button className="info-link-btn" onClick={() => setShowInfo(true)}>WHY IS THIS CRITICAL? [MANIFESTO]</button>
+            <button className="info-link-btn" onClick={() => setShowLegal('manifesto')}>WHY IS THIS CRITICAL? [MANIFESTO]</button>
           </div>
+
+          <footer className="home-footer">
+              <span onClick={() => setShowLegal('privacy')}>PRIVACY POLICY</span>
+              <span className="footer-divider">|</span>
+              <span onClick={() => setShowLegal('terms')}>TERMS OF SERVICE</span>
+          </footer>
         </div>
       )}
 
@@ -310,8 +324,35 @@ function App() {
                     <label style={{fontSize: '0.6rem', color: '#94A3B8', marginLeft: '10px'}}>DATE OF BIRTH</label>
                     <input className="mask-btn" style={{width: '100%', color: 'white'}} type="date" value={targetProfile.dob} onChange={(e) => setTargetProfile({...targetProfile, dob: e.target.value})} />
                 </div>
+
+                {/* CONSENT CHECKBOX */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '15px', padding: '0 10px' }}>
+                  <input 
+                    type="checkbox" 
+                    id="terms" 
+                    style={{ marginTop: '4px', cursor: 'pointer' }}
+                    checked={targetProfile.termsAccepted}
+                    onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})}
+                  />
+                  <label htmlFor="terms" style={{ fontSize: '0.65rem', color: '#94A3B8', textAlign: 'left', lineHeight: '1.4' }}>
+                    I agree to the <span className="legal-link" onClick={() => setShowLegal('terms')}>Terms of Service</span> and understand that burning a card does not absolve me of existing financial obligations.
+                  </label>
+                </div>
             </div>
-            <button className="main-button" style={{width: '100%', marginTop: '25px'}} onClick={handleFinalPurchase}>CONFIRM & INITIATE SCRUB</button>
+
+            <button 
+              className="main-button" 
+              style={{ 
+                width: '100%', 
+                marginTop: '25px', 
+                opacity: targetProfile.termsAccepted ? 1 : 0.4,
+                cursor: targetProfile.termsAccepted ? 'pointer' : 'not-allowed' 
+              }} 
+              onClick={handleFinalPurchase}
+              disabled={!targetProfile.termsAccepted}
+            >
+              CONFIRM & INITIATE SCRUB
+            </button>
             <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowCheckout(false)}>BACK</button>
           </div>
         </div>
