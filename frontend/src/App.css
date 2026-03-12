@@ -1,23 +1,26 @@
-/* 1. GLOBAL RESET & CORE THEME */
+/* 1. CORE THEME & RESET */
 :root {
-  --tiger-blue: #0047AB; /* Jesuit High School Blue */
+  --tiger-blue: #0047AB;
   --bg-dark: #000000;
   --card-bg: #0A0A0A;
   --text-dim: #94A3B8;
   --border-dim: #1e293b;
   --alert-red: #ef4444;
   --burn-orange: #ff4d00;
-  --terminal-green: #00ff41;
+}
+
+* {
+  box-sizing: border-box; /* Forces padding to stay INSIDE the width */
+  margin: 0;
+  padding: 0;
 }
 
 body, html, #root {
-  margin: 0;
-  padding: 0;
   width: 100%;
   min-height: 100vh;
   background-color: var(--bg-dark);
   color: white;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', sans-serif;
   overflow-x: hidden;
 }
 
@@ -30,213 +33,60 @@ body, html, #root {
 .app-container {
   width: 100%;
   max-width: 1000px;
-  padding: 100px 20px 60px 20px;
+  padding: 80px 20px;
   margin: 0 auto;
-  text-align: center;
-  box-sizing: border-box;
-}
-
-/* 2. BRANDING & TEXT */
-.brand-name {
-  color: var(--tiger-blue);
-  font-size: 4rem;
-  font-weight: 200;
-  letter-spacing: 15px;
-  text-transform: uppercase;
-  margin: 0;
-  text-shadow: 0 0 20px rgba(0, 71, 171, 0.4);
-}
-
-.subtitle {
-  color: var(--text-dim);
-  font-size: 0.9rem;
-  letter-spacing: 5px;
-  margin-top: 10px;
-  margin-bottom: 60px;
-}
-
-.tiger-text {
-  color: var(--tiger-blue);
-  font-size: 0.8rem;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  font-weight: bold;
-}
-
-/* 3. BUTTONS & PULSE */
-.main-button {
-  background-color: var(--tiger-blue);
-  color: white;
-  border: none;
-  padding: 20px 50px;
-  border-radius: 50px;
-  font-weight: bold;
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition: 0.4s;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-}
-
-.main-button:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 30px rgba(0, 71, 171, 0.6);
-}
-
-.login-btn-outline {
-  background: transparent;
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 20px 40px;
-  border-radius: 50px;
-  font-weight: bold;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: 0.3s;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-}
-
-.login-btn-outline:hover {
-  border-color: var(--tiger-blue);
-  background: rgba(0, 71, 171, 0.1);
-}
-
-.mask-btn {
-  background: transparent;
-  color: var(--tiger-blue);
-  border: 1px solid var(--tiger-blue);
-  padding: 12px 24px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  transition: 0.3s;
-}
-
-.mask-btn:hover {
-  background: var(--tiger-blue);
-  color: white;
-}
-
-.active-toggle {
-  background: var(--tiger-blue) !important;
-  color: white !important;
-}
-
-/* 4. PROGRESS BAR & THREAT COUNTER */
-.progress-bar-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 4px;
-  background-color: #0F172A;
-  z-index: 10000;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  background-color: var(--tiger-blue);
-  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 0 20px var(--tiger-blue);
-}
-
-.secure-connection-text {
-  position: absolute;
-  top: 10px;
-  left: 20px;
-  font-size: 0.6rem;
-  color: var(--tiger-blue);
-  letter-spacing: 2px;
-  font-weight: bold;
-  text-transform: uppercase;
-  opacity: 0.7;
-}
-
-/* 5. PRICING & CHECKOUT */
-.pricing-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  animation: fadeIn 1s ease-in;
 }
 
+/* 2. THE ALIGNMENT FIX (PRICE-BOX REFACTOR) */
 .price-box {
   background-color: var(--card-bg);
   border: 1px solid var(--tiger-blue);
   padding: 40px;
   border-radius: 20px;
-  width: 100%;
-  max-width: 400px;
+  width: 450px; /* FIXED WIDTH PREVENTS MISALIGNMENT */
   margin: 20px auto;
   box-shadow: 0 0 40px rgba(0, 71, 171, 0.2);
-}
-
-.price-amount {
-  font-size: 3.5rem;
-  font-weight: bold;
-  color: white;
-  margin: 15px 0;
-}
-
-.billing-toggle {
-  background: #111;
-  padding: 6px;
-  border-radius: 50px;
-  display: inline-flex;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-/* 6. BIOMETRIC SCANNER */
-.biometric-section {
-  background: rgba(0, 71, 171, 0.1);
-  border: 1px solid var(--tiger-blue);
-  padding: 25px;
-  border-radius: 12px;
-  margin-bottom: 25px;
-  position: relative;
-  overflow: hidden;
-  color: white;
-  font-size: 0.7rem;
-  letter-spacing: 2px;
-  font-weight: bold;
-}
-
-.biometric-section::after {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; width: 100%; height: 2px;
-  background: white;
-  box-shadow: 0 0 15px white;
-  animation: scanMove 2s infinite linear;
-}
-
-/* 7. DASHBOARD & TOOLS */
-.shield-container {
+  
+  /* Flexbox forces perfect vertical alignment */
   display: flex;
   flex-direction: column;
-  align-items: center;
-  width: 100%;
+  align-items: center; 
+  gap: 15px; /* Identical vertical spacing between all elements */
 }
 
-.shield-text {
-  color: var(--tiger-blue);
-  letter-spacing: 5px;
-  text-transform: uppercase;
-  font-weight: 300;
-  margin-bottom: 40px;
+/* UNIVERSAL ELEMENT STYLING - Forces all inputs and buttons to match exactly */
+.price-box .mask-btn, 
+.price-box .main-button, 
+.price-box .reset-btn,
+.price-box input,
+.price-box .profile-input {
+  width: 100% !important; /* Forces 100% of the 450px container */
+  max-width: 100% !important;
+  display: block;
+  margin: 0 !important;
+  height: 55px; /* Uniform height for all boxes */
+  font-size: 0.9rem;
 }
 
+.price-box input, .price-box .profile-input {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--tiger-blue);
+  color: white;
+  padding: 0 20px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+/* 3. DASHBOARD STABILITY (LOCKS HEIGHTS TO STOP JUMPING) */
 .tools-grid {
   display: flex;
   flex-direction: column;
   gap: 20px;
   width: 100%;
-  max-width: 700px;
-  margin: 0 auto;
+  max-width: 750px;
 }
 
 .masking-tool {
@@ -244,122 +94,79 @@ body, html, #root {
   border: 1px solid var(--border-dim);
   padding: 30px;
   border-radius: 15px;
-  text-align: left;
-  transition: 0.3s;
-  box-sizing: border-box;
+  min-height: 145px; /* LOCKED HEIGHT PREVENTS JUMPING */
   width: 100%;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
-.masking-tool:hover {
-  border-color: var(--tiger-blue);
+.audit-list {
+  height: 250px; /* FIXED HEIGHT FOR LOGS */
+  overflow-y: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.tool-label {
-  color: var(--tiger-blue);
-  font-size: 0.75rem;
-  letter-spacing: 3px;
-  font-weight: bold;
-  margin-bottom: 20px;
-  text-transform: uppercase;
-}
-
-/* FLUSH CHART & FILTERS */
-.full-width-tool {
-  width: 100%;
-  padding: 30px 0 0 0 !important;
+.recon-terminal {
+  height: 180px; /* FIXED HEIGHT FOR TERMINAL */
+  background: #000;
+  border-left: 2px solid var(--tiger-blue);
+  padding: 20px;
+  font-family: 'Courier New', monospace;
   overflow: hidden;
 }
 
-.full-width-tool .tool-label {
-  padding-left: 30px;
-}
-
-.chart-filters {
+/* 4. PREMIUM VCC CARDS */
+.vcc-horizontal-scroll {
   display: flex;
-  gap: 10px;
-  padding-right: 30px;
+  gap: 20px;
+  padding: 10px 0;
+  overflow-x: auto;
 }
 
-.filter-btn {
-  background: transparent;
+.vcc-card-premium {
+  min-width: 320px;
+  height: 190px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border: 1px solid #334155;
+  border-radius: 16px;
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.vcc-number-display {
+  font-family: 'Courier New', monospace;
+  font-size: 1.4rem;
+  letter-spacing: 3px;
+  color: white;
+}
+
+/* 5. UI COMPONENTS & NOTIFICATIONS */
+.main-button {
+  background-color: var(--tiger-blue);
+  color: white;
   border: none;
-  color: #475569;
-  font-size: 0.65rem;
+  border-radius: 50px;
   font-weight: bold;
   cursor: pointer;
-  padding: 2px 8px;
-  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
   transition: 0.3s;
 }
 
-.filter-btn.active {
-  color: var(--tiger-blue);
-  background: rgba(0, 71, 171, 0.1);
+.main-button:hover {
+  filter: brightness(1.2);
+  box-shadow: 0 0 20px rgba(0, 71, 171, 0.5);
 }
 
-/* 8. VCC MANAGER STYLES */
-.card-manager-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.enhanced-card {
-  border: 1px solid #1e293b;
-  background: linear-gradient(145deg, #0a0a0a 0%, #050505 100%);
-  padding: 20px !important;
-  display: block; 
-  transition: all 0.5s ease;
-}
-
-/* BURN ANIMATION */
-.burning {
-  animation: burnAway 0.8s forwards;
-  pointer-events: none;
-}
-
-@keyframes burnAway {
-  0% { transform: scale(1); filter: brightness(1) saturate(1); border-color: var(--tiger-blue); }
-  50% { transform: scale(1.05); filter: brightness(2) saturate(2); border-color: var(--burn-orange); box-shadow: 0 0 30px var(--burn-orange); }
-  100% { transform: scale(0.9); opacity: 0; filter: blur(10px); }
-}
-
-.clickable-card {
-  font-size: 1.1rem !important;
-  letter-spacing: 2px;
-  cursor: pointer;
-  display: block;
-  padding: 10px;
-  background: #000;
-  border: 1px solid #111;
-  border-radius: 4px;
-  margin-bottom: 12px;
-  text-align: center;
-}
-
-.clickable-card:hover { 
-  border-color: var(--tiger-blue); 
-  background: #001a3d; 
-}
-
-.kill-text-bold {
-  background: transparent;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: var(--alert-red);
-  font-size: 0.6rem;
-  font-weight: bold;
-  padding: 4px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  text-transform: uppercase;
-}
-
-/* 9. NOTIFICATION STACK */
 .notification-stack {
   position: fixed;
   top: 20px;
   right: 20px;
+  height: 200px; /* KEEPS STACK AREA STABLE */
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -369,315 +176,56 @@ body, html, #root {
 .notif-pill {
   background: rgba(0, 0, 0, 0.9);
   border: 1px solid var(--tiger-blue);
-  color: white;
   padding: 12px 20px;
   border-radius: 4px;
   font-size: 0.7rem;
-  letter-spacing: 1px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  animation: slideInRight 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  animation: slideIn 0.3s forwards;
 }
 
-.pulse-dot {
-  width: 8px;
-  height: 8px;
-  background: var(--tiger-blue);
-  border-radius: 50%;
-  box-shadow: 0 0 10px var(--tiger-blue);
-  animation: pulseMe 1s infinite;
-}
-
-@keyframes pulseMe {
-  0% { transform: scale(1); opacity: 1; }
-  100% { transform: scale(2.5); opacity: 0; }
-}
-
-@keyframes slideInRight {
+@keyframes slideIn {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
 }
 
-/* 10. TACTICAL MAP STYLES */
-.map-container-tactical {
-  height: 300px;
-  width: 100%;
-  background: #000;
-  position: relative;
-  overflow: hidden;
-  border-top: 1px solid var(--border-dim);
-  border-bottom: 1px solid var(--border-dim);
-}
-
-.map-grid-overlay {
-  position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background-image: 
-    linear-gradient(rgba(0, 71, 171, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 71, 171, 0.1) 1px, transparent 1px);
-  background-size: 30px 30px;
-  pointer-events: none;
-}
-
-.map-node {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  background: var(--tiger-blue);
-  border-radius: 50%;
-  box-shadow: 0 0 10px var(--tiger-blue);
-  cursor: crosshair;
-  transition: 0.3s;
-}
-
-.map-node:hover {
-  transform: scale(2);
-  background: white;
-  z-index: 100;
-}
-
-.map-node:hover .node-tooltip {
-  display: block;
-}
-
-.node-alert {
-  background: var(--alert-red) !important;
-  box-shadow: 0 0 15px var(--alert-red) !important;
-  animation: mapPulse 1s infinite;
-}
-
-.node-tooltip {
-  display: none;
-  position: absolute;
-  bottom: 15px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #000;
-  border: 1px solid var(--tiger-blue);
-  color: white;
-  padding: 4px 8px;
-  font-size: 0.5rem;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-@keyframes mapPulse {
-  0% { transform: scale(1); opacity: 1; }
-  100% { transform: scale(3); opacity: 0; }
-}
-
-/* 11. AUDIT LOG & PDF */
-.audit-list {
-  display: flex;
-  flex-direction: column;
-  max-height: 250px;
-  overflow-y: auto;
-}
-
-.pdf-btn {
-  display: block !important;
-  width: 100%;
-  margin-top: 20px;
-  background: rgba(0, 71, 171, 0.1);
+/* 6. BRANDING */
+.brand-name {
   color: var(--tiger-blue);
-  border: 1px solid var(--tiger-blue);
-  padding: 14px;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: bold;
-  letter-spacing: 2px;
-  cursor: pointer;
+  font-size: 4rem;
+  letter-spacing: 15px;
   text-transform: uppercase;
-  transition: 0.3s;
-}
-
-.pdf-btn:hover:not(:disabled) {
-  background: var(--tiger-blue);
-  color: white;
-}
-
-/* 12. RECONNAISSANCE TERMINAL */
-.terminal-bg {
-  background: #020202 !important;
-  border: 1px solid #111 !important;
-}
-
-.recon-terminal {
-  background: #000;
-  border-left: 2px solid var(--tiger-blue);
-  padding: 20px;
-  height: 180px;
-  margin: 15px 0;
-  font-family: 'Courier New', monospace;
-  overflow: hidden;
-  text-align: left;
-}
-
-.terminal-line {
-  color: var(--tiger-blue);
-  font-size: 0.75rem;
-  margin-bottom: 5px;
-  opacity: 0.8;
-  animation: typeWriter 0.1s ease-out;
-}
-
-/* 13. EMERGENCY BURN SWITCH */
-.burn-all-btn {
-  background: rgba(239, 68, 68, 0.1);
-  color: var(--alert-red);
-  border: 1px solid var(--alert-red);
-  padding: 12px 25px;
-  margin-top: 20px;
-  cursor: pointer;
-  text-transform: uppercase;
-  font-size: 0.7rem;
-  font-weight: bold;
-  letter-spacing: 2px;
-  transition: 0.3s;
-  animation: criticalPulse 2s infinite;
-}
-
-.burn-all-btn:hover {
-  background: var(--alert-red);
-  color: white;
-  box-shadow: 0 0 20px var(--alert-red);
-}
-
-@keyframes criticalPulse {
-  0% { border-color: rgba(239, 68, 68, 0.5); }
-  50% { border-color: rgba(239, 68, 68, 1); box-shadow: 0 0 10px var(--alert-red); }
-  100% { border-color: rgba(239, 68, 68, 0.5); }
-}
-
-.wipe-shake {
-  animation: screenWipe 0.5s infinite;
-}
-
-@keyframes screenWipe {
-  0% { transform: translate(1px, 1px) rotate(0deg); filter: invert(0); }
-  20% { transform: translate(-3px, 0px) rotate(1deg); filter: invert(0.1); }
-  40% { transform: translate(3px, 2px) rotate(0deg); }
-  60% { transform: translate(1px, -1px) rotate(1deg); }
-  100% { transform: translate(-1px, 2px) rotate(0deg); }
-}
-
-/* 14. MANIFESTO / INFO MODAL */
-.info-link-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-dim);
-  font-size: 0.7rem;
-  letter-spacing: 1px;
-  text-decoration: underline;
-  cursor: pointer;
-  margin-top: 10px;
-}
-
-.info-modal-content {
-  background: var(--card-bg);
-  border: 1px solid var(--tiger-blue);
-  padding: 40px;
-  border-radius: 20px;
-  max-width: 800px;
-  width: 90%;
-  box-shadow: 0 0 50px rgba(0, 71, 171, 0.3);
-  text-align: left;
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin: 30px 0;
-}
-
-.info-item {
-  background: rgba(255, 255, 255, 0.03);
-  padding: 20px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.info-item h4 {
-  color: var(--tiger-blue);
   margin-bottom: 10px;
-  text-transform: uppercase;
-  font-size: 0.9rem;
 }
 
-.info-item p {
+.subtitle {
   color: var(--text-dim);
-  font-size: 0.8rem;
-  line-height: 1.5;
+  font-size: 0.9rem;
+  letter-spacing: 5px;
+  margin-bottom: 50px;
 }
 
-/* 15. UTILITIES */
+/* 7. PROGRESS BAR */
+.progress-bar-container {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 4px;
+  background-color: #0F172A;
+  z-index: 10000;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--tiger-blue);
+  transition: width 1s ease-in-out;
+}
+
+/* 8. TOASTS */
 .status-message.toast-fixed {
   position: fixed;
-  top: 30px;
-  left: 50%;
+  top: 30px; left: 50%;
   transform: translateX(-50%);
   background-color: var(--tiger-blue);
   padding: 12px 30px;
   border-radius: 50px;
-  z-index: 11000;
-  font-weight: bold;
-  font-size: 0.8rem;
-}
-
-.reset-btn {
-  background: transparent;
-  color: #475569;
-  border: 1px solid #334155;
-  padding: 12px 25px;
-  margin-top: 20px;
-  cursor: pointer;
-  text-transform: uppercase;
-  font-size: 0.7rem;
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
   z-index: 20000;
-}
-
-.masked-display {
-  background: #000;
-  padding: 20px;
-  border: 1px dashed var(--tiger-blue);
-  border-radius: 8px;
-  font-family: 'Courier New', monospace;
-  text-align: center;
-  word-break: break-all;
-  box-sizing: border-box;
-  width: 100%;
-  transition: 0.2s;
-  cursor: pointer;
-}
-
-.blue-mono { color: var(--tiger-blue); font-weight: bold; }
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes scanMove {
-  0% { top: 0; }
-  100% { top: 100%; }
-}
-
-@keyframes typeWriter {
-  from { opacity: 0; transform: translateX(-5px); }
-  to { opacity: 0.8; transform: translateX(0); }
+  font-weight: bold;
 }
