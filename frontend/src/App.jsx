@@ -26,14 +26,14 @@ function App() {
   const [notifications, setNotifications] = useState([]); 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   
-  // State to manage legal document modals
+  // State to manage which legal document to show
   const [showLegal, setShowLegal] = useState(null); 
 
   const [reconActive, setReconActive] = useState(false);
   const [reconLog, setReconLog] = useState([]);
   const [isEmergencyWipe, setIsEmergencyWipe] = useState(false);
 
-  // Updated Profile State with termsAccepted toggle
+  // Target Profile State with termsAccepted toggle
   const [targetProfile, setTargetProfile] = useState({
     fullName: "", email: "", dob: "", address: "", termsAccepted: false
   });
@@ -59,6 +59,7 @@ function App() {
   }, []);
 
   const pushNotification = (broker) => {
+    if (!broker) return;
     const id = Date.now();
     setNotifications(prev => [{ id, msg: `THREAT DEFLECTED: [${broker}]` }, ...prev].slice(0, 3));
     setTimeout(() => {
@@ -72,9 +73,14 @@ function App() {
       const data = await res.json();
       
       setAuditLog(prevLog => {
-        if (data.recent_audit?.length > 0 && prevLog.length > 0) {
-            if (data.recent_audit[0].time !== prevLog[0].time) {
-                pushNotification(data.recent_audit[0].broker);
+        // Only trigger notification if we have new audit data
+        if (data.recent_audit?.length > 0) {
+            const latest = data.recent_audit[0];
+            const oldLatest = prevLog.length > 0 ? prevLog[0] : null;
+            
+            // Check if the timestamp or broker is different from what we last saw
+            if (!oldLatest || latest.time !== oldLatest.time) {
+                pushNotification(latest.broker);
             }
         }
         return data.recent_audit || [];
@@ -329,12 +335,12 @@ function App() {
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '15px', padding: '0 10px' }}>
                   <input 
                     type="checkbox" 
-                    id="terms" 
+                    id="terms-check" 
                     style={{ marginTop: '4px', cursor: 'pointer' }}
                     checked={targetProfile.termsAccepted}
                     onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})}
                   />
-                  <label htmlFor="terms" style={{ fontSize: '0.65rem', color: '#94A3B8', textAlign: 'left', lineHeight: '1.4' }}>
+                  <label htmlFor="terms-check" style={{ fontSize: '0.65rem', color: '#94A3B8', textAlign: 'left', lineHeight: '1.4' }}>
                     I agree to the <span className="legal-link" onClick={() => setShowLegal('terms')}>Terms of Service</span> and understand that burning a card does not absolve me of existing financial obligations.
                   </label>
                 </div>
