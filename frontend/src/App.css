@@ -34,7 +34,7 @@ body, html, #root {
 .app-container {
   width: 100%;
   max-width: 1000px;
-  padding: 100px 20px 60px 20px;
+  padding: 100px 20px 120px 20px; /* Increased bottom padding so footer doesn't cover content */
   margin: 0 auto;
   text-align: center;
   display: flex;
@@ -195,36 +195,44 @@ input[type="checkbox"] {
   text-transform: uppercase;
 }
 
-/* 6. HOME FOOTER (UPDATED FOR VISIBILITY) */
+/* 6. GUARANTEED VISIBILITY FOOTER (FIXED) */
 .home-footer {
-  margin-top: auto;
-  padding: 40px 0;
-  font-size: 0.7rem; /* Slightly larger */
-  color: var(--tiger-blue); /* Bright Blue so you can see them! */
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 70px !important;
+  background-color: #000000 !important;
+  border-top: 1px solid #1e293b !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 15px !important;
+  z-index: 999999 !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 .home-footer span {
-  cursor: pointer;
-  text-decoration: underline; /* Makes it clear they are links */
-  transition: all 0.2s;
+  color: var(--tiger-blue) !important;
+  font-size: 0.75rem !important;
+  font-weight: bold !important;
+  text-decoration: underline !important;
+  cursor: pointer !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  display: inline-block !important;
+  visibility: visible !important;
 }
 
 .home-footer span:hover {
-  color: white;
-  text-shadow: 0 0 10px var(--tiger-blue);
+  color: white !important;
 }
 
 .footer-divider {
-  margin: 0 10px;
-  opacity: 0.3;
-  color: white;
+  color: #334155 !important;
   text-decoration: none !important;
+  opacity: 0.5;
   cursor: default !important;
 }
 
@@ -269,7 +277,7 @@ input[type="checkbox"] {
   padding: 10px 20px;
 }
 
-/* 8. LEGAL DOCUMENT STYLING (The content inside the modals) */
+/* 8. LEGAL DOCUMENT STYLING */
 .legal-document {
   padding: 10px 0;
 }
@@ -325,7 +333,7 @@ input[type="checkbox"] {
   border-radius: 20px;
   max-width: 650px;
   width: 100%;
-  max-height: 85vh;
+  max-height: 80vh;
   overflow-y: auto;
   text-align: left;
   box-shadow: 0 0 50px rgba(0, 0, 0, 1);
