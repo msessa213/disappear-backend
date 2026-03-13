@@ -7,6 +7,7 @@ import "jspdf-autotable";
 import Manifesto from './Manifesto';
 import Privacy from './Privacy';
 import Terms from './Terms';
+import AdminDashboard from './AdminDashboard'; 
 
 import './App.css';
 
@@ -26,14 +27,15 @@ function App() {
   const [notifications, setNotifications] = useState([]); 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   
-  // State to manage which legal document to show
+  // States for Modals
   const [showLegal, setShowLegal] = useState(null); 
+  const [showAdmin, setShowAdmin] = useState(false);
 
   const [reconActive, setReconActive] = useState(false);
   const [reconLog, setReconLog] = useState([]);
   const [isEmergencyWipe, setIsEmergencyWipe] = useState(false);
 
-  // Target Profile State with termsAccepted toggle
+  // Profile State
   const [targetProfile, setTargetProfile] = useState({
     fullName: "", email: "", dob: "", address: "", termsAccepted: false
   });
@@ -73,12 +75,9 @@ function App() {
       const data = await res.json();
       
       setAuditLog(prevLog => {
-        // Only trigger notification if we have new audit data
         if (data.recent_audit?.length > 0) {
             const latest = data.recent_audit[0];
             const oldLatest = prevLog.length > 0 ? prevLog[0] : null;
-            
-            // Check if the timestamp or broker is different from what we last saw
             if (!oldLatest || latest.time !== oldLatest.time) {
                 pushNotification(latest.broker);
             }
@@ -218,74 +217,30 @@ function App() {
         ))}
       </div>
 
-      {/* LEGAL MODAL OVERLAY */}
+      {/* MODALS */}
       {showLegal && (
         <div className="modal-overlay" onClick={() => setShowLegal(null)}>
           <div className="info-modal-content" onClick={e => e.stopPropagation()}>
             {showLegal === 'manifesto' && <Manifesto />}
             {showLegal === 'privacy' && <Privacy />}
             {showLegal === 'terms' && <Terms />}
-            <button className="reset-btn" onClick={() => setShowLegal(null)}>CLOSE</button>
+            <button className="reset-btn" style={{marginTop: '20px', width: '100%'}} onClick={() => setShowLegal(null)}>CLOSE</button>
           </div>
         </div>
       )}
 
-      {showInfo && (
-        <div className="modal-overlay" onClick={() => setShowInfo(false)}>
-          <div className="info-modal-content" onClick={e => e.stopPropagation()}>
-            <h2 className="tiger-text">SYSTEM MANIFESTO</h2>
-            <div className="info-grid">
-              <div className="info-item"><h4>Broker Removal</h4><p>Scrub PII from aggregators selling your data.</p></div>
-              <div className="info-item"><h4>Identity Masking</h4><p>Burnable aliases to stop tracking.</p></div>
-              <div className="info-item"><h4>Shield Cards</h4><p>Proxy finances for total anonymity.</p></div>
-            </div>
-            <button className="reset-btn" onClick={() => setShowInfo(false)}>DISMISS</button>
+      {showAdmin && (
+        <div className="modal-overlay" onClick={() => setShowAdmin(false)}>
+          <div onClick={e => e.stopPropagation()}>
+            <AdminDashboard API_BASE_URL={API_BASE_URL} />
+            <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowAdmin(false)}>EXIT COMMAND</button>
           </div>
         </div>
       )}
 
-      {show2FA && (
-        <div className="modal-overlay">
-          <div className="price-box" style={{maxWidth: '350px'}}>
-            <h3 className="tiger-text">{isMobile ? "BIOMETRIC AUTH" : "VERIFICATION REQUIRED"}</h3>
-            <p style={{fontSize: '0.7rem', color: '#94A3B8', margin: '10px 0'}}>
-              {isMobile ? "PLACE THUMB ON SCANNER" : "ENTER 6-DIGIT ENCRYPTED TOKEN"}
-            </p>
-            {isMobile ? (
-              <div className="biometric-scan-circle" onClick={verify2FA}>
-                <span style={{fontSize: '2.5rem'}}>🔒</span>
-              </div>
-            ) : (
-              <input className="mask-btn" style={{width: '100%', margin: '20px 0', textAlign: 'center', letterSpacing: '10px', fontSize: '1.2rem', color: 'white'}} placeholder="******" maxLength="6" />
-            )}
-            {!isMobile && <button className="main-button" style={{width: '100%'}} onClick={verify2FA}>VERIFY IDENTITY</button>}
-            <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShow2FA(false)}>CANCEL</button>
-          </div>
-        </div>
-      )}
-
-      {isMinting && (
-        <div className="modal-overlay">
-          <div className="price-box" style={{maxWidth: '350px'}}>
-            <h3 className="tiger-text">MINT SHIELD CARD</h3>
-            <input className="mask-btn" style={{width: '100%', margin: '20px 0', padding: '12px', color: 'white'}} placeholder="Merchant Name" value={newCardLabel} onChange={(e) => setNewCardLabel(e.target.value)} />
-            <div style={{display: 'flex', gap: '10px'}}>
-              <button className="main-button" style={{flex: 1}} onClick={() => {
-                 fetch(`${API_BASE_URL}/financials/mint`, {
-                    method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ label: newCardLabel })
-                  }).then(r => r.json()).then(newCard => {
-                    setCards([newCard, ...cards]); setIsMinting(false); setNewCardLabel(""); triggerToast("SHIELD MINTED");
-                  });
-              }}>MINT</button>
-              <button className="reset-btn" style={{margin: 0, flex: 1}} onClick={() => setIsMinting(false)}>CANCEL</button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* SCREEN: HOME */}
       {!showShield && !showPricing && !showCheckout && !isScanning && !show2FA && (
-        <div className="fade-in" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '80vh'}}>
+        <div className="fade-in" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '60vh', justifyContent: 'center'}}>
           <h1 className="brand-name">DISAPPEAR</h1>
           <p className="subtitle">Privacy-as-a-Service</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', marginTop: '40px' }}>
@@ -295,15 +250,10 @@ function App() {
             </div>
             <button className="info-link-btn" onClick={() => setShowLegal('manifesto')}>WHY IS THIS CRITICAL? [MANIFESTO]</button>
           </div>
-
-          <footer className="home-footer">
-              <span onClick={() => setShowLegal('privacy')}>PRIVACY POLICY</span>
-              <span className="footer-divider">|</span>
-              <span onClick={() => setShowLegal('terms')}>TERMS OF SERVICE</span>
-          </footer>
         </div>
       )}
 
+      {/* SCREEN: PRICING */}
       {showPricing && !showCheckout && (
         <div className="pricing-card">
           <div className="billing-toggle">
@@ -314,10 +264,12 @@ function App() {
             <h3 className="tiger-text">PREMIUM PAAS</h3>
             <div className="price-amount">${billingCycle === 'monthly' ? '19.99' : '15.99'}</div>
             <button className="main-button" style={{width: '100%'}} onClick={() => setShowCheckout(true)}>PROCEED</button>
+            <button className="reset-btn" style={{width: '100%'}} onClick={() => setShowPricing(false)}>CANCEL</button>
           </div>
         </div>
       )}
 
+      {/* SCREEN: CHECKOUT/PROFILE */}
       {showCheckout && !isScanning && (
         <div className="pricing-card">
           <div className="price-box" style={{maxWidth: '450px', width: '100%', margin: '0 auto'}}>
@@ -331,12 +283,11 @@ function App() {
                     <input className="mask-btn" style={{width: '100%', color: 'white'}} type="date" value={targetProfile.dob} onChange={(e) => setTargetProfile({...targetProfile, dob: e.target.value})} />
                 </div>
 
-                {/* CONSENT CHECKBOX */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '15px', padding: '0 10px' }}>
                   <input 
                     type="checkbox" 
                     id="terms-check" 
-                    style={{ marginTop: '4px', cursor: 'pointer' }}
+                    style={{ marginTop: '4px' }}
                     checked={targetProfile.termsAccepted}
                     onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})}
                   />
@@ -364,8 +315,10 @@ function App() {
         </div>
       )}
 
+      {/* SCREEN: SCANNING ANIMATION */}
       {isScanning && <div className="shield-container"><h2 className="shield-text">SCRUBBING NODES...</h2></div>}
 
+      {/* SCREEN: MAIN SHIELD DASHBOARD */}
       {showShield && (
         <div className="shield-container">
           <h2 className="shield-text">🛡️ SHIELD ACTIVE</h2>
@@ -419,16 +372,6 @@ function App() {
               </div>
             </div>
 
-            <div className="masking-tool full-width-tool terminal-bg">
-               <div style={{padding: '0 30px'}}>
-                <p className="tool-label">DEEP WEB RECONNAISSANCE</p>
-                <div className="recon-terminal">
-                  {reconLog.map((line, i) => <div key={i} className="terminal-line" style={{fontSize: '0.7rem'}}>{`> ${line}`}</div>)}
-                </div>
-                <button className="pdf-btn" onClick={runDeepWebScan} disabled={reconActive}>RUN GLOBAL THREAT SCAN</button>
-               </div>
-            </div>
-
             <div className="masking-tool">
               <p className="tool-label">LIVE SECURITY AUDIT</p>
               <div className="audit-list">
@@ -449,6 +392,15 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* PERSISTENT GLOBAL FOOTER */}
+      <footer className="home-footer">
+          <span onClick={() => setShowLegal('privacy')}>PRIVACY POLICY</span>
+          <span className="footer-divider">|</span>
+          <span onClick={() => setShowLegal('terms')}>TERMS OF SERVICE</span>
+          <span style={{ opacity: 0.05, cursor: 'pointer', marginLeft: '10px' }} onClick={() => setShowAdmin(true)}>.</span>
+      </footer>
+
     </div>
   );
 }
