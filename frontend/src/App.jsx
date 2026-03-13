@@ -3,10 +3,10 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
-// --- NEW IMPORTS ---
-import Manifesto from './Manifesto';
-import Privacy from './Privacy';
-import Terms from './Terms';
+// --- NEW IMPORTS (Lowercase for Vercel/Linux compatibility) ---
+import Manifesto from './manifesto';
+import Privacy from './privacy';
+import Terms from './terms';
 import AdminDashboard from './AdminDashboard'; 
 
 import './App.css';
