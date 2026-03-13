@@ -195,13 +195,13 @@ input[type="checkbox"] {
   text-transform: uppercase;
 }
 
-/* 6. HOME FOOTER & SECRET TRIGGER */
+/* 6. HOME FOOTER (UPDATED FOR VISIBILITY) */
 .home-footer {
   margin-top: auto;
   padding: 40px 0;
-  font-size: 0.65rem;
-  color: #475569;
-  letter-spacing: 2px;
+  font-size: 0.7rem; /* Slightly larger */
+  color: var(--tiger-blue); /* Bright Blue so you can see them! */
+  letter-spacing: 1px;
   text-transform: uppercase;
   display: flex;
   align-items: center;
@@ -211,16 +211,20 @@ input[type="checkbox"] {
 
 .home-footer span {
   cursor: pointer;
-  transition: color 0.2s;
+  text-decoration: underline; /* Makes it clear they are links */
+  transition: all 0.2s;
 }
 
 .home-footer span:hover {
-  color: var(--tiger-blue);
+  color: white;
+  text-shadow: 0 0 10px var(--tiger-blue);
 }
 
 .footer-divider {
-  margin: 0 15px;
+  margin: 0 10px;
   opacity: 0.3;
+  color: white;
+  text-decoration: none !important;
   cursor: default !important;
 }
 
@@ -265,6 +269,39 @@ input[type="checkbox"] {
   padding: 10px 20px;
 }
 
+/* 8. LEGAL DOCUMENT STYLING (The content inside the modals) */
+.legal-document {
+  padding: 10px 0;
+}
+
+.legal-document h2 {
+  color: var(--tiger-blue);
+  margin-bottom: 20px;
+}
+
+.legal-document h3 {
+  color: white;
+  margin-top: 25px;
+  margin-bottom: 10px;
+  font-size: 1rem;
+}
+
+.legal-document p {
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+}
+
+.legal-document ul {
+  margin-left: 20px;
+  color: var(--text-dim);
+}
+
+.legal-document li {
+  margin-bottom: 10px;
+}
+
 /* MODALS */
 .modal-overlay {
   position: fixed;
@@ -292,41 +329,4 @@ input[type="checkbox"] {
   overflow-y: auto;
   text-align: left;
   box-shadow: 0 0 50px rgba(0, 0, 0, 1);
-}
-
-.tiger-text {
-  color: var(--tiger-blue);
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  margin-bottom: 20px;
-}
-
-/* ADMIN DASHBOARD GRID */
-.admin-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.admin-stat-card {
-  background: #050505;
-  border: 1px solid var(--border-dim);
-  padding: 20px;
-  border-radius: 12px;
-  text-align: center;
-}
-
-.admin-stat-val {
-  font-size: 2rem;
-  font-weight: bold;
-  color: white;
-  display: block;
-}
-
-.admin-stat-label {
-  font-size: 0.6rem;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 1px;
 }
