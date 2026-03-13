@@ -395,6 +395,8 @@ function App() {
 
       {/* PERSISTENT GLOBAL FOOTER */}
       <footer className="home-footer">
+          {/* PERSISTENT GLOBAL FOOTER */}
+      <footer className="home-footer">
           <span onClick={() => setShowLegal('privacy')}>PRIVACY POLICY</span>
           <span className="footer-divider">|</span>
           <span onClick={() => setShowLegal('terms')}>TERMS OF SERVICE</span>
