@@ -2,10 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
-// --- UPDATED IMPORTS (Using Capitalized Casing to match your files) ---
-import Manifesto from './Manifesto';
-import Privacy from './Privacy';
-import Terms from './Terms';
+// --- FIXED IMPORTS (Using curly braces for Named Exports) ---
+import { Manifesto } from './Manifesto';
+import { Privacy } from './Privacy';
+import { Terms } from './Terms';
 import AdminDashboard from './AdminDashboard'; 
 
 import './App.css';
