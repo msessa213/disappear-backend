@@ -2,10 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
-// --- NEW IMPORTS ---
-import Manifesto from './manifesto';
-import Privacy from './privacy';
-import Terms from './terms';
+// --- UPDATED IMPORTS (Using Capitalized Casing to match your files) ---
+import Manifesto from './Manifesto';
+import Privacy from './Privacy';
+import Terms from './Terms';
 import AdminDashboard from './AdminDashboard'; 
 
 import './App.css';
@@ -25,7 +25,6 @@ function App() {
   // States for Modals
   const [showLegal, setShowLegal] = useState(null); 
   const [showAdmin, setShowAdmin] = useState(false);
-
   const [isEmergencyWipe, setIsEmergencyWipe] = useState(false);
 
   // Profile State
@@ -47,12 +46,7 @@ function App() {
     setTimeout(() => setShowToast(""), 2000); 
   };
 
-  useEffect(() => {
-    const handleResize = () => {}; // Placeholder for logic if needed
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
+  // Notification logic
   const pushNotification = useCallback((broker) => {
     if (!broker) return;
     const id = Date.now();
@@ -62,6 +56,7 @@ function App() {
     }, 4000);
   }, []);
 
+  // Data Sync
   const syncDefenseData = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/dashboard/sync`);
@@ -86,7 +81,7 @@ function App() {
       const finData = await finRes.json();
       setCards(finData.cards || []);
     } catch (err) { 
-      console.log("Pulse heartbeat..."); 
+      console.log("Heartbeat active..."); 
     }
   }, [pushNotification]);
 
@@ -118,15 +113,13 @@ function App() {
 
   const handleKillCard = async (id) => {
     triggerToast("TERMINATING NODE...");
-    setTimeout(async () => {
-      try {
-        await fetch(`${API_BASE_URL}/financials/kill/${id}`, { method: "DELETE" });
-        setCards(prev => prev.filter(c => c.id !== id));
-        triggerToast("NODE BURNED");
-      } catch (err) { 
-        triggerToast("ERROR"); 
-      }
-    }, 800); 
+    try {
+      await fetch(`${API_BASE_URL}/financials/kill/${id}`, { method: "DELETE" });
+      setCards(prev => prev.filter(c => c.id !== id));
+      triggerToast("NODE BURNED");
+    } catch (err) { 
+      triggerToast("ERROR"); 
+    }
   };
 
   const startLoginFlow = () => { 
@@ -155,7 +148,7 @@ function App() {
         doc.setFillColor(0, 71, 171); doc.rect(0, 0, 210, 40, 'F');
         doc.setTextColor(255, 255, 255); doc.setFontSize(22);
         doc.text("DISAPPEAR | PRIVACY AUDIT", 15, 25);
-        doc.save(`DISAPPEAR_AUDIT_${Date.now()}.pdf`);
+        doc.save(`AUDIT_${Date.now()}.pdf`);
         triggerToast("AUDIT DOWNLOADED");
       } catch (err) { 
         triggerToast("FAILED"); 
