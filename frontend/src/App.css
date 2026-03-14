@@ -1,0 +1,340 @@
+/* 1. CORE THEME & GLOBAL RESET */
+:root {
+  --tiger-blue: #0047AB; /* Jesuit High School Blue */
+  --bg-dark: #000000;
+  --card-bg: #0A0A0A;
+  --text-dim: #94A3B8;
+  --border-dim: #1e293b;
+  --alert-red: #ef4444;
+  --burn-orange: #ff4d00;
+  --terminal-green: #10b981;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body, html, #root {
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--bg-dark);
+  color: white;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow-x: hidden;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 1000px;
+  padding: 100px 20px 120px 20px; /* Increased bottom padding so footer doesn't cover content */
+  margin: 0 auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* 2. THE ALIGNMENT FIX */
+.price-box {
+  background-color: var(--card-bg);
+  border: 1px solid var(--tiger-blue);
+  padding: 40px;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 450px; 
+  margin: 20px auto;
+  box-shadow: 0 0 40px rgba(0, 71, 171, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center; 
+  gap: 15px;
+}
+
+.price-box .mask-btn, 
+.price-box .main-button, 
+.price-box .reset-btn,
+.price-box input:not([type="checkbox"]),
+.price-box .profile-input {
+  width: 100% !important;
+  display: block;
+  margin: 0 !important;
+  height: 55px;
+  font-size: 0.9rem;
+  background: #000;
+  border: 1px solid var(--border-dim);
+  color: white;
+  border-radius: 8px;
+  padding: 0 15px;
+}
+
+/* 3. COMPLIANCE CHECKBOX STYLING */
+.legal-link {
+  color: var(--tiger-blue);
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.legal-link:hover {
+  color: white;
+}
+
+input[type="checkbox"] {
+  accent-color: var(--tiger-blue);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* 4. DASHBOARD STABILITY */
+.tools-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 750px;
+  margin: 0 auto;
+}
+
+.masking-tool {
+  background: var(--card-bg);
+  border: 1px solid var(--border-dim);
+  padding: 30px;
+  border-radius: 15px;
+  min-height: 160px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: border 0.3s ease;
+}
+
+.masked-display {
+  background: #000;
+  padding: 20px;
+  border: 1px dashed var(--tiger-blue);
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  margin-top: 15px;
+  cursor: pointer;
+  transition: 0.3s;
+  position: relative;
+}
+
+.audit-list {
+  height: 220px;
+  overflow-y: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.audit-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #111;
+  font-size: 0.75rem;
+}
+
+.recon-terminal {
+  height: 160px;
+  background: #000;
+  border-left: 2px solid var(--tiger-blue);
+  padding: 20px;
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  text-align: left;
+}
+
+.terminal-line {
+  color: var(--terminal-green);
+  font-size: 0.8rem;
+  margin-bottom: 5px;
+}
+
+/* 5. VCC CARDS */
+.card-manager-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.managed-card-row {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: left;
+}
+
+.card-digits {
+  font-family: 'Courier New', monospace;
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+  display: block;
+  margin: 10px 0;
+  cursor: pointer;
+}
+
+.kill-text-bold {
+  color: var(--alert-red);
+  background: transparent;
+  border: none;
+  font-weight: bold;
+  font-size: 0.7rem;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+/* 6. GUARANTEED VISIBILITY FOOTER (FIXED) */
+.home-footer {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 70px !important;
+  background-color: #000000 !important;
+  border-top: 1px solid #1e293b !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 15px !important;
+  z-index: 999999 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.home-footer span {
+  color: var(--tiger-blue) !important;
+  font-size: 0.75rem !important;
+  font-weight: bold !important;
+  text-decoration: underline !important;
+  cursor: pointer !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  display: inline-block !important;
+  visibility: visible !important;
+}
+
+.home-footer span:hover {
+  color: white !important;
+}
+
+.footer-divider {
+  color: #334155 !important;
+  text-decoration: none !important;
+  opacity: 0.5;
+  cursor: default !important;
+}
+
+/* 7. BRANDING & UI */
+.brand-name {
+  color: var(--tiger-blue);
+  font-size: 4rem;
+  font-weight: 200;
+  letter-spacing: 15px;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.main-button {
+  background-color: var(--tiger-blue);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-weight: bold;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  transition: 0.4s;
+}
+
+.main-button:hover:not(:disabled) {
+  transform: scale(1.02);
+  box-shadow: 0 0 30px rgba(0, 71, 171, 0.6);
+}
+
+.main-button:disabled {
+  background-color: #1e293b;
+  color: #475569;
+}
+
+.reset-btn {
+  background: transparent;
+  border: 1px solid var(--border-dim);
+  color: var(--text-dim);
+  border-radius: 50px;
+  cursor: pointer;
+  padding: 10px 20px;
+}
+
+/* 8. LEGAL DOCUMENT STYLING */
+.legal-document {
+  padding: 10px 0;
+}
+
+.legal-document h2 {
+  color: var(--tiger-blue);
+  margin-bottom: 20px;
+}
+
+.legal-document h3 {
+  color: white;
+  margin-top: 25px;
+  margin-bottom: 10px;
+  font-size: 1rem;
+}
+
+.legal-document p {
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+}
+
+.legal-document ul {
+  margin-left: 20px;
+  color: var(--text-dim);
+}
+
+.legal-document li {
+  margin-bottom: 10px;
+}
+
+/* MODALS */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.92);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 20000;
+  padding: 20px;
+}
+
+.info-modal-content {
+  background: var(--card-bg);
+  border: 1px solid var(--tiger-blue);
+  padding: 40px;
+  border-radius: 20px;
+  max-width: 650px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  text-align: left;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 1);
+}
