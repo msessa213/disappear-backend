@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useState, useEffect, useCallback } from 'react';
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
-// --- NEW IMPORTS (Lowercase for Vercel/Linux compatibility) ---
+// --- NEW IMPORTS ---
 import Manifesto from './manifesto';
 import Privacy from './privacy';
 import Terms from './terms';
@@ -18,21 +17,15 @@ function App() {
   const [showShield, setShowShield] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
-  const [showInfo, setShowInfo] = useState(false);
   const [show2FA, setShow2FA] = useState(false); 
   const [isScanning, setIsScanning] = useState(false);
-  const [isMinting, setIsMinting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [terminatingId, setTerminatingId] = useState(null); 
   const [notifications, setNotifications] = useState([]); 
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   
   // States for Modals
   const [showLegal, setShowLegal] = useState(null); 
   const [showAdmin, setShowAdmin] = useState(false);
 
-  const [reconActive, setReconActive] = useState(false);
-  const [reconLog, setReconLog] = useState([]);
   const [isEmergencyWipe, setIsEmergencyWipe] = useState(false);
 
   // Profile State
@@ -40,34 +33,34 @@ function App() {
     fullName: "", email: "", dob: "", address: "", termsAccepted: false
   });
 
-  const [newCardLabel, setNewCardLabel] = useState("");
   const [billingCycle, setBillingCycle] = useState("monthly");
-  const [chartRange, setChartRange] = useState("30D");
   const [maskedEmail, setMaskedEmail] = useState("****************@mask.com");
   const [maskedPhone, setMaskedPhone] = useState("+1 (***) ***-****"); 
   const [nodeCount, setNodeCount] = useState(0);
   const [auditLog, setAuditLog] = useState([]);
-  const [mapNodes, setMapNodes] = useState([]); 
   const [cards, setCards] = useState([]);
   const [progress, setProgress] = useState(15);
   const [showToast, setShowToast] = useState("");
 
-  const triggerToast = (msg) => { setShowToast(msg); setTimeout(() => setShowToast(""), 2000); };
+  const triggerToast = (msg) => { 
+    setShowToast(msg); 
+    setTimeout(() => setShowToast(""), 2000); 
+  };
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    const handleResize = () => {}; // Placeholder for logic if needed
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const pushNotification = (broker) => {
+  const pushNotification = useCallback((broker) => {
     if (!broker) return;
     const id = Date.now();
     setNotifications(prev => [{ id, msg: `THREAT DEFLECTED: [${broker}]` }, ...prev].slice(0, 3));
     setTimeout(() => {
       setNotifications(prev => prev.filter(n => n.id !== id));
     }, 4000);
-  };
+  }, []);
 
   const syncDefenseData = useCallback(async () => {
     try {
@@ -88,13 +81,14 @@ function App() {
       setMaskedEmail(data.profile?.email_alias || "");
       setMaskedPhone(data.profile?.phone_alias || "");
       setNodeCount(data.profile?.active_nodes || 0);
-      setMapNodes(data.map_nodes || []); 
 
       const finRes = await fetch(`${API_BASE_URL}/financials/data`);
       const finData = await finRes.json();
       setCards(finData.cards || []);
-    } catch (e) { console.log("Pulse heartbeat..."); }
-  }, [showShield]);
+    } catch (err) { 
+      console.log("Pulse heartbeat..."); 
+    }
+  }, [pushNotification]);
 
   useEffect(() => {
     let interval;
@@ -107,23 +101,6 @@ function App() {
     return () => clearInterval(interval);
   }, [showShield, syncDefenseData]);
 
-  const runDeepWebScan = () => {
-    setReconActive(true);
-    setReconLog(["INITIALIZING RECONNAISSANCE..."]);
-    const brokerPool = ["ACXIOM", "SPOKEO", "WHITEPAGES", "INTELIUS", "PEOPLELOOKER"];
-    let count = 0;
-    const interval = setInterval(() => {
-      const broker = brokerPool[Math.floor(Math.random() * brokerPool.length)];
-      setReconLog(prev => [...prev, `[MATCH] PII DATA LOCATED ON ${broker} SERVERS...`].slice(-8));
-      count++;
-      if (count > 15) {
-        clearInterval(interval);
-        setReconLog(prev => [...prev, "SCAN COMPLETE: 47 THREATS IDENTIFIED.", "SHIELD DEPLOYMENT RECOMMENDED."]);
-        setReconActive(false);
-      }
-    }, 200);
-  };
-
   const handleEmergencyBurn = async () => {
     setIsEmergencyWipe(true);
     triggerToast("INITIATING TOTAL PURGE...");
@@ -132,29 +109,38 @@ function App() {
         await fetch(`${API_BASE_URL}/financials/burn-all`, { method: "POST" });
         localStorage.clear();
         window.location.reload();
-      } catch (err) { triggerToast("PURGE ERROR"); setIsEmergencyWipe(false); }
+      } catch (err) { 
+        triggerToast("PURGE ERROR"); 
+        setIsEmergencyWipe(false); 
+      }
     }, 2000);
   };
 
   const handleKillCard = async (id) => {
-    setTerminatingId(id); 
+    triggerToast("TERMINATING NODE...");
     setTimeout(async () => {
       try {
         await fetch(`${API_BASE_URL}/financials/kill/${id}`, { method: "DELETE" });
         setCards(prev => prev.filter(c => c.id !== id));
-        setTerminatingId(null);
         triggerToast("NODE BURNED");
-      } catch (e) { triggerToast("ERROR"); setTerminatingId(null); }
+      } catch (err) { 
+        triggerToast("ERROR"); 
+      }
     }, 800); 
   };
 
-  const startLoginFlow = () => { triggerToast("CHALLENGE REQUEST SENT..."); setShow2FA(true); };
+  const startLoginFlow = () => { 
+    triggerToast("CHALLENGE REQUEST SENT..."); 
+    setShow2FA(true); 
+  };
   
   const verify2FA = () => {
     triggerToast("AUTHENTICATING...");
     setTimeout(() => {
       localStorage.setItem("disappear_session", "active");
-      setShow2FA(false); setShowShield(true); setProgress(100);
+      setShow2FA(false); 
+      setShowShield(true); 
+      setProgress(100);
       triggerToast("WELCOME BACK, AGENT");
     }, 1500);
   };
@@ -171,8 +157,11 @@ function App() {
         doc.text("DISAPPEAR | PRIVACY AUDIT", 15, 25);
         doc.save(`DISAPPEAR_AUDIT_${Date.now()}.pdf`);
         triggerToast("AUDIT DOWNLOADED");
-      } catch (err) { triggerToast("FAILED"); }
-      finally { setIsGenerating(false); }
+      } catch (err) { 
+        triggerToast("FAILED"); 
+      } finally { 
+        setIsGenerating(false); 
+      }
     }, 1500);
   };
 
@@ -187,15 +176,23 @@ function App() {
             body: JSON.stringify(targetProfile)
         });
         if (response.ok) {
-            setShowCheckout(false); setIsScanning(true); setProgress(60);
+            setShowCheckout(false); 
+            setIsScanning(true); 
+            setProgress(60);
             triggerToast("UPLOADING TARGET PROFILE...");
             setTimeout(() => {
               localStorage.setItem("disappear_session", "active");
-              setIsScanning(false); setShowShield(true); setProgress(100);
+              setIsScanning(false); 
+              setShowShield(true); 
+              setProgress(100);
               triggerToast("REMOVALS INITIATED");
             }, 3000);
-        } else { triggerToast("UPLOAD FAILED"); }
-    } catch (error) { triggerToast("SERVER UNREACHABLE"); }
+        } else { 
+          triggerToast("UPLOAD FAILED"); 
+        }
+    } catch (err) { 
+      triggerToast("SERVER UNREACHABLE"); 
+    }
   };
 
   return (
@@ -249,6 +246,19 @@ function App() {
               <button className="login-btn-outline" onClick={startLoginFlow}>CLIENT LOGIN</button>
             </div>
             <button className="info-link-btn" onClick={() => setShowLegal('manifesto')}>WHY IS THIS CRITICAL? [MANIFESTO]</button>
+          </div>
+        </div>
+      )}
+
+      {/* SCREEN: 2FA LOGIN */}
+      {show2FA && (
+        <div className="pricing-card fade-in">
+          <div className="price-box">
+            <h3 className="tiger-text">MFA CHALLENGE</h3>
+            <p style={{fontSize: '0.7rem', color: '#94A3B8', marginBottom: '20px'}}>ENTER SECURE ACCESS TOKEN</p>
+            <input className="mask-btn" style={{width: '100%', textAlign: 'center', fontSize: '1.2rem', letterSpacing: '5px'}} placeholder="******" />
+            <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={verify2FA}>VERIFY</button>
+            <button className="reset-btn" style={{width: '100%'}} onClick={() => setShow2FA(false)}>CANCEL</button>
           </div>
         </div>
       )}
@@ -368,7 +378,7 @@ function App() {
                 ))}
               </div>
               <div style={{padding: '0 30px'}}>
-                <button className="mask-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setIsMinting(true)}>+ MINT NEW SHIELD</button>
+                <button className="mask-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => triggerToast("MINTING...")}>+ MINT NEW SHIELD</button>
               </div>
             </div>
 
