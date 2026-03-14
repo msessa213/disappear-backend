@@ -1,6 +1,0 @@
-Set-Content -Path vercel.json -Value '{
-  "rootDirectory": "frontend",
-  "framework": "vite",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist"
-}'
