@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
-// --- FIXED IMPORTS ---
+// --- FIXED IMPORTS (Using curly braces for Named Exports) ---
 import { Manifesto } from './Manifesto';
 import { Privacy } from './Privacy';
 import { Terms } from './Terms';
@@ -27,7 +27,7 @@ function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [isEmergencyWipe, setIsEmergencyWipe] = useState(false);
 
-  // Profile State - UPDATED for separate names
+  // Profile State
   const [targetProfile, setTargetProfile] = useState({
     firstName: "", 
     middleName: "", 
@@ -165,7 +165,6 @@ function App() {
   };
 
   const handleFinalPurchase = async () => {
-    // UPDATED VALIDATION
     if(!targetProfile.firstName || !targetProfile.lastName || !targetProfile.email || !targetProfile.address) {
         triggerToast("REQUIRED FIELDS MISSING");
         return;
@@ -298,7 +297,6 @@ function App() {
             <h3 className="tiger-text">TARGET PROFILE DATA</h3>
             <div style={{display: 'flex', flexDirection: 'column', gap: '12px', width: '100%'}}>
                 
-                {/* NEW NAME FIELDS */}
                 <input className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="First Name" autoComplete="given-name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
                 <input className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Middle Name (Optional)" autoComplete="additional-name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
                 <input className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Last Name" autoComplete="family-name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
@@ -355,9 +353,10 @@ function App() {
       {isScanning && (
         <div className="shield-container">
           <div className="recon-terminal" style={{maxWidth: '500px', margin: '0 auto'}}>
-            <div className="terminal-line">>> INITIATING HANDSHAKE...</div>
-            <div className="terminal-line">>> BYPASSING DATA BROKER FIREWALLS...</div>
-            <div className="terminal-line">>> UPLOADING PURGE REQUESTS...</div>
+            {/* FIXED LINES: Using curly braces to escape the arrow characters */}
+            <div className="terminal-line">{'>> INITIATING HANDSHAKE...'}</div>
+            <div className="terminal-line">{'>> BYPASSING DATA BROKER FIREWALLS...'}</div>
+            <div className="terminal-line">{'>> UPLOADING PURGE REQUESTS...'}</div>
           </div>
           <h2 className="shield-text" style={{marginTop: '20px'}}>SCRUBBING NODES...</h2>
         </div>
