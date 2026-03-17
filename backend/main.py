@@ -33,24 +33,26 @@ class DBCard(Base):
     id = Column(String, primary_key=True, index=True)
     label = Column(String)
     number = Column(String)
-    expiry = Column(String) 
-    cvv = Column(String)    
+    expiry = Column(String) # MM/YY
+    cvv = Column(String)    # 3-digit
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class DBProfile(Base):
     __tablename__ = "profiles"
     id = Column(String, primary_key=True, index=True)
-    full_name = Column(String) # We will combine first/middle/last here
+    full_name = Column(String)
     email = Column(String)
     address = Column(String)
     dob = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+# Auto-create tables on startup
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+# --- APP CONFIGURATION ---
+# Fix: Disable automatic slash redirects to stop 404 loops
+app = FastAPI(redirect_slashes=False)
 
-# --- FIXED CORS CONFIGURATION ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -74,16 +76,18 @@ THREAT_TYPES = ["IDENTITY_QUERY_DEFLECTED", "PII_SCRUB_VERIFIED", "NODE_ENCRYPTE
 BROKERS = ["SPOKEO", "ACXIOM", "INTELIUS", "WHITEPAGES", "PEOPLELOOKER"]
 DOMAINS = ["disappear.private", "shield.mask", "cloak.node", "ghost.vault"]
 
+# THE "HARD LOCK" VARIABLES - These stay in memory
 STABLE_EMAIL = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
 STABLE_PHONE = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
 
-# --- UPDATED SCHEMAS TO MATCH APP.JSX ---
+# --- SCHEMAS ---
 class CardRequest(BaseModel):
     label: str
 
 class LoginRequest(BaseModel):
     token: str = None
 
+# Updated to match App.jsx separate name fields
 class ProfileRequest(BaseModel):
     firstName: str
     middleName: Optional[str] = ""
@@ -96,8 +100,10 @@ class ProfileRequest(BaseModel):
 
 @app.get("/admin/stats")
 async def get_admin_stats(db: Session = Depends(get_db)):
+    """Aggregates platform-wide metrics for the Central Command Dashboard"""
     total_users = db.query(DBProfile).count()
     total_cards = db.query(DBCard).count()
+    # Logic: Assume 47 removal requests are triggered per registered profile
     total_removals = total_users * 47 
     
     return {
@@ -111,6 +117,8 @@ async def get_admin_stats(db: Session = Depends(get_db)):
 @app.get("/dashboard/sync")
 async def sync():
     now = datetime.now()
+    
+    # SEED STABILITY: Use current minute to keep logs/nodes static for 60 seconds
     minute_seed = now.minute + now.hour
     random.seed(minute_seed)
     
@@ -173,8 +181,9 @@ async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
     db.refresh(new_card)
     return new_card
 
-# --- UPDATED SAVE PROFILE TO HANDLE SEPARATE NAMES ---
+# THE FIX: Dual-route registration to catch all slash variants
 @app.post("/financials/profile")
+@app.post("/financials/profile/")
 async def save_profile(request: ProfileRequest, db: Session = Depends(get_db)):
     profile_id = f"user_{random.randint(1000, 9999)}"
     
