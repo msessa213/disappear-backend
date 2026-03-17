@@ -170,8 +170,9 @@ function App() {
         return;
     }
 
+    // Increased timeout to 30s to allow Render server to wake up
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     setIsScanning(true);
     triggerToast("CONNECTING TO SCRUB NODES...");
@@ -179,7 +180,10 @@ function App() {
     try {
         const response = await fetch(`${API_BASE_URL}/financials/profile`, {
             method: "POST", 
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            },
             body: JSON.stringify(targetProfile),
             signal: controller.signal
         });
@@ -194,14 +198,15 @@ function App() {
             triggerToast("IDENTITY PURGE INITIATED");
         } else { 
             setIsScanning(false);
-            triggerToast("UPLOAD FAILED"); 
+            // Enhanced error messaging
+            triggerToast(`UPLOAD FAILED: ${response.status} ${response.statusText}`); 
         }
     } catch (err) { 
         setIsScanning(false);
         if (err.name === 'AbortError') {
-          triggerToast("TIMEOUT: SERVER ASLEEP (TRY AGAIN)");
+          triggerToast("TIMEOUT: SERVER STILL WAKING UP. TRY AGAIN.");
         } else {
-          triggerToast("BACKEND UNREACHABLE"); 
+          triggerToast("BACKEND UNREACHABLE - CHECK CORS"); 
         }
     }
   };
@@ -353,7 +358,6 @@ function App() {
       {isScanning && (
         <div className="shield-container">
           <div className="recon-terminal" style={{maxWidth: '500px', margin: '0 auto'}}>
-            {/* FIXED LINES: Using curly braces to escape the arrow characters */}
             <div className="terminal-line">{'>> INITIATING HANDSHAKE...'}</div>
             <div className="terminal-line">{'>> BYPASSING DATA BROKER FIREWALLS...'}</div>
             <div className="terminal-line">{'>> UPLOADING PURGE REQUESTS...'}</div>
