@@ -34,7 +34,7 @@ body, html, #root {
 .app-container {
   width: 100%;
   max-width: 1000px;
-  padding: 100px 20px 120px 20px; /* Increased bottom padding so footer doesn't cover content */
+  padding: 100px 20px 120px 20px;
   margin: 0 auto;
   text-align: center;
   display: flex;
@@ -96,12 +96,16 @@ input[type="checkbox"] {
 
 /* 4. DASHBOARD STABILITY */
 .tools-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid; /* Switched to Grid for easier mobile handling */
+  grid-template-columns: 1fr 1fr;
   gap: 20px;
   width: 100%;
-  max-width: 750px;
+  max-width: 900px;
   margin: 0 auto;
+}
+
+.full-width-tool {
+  grid-column: span 2;
 }
 
 .masking-tool {
@@ -127,11 +131,12 @@ input[type="checkbox"] {
   cursor: pointer;
   transition: 0.3s;
   position: relative;
+  word-break: break-all; /* Prevents long emails from breaking mobile */
 }
 
 .audit-list {
   height: 220px;
-  overflow-y: hidden;
+  overflow-y: auto; /* Changed to auto so you can scroll the logs */
   display: flex;
   flex-direction: column;
 }
@@ -142,6 +147,7 @@ input[type="checkbox"] {
   padding: 10px 0;
   border-bottom: 1px solid #111;
   font-size: 0.75rem;
+  text-align: left;
 }
 
 .recon-terminal {
@@ -208,7 +214,7 @@ input[type="checkbox"] {
   align-items: center !important;
   justify-content: center !important;
   gap: 15px !important;
-  z-index: 999999 !important;
+  z-index: 9999 !important;
   padding: 0 !important;
   margin: 0 !important;
 }
@@ -239,9 +245,9 @@ input[type="checkbox"] {
 /* 7. BRANDING & UI */
 .brand-name {
   color: var(--tiger-blue);
-  font-size: 4rem;
+  font-size: clamp(2.5rem, 8vw, 4rem); /* Responsive Logo */
   font-weight: 200;
-  letter-spacing: 15px;
+  letter-spacing: clamp(5px, 2vw, 15px);
   text-transform: uppercase;
   margin: 0;
 }
@@ -256,6 +262,7 @@ input[type="checkbox"] {
   text-transform: uppercase;
   letter-spacing: 2px;
   transition: 0.4s;
+  padding: 15px 30px;
 }
 
 .main-button:hover:not(:disabled) {
@@ -317,7 +324,7 @@ input[type="checkbox"] {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.92);
+  background: rgba(0,0,0,0.95);
   backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
@@ -333,8 +340,43 @@ input[type="checkbox"] {
   border-radius: 20px;
   max-width: 650px;
   width: 100%;
-  max-height: 80vh;
+  max-height: 85vh;
   overflow-y: auto;
   text-align: left;
   box-shadow: 0 0 50px rgba(0, 0, 0, 1);
+}
+
+/* --- 9. MOBILE RESPONSIVE OVERRIDES --- */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 60px 15px 120px 15px;
+  }
+
+  /* Force home buttons to stack */
+  div[style*="display: flex"][style*="gap: 20px"] {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  .tools-grid {
+    grid-template-columns: 1fr; /* Single column layout for mobile */
+  }
+
+  .full-width-tool {
+    grid-column: span 1;
+  }
+
+  .price-box, .info-modal-content {
+    padding: 25px 20px;
+  }
+
+  .brand-name {
+    margin-top: 20px;
+  }
+
+  /* Make Toast messages highly visible on mobile top */
+  .status-message.toast-fixed {
+    width: 90%;
+    top: 10px;
+  }
 }
