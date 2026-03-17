@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
-// --- FIXED IMPORTS (Using curly braces for Named Exports) ---
+// --- FIXED IMPORTS ---
 import { Manifesto } from './Manifesto';
 import { Privacy } from './Privacy';
 import { Terms } from './Terms';
@@ -27,9 +27,15 @@ function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [isEmergencyWipe, setIsEmergencyWipe] = useState(false);
 
-  // Profile State
+  // Profile State - UPDATED for separate names
   const [targetProfile, setTargetProfile] = useState({
-    fullName: "", email: "", dob: "", address: "", termsAccepted: false
+    firstName: "", 
+    middleName: "", 
+    lastName: "", 
+    email: "", 
+    dob: "", 
+    address: "", 
+    termsAccepted: false
   });
 
   const [billingCycle, setBillingCycle] = useState("monthly");
@@ -43,7 +49,7 @@ function App() {
 
   const triggerToast = (msg) => { 
     setShowToast(msg); 
-    setTimeout(() => setShowToast(""), 2000); 
+    setTimeout(() => setShowToast(""), 3000); 
   };
 
   // Notification logic
@@ -159,32 +165,45 @@ function App() {
   };
 
   const handleFinalPurchase = async () => {
-    if(!targetProfile.fullName || !targetProfile.email) {
-        triggerToast("PROFILE DATA REQUIRED");
+    // UPDATED VALIDATION
+    if(!targetProfile.firstName || !targetProfile.lastName || !targetProfile.email || !targetProfile.address) {
+        triggerToast("REQUIRED FIELDS MISSING");
         return;
     }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    setIsScanning(true);
+    triggerToast("CONNECTING TO SCRUB NODES...");
+
     try {
         const response = await fetch(`${API_BASE_URL}/financials/profile`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(targetProfile)
+            method: "POST", 
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(targetProfile),
+            signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
+
         if (response.ok) {
             setShowCheckout(false); 
-            setIsScanning(true); 
-            setProgress(60);
-            triggerToast("UPLOADING TARGET PROFILE...");
-            setTimeout(() => {
-              localStorage.setItem("disappear_session", "active");
-              setIsScanning(false); 
-              setShowShield(true); 
-              setProgress(100);
-              triggerToast("REMOVALS INITIATED");
-            }, 3000);
+            setIsScanning(false);
+            setShowShield(true); 
+            setProgress(100);
+            triggerToast("IDENTITY PURGE INITIATED");
         } else { 
-          triggerToast("UPLOAD FAILED"); 
+            setIsScanning(false);
+            triggerToast("UPLOAD FAILED"); 
         }
     } catch (err) { 
-      triggerToast("SERVER UNREACHABLE"); 
+        setIsScanning(false);
+        if (err.name === 'AbortError') {
+          triggerToast("TIMEOUT: SERVER ASLEEP (TRY AGAIN)");
+        } else {
+          triggerToast("BACKEND UNREACHABLE"); 
+        }
     }
   };
 
@@ -278,9 +297,23 @@ function App() {
           <div className="price-box" style={{maxWidth: '450px', width: '100%', margin: '0 auto'}}>
             <h3 className="tiger-text">TARGET PROFILE DATA</h3>
             <div style={{display: 'flex', flexDirection: 'column', gap: '12px', width: '100%'}}>
-                <input className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Full Legal Name" value={targetProfile.fullName} onChange={(e) => setTargetProfile({...targetProfile, fullName: e.target.value})} />
-                <input className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Primary Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
-                <input className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Home Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
+                
+                {/* NEW NAME FIELDS */}
+                <input className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="First Name" autoComplete="given-name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
+                <input className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Middle Name (Optional)" autoComplete="additional-name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
+                <input className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Last Name" autoComplete="family-name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
+                
+                <input className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Primary Email Address" autoComplete="email" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
+                
+                <input 
+                  className="mask-btn" 
+                  style={{width: '100%', color: 'white'}} 
+                  placeholder="Home Address (Verified)" 
+                  autoComplete="street-address"
+                  value={targetProfile.address} 
+                  onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} 
+                />
+
                 <div style={{textAlign: 'left', width: '100%'}}>
                     <label style={{fontSize: '0.6rem', color: '#94A3B8', marginLeft: '10px'}}>DATE OF BIRTH</label>
                     <input className="mask-btn" style={{width: '100%', color: 'white'}} type="date" value={targetProfile.dob} onChange={(e) => setTargetProfile({...targetProfile, dob: e.target.value})} />
@@ -319,7 +352,16 @@ function App() {
       )}
 
       {/* SCREEN: SCANNING ANIMATION */}
-      {isScanning && <div className="shield-container"><h2 className="shield-text">SCRUBBING NODES...</h2></div>}
+      {isScanning && (
+        <div className="shield-container">
+          <div className="recon-terminal" style={{maxWidth: '500px', margin: '0 auto'}}>
+            <div className="terminal-line">>> INITIATING HANDSHAKE...</div>
+            <div className="terminal-line">>> BYPASSING DATA BROKER FIREWALLS...</div>
+            <div className="terminal-line">>> UPLOADING PURGE REQUESTS...</div>
+          </div>
+          <h2 className="shield-text" style={{marginTop: '20px'}}>SCRUBBING NODES...</h2>
+        </div>
+      )}
 
       {/* SCREEN: MAIN SHIELD DASHBOARD */}
       {showShield && (
