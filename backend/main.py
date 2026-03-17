@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, Column, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import List, Optional
 from dotenv import load_dotenv
 
-# Load variables from the .env file
+# Load variables from the .env file (Local development only)
 load_dotenv()
 
 # --- DATABASE CONFIGURATION ---
@@ -50,15 +50,12 @@ class DBProfile(Base):
 Base.metadata.create_all(bind=engine)
 
 # --- APP CONFIGURATION ---
-# Fix: Disable automatic slash redirects to stop 404 loops
+# THE FIX: Disable automatic slash redirects to stop 404 loops
 app = FastAPI(redirect_slashes=False)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://disappear-frontend-v2.vercel.app", 
-        "http://localhost:5173"
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -76,7 +73,7 @@ THREAT_TYPES = ["IDENTITY_QUERY_DEFLECTED", "PII_SCRUB_VERIFIED", "NODE_ENCRYPTE
 BROKERS = ["SPOKEO", "ACXIOM", "INTELIUS", "WHITEPAGES", "PEOPLELOOKER"]
 DOMAINS = ["disappear.private", "shield.mask", "cloak.node", "ghost.vault"]
 
-# THE "HARD LOCK" VARIABLES - These stay in memory
+# THE "HARD LOCK" VARIABLES - These stay in memory so they don't change every sync request
 STABLE_EMAIL = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
 STABLE_PHONE = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
 
@@ -86,15 +83,6 @@ class CardRequest(BaseModel):
 
 class LoginRequest(BaseModel):
     token: str = None
-
-# Updated to match App.jsx separate name fields
-class ProfileRequest(BaseModel):
-    firstName: str
-    middleName: Optional[str] = ""
-    lastName: str
-    email: str
-    address: Optional[str] = None
-    dob: Optional[str] = None
 
 # --- ROUTES ---
 
@@ -181,25 +169,34 @@ async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
     db.refresh(new_card)
     return new_card
 
-# THE FIX: Dual-route registration to catch all slash variants
+# --- UPDATED SAVE PROFILE ROUTE (THE 404 FIX) ---
 @app.post("/financials/profile")
 @app.post("/financials/profile/")
-async def save_profile(request: ProfileRequest, db: Session = Depends(get_db)):
-    profile_id = f"user_{random.randint(1000, 9999)}"
-    
-    # Combine names for the database full_name column
-    full_combined = f"{request.firstName} {request.middleName} {request.lastName}".replace("  ", " ").strip()
-    
-    new_profile = DBProfile(
-        id=profile_id,
-        full_name=full_combined,
-        email=request.email,
-        address=request.address,
-        dob=request.dob
-    )
-    db.add(new_profile)
-    db.commit()
-    return {"status": "success", "profile_id": profile_id}
+async def save_profile(request: Request, db: Session = Depends(get_db)):
+    try:
+        # We use raw request to bypass Pydantic validation 404s
+        data = await request.json()
+        profile_id = f"user_{random.randint(1000, 9999)}"
+        
+        # Manually extract fields from raw JSON
+        fname = data.get("firstName", "")
+        mname = data.get("middleName", "")
+        lname = data.get("lastName", "")
+        full_combined = f"{fname} {mname} {lname}".replace("  ", " ").strip()
+        
+        new_profile = DBProfile(
+            id=profile_id,
+            full_name=full_combined,
+            email=data.get("email"),
+            address=data.get("address"),
+            dob=data.get("dob")
+        )
+        db.add(new_profile)
+        db.commit()
+        return {"status": "success", "profile_id": profile_id}
+    except Exception as e:
+        print(f"ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail="Data Processing Error")
 
 @app.delete("/financials/kill/{card_id}")
 async def kill_card(card_id: str, db: Session = Depends(get_db)):
