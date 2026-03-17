@@ -170,7 +170,6 @@ function App() {
         return;
     }
 
-    // Increased timeout to 30s to allow Render server to wake up
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
 
@@ -178,13 +177,20 @@ function App() {
     triggerToast("CONNECTING TO SCRUB NODES...");
 
     try {
+        // FIXED: Explicitly calling the endpoint without a trailing slash
         const response = await fetch(`${API_BASE_URL}/financials/profile`, {
             method: "POST", 
             headers: { 
-              "Content-Type": "application/json",
-              "Accept": "application/json"
+              "Content-Type": "application/json"
             },
-            body: JSON.stringify(targetProfile),
+            body: JSON.stringify({
+              firstName: targetProfile.firstName,
+              middleName: targetProfile.middleName || "",
+              lastName: targetProfile.lastName,
+              email: targetProfile.email,
+              address: targetProfile.address,
+              dob: targetProfile.dob
+            }),
             signal: controller.signal
         });
 
@@ -198,15 +204,15 @@ function App() {
             triggerToast("IDENTITY PURGE INITIATED");
         } else { 
             setIsScanning(false);
-            // Enhanced error messaging
-            triggerToast(`UPLOAD FAILED: ${response.status} ${response.statusText}`); 
+            const errorMsg = response.status === 404 ? "ROUTE NOT FOUND (404)" : `ERROR: ${response.status}`;
+            triggerToast(errorMsg); 
         }
     } catch (err) { 
         setIsScanning(false);
         if (err.name === 'AbortError') {
-          triggerToast("TIMEOUT: SERVER STILL WAKING UP. TRY AGAIN.");
+          triggerToast("TIMEOUT: SERVER STILL WAKING UP");
         } else {
-          triggerToast("BACKEND UNREACHABLE - CHECK CORS"); 
+          triggerToast("BACKEND UNREACHABLE"); 
         }
     }
   };
