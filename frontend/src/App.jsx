@@ -11,6 +11,7 @@ import AdminDashboard from './AdminDashboard';
 import './App.css';
 
 // --- CONFIGURATION ---
+// Ensure this matches your Render service URL exactly
 const API_BASE_URL = "https://disappear-backend.onrender.com"; 
 
 function App() {
@@ -55,6 +56,7 @@ function App() {
   // Pre-fetch health check to wake up Render node
   useEffect(() => {
     if (showCheckout) {
+      // Poking the root endpoint to wake the service from sleep
       fetch(`${API_BASE_URL}/`).catch(() => console.log("Handshake initialized..."));
     }
   }, [showCheckout]);
@@ -184,13 +186,13 @@ function App() {
     triggerToast("CONNECTING TO SCRUB NODES...");
 
     try {
+        // ULTIMATE 404 FIX: Construct exact URL matching backend decorators
         const targetURL = `${API_BASE_URL.replace(/\/$/, "")}/financials/profile`;
         
         const response = await fetch(targetURL, {
             method: "POST", 
             headers: { 
-              "Content-Type": "application/json",
-              "Accept": "application/json"
+              "Content-Type": "application/json"
             },
             body: JSON.stringify({
               firstName: targetProfile.firstName,
@@ -286,7 +288,13 @@ function App() {
           <div className="price-box">
             <h3 className="tiger-text">MFA CHALLENGE</h3>
             <p style={{fontSize: '0.7rem', color: '#94A3B8', marginBottom: '20px'}}>ENTER SECURE ACCESS TOKEN</p>
-            <input className="mask-btn" style={{width: '100%', textAlign: 'center', fontSize: '1.2rem', letterSpacing: '5px'}} placeholder="******" />
+            <input 
+              id="mfa_token"
+              name="mfa_token"
+              className="mask-btn" 
+              style={{width: '100%', textAlign: 'center', fontSize: '1.2rem', letterSpacing: '5px'}} 
+              placeholder="******" 
+            />
             <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={verify2FA}>VERIFY</button>
             <button className="reset-btn" style={{width: '100%'}} onClick={() => setShow2FA(false)}>CANCEL</button>
           </div>
@@ -314,49 +322,48 @@ function App() {
         <div className="pricing-card">
           <div className="price-box" style={{maxWidth: '450px', width: '100%', margin: '0 auto'}}>
             <h3 className="tiger-text">TARGET PROFILE DATA</h3>
-            <div style={{display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', textAlign: 'left'}}>
+            <div className="form-stack" style={{display: 'flex', flexDirection: 'column', gap: '15px', width: '100%', textAlign: 'left'}}>
                 
-                <div className="input-group">
+                <div className="accessible-field">
                   <label htmlFor="firstName" className="field-label">First Name</label>
                   <input id="firstName" name="firstName" className="mask-btn" placeholder="Required" autoComplete="given-name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
                 </div>
 
-                <div className="input-group">
+                <div className="accessible-field">
                   <label htmlFor="middleName" className="field-label">Middle Name</label>
                   <input id="middleName" name="middleName" className="mask-btn" placeholder="Optional" autoComplete="additional-name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
                 </div>
 
-                <div className="input-group">
+                <div className="accessible-field">
                   <label htmlFor="lastName" className="field-label">Last Name</label>
                   <input id="lastName" name="lastName" className="mask-btn" placeholder="Required" autoComplete="family-name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
                 </div>
                 
-                <div className="input-group">
+                <div className="accessible-field">
                   <label htmlFor="email" className="field-label">Email Address</label>
                   <input id="email" name="email" className="mask-btn" placeholder="Required" autoComplete="email" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
                 </div>
                 
-                <div className="input-group">
+                <div className="accessible-field">
                   <label htmlFor="address" className="field-label">Home Address</label>
-                  <input id="address" name="address" className="mask-btn" placeholder="Verified Address" autoComplete="street-address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
+                  <input id="address" name="address" className="mask-btn" placeholder="Required" autoComplete="street-address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
                 </div>
 
-                <div className="input-group">
+                <div className="accessible-field">
                   <label htmlFor="dob" className="field-label">Date of Birth</label>
                   <input id="dob" name="dob" className="mask-btn" type="date" value={targetProfile.dob} onChange={(e) => setTargetProfile({...targetProfile, dob: e.target.value})} />
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '15px', padding: '0 10px' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '10px' }}>
                   <input 
                     type="checkbox" 
                     id="terms-check" 
                     name="termsAccepted"
-                    style={{ marginTop: '4px' }}
                     checked={targetProfile.termsAccepted}
                     onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})}
                   />
-                  <label htmlFor="terms-check" style={{ fontSize: '0.65rem', color: '#94A3B8', textAlign: 'left', lineHeight: '1.4' }}>
-                    I agree to the <span className="legal-link" onClick={() => setShowLegal('terms')}>Terms of Service</span> and understand data purge protocols.
+                  <label htmlFor="terms-check" style={{ fontSize: '0.65rem', color: '#94A3B8', lineHeight: '1.4' }}>
+                    I agree to the <span className="legal-link" onClick={() => setShowLegal('terms')}>Terms of Service</span>.
                   </label>
                 </div>
             </div>

@@ -26,9 +26,11 @@ DATABASE_URL = os.getenv(
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
+# Create the engine and session local factory for database connectivity
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
 
 # --- DATABASE MODELS ---
 
@@ -42,6 +44,7 @@ class DBCard(Base):
     cvv = Column(String)    # 3-digit security code
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
 class DBProfile(Base):
     """Represents a target profile for PII scrub queuing"""
     __tablename__ = "profiles"
@@ -52,12 +55,14 @@ class DBProfile(Base):
     dob = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-# Auto-create tables on startup
+
+# Auto-create tables on startup to maintain environment parity
 Base.metadata.create_all(bind=engine)
+
 
 # --- APP CONFIGURATION ---
 
-# redirect_slashes=False prevents automatic 307 redirects which can drop POST payloads
+# IMPORTANT: redirect_slashes=False is critical to prevent 404s on POST requests
 app = FastAPI(redirect_slashes=False)
 
 # Global CORS Policy: Explicitly open for Vercel/Localhost connectivity
@@ -69,6 +74,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Database Dependency Injection
 def get_db():
     db = SessionLocal()
@@ -77,29 +83,35 @@ def get_db():
     finally:
         db.close()
 
+
 # --- DATA SEEDING & STABILITY STORAGE ---
 
 THREAT_TYPES = ["IDENTITY_QUERY_DEFLECTED", "PII_SCRUB_VERIFIED", "NODE_ENCRYPTED", "RECAPTURE_BLOCKED", "TRACE_PURGED"]
 BROKERS = ["SPOKEO", "ACXIOM", "INTELIUS", "WHITEPAGES", "PEOPLELOOKER"]
 DOMAINS = ["disappear.private", "shield.mask", "cloak.node", "ghost.vault"]
 
+# THE "HARD LOCK" VARIABLES - Persistent aliases during server uptime
 STABLE_EMAIL = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
 STABLE_PHONE = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
+
 
 # --- SCHEMAS ---
 
 class CardRequest(BaseModel):
     label: str
 
+
 class LoginRequest(BaseModel):
     token: str = None
+
 
 # --- CORE SYSTEM ROUTES ---
 
 @app.get("/")
 async def health_status():
-    """Health check endpoint to verify node connectivity"""
+    """Health check endpoint to keep the Render node from entering deep sleep"""
     return {"status": "ACTIVE", "timestamp": datetime.now().isoformat()}
+
 
 @app.get("/admin/stats")
 async def get_admin_stats(db: Session = Depends(get_db)):
@@ -117,10 +129,13 @@ async def get_admin_stats(db: Session = Depends(get_db)):
         "last_purge": datetime.now().strftime("%Y-%m-%d %H:%M")
     }
 
+
 @app.get("/dashboard/sync")
 async def sync():
     """Synchronizes dashboard with live threat intelligence and node map data"""
     now = datetime.now()
+    
+    # SEED STABILITY: Ensure dashboard remains static for 60-second intervals
     minute_seed = now.minute + now.hour
     random.seed(minute_seed)
     
@@ -135,11 +150,15 @@ async def sync():
     map_nodes = []
     for i in range(18):
         map_nodes.append({
-            "id": i, "x": random.randint(5, 95), "y": random.randint(10, 85), 
+            "id": i, 
+            "x": random.randint(5, 95), 
+            "y": random.randint(10, 85), 
             "status": "active" if i % 4 != 0 else "intercepting"
         })
 
+    # Restore dynamic randomness for other functions
     random.seed(time.time())
+
     return {
         "profile": {
             "email_alias": STABLE_EMAIL,
@@ -153,14 +172,19 @@ async def sync():
         "system_status": "ENCRYPTED_TUNNEL_STABLE"
     }
 
+
 @app.get("/financials/data")
 async def financials(db: Session = Depends(get_db)):
+    """Retrieves list of active virtual cards from the secure ledger"""
     cards = db.query(DBCard).order_by(DBCard.created_at.desc()).all()
     return {"cards": cards}
 
+
 @app.post("/financials/mint")
 async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
+    """Initiates a new virtual card minting process on the secure node"""
     card_id = f"vcc_{random.randint(1000, 9999)}"
+    
     new_card = DBCard(
         id=card_id,
         label=request.label,
@@ -173,6 +197,7 @@ async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
     db.refresh(new_card)
     return new_card
 
+
 # --- THE DEFINITIVE 404 RESOLUTION BLOCK ---
 
 @app.post("/financials/profile")
@@ -180,24 +205,18 @@ async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
 async def save_profile(request: Request, db: Session = Depends(get_db)):
     """Handles raw profile ingestion to bypass strict validation 404s"""
     try:
-        # Use raw Request parsing to handle any variations in incoming JSON keys
         data = await request.json()
         print(f"SCRUB REQUEST RECEIVED FOR: {data.get('email')}") 
         
         profile_id = f"user_{random.randint(1000, 9999)}"
+        fn, mn, ln = data.get("firstName", ""), data.get("middleName", ""), data.get("lastName", "")
         
-        # Manual name reconstruction logic matches App.jsx state
-        fn = data.get("firstName", "")
-        mn = data.get("middleName", "")
-        ln = data.get("lastName", "")
-        
-        # Merge parts into full_name column while sanitizing double spaces
+        # Combining names into a single string while cleaning double spaces
         combined_name = f"{fn} {mn} {ln}".replace("  ", " ").strip()
-        final_name = combined_name if combined_name else data.get("fullName", "Unknown")
         
         new_profile = DBProfile(
             id=profile_id,
-            full_name=final_name,
+            full_name=combined_name if combined_name else data.get("fullName", "Unknown"),
             email=data.get("email"),
             address=data.get("address"),
             dob=data.get("dob")
@@ -210,8 +229,10 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         print(f"CRITICAL NODE ERROR: {str(e)}")
         return {"status": "error", "message": str(e)}
 
+
 @app.delete("/financials/kill/{card_id}")
 async def kill_card(card_id: str, db: Session = Depends(get_db)):
+    """Permanently deletes a card asset from the database"""
     card = db.query(DBCard).filter(DBCard.id == card_id).first()
     if card:
         db.delete(card)
@@ -219,24 +240,31 @@ async def kill_card(card_id: str, db: Session = Depends(get_db)):
         return {"status": "node_terminated"}
     raise HTTPException(status_code=404, detail="Asset not found")
 
+
 @app.post("/financials/burn-all")
 async def burn_all_assets(db: Session = Depends(get_db)):
+    """Global wipe command: Deletes all profiles and cards from the node"""
     db.query(DBCard).delete()
     db.query(DBProfile).delete()
     db.commit()
     return {"status": "TOTAL_PURGE_COMPLETE"}
 
+
 @app.post("/financials/regenerate")
 async def regenerate_alias():
+    """Cycles identity aliases for the shield dashboard interface"""
     global STABLE_EMAIL, STABLE_PHONE
     STABLE_EMAIL = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
     STABLE_PHONE = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
     return {"email_alias": STABLE_EMAIL, "phone_alias": STABLE_PHONE}
 
+
+# --- SERVER STARTUP AND PORT BINDING ---
+
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 10000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+    # Final check for port binding compatibility with Render environment
+    target_port = int(os.environ.get("PORT", 10000))
+    uvicorn.run("main:app", host="0.0.0.0", port=target_port, reload=False)
 
-# --- END OF MAIN.PY CORE ENGINE ---
-# SECURE DISAPPEAR NODE VERSION 2.1.4
+# --- END OF MAIN.PY CORE ENGINE VERSION 2.1.5 ---
