@@ -62,8 +62,8 @@ Base.metadata.create_all(bind=engine)
 
 # --- APP CONFIGURATION ---
 
-# IMPORTANT: redirect_slashes=False is critical to prevent 404s on POST requests
-app = FastAPI(redirect_slashes=False)
+# IMPORTANT: Setting this to True (default) helps with standard pathing
+app = FastAPI()
 
 # Global CORS Policy: Explicitly open for Vercel/Localhost connectivity
 app.add_middleware(
@@ -108,9 +108,8 @@ class LoginRequest(BaseModel):
 # --- CORE SYSTEM ROUTES ---
 
 @app.get("/")
-@app.get("/health")
 async def health_status():
-    """Health check endpoint to keep the Render node from entering deep sleep and resolve root 404"""
+    """FIX FOR ROOT 404: Explicitly defines the home route"""
     return {"status": "ACTIVE", "timestamp": datetime.now().isoformat()}
 
 
