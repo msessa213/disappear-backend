@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
-// --- FIXED IMPORTS (Using curly braces for Named Exports) ---
+// --- FIXED IMPORTS ---
 import { Manifesto } from './Manifesto';
 import { Privacy } from './Privacy';
 import { Terms } from './Terms';
@@ -52,10 +52,10 @@ function App() {
     setTimeout(() => setShowToast(""), 3000); 
   };
 
-  // Pre-fetch health check to wake up Render
+  // Pre-fetch health check to wake up Render node
   useEffect(() => {
     if (showCheckout) {
-      fetch(`${API_BASE_URL}/dashboard/sync`).catch(() => console.log("Waking server..."));
+      fetch(`${API_BASE_URL}/`).catch(() => console.log("Handshake initialized..."));
     }
   }, [showCheckout]);
 
@@ -184,7 +184,7 @@ function App() {
     triggerToast("CONNECTING TO SCRUB NODES...");
 
     try {
-        // Normalizing URL to avoid extra slashes causing 404s
+        // CORRECTION: Ensure clean URL without double slashes
         const targetURL = `${API_BASE_URL.replace(/\/$/, "")}/financials/profile`;
         
         const response = await fetch(targetURL, {
@@ -214,7 +214,6 @@ function App() {
             triggerToast("IDENTITY PURGE INITIATED");
         } else { 
             setIsScanning(false);
-            // This displays the exact status code from Render logs for troubleshooting
             triggerToast(`NODE ERROR: ${response.status}`); 
         }
     } catch (err) { 

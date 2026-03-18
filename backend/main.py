@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 # Load variables from the .env file (Local development only)
 load_dotenv()
 
+
 # --- DATABASE CONFIGURATION ---
 # Database URL extraction with fallback to Supabase
 DATABASE_URL = os.getenv(
@@ -22,14 +23,15 @@ DATABASE_URL = os.getenv(
     "postgresql://postgres.chymgteinnczqfjqknan:%40Chase246642@aws-1-us-east-1.pooler.supabase.com:6543/postgres"
 )
 
-# Standardize postgres prefix for SQLAlchemy 1.4+
+# Standardize postgres prefix for SQLAlchemy 1.4+ requirements
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# Create the engine and session local factory
+# Create the engine and session local factory for database connectivity
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
 
 # --- DATABASE MODELS ---
 
@@ -43,6 +45,7 @@ class DBCard(Base):
     cvv = Column(String)    # 3-digit security code
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
 class DBProfile(Base):
     """Represents a target profile for PII scrub queuing"""
     __tablename__ = "profiles"
@@ -53,12 +56,15 @@ class DBProfile(Base):
     dob = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
 # Auto-create tables on startup to maintain environment parity
 Base.metadata.create_all(bind=engine)
+
 
 # --- APP CONFIGURATION ---
 
 # IMPORTANT: redirect_slashes=False is critical to prevent 404s on POST requests
+# This ensures that /route and /route/ are handled specifically by our decorators.
 app = FastAPI(redirect_slashes=False)
 
 # Global CORS Policy: Explicitly open for Vercel/Localhost connectivity
@@ -70,6 +76,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Database Dependency Injection
 def get_db():
     db = SessionLocal()
@@ -77,6 +84,7 @@ def get_db():
         yield db
     finally:
         db.close()
+
 
 # --- DATA SEEDING & STABILITY STORAGE ---
 
@@ -88,13 +96,16 @@ DOMAINS = ["disappear.private", "shield.mask", "cloak.node", "ghost.vault"]
 STABLE_EMAIL = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
 STABLE_PHONE = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
 
+
 # --- SCHEMAS ---
 
 class CardRequest(BaseModel):
     label: str
 
+
 class LoginRequest(BaseModel):
     token: str = None
+
 
 # --- CORE SYSTEM ROUTES ---
 
@@ -102,6 +113,7 @@ class LoginRequest(BaseModel):
 async def health_status():
     """Health check endpoint to keep the Render node from entering deep sleep"""
     return {"status": "ACTIVE", "timestamp": datetime.now().isoformat()}
+
 
 @app.get("/admin/stats")
 async def get_admin_stats(db: Session = Depends(get_db)):
@@ -118,6 +130,7 @@ async def get_admin_stats(db: Session = Depends(get_db)):
         "system_health": "OPTIMAL",
         "last_purge": datetime.now().strftime("%Y-%m-%d %H:%M")
     }
+
 
 @app.get("/dashboard/sync")
 async def sync():
@@ -161,11 +174,13 @@ async def sync():
         "system_status": "ENCRYPTED_TUNNEL_STABLE"
     }
 
+
 @app.get("/financials/data")
 async def financials(db: Session = Depends(get_db)):
     """Retrieves list of active virtual cards from the secure ledger"""
     cards = db.query(DBCard).order_by(DBCard.created_at.desc()).all()
     return {"cards": cards}
+
 
 @app.post("/financials/mint")
 async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
@@ -184,6 +199,7 @@ async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
     db.refresh(new_card)
     return new_card
 
+
 # --- THE DEFINITIVE 404 RESOLUTION BLOCK ---
 
 @app.post("/financials/profile")
@@ -191,6 +207,7 @@ async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
 async def save_profile(request: Request, db: Session = Depends(get_db)):
     """Handles raw profile ingestion to bypass strict validation 404s"""
     try:
+        # Parse raw JSON to avoid Pydantic validation errors before route matching
         data = await request.json()
         print(f"SCRUB REQUEST RECEIVED FOR: {data.get('email')}") 
         
@@ -202,6 +219,7 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         ln = data.get("lastName", "")
         
         # Combining names into a single string for the DB full_name column
+        # replace("  ", " ") cleans up the string if middleName is omitted
         combined_name = f"{fn} {mn} {ln}".replace("  ", " ").strip()
         final_name = combined_name if combined_name else data.get("fullName", "Unknown")
         
@@ -214,10 +232,13 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         )
         db.add(new_profile)
         db.commit()
+        
         return {"status": "success", "profile_id": profile_id}
+        
     except Exception as e:
         print(f"CRITICAL NODE ERROR: {str(e)}")
         return {"status": "error", "message": str(e)}
+
 
 @app.delete("/financials/kill/{card_id}")
 async def kill_card(card_id: str, db: Session = Depends(get_db)):
@@ -229,6 +250,7 @@ async def kill_card(card_id: str, db: Session = Depends(get_db)):
         return {"status": "node_terminated"}
     raise HTTPException(status_code=404, detail="Asset not found")
 
+
 @app.post("/financials/burn-all")
 async def burn_all_assets(db: Session = Depends(get_db)):
     """Global wipe command: Deletes all profiles and cards from the node"""
@@ -236,6 +258,7 @@ async def burn_all_assets(db: Session = Depends(get_db)):
     db.query(DBProfile).delete()
     db.commit()
     return {"status": "TOTAL_PURGE_COMPLETE"}
+
 
 @app.post("/financials/regenerate")
 async def regenerate_alias():
@@ -245,11 +268,13 @@ async def regenerate_alias():
     STABLE_PHONE = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
     return {"email_alias": STABLE_EMAIL, "phone_alias": STABLE_PHONE}
 
+
 # --- SERVER STARTUP AND PORT BINDING ---
 
 if __name__ == "__main__":
     import uvicorn
     # Final check for port binding compatibility with Render environment
+    # Defaulting to 10000 per Render's standard configuration
     target_port = int(os.environ.get("PORT", 10000))
     uvicorn.run("main:app", host="0.0.0.0", port=target_port, reload=False)
 
