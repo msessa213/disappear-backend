@@ -192,20 +192,22 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
     """Handles raw profile ingestion to bypass strict validation 404s"""
     try:
         data = await request.json()
-        print(f"SCRUB REQUEST RECEIVED: {data.get('email')}") # Server-side audit log
+        print(f"SCRUB REQUEST RECEIVED FOR: {data.get('email')}") 
         
         profile_id = f"user_{random.randint(1000, 9999)}"
         
-        # Manual name reconstruction logic
+        # Manual name reconstruction logic matches firstName/middleName/lastName in App.jsx
         fn = data.get("firstName", "")
         mn = data.get("middleName", "")
         ln = data.get("lastName", "")
-        combined_name = f"{fn} {mn} {ln}".replace("  ", " ").strip()
         
-        # Profile Object instantiation
+        # Combining names into a single string for the DB full_name column
+        combined_name = f"{fn} {mn} {ln}".replace("  ", " ").strip()
+        final_name = combined_name if combined_name else data.get("fullName", "Unknown")
+        
         new_profile = DBProfile(
             id=profile_id,
-            full_name=combined_name if combined_name else data.get("fullName", "Unknown"),
+            full_name=final_name,
             email=data.get("email"),
             address=data.get("address"),
             dob=data.get("dob")
@@ -214,8 +216,8 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         db.commit()
         return {"status": "success", "profile_id": profile_id}
     except Exception as e:
-        print(f"NODE ERROR: {str(e)}")
-        return {"status": "error", "message": "Failed to process target"}
+        print(f"CRITICAL NODE ERROR: {str(e)}")
+        return {"status": "error", "message": str(e)}
 
 @app.delete("/financials/kill/{card_id}")
 async def kill_card(card_id: str, db: Session = Depends(get_db)):

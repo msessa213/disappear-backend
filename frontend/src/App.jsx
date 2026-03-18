@@ -184,9 +184,10 @@ function App() {
     triggerToast("CONNECTING TO SCRUB NODES...");
 
     try {
-        // We call the endpoint explicitly. Note: No trailing slash here because 
-        // FastAPI redirect_slashes=False is looking for the exact match.
-        const response = await fetch(`${API_BASE_URL}/financials/profile`, {
+        // Normalizing URL to avoid extra slashes causing 404s
+        const targetURL = `${API_BASE_URL.replace(/\/$/, "")}/financials/profile`;
+        
+        const response = await fetch(targetURL, {
             method: "POST", 
             headers: { 
               "Content-Type": "application/json",
@@ -213,7 +214,7 @@ function App() {
             triggerToast("IDENTITY PURGE INITIATED");
         } else { 
             setIsScanning(false);
-            // This displays the exact status code from Render logs
+            // This displays the exact status code from Render logs for troubleshooting
             triggerToast(`NODE ERROR: ${response.status}`); 
         }
     } catch (err) { 
