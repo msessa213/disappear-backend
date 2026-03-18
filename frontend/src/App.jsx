@@ -52,6 +52,13 @@ function App() {
     setTimeout(() => setShowToast(""), 3000); 
   };
 
+  // Pre-fetch health check to wake up Render
+  useEffect(() => {
+    if (showCheckout) {
+      fetch(`${API_BASE_URL}/dashboard/sync`).catch(() => console.log("Waking server..."));
+    }
+  }, [showCheckout]);
+
   // Notification logic
   const pushNotification = useCallback((broker) => {
     if (!broker) return;
@@ -177,11 +184,13 @@ function App() {
     triggerToast("CONNECTING TO SCRUB NODES...");
 
     try {
-        // FIXED: Explicitly calling the endpoint without a trailing slash
+        // We call the endpoint explicitly. Note: No trailing slash here because 
+        // FastAPI redirect_slashes=False is looking for the exact match.
         const response = await fetch(`${API_BASE_URL}/financials/profile`, {
             method: "POST", 
             headers: { 
-              "Content-Type": "application/json"
+              "Content-Type": "application/json",
+              "Accept": "application/json"
             },
             body: JSON.stringify({
               firstName: targetProfile.firstName,
@@ -204,15 +213,15 @@ function App() {
             triggerToast("IDENTITY PURGE INITIATED");
         } else { 
             setIsScanning(false);
-            const errorMsg = response.status === 404 ? "ROUTE NOT FOUND (404)" : `ERROR: ${response.status}`;
-            triggerToast(errorMsg); 
+            // This displays the exact status code from Render logs
+            triggerToast(`NODE ERROR: ${response.status}`); 
         }
     } catch (err) { 
         setIsScanning(false);
         if (err.name === 'AbortError') {
-          triggerToast("TIMEOUT: SERVER STILL WAKING UP");
+          triggerToast("TIMEOUT: RETRYING HANDSHAKE...");
         } else {
-          triggerToast("BACKEND UNREACHABLE"); 
+          triggerToast("NODE OFFLINE: CHECK BACKEND"); 
         }
     }
   };
