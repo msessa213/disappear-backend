@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
-// --- FIXED IMPORTS ---
+// --- FIXED IMPORTS (Using curly braces for Named Exports) ---
 import { Manifesto } from './Manifesto';
 import { Privacy } from './Privacy';
 import { Terms } from './Terms';
@@ -11,6 +11,7 @@ import AdminDashboard from './AdminDashboard';
 import './App.css';
 
 // --- CONFIGURATION ---
+// Ensure this matches your Render service URL exactly
 const API_BASE_URL = "https://disappear-backend.onrender.com"; 
 
 function App() {
@@ -55,6 +56,7 @@ function App() {
   // Pre-fetch health check to wake up Render node
   useEffect(() => {
     if (showCheckout) {
+      // Poking the root endpoint to wake the service from sleep
       fetch(`${API_BASE_URL}/`).catch(() => console.log("Handshake initialized..."));
     }
   }, [showCheckout]);
@@ -184,7 +186,7 @@ function App() {
     triggerToast("CONNECTING TO SCRUB NODES...");
 
     try {
-        // CORRECTION: Ensure clean URL without double slashes
+        // FIX: Remove trailing slash from API_BASE_URL and construct clean path
         const targetURL = `${API_BASE_URL.replace(/\/$/, "")}/financials/profile`;
         
         const response = await fetch(targetURL, {
@@ -214,6 +216,7 @@ function App() {
             triggerToast("IDENTITY PURGE INITIATED");
         } else { 
             setIsScanning(false);
+            // Enhanced logging for node errors
             triggerToast(`NODE ERROR: ${response.status}`); 
         }
     } catch (err) { 
