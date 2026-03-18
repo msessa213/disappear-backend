@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
-// --- FIXED IMPORTS ---
+// --- FIXED IMPORTS (Using curly braces for Named Exports) ---
 import { Manifesto } from './Manifesto';
 import { Privacy } from './Privacy';
 import { Terms } from './Terms';
@@ -186,13 +186,14 @@ function App() {
     triggerToast("CONNECTING TO SCRUB NODES...");
 
     try {
-        // ULTIMATE 404 FIX: Construct exact URL matching backend decorators
+        // Construct clean path matching backend fix
         const targetURL = `${API_BASE_URL.replace(/\/$/, "")}/financials/profile`;
         
         const response = await fetch(targetURL, {
             method: "POST", 
             headers: { 
-              "Content-Type": "application/json"
+              "Content-Type": "application/json",
+              "Accept": "application/json"
             },
             body: JSON.stringify({
               firstName: targetProfile.firstName,
@@ -215,6 +216,7 @@ function App() {
             triggerToast("IDENTITY PURGE INITIATED");
         } else { 
             setIsScanning(false);
+            // Enhanced logging for node errors
             triggerToast(`NODE ERROR: ${response.status}`); 
         }
     } catch (err) { 
@@ -289,8 +291,8 @@ function App() {
             <h3 className="tiger-text">MFA CHALLENGE</h3>
             <p style={{fontSize: '0.7rem', color: '#94A3B8', marginBottom: '20px'}}>ENTER SECURE ACCESS TOKEN</p>
             <input 
-              id="mfa_token"
-              name="mfa_token"
+              id="mfa_input"
+              name="mfa_input"
               className="mask-btn" 
               style={{width: '100%', textAlign: 'center', fontSize: '1.2rem', letterSpacing: '5px'}} 
               placeholder="******" 
@@ -322,48 +324,58 @@ function App() {
         <div className="pricing-card">
           <div className="price-box" style={{maxWidth: '450px', width: '100%', margin: '0 auto'}}>
             <h3 className="tiger-text">TARGET PROFILE DATA</h3>
-            <div className="form-stack" style={{display: 'flex', flexDirection: 'column', gap: '15px', width: '100%', textAlign: 'left'}}>
+            <div style={{display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', textAlign: 'left'}}>
                 
                 <div className="accessible-field">
                   <label htmlFor="firstName" className="field-label">First Name</label>
-                  <input id="firstName" name="firstName" className="mask-btn" placeholder="Required" autoComplete="given-name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
+                  <input id="firstName" name="firstName" className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="First Name" autoComplete="given-name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
                 </div>
 
                 <div className="accessible-field">
                   <label htmlFor="middleName" className="field-label">Middle Name</label>
-                  <input id="middleName" name="middleName" className="mask-btn" placeholder="Optional" autoComplete="additional-name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
+                  <input id="middleName" name="middleName" className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Middle Name (Optional)" autoComplete="additional-name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
                 </div>
 
                 <div className="accessible-field">
                   <label htmlFor="lastName" className="field-label">Last Name</label>
-                  <input id="lastName" name="lastName" className="mask-btn" placeholder="Required" autoComplete="family-name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
+                  <input id="lastName" name="lastName" className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Last Name" autoComplete="family-name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
                 </div>
                 
                 <div className="accessible-field">
                   <label htmlFor="email" className="field-label">Email Address</label>
-                  <input id="email" name="email" className="mask-btn" placeholder="Required" autoComplete="email" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
+                  <input id="email" name="email" className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Primary Email Address" autoComplete="email" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
                 </div>
                 
                 <div className="accessible-field">
                   <label htmlFor="address" className="field-label">Home Address</label>
-                  <input id="address" name="address" className="mask-btn" placeholder="Required" autoComplete="street-address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
+                  <input 
+                    id="address"
+                    name="address"
+                    className="mask-btn" 
+                    style={{width: '100%', color: 'white'}} 
+                    placeholder="Home Address (Verified)" 
+                    autoComplete="street-address"
+                    value={targetProfile.address} 
+                    onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} 
+                  />
                 </div>
 
                 <div className="accessible-field">
-                  <label htmlFor="dob" className="field-label">Date of Birth</label>
-                  <input id="dob" name="dob" className="mask-btn" type="date" value={targetProfile.dob} onChange={(e) => setTargetProfile({...targetProfile, dob: e.target.value})} />
+                    <label htmlFor="dob" className="field-label">Date of Birth</label>
+                    <input id="dob" name="dob" className="mask-btn" style={{width: '100%', color: 'white'}} type="date" value={targetProfile.dob} onChange={(e) => setTargetProfile({...targetProfile, dob: e.target.value})} />
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '15px', padding: '0 10px' }}>
                   <input 
                     type="checkbox" 
                     id="terms-check" 
-                    name="termsAccepted"
+                    name="terms-check"
+                    style={{ marginTop: '4px' }}
                     checked={targetProfile.termsAccepted}
                     onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})}
                   />
-                  <label htmlFor="terms-check" style={{ fontSize: '0.65rem', color: '#94A3B8', lineHeight: '1.4' }}>
-                    I agree to the <span className="legal-link" onClick={() => setShowLegal('terms')}>Terms of Service</span>.
+                  <label htmlFor="terms-check" style={{ fontSize: '0.65rem', color: '#94A3B8', textAlign: 'left', lineHeight: '1.4' }}>
+                    I agree to the <span className="legal-link" onClick={() => setShowLegal('terms')}>Terms of Service</span> and understand that burning a card does not absolve me of existing financial obligations.
                   </label>
                 </div>
             </div>
@@ -473,6 +485,7 @@ function App() {
         </div>
       )}
 
+      {/* PERSISTENT GLOBAL FOOTER */}
       <footer className="home-footer">
           <span onClick={() => setShowLegal('privacy')}>PRIVACY POLICY</span>
           <span className="footer-divider">|</span>

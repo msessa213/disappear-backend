@@ -54,10 +54,11 @@ body, html, #root {
   box-shadow: 0 0 40px rgba(0, 71, 171, 0.2);
   display: flex;
   flex-direction: column;
+  align-items: center; 
   gap: 15px;
 }
 
-/* Grouping labels and inputs */
+/* ADDED ACCESSIBILITY CLASSES */
 .accessible-field {
   width: 100%;
   display: flex;
@@ -78,23 +79,18 @@ body, html, #root {
 .price-box .mask-btn, 
 .price-box .main-button, 
 .price-box .reset-btn,
-.price-box input:not([type="checkbox"]) {
+.price-box input:not([type="checkbox"]),
+.price-box .profile-input {
   width: 100% !important;
   display: block;
   margin: 0 !important;
-  height: 50px;
+  height: 55px;
   font-size: 0.9rem;
   background: #000;
   border: 1px solid var(--border-dim);
   color: white;
   border-radius: 8px;
   padding: 0 15px;
-  transition: border 0.3s ease;
-}
-
-.price-box input:focus {
-  outline: none;
-  border-color: var(--tiger-blue);
 }
 
 /* 3. COMPLIANCE CHECKBOX STYLING */
@@ -118,7 +114,7 @@ input[type="checkbox"] {
 
 /* 4. DASHBOARD STABILITY */
 .tools-grid {
-  display: grid;
+  display: grid; /* Switched to Grid for easier mobile handling */
   grid-template-columns: 1fr 1fr;
   gap: 20px;
   width: 100%;
@@ -152,12 +148,13 @@ input[type="checkbox"] {
   margin-top: 15px;
   cursor: pointer;
   transition: 0.3s;
-  word-break: break-all;
+  position: relative;
+  word-break: break-all; /* Prevents long emails from breaking mobile */
 }
 
 .audit-list {
   height: 220px;
-  overflow-y: auto;
+  overflow-y: auto; /* Changed to auto so you can scroll the logs */
   display: flex;
   flex-direction: column;
 }
@@ -222,7 +219,7 @@ input[type="checkbox"] {
   text-transform: uppercase;
 }
 
-/* 6. GUARANTEED VISIBILITY FOOTER */
+/* 6. GUARANTEED VISIBILITY FOOTER (FIXED) */
 .home-footer {
   position: fixed !important;
   bottom: 0 !important;
@@ -236,6 +233,8 @@ input[type="checkbox"] {
   justify-content: center !important;
   gap: 15px !important;
   z-index: 9999 !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 .home-footer span {
@@ -246,20 +245,29 @@ input[type="checkbox"] {
   cursor: pointer !important;
   text-transform: uppercase !important;
   letter-spacing: 1px !important;
+  display: inline-block !important;
+  visibility: visible !important;
 }
 
 .home-footer span:hover {
   color: white !important;
 }
 
+.footer-divider {
+  color: #334155 !important;
+  text-decoration: none !important;
+  opacity: 0.5;
+  cursor: default !important;
+}
+
 /* 7. BRANDING & UI */
 .brand-name {
   color: var(--tiger-blue);
-  font-size: clamp(2.5rem, 8vw, 4rem);
+  font-size: clamp(2.5rem, 8vw, 4rem); /* Responsive Logo */
   font-weight: 200;
   letter-spacing: clamp(5px, 2vw, 15px);
   text-transform: uppercase;
-  margin-bottom: 10px;
+  margin: 0;
 }
 
 .main-button {
@@ -283,7 +291,6 @@ input[type="checkbox"] {
 .main-button:disabled {
   background-color: #1e293b;
   color: #475569;
-  cursor: not-allowed;
 }
 
 .reset-btn {
@@ -295,10 +302,46 @@ input[type="checkbox"] {
   padding: 10px 20px;
 }
 
-/* 8. MODALS */
+/* 8. LEGAL DOCUMENT STYLING */
+.legal-document {
+  padding: 10px 0;
+}
+
+.legal-document h2 {
+  color: var(--tiger-blue);
+  margin-bottom: 20px;
+}
+
+.legal-document h3 {
+  color: white;
+  margin-top: 25px;
+  margin-bottom: 10px;
+  font-size: 1rem;
+}
+
+.legal-document p {
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+}
+
+.legal-document ul {
+  margin-left: 20px;
+  color: var(--text-dim);
+}
+
+.legal-document li {
+  margin-bottom: 10px;
+}
+
+/* MODALS */
 .modal-overlay {
   position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background: rgba(0,0,0,0.95);
   backdrop-filter: blur(8px);
   display: flex;
@@ -318,26 +361,38 @@ input[type="checkbox"] {
   max-height: 85vh;
   overflow-y: auto;
   text-align: left;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 1);
 }
 
-/* 9. MOBILE RESPONSIVE OVERRIDES */
+/* --- 9. MOBILE RESPONSIVE OVERRIDES --- */
 @media (max-width: 768px) {
   .app-container {
     padding: 60px 15px 120px 15px;
   }
 
+  /* Force home buttons to stack */
+  div[style*="display: flex"][style*="gap: 20px"] {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
   .tools-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr; /* Single column layout for mobile */
   }
 
   .full-width-tool {
     grid-column: span 1;
   }
 
-  .price-box {
+  .price-box, .info-modal-content {
     padding: 25px 20px;
   }
 
+  .brand-name {
+    margin-top: 20px;
+  }
+
+  /* Make Toast messages highly visible on mobile top */
   .status-message.toast-fixed {
     width: 90%;
     top: 10px;

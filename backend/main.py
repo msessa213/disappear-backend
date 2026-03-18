@@ -108,8 +108,9 @@ class LoginRequest(BaseModel):
 # --- CORE SYSTEM ROUTES ---
 
 @app.get("/")
+@app.get("/health")
 async def health_status():
-    """Health check endpoint to keep the Render node from entering deep sleep"""
+    """Health check endpoint to keep the Render node from entering deep sleep and resolve root 404"""
     return {"status": "ACTIVE", "timestamp": datetime.now().isoformat()}
 
 
