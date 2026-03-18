@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- DATABASE CONFIGURATION ---
+# Database URL extraction with fallback to Supabase
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
     "postgresql://postgres.chymgteinnczqfjqknan:%40Chase246642@aws-1-us-east-1.pooler.supabase.com:6543/postgres"
@@ -105,6 +106,7 @@ async def get_admin_stats(db: Session = Depends(get_db)):
     """Aggregates platform-wide metrics for the Central Command Dashboard"""
     total_users = db.query(DBProfile).count()
     total_cards = db.query(DBCard).count()
+    # Assume a standard threat density of 47 removal requests per profile
     total_removals = total_users * 47 
     
     return {
@@ -178,6 +180,7 @@ async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
 async def save_profile(request: Request, db: Session = Depends(get_db)):
     """Handles raw profile ingestion to bypass strict validation 404s"""
     try:
+        # Use raw Request parsing to handle any variations in incoming JSON keys
         data = await request.json()
         print(f"SCRUB REQUEST RECEIVED FOR: {data.get('email')}") 
         
@@ -188,6 +191,7 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         mn = data.get("middleName", "")
         ln = data.get("lastName", "")
         
+        # Merge parts into full_name column while sanitizing double spaces
         combined_name = f"{fn} {mn} {ln}".replace("  ", " ").strip()
         final_name = combined_name if combined_name else data.get("fullName", "Unknown")
         

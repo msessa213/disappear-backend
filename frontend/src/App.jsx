@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
-// --- FIXED IMPORTS (Using curly braces for Named Exports) ---
+// --- FIXED IMPORTS ---
 import { Manifesto } from './Manifesto';
 import { Privacy } from './Privacy';
 import { Terms } from './Terms';
@@ -11,7 +11,6 @@ import AdminDashboard from './AdminDashboard';
 import './App.css';
 
 // --- CONFIGURATION ---
-// Ensure this matches your Render service URL exactly
 const API_BASE_URL = "https://disappear-backend.onrender.com"; 
 
 function App() {
@@ -56,7 +55,6 @@ function App() {
   // Pre-fetch health check to wake up Render node
   useEffect(() => {
     if (showCheckout) {
-      // Poking the root endpoint to wake the service from sleep
       fetch(`${API_BASE_URL}/`).catch(() => console.log("Handshake initialized..."));
     }
   }, [showCheckout]);
@@ -186,7 +184,6 @@ function App() {
     triggerToast("CONNECTING TO SCRUB NODES...");
 
     try {
-        // FIX: Remove trailing slash from API_BASE_URL and construct clean path
         const targetURL = `${API_BASE_URL.replace(/\/$/, "")}/financials/profile`;
         
         const response = await fetch(targetURL, {
@@ -216,7 +213,6 @@ function App() {
             triggerToast("IDENTITY PURGE INITIATED");
         } else { 
             setIsScanning(false);
-            // Enhanced logging for node errors
             triggerToast(`NODE ERROR: ${response.status}`); 
         }
     } catch (err) { 
@@ -318,38 +314,49 @@ function App() {
         <div className="pricing-card">
           <div className="price-box" style={{maxWidth: '450px', width: '100%', margin: '0 auto'}}>
             <h3 className="tiger-text">TARGET PROFILE DATA</h3>
-            <div style={{display: 'flex', flexDirection: 'column', gap: '12px', width: '100%'}}>
+            <div style={{display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', textAlign: 'left'}}>
                 
-                <input className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="First Name" autoComplete="given-name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
-                <input className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Middle Name (Optional)" autoComplete="additional-name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
-                <input className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Last Name" autoComplete="family-name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
-                
-                <input className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Primary Email Address" autoComplete="email" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
-                
-                <input 
-                  className="mask-btn" 
-                  style={{width: '100%', color: 'white'}} 
-                  placeholder="Home Address (Verified)" 
-                  autoComplete="street-address"
-                  value={targetProfile.address} 
-                  onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} 
-                />
+                <div className="input-group">
+                  <label htmlFor="firstName" className="field-label">First Name</label>
+                  <input id="firstName" name="firstName" className="mask-btn" placeholder="Required" autoComplete="given-name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
+                </div>
 
-                <div style={{textAlign: 'left', width: '100%'}}>
-                    <label style={{fontSize: '0.6rem', color: '#94A3B8', marginLeft: '10px'}}>DATE OF BIRTH</label>
-                    <input className="mask-btn" style={{width: '100%', color: 'white'}} type="date" value={targetProfile.dob} onChange={(e) => setTargetProfile({...targetProfile, dob: e.target.value})} />
+                <div className="input-group">
+                  <label htmlFor="middleName" className="field-label">Middle Name</label>
+                  <input id="middleName" name="middleName" className="mask-btn" placeholder="Optional" autoComplete="additional-name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
+                </div>
+
+                <div className="input-group">
+                  <label htmlFor="lastName" className="field-label">Last Name</label>
+                  <input id="lastName" name="lastName" className="mask-btn" placeholder="Required" autoComplete="family-name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
+                </div>
+                
+                <div className="input-group">
+                  <label htmlFor="email" className="field-label">Email Address</label>
+                  <input id="email" name="email" className="mask-btn" placeholder="Required" autoComplete="email" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
+                </div>
+                
+                <div className="input-group">
+                  <label htmlFor="address" className="field-label">Home Address</label>
+                  <input id="address" name="address" className="mask-btn" placeholder="Verified Address" autoComplete="street-address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
+                </div>
+
+                <div className="input-group">
+                  <label htmlFor="dob" className="field-label">Date of Birth</label>
+                  <input id="dob" name="dob" className="mask-btn" type="date" value={targetProfile.dob} onChange={(e) => setTargetProfile({...targetProfile, dob: e.target.value})} />
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '15px', padding: '0 10px' }}>
                   <input 
                     type="checkbox" 
                     id="terms-check" 
+                    name="termsAccepted"
                     style={{ marginTop: '4px' }}
                     checked={targetProfile.termsAccepted}
                     onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})}
                   />
                   <label htmlFor="terms-check" style={{ fontSize: '0.65rem', color: '#94A3B8', textAlign: 'left', lineHeight: '1.4' }}>
-                    I agree to the <span className="legal-link" onClick={() => setShowLegal('terms')}>Terms of Service</span> and understand that burning a card does not absolve me of existing financial obligations.
+                    I agree to the <span className="legal-link" onClick={() => setShowLegal('terms')}>Terms of Service</span> and understand data purge protocols.
                   </label>
                 </div>
             </div>
@@ -459,7 +466,6 @@ function App() {
         </div>
       )}
 
-      {/* PERSISTENT GLOBAL FOOTER */}
       <footer className="home-footer">
           <span onClick={() => setShowLegal('privacy')}>PRIVACY POLICY</span>
           <span className="footer-divider">|</span>
