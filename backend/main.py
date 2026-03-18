@@ -62,7 +62,7 @@ Base.metadata.create_all(bind=engine)
 
 # --- APP CONFIGURATION ---
 
-# IMPORTANT: Setting this to True (default) helps with standard pathing
+# Standard FastAPI initialization
 app = FastAPI()
 
 # Global CORS Policy: Explicitly open for Vercel/Localhost connectivity
@@ -109,7 +109,7 @@ class LoginRequest(BaseModel):
 
 @app.get("/")
 async def health_status():
-    """FIX FOR ROOT 404: Explicitly defines the home route"""
+    """Health check endpoint to keep the Render node from entering deep sleep"""
     return {"status": "ACTIVE", "timestamp": datetime.now().isoformat()}
 
 
