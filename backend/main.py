@@ -27,7 +27,8 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 # Create the engine and session local factory for database connectivity
-engine = create_engine(DATABASE_URL)
+# FIXED: Added pool_pre_ping to prevent the 500 errors you saw in the browser
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -65,10 +66,16 @@ Base.metadata.create_all(bind=engine)
 # Standard FastAPI initialization
 app = FastAPI()
 
-# Global CORS Policy: Explicitly open for Vercel/Localhost connectivity
+# FIXED: Explicit origins to resolve the CORS "Missing Header" error on Vercel
+origins = [
+    "https://disappear-frontend-v2.vercel.app",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -176,8 +183,12 @@ async def sync():
 @app.get("/financials/data")
 async def financials(db: Session = Depends(get_db)):
     """Retrieves list of active virtual cards from the secure ledger"""
-    cards = db.query(DBCard).order_by(DBCard.created_at.desc()).all()
-    return {"cards": cards}
+    try:
+        cards = db.query(DBCard).order_by(DBCard.created_at.desc()).all()
+        return {"cards": cards if cards else []}
+    except Exception as e:
+        # Prevents 500 error on dashboard load if DB is idle
+        return {"cards": [], "error": str(e)}
 
 
 @app.post("/financials/mint")
