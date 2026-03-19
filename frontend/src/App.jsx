@@ -147,7 +147,7 @@ function App() {
   };
 
   /**
-   * Mints a new virtual shield card via the backend (FIXED)
+   * Mints a new virtual shield card via the backend
    */
   const handleMintCard = async () => {
     if (!newCardLabel) {
@@ -299,7 +299,7 @@ function App() {
 
       {/* MINTING MERCHANT MODAL */}
       {showMintModal && (
-        <div className="modal-overlay" onClick={() => setShowMintModal(false)}>
+        <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => setShowMintModal(false)}>
           <div className="price-box" onClick={e => e.stopPropagation()} style={{border: '1px solid var(--tiger-blue)'}}>
             <h3 className="tiger-text">MINT NEW SHIELD</h3>
             <p className="field-label">ASSOCIATE MERCHANT</p>
