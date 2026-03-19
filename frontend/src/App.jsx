@@ -143,6 +143,27 @@ function App() {
   };
 
   /**
+   * Mints a new virtual shield card via the backend
+   */
+  const handleMintCard = async () => {
+    triggerToast("MINTING NEW SHIELD...");
+    try {
+      const response = await fetch(`${API_BASE_URL}/financials/mint`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: `Shield Node ${cards.length + 1}` })
+      });
+      if (response.ok) {
+        const newCard = await response.json();
+        setCards(prev => [newCard, ...prev]);
+        triggerToast("NODE SECURED");
+      }
+    } catch (err) {
+      triggerToast("MINTING FAILED");
+    }
+  };
+
+  /**
    * Destroys a single virtual card node
    */
   const handleKillCard = async (id) => {
@@ -287,7 +308,7 @@ function App() {
         </div>
       )}
 
-      {/* --- MAIN NAVIGATION VIEW LOGIC (Mutual Exclusivity Fix) --- */}
+      {/* --- MAIN NAVIGATION VIEW --- */}
       <main>
         {showShield ? (
           /* SCREEN: MAIN SHIELD DASHBOARD (VERTICAL STACK FIX) */
@@ -350,7 +371,7 @@ function App() {
                   </div>
                 ))}
               </div>
-              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => triggerToast("MINTING...")}>
+              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={handleMintCard}>
                 + MINT NEW SHIELD
               </button>
             </div>
