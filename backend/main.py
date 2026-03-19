@@ -27,8 +27,12 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 # Create the engine and session local factory for database connectivity
-# FIXED: Added pool_pre_ping to prevent the 500 errors you saw in the browser
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+# FIXED: Added pool_pre_ping=True to prevent 500 errors during DB idle states
+engine = create_engine(
+    DATABASE_URL, 
+    pool_pre_ping=True,
+    pool_recycle=300
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -66,7 +70,8 @@ Base.metadata.create_all(bind=engine)
 # Standard FastAPI initialization
 app = FastAPI()
 
-# FIXED: Explicit origins to resolve the CORS "Missing Header" error on Vercel
+# Global CORS Policy: Explicitly open for Vercel/Localhost connectivity
+# FIXED: Replaced "*" with explicit origins to satisfy modern browser security
 origins = [
     "https://disappear-frontend-v2.vercel.app",
     "http://localhost:5173",
@@ -187,7 +192,7 @@ async def financials(db: Session = Depends(get_db)):
         cards = db.query(DBCard).order_by(DBCard.created_at.desc()).all()
         return {"cards": cards if cards else []}
     except Exception as e:
-        # Prevents 500 error on dashboard load if DB is idle
+        # Prevents 500 error by returning empty list on DB failure
         return {"cards": [], "error": str(e)}
 
 
@@ -277,5 +282,6 @@ if __name__ == "__main__":
     # Final check for port binding compatibility with Render environment
     target_port = int(os.environ.get("PORT", 10000))
     uvicorn.run("main:app", host="0.0.0.0", port=target_port, reload=False)
+
 
 # --- END OF MAIN.PY CORE ENGINE VERSION 2.1.5 ---
