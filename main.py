@@ -23,7 +23,6 @@ DATABASE_URL = os.getenv(
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# FIXED: Added pool_pre_ping=True and sslmode requirement to prevent 500 errors
 engine = create_engine(
     DATABASE_URL, 
     pool_pre_ping=True,
@@ -38,18 +37,19 @@ Base = declarative_base()
 
 class DBCard(Base):
     """Represents a virtual shield card asset in the secure vault"""
-    __tablename__ = "cards"
+    # CHANGED TABLE NAME TO FORCE SCHEMA SYNC
+    __tablename__ = "shield_assets_v3"
     id = Column(String, primary_key=True, index=True)
     label = Column(String)
     number = Column(String)
-    expiry = Column(String) # Format: MM/YY
-    cvv = Column(String)    # 3-digit security code
+    expiry = Column(String) 
+    cvv = Column(String)    
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class DBProfile(Base):
     """Represents a target profile for PII scrub queuing"""
-    __tablename__ = "profiles"
+    __tablename__ = "shield_profiles_v3"
     id = Column(String, primary_key=True, index=True)
     full_name = Column(String)
     email = Column(String)
@@ -58,9 +58,7 @@ class DBProfile(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-# --- SCHEMA PERSISTENCE ---
-# create_all is safe to keep; it only creates tables if they don't exist.
-# drop_all was removed to prevent 500 errors during server restarts.
+# Auto-create tables on startup
 Base.metadata.create_all(bind=engine)
 
 
@@ -69,6 +67,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 # Global CORS Policy
+# FIXED: Using explicit list for methods to prevent "Rejected" errors
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -202,11 +201,8 @@ async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         print(f"CRITICAL DB ERROR DURING MINT: {str(e)}")
-        # Returns exact error to frontend console to help us if it fails again
         raise HTTPException(status_code=500, detail=f"MINT_ERROR: {str(e)}")
 
-
-# --- THE DEFINITIVE 404 RESOLUTION BLOCK ---
 
 @app.post("/financials/profile")
 @app.post("/financials/profile/")
@@ -214,8 +210,6 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
     """Handles raw profile ingestion to bypass strict validation 404s"""
     try:
         data = await request.json()
-        print(f"SCRUB REQUEST RECEIVED FOR: {data.get('email')}") 
-        
         profile_id = f"user_{random.randint(1000, 9999)}"
         fn, mn, ln = data.get("firstName", ""), data.get("middleName", ""), data.get("lastName", "")
         combined_name = f"{fn} {mn} {ln}".replace("  ", " ").strip()
@@ -233,7 +227,6 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         
     except Exception as e:
         db.rollback()
-        print(f"CRITICAL NODE ERROR: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 
@@ -266,13 +259,9 @@ async def regenerate_alias():
     return {"email_alias": STABLE_EMAIL, "phone_alias": STABLE_PHONE}
 
 
-# --- SERVER STARTUP AND PORT BINDING ---
-
 if __name__ == "__main__":
     import uvicorn
-    # Final check for port binding compatibility with Render environment
     target_port = int(os.environ.get("PORT", 10000))
     uvicorn.run("main:app", host="0.0.0.0", port=target_port, reload=False)
 
-
-# --- END OF MAIN.PY CORE ENGINE VERSION 2.1.5 --- # FINAL SYNC
+# --- END OF MAIN.PY FINAL STABLE VERSION ---
