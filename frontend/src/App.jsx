@@ -31,6 +31,10 @@ function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [isEmergencyWipe, setIsEmergencyWipe] = useState(false);
 
+  // NEW: State for Minting Logic
+  const [showMintModal, setShowMintModal] = useState(false);
+  const [newCardLabel, setNewCardLabel] = useState("");
+
   // Target Profile Identity State
   const [targetProfile, setTargetProfile] = useState({
     firstName: "", 
@@ -143,19 +147,25 @@ function App() {
   };
 
   /**
-   * Mints a new virtual shield card via the backend
+   * Mints a new virtual shield card via the backend (FIXED)
    */
   const handleMintCard = async () => {
+    if (!newCardLabel) {
+      triggerToast("ENTER MERCHANT NAME");
+      return;
+    }
     triggerToast("MINTING NEW SHIELD...");
     try {
       const response = await fetch(`${API_BASE_URL}/financials/mint`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label: `Shield Node ${cards.length + 1}` })
+        body: JSON.stringify({ label: newCardLabel })
       });
       if (response.ok) {
         const newCard = await response.json();
         setCards(prev => [newCard, ...prev]);
+        setNewCardLabel("");
+        setShowMintModal(false);
         triggerToast("NODE SECURED");
       }
     } catch (err) {
@@ -287,6 +297,25 @@ function App() {
         ))}
       </div>
 
+      {/* NEW: MERCHANT INPUT MODAL */}
+      {showMintModal && (
+        <div className="modal-overlay" onClick={() => setShowMintModal(false)}>
+          <div className="price-box" onClick={e => e.stopPropagation()} style={{border: '1px solid var(--tiger-blue)'}}>
+            <h3 className="tiger-text">MINT NEW SHIELD</h3>
+            <p className="field-label">ASSOCIATE MERCHANT</p>
+            <input 
+              className="mask-btn" 
+              style={{width: '100%', color: 'white', textAlign: 'center'}} 
+              placeholder="e.g. Amazon, Netflix, Target" 
+              value={newCardLabel}
+              onChange={(e) => setNewCardLabel(e.target.value)}
+            />
+            <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={handleMintCard}>AUTHORIZE NODE</button>
+            <button className="reset-btn" style={{width: '100%'}} onClick={() => setShowMintModal(false)}>CANCEL</button>
+          </div>
+        </div>
+      )}
+
       {/* GLOBAL MODALS */}
       {showLegal && (
         <div className="modal-overlay" onClick={() => setShowLegal(null)}>
@@ -371,7 +400,7 @@ function App() {
                   </div>
                 ))}
               </div>
-              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={handleMintCard}>
+              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowMintModal(true)}>
                 + MINT NEW SHIELD
               </button>
             </div>
