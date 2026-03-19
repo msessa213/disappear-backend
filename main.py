@@ -12,21 +12,17 @@ from typing import List, Optional
 from dotenv import load_dotenv
 
 # --- INITIALIZATION BLOCK ---
-# Load variables from the .env file (Local development only)
 load_dotenv()
 
 # --- DATABASE CONFIGURATION ---
-# Database URL extraction with fallback to Supabase
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
     "postgresql://postgres.chymgteinnczqfjqknan:%40Chase246642@aws-1-us-east-1.pooler.supabase.com:6543/postgres"
 )
 
-# Standardize postgres prefix for SQLAlchemy 1.4+ requirements
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# Create the engine and session local factory for database connectivity
 # FIXED: Added pool_pre_ping=True and sslmode requirement to prevent 500 errors
 engine = create_engine(
     DATABASE_URL, 
@@ -68,20 +64,13 @@ Base.metadata.create_all(bind=engine)
 
 # --- APP CONFIGURATION ---
 
-# Standard FastAPI initialization
 app = FastAPI()
 
-# Global CORS Policy: Explicitly open for Vercel/Localhost connectivity
-# FIXED: Broadened to handle all Vercel sub-deployments and prevent 'Missing Header' errors
-origins = [
-    "https://disappear-frontend-v2.vercel.app",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173"
-]
-
+# Global CORS Policy
+# FIXED: Broadened to prevent 'Missing Header' errors on preflight OPTIONS requests
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Temporarily using wildcard to bypass preflight 'Missing Header' blockage
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -103,7 +92,6 @@ THREAT_TYPES = ["IDENTITY_QUERY_DEFLECTED", "PII_SCRUB_VERIFIED", "NODE_ENCRYPTE
 BROKERS = ["SPOKEO", "ACXIOM", "INTELIUS", "WHITEPAGES", "PEOPLELOOKER"]
 DOMAINS = ["disappear.private", "shield.mask", "cloak.node", "ghost.vault"]
 
-# THE "HARD LOCK" VARIABLES - Persistent aliases during server uptime
 STABLE_EMAIL = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
 STABLE_PHONE = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
 
@@ -131,7 +119,6 @@ async def get_admin_stats(db: Session = Depends(get_db)):
     """Aggregates platform-wide metrics for the Central Command Dashboard"""
     total_users = db.query(DBProfile).count()
     total_cards = db.query(DBCard).count()
-    # Assume a standard threat density of 47 removal requests per profile
     total_removals = total_users * 47 
     
     return {
@@ -147,8 +134,6 @@ async def get_admin_stats(db: Session = Depends(get_db)):
 async def sync():
     """Synchronizes dashboard with live threat intelligence and node map data"""
     now = datetime.now()
-    
-    # SEED STABILITY: Ensure dashboard remains static for 60-second intervals
     minute_seed = now.minute + now.hour
     random.seed(minute_seed)
     
@@ -169,7 +154,6 @@ async def sync():
             "status": "active" if i % 4 != 0 else "intercepting"
         })
 
-    # Restore dynamic randomness for other functions
     random.seed(time.time())
 
     return {
@@ -193,7 +177,6 @@ async def financials(db: Session = Depends(get_db)):
         cards = db.query(DBCard).order_by(DBCard.created_at.desc()).all()
         return {"cards": cards if cards else []}
     except Exception as e:
-        # Prevents 500 error by returning empty list on DB failure
         return {"cards": [], "error": str(e)}
 
 
@@ -233,8 +216,6 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         
         profile_id = f"user_{random.randint(1000, 9999)}"
         fn, mn, ln = data.get("firstName", ""), data.get("middleName", ""), data.get("lastName", "")
-        
-        # Combining names into a single string while cleaning double spaces
         combined_name = f"{fn} {mn} {ln}".replace("  ", " ").strip()
         
         new_profile = DBProfile(
@@ -287,7 +268,6 @@ async def regenerate_alias():
 
 if __name__ == "__main__":
     import uvicorn
-    # Final check for port binding compatibility with Render environment
     target_port = int(os.environ.get("PORT", 10000))
     uvicorn.run("main:app", host="0.0.0.0", port=target_port, reload=False)
 

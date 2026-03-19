@@ -308,9 +308,11 @@ function App() {
             <h3 className="tiger-text">MINT NEW SHIELD</h3>
             <p className="field-label">ASSOCIATE MERCHANT</p>
             <input 
+              id="merchant_name"
+              name="merchant_name"
               className="mask-btn" 
               style={{width: '100%', color: 'white', textAlign: 'center'}} 
-              placeholder="e.g. hsn, Amazon, Target" 
+              placeholder="e.g. Amazon, Netflix, Target" 
               value={newCardLabel}
               onChange={(e) => setNewCardLabel(e.target.value)}
             />
@@ -453,7 +455,13 @@ function App() {
                 <div className="price-box">
                   <h3 className="tiger-text">MFA CHALLENGE</h3>
                   <p style={{fontSize: '0.7rem', color: '#94A3B8', marginBottom: '20px'}}>ENTER SECURE ACCESS TOKEN</p>
-                  <input className="mask-btn" style={{width: '100%', textAlign: 'center', fontSize: '1.2rem', letterSpacing: '5px'}} placeholder="******" />
+                  <input 
+                    id="mfa_code"
+                    name="mfa_code"
+                    className="mask-btn" 
+                    style={{width: '100%', textAlign: 'center', fontSize: '1.2rem', letterSpacing: '5px'}} 
+                    placeholder="******" 
+                  />
                   <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={verify2FA}>VERIFY</button>
                   <button className="reset-btn" style={{width: '100%'}} onClick={() => setShow2FA(false)}>CANCEL</button>
                 </div>
@@ -480,12 +488,12 @@ function App() {
                 <div className="price-box" style={{maxWidth: '450px', width: '100%', margin: '0 auto'}}>
                   <h3 className="tiger-text">TARGET PROFILE DATA</h3>
                   <div style={{display: 'flex', flexDirection: 'column', gap: '15px', textAlign: 'left'}}>
-                      <input className="mask-btn" placeholder="First Name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
-                      <input className="mask-btn" placeholder="Middle Name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
-                      <input className="mask-btn" placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
-                      <input className="mask-btn" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
-                      <input className="mask-btn" placeholder="Home Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
-                      <input className="mask-btn" type="date" value={targetProfile.dob} onChange={(e) => setTargetProfile({...targetProfile, dob: e.target.value})} />
+                      <input id="first_name" name="first_name" className="mask-btn" placeholder="First Name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
+                      <input id="middle_name" name="middle_name" className="mask-btn" placeholder="Middle Name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
+                      <input id="last_name" name="last_name" className="mask-btn" placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
+                      <input id="email" name="email" className="mask-btn" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
+                      <input id="address" name="address" className="mask-btn" placeholder="Home Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
+                      <input id="dob" name="dob" className="mask-btn" type="date" value={targetProfile.dob} onChange={(e) => setTargetProfile({...targetProfile, dob: e.target.value})} />
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '15px' }}>
                         <input type="checkbox" checked={targetProfile.termsAccepted} onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})} />
                         <label style={{ fontSize: '0.65rem', color: '#94A3B8' }}>Authorize Full PII Scrub and Burn</label>
