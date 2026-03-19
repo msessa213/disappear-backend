@@ -58,7 +58,9 @@ class DBProfile(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-# Auto-create tables on startup to maintain environment parity
+# --- SCHEMA REFRESH BLOCK ---
+# This forces the DB to sync with the code and resolves the 500 error
+Base.metadata.drop_all(bind=engine) 
 Base.metadata.create_all(bind=engine)
 
 
@@ -67,7 +69,6 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 # Global CORS Policy
-# FIXED: Broadened to prevent 'Missing Header' errors on preflight OPTIONS requests
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -272,4 +273,4 @@ if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=target_port, reload=False)
 
 
-# --- END OF MAIN.PY CORE ENGINE VERSION 2.1.5 --- # Refresh Deploy 1
+# --- END OF MAIN.PY CORE ENGINE VERSION 2.1.5 --- # Refresh Deploy 2
