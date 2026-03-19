@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
-// --- FIXED IMPORTS ---
+// --- FIXED IMPORTS (Using curly braces for Named Exports) ---
 import { Manifesto } from './Manifesto';
 import { Privacy } from './Privacy';
 import { Terms } from './Terms';
@@ -11,6 +11,7 @@ import AdminDashboard from './AdminDashboard';
 import './App.css';
 
 // --- CONFIGURATION ---
+// Ensure this matches your Render service URL exactly
 const API_BASE_URL = "https://disappear-backend.onrender.com"; 
 
 function App() {
@@ -55,6 +56,7 @@ function App() {
   // Pre-fetch health check to wake up Render node
   useEffect(() => {
     if (showCheckout) {
+      // Poking the root endpoint to wake the service from sleep
       fetch(`${API_BASE_URL}/`).catch(() => console.log("Handshake initialized..."));
     }
   }, [showCheckout]);
@@ -206,7 +208,7 @@ function App() {
         clearTimeout(timeoutId);
 
         if (response.ok) {
-            // FIX: Explicitly turn off pricing/checkout when shield activates
+            // THE FIX: Explicitly clear the pricing/checkout views before showing shield
             setShowCheckout(false); 
             setShowPricing(false);
             setIsScanning(false);
@@ -229,7 +231,6 @@ function App() {
 
   return (
     <div className={`app-container ${isEmergencyWipe ? 'wipe-shake' : ''}`}>
-      {/* GLOBAL HUD ELEMENTS */}
       <div className="progress-bar-container">
         <div className="progress-bar-fill" style={{ width: `${progress}%` }}></div>
         <span className="secure-connection-text">
@@ -247,7 +248,7 @@ function App() {
         ))}
       </div>
 
-      {/* MODAL OVERLAYS */}
+      {/* MODALS */}
       {showLegal && (
         <div className="modal-overlay" onClick={() => setShowLegal(null)}>
           <div className="info-modal-content" onClick={e => e.stopPropagation()}>
@@ -268,16 +269,13 @@ function App() {
         </div>
       )}
 
-      {/* MAIN VIEW LOGIC - FIXING OVERLAP */}
-      <main className="main-content-area">
-        
-        {/* VIEW 1: ACTIVE DASHBOARD (High Priority) */}
+      {/* --- MAIN NAVIGATION VIEW LOGIC (The Ternary Fix) --- */}
+      <main>
         {showShield ? (
+          /* SCREEN: MAIN SHIELD DASHBOARD (Now high-priority, prevents Pricing from showing) */
           <div className="shield-container fade-in">
             <h2 className="shield-text">🛡️ SHIELD ACTIVE</h2>
             <div className="tools-grid">
-              
-              {/* Tool: Email Masking */}
               <div className="masking-tool">
                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                   <p className="tool-label">ENCRYPTED IDENTITY EMAIL</p>
@@ -294,7 +292,6 @@ function App() {
                 </div>
               </div>
 
-              {/* Tool: Phone Masking */}
               <div className="masking-tool">
                 <p className="tool-label">ENCRYPTED PHONE ALIAS</p>
                 <div className="masked-display" onClick={() => {navigator.clipboard.writeText(maskedPhone); triggerToast("COPIED")}}>
@@ -302,7 +299,6 @@ function App() {
                 </div>
               </div>
 
-              {/* Tool: Virtual Cards */}
               <div className="masking-tool full-width-tool">
                 <p className="tool-label" style={{paddingLeft: '30px'}}>VIRTUAL SHIELD CARDS</p>
                 <div className="card-manager-list" style={{padding: '0 30px'}}>
@@ -329,7 +325,6 @@ function App() {
                 </div>
               </div>
 
-              {/* Tool: Security Audit */}
               <div className="masking-tool">
                 <p className="tool-label">LIVE SECURITY AUDIT</p>
                 <div className="audit-list">
@@ -350,10 +345,9 @@ function App() {
             </div>
           </div>
         ) : (
-          /* VIEW 2: SALES & ONBOARDING (Only shows if showShield is false) */
+          /* SECONDARY VIEW (Onboarding/Sales Flow) */
           <div className="onboarding-flow">
-            
-            {/* SCREEN: HOME/LANDING */}
+            {/* SCREEN: HOME */}
             {!showPricing && !showCheckout && !isScanning && !show2FA && (
               <div className="fade-in" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '60vh', justifyContent: 'center'}}>
                 <h1 className="brand-name">DISAPPEAR</h1>
@@ -376,6 +370,7 @@ function App() {
                   <p style={{fontSize: '0.7rem', color: '#94A3B8', marginBottom: '20px'}}>ENTER SECURE ACCESS TOKEN</p>
                   <input 
                     id="mfa_input"
+                    name="mfa_input"
                     className="mask-btn" 
                     style={{width: '100%', textAlign: 'center', fontSize: '1.2rem', letterSpacing: '5px'}} 
                     placeholder="******" 
@@ -386,7 +381,7 @@ function App() {
               </div>
             )}
 
-            {/* SCREEN: PRICING (THIS WAS THE OVERLAPPING COMPONENT) */}
+            {/* SCREEN: PRICING */}
             {showPricing && !showCheckout && !isScanning && (
               <div className="pricing-card fade-in">
                 <div className="billing-toggle">
@@ -411,40 +406,66 @@ function App() {
                       
                       <div className="accessible-field">
                         <label htmlFor="firstName" className="field-label">First Name</label>
-                        <input id="firstName" className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="First Name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
+                        <input id="firstName" name="firstName" className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="First Name" autoComplete="given-name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
+                      </div>
+
+                      <div className="accessible-field">
+                        <label htmlFor="middleName" className="field-label">Middle Name</label>
+                        <input id="middleName" name="middleName" className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Middle Name (Optional)" autoComplete="additional-name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
                       </div>
 
                       <div className="accessible-field">
                         <label htmlFor="lastName" className="field-label">Last Name</label>
-                        <input id="lastName" className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
+                        <input id="lastName" name="lastName" className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Last Name" autoComplete="family-name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
                       </div>
                       
                       <div className="accessible-field">
                         <label htmlFor="email" className="field-label">Email Address</label>
-                        <input id="email" className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Primary Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
+                        <input id="email" name="email" className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Primary Email Address" autoComplete="email" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
                       </div>
                       
                       <div className="accessible-field">
                         <label htmlFor="address" className="field-label">Home Address</label>
-                        <input id="address" className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Home Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
+                        <input 
+                          id="address"
+                          name="address"
+                          className="mask-btn" 
+                          style={{width: '100%', color: 'white'}} 
+                          placeholder="Home Address (Verified)" 
+                          autoComplete="street-address"
+                          value={targetProfile.address} 
+                          onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} 
+                        />
                       </div>
 
                       <div className="accessible-field">
                           <label htmlFor="dob" className="field-label">Date of Birth</label>
-                          <input id="dob" className="mask-btn" style={{width: '100%', color: 'white'}} type="date" value={targetProfile.dob} onChange={(e) => setTargetProfile({...targetProfile, dob: e.target.value})} />
+                          <input id="dob" name="dob" className="mask-btn" style={{width: '100%', color: 'white'}} type="date" value={targetProfile.dob} onChange={(e) => setTargetProfile({...targetProfile, dob: e.target.value})} />
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '15px' }}>
-                        <input type="checkbox" id="terms-check" checked={targetProfile.termsAccepted} onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})} />
-                        <label htmlFor="terms-check" style={{ fontSize: '0.65rem', color: '#94A3B8' }}>
-                          I agree to the <span className="legal-link" onClick={() => setShowLegal('terms')}>Terms</span> and authorize the purge.
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '15px', padding: '0 10px' }}>
+                        <input 
+                          type="checkbox" 
+                          id="terms-check" 
+                          name="terms-check"
+                          style={{ marginTop: '4px' }}
+                          checked={targetProfile.termsAccepted}
+                          onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})}
+                        />
+                        <label htmlFor="terms-check" style={{ fontSize: '0.65rem', color: '#94A3B8', textAlign: 'left', lineHeight: '1.4' }}>
+                          I agree to the <span className="legal-link" onClick={() => setShowLegal('terms')}>Terms of Service</span> and understand that burning a card does not absolve me of existing financial obligations.
                         </label>
                       </div>
                   </div>
 
                   <button 
                     className="main-button" 
-                    style={{ width: '100%', marginTop: '25px', opacity: targetProfile.termsAccepted ? 1 : 0.4 }} 
+                    style={{ 
+                      width: '100%', 
+                      marginTop: '25px', 
+                      opacity: targetProfile.termsAccepted ? 1 : 0.4,
+                      cursor: targetProfile.termsAccepted ? 'pointer' : 'not-allowed' 
+                    }} 
                     onClick={handleFinalPurchase}
                     disabled={!targetProfile.termsAccepted}
                   >
@@ -462,6 +483,9 @@ function App() {
                   <div className="terminal-line">{'>> INITIATING HANDSHAKE...'}</div>
                   <div className="terminal-line">{'>> BYPASSING DATA BROKER FIREWALLS...'}</div>
                   <div className="terminal-line">{'>> UPLOADING PURGE REQUESTS...'}</div>
+                  <div className="terminal-line">{'>> DECRYPTING BROKER RESPONSE NODES...'}</div>
+                  <div className="terminal-line">{'>> VERIFYING IDENTITY FRAGMENTS...'}</div>
+                  <div className="terminal-line">{'>> ESTABLISHING SECURE ALIAS TUNNEL...'}</div>
                 </div>
                 <h2 className="shield-text" style={{marginTop: '20px'}}>SCRUBBING NODES...</h2>
               </div>
