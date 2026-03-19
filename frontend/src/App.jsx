@@ -31,7 +31,7 @@ function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [isEmergencyWipe, setIsEmergencyWipe] = useState(false);
 
-  // NEW: State for Minting Logic
+  // NEW: MINTING STATES
   const [showMintModal, setShowMintModal] = useState(false);
   const [newCardLabel, setNewCardLabel] = useState("");
 
@@ -151,8 +151,8 @@ function App() {
    */
   const handleMintCard = async () => {
     if (!newCardLabel) {
-      triggerToast("ENTER MERCHANT NAME");
-      return;
+        triggerToast("ENTER MERCHANT NAME");
+        return;
     }
     triggerToast("MINTING NEW SHIELD...");
     try {
@@ -297,7 +297,7 @@ function App() {
         ))}
       </div>
 
-      {/* NEW: MERCHANT INPUT MODAL */}
+      {/* MINTING MERCHANT MODAL */}
       {showMintModal && (
         <div className="modal-overlay" onClick={() => setShowMintModal(false)}>
           <div className="price-box" onClick={e => e.stopPropagation()} style={{border: '1px solid var(--tiger-blue)'}}>
@@ -306,7 +306,7 @@ function App() {
             <input 
               className="mask-btn" 
               style={{width: '100%', color: 'white', textAlign: 'center'}} 
-              placeholder="e.g. Amazon, Netflix, Target" 
+              placeholder="Amazon, Netflix, Apple, etc." 
               value={newCardLabel}
               onChange={(e) => setNewCardLabel(e.target.value)}
             />
