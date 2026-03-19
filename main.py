@@ -201,7 +201,7 @@ async def financials(db: Session = Depends(get_db)):
 async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
     """Initiates a new virtual card minting process on the secure node"""
     try:
-        card_id = f"vcc_{random.randint(1000, 9999)}"
+        card_id = f"vcc_{random.randint(100000, 999999)}"
         
         new_card = DBCard(
             id=card_id,
