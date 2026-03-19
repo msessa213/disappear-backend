@@ -91,6 +91,17 @@ body, html, #root {
   color: white;
   border-radius: 8px;
   padding: 0 15px;
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+
+.price-box input:focus {
+  border-color: var(--tiger-blue);
+}
+
+/* DOB INPUT FIX: Ensure placeholder is visible and consistent */
+.price-box input::placeholder {
+  color: #475569;
 }
 
 /* 3. COMPLIANCE CHECKBOX STYLING */
@@ -114,8 +125,8 @@ input[type="checkbox"] {
 
 /* 4. DASHBOARD STABILITY - FIXED FOR VERTICAL STACKING */
 .tools-grid {
-  display: flex; /* Changed from grid to flex */
-  flex-direction: column; /* Forces everything to stack on top of each other */
+  display: flex; 
+  flex-direction: column; 
   gap: 20px;
   width: 100%;
   max-width: 800px;
@@ -139,7 +150,6 @@ input[type="checkbox"] {
   transition: border 0.3s ease;
 }
 
-/* Added Styling for the Cycle Button to match core theme */
 .filter-btn.active {
   background-color: var(--tiger-blue);
   color: white;
@@ -163,13 +173,13 @@ input[type="checkbox"] {
   cursor: pointer;
   transition: 0.3s;
   position: relative;
-  word-break: break-all; /* Prevents long emails from breaking mobile */
+  word-break: break-all;
   text-align: center;
 }
 
 .audit-list {
   height: 220px;
-  overflow-y: auto; /* Changed to auto so you can scroll the logs */
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
@@ -278,7 +288,7 @@ input[type="checkbox"] {
 /* 7. BRANDING & UI */
 .brand-name {
   color: var(--tiger-blue);
-  font-size: clamp(2.5rem, 8vw, 4rem); /* Responsive Logo */
+  font-size: clamp(2.5rem, 8vw, 4rem); 
   font-weight: 200;
   letter-spacing: clamp(5px, 2vw, 15px);
   text-transform: uppercase;
@@ -385,14 +395,13 @@ input[type="checkbox"] {
     padding: 60px 15px 120px 15px;
   }
 
-  /* Force home buttons to stack */
   div[style*="display: flex"][style*="gap: 20px"] {
     flex-direction: column !important;
     width: 100% !important;
   }
 
   .tools-grid {
-    flex-direction: column !important; /* Overrides any grid settings */
+    flex-direction: column !important;
   }
 
   .full-width-tool {
@@ -407,7 +416,6 @@ input[type="checkbox"] {
     margin-top: 20px;
   }
 
-  /* Make Toast messages highly visible on mobile top */
   .status-message.toast-fixed {
     width: 90%;
     top: 10px;

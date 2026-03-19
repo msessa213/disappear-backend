@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
-// --- FIXED IMPORTS (Using curly braces for Named Exports) ---
+// --- FIXED IMPORTS ---
 import { Manifesto } from './Manifesto';
 import { Privacy } from './Privacy';
 import { Terms } from './Terms';
@@ -11,8 +11,9 @@ import AdminDashboard from './AdminDashboard';
 import './App.css';
 
 /**
- * DISAPPEAR CORE ENGINE v2.1.5
+ * DISAPPEAR CORE ENGINE v2.1.6
  * Privacy-as-a-Service Frontend
+ * Fixes: Masked DOB Input, Persistence Sync, UX Polish
  */
 
 const API_BASE_URL = "https://disappear-backend.onrender.com"; 
@@ -26,16 +27,13 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [notifications, setNotifications] = useState([]); 
   
-  // States for Modals and Administrative Overlays
   const [showLegal, setShowLegal] = useState(null); 
   const [showAdmin, setShowAdmin] = useState(false);
   const [isEmergencyWipe, setIsEmergencyWipe] = useState(false);
 
-  // NEW: MINTING STATES
   const [showMintModal, setShowMintModal] = useState(false);
   const [newCardLabel, setNewCardLabel] = useState("");
 
-  // Target Profile Identity State
   const [targetProfile, setTargetProfile] = useState({
     firstName: "", 
     middleName: "", 
@@ -46,7 +44,6 @@ function App() {
     termsAccepted: false
   });
 
-  // Dashboard Data Persistence States
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [maskedEmail, setMaskedEmail] = useState("****************@mask.com");
   const [maskedPhone, setMaskedPhone] = useState("+1 (***) ***-****"); 
@@ -56,26 +53,32 @@ function App() {
   const [progress, setProgress] = useState(15);
   const [showToast, setShowToast] = useState("");
 
-  /**
-   * Triggers a global status notification toast
-   * @param {string} msg - The message to display
-   */
   const triggerToast = (msg) => { 
     setShowToast(msg); 
     setTimeout(() => setShowToast(""), 3000); 
   };
 
-  // Pre-fetch health check to wake up Render node from sleep
+  // PERSISTENCE SYNC: Ensures old data from other devices/sessions doesn't bleed in
+  useEffect(() => {
+    const session = localStorage.getItem("disappear_session");
+    if (session === "active") {
+        setShowShield(true);
+        setProgress(100);
+    } else {
+        // Force reset state if no session found
+        setTargetProfile({
+            firstName: "", middleName: "", lastName: "", 
+            email: "", dob: "", address: "", termsAccepted: false
+        });
+    }
+  }, []);
+
   useEffect(() => {
     if (showCheckout) {
-      console.log(">> Handshake initialized with scrubbing nodes...");
-      fetch(`${API_BASE_URL}/`).catch(() => console.log("Wake-up pulse sent..."));
+      fetch(`${API_BASE_URL}/`).catch(() => {});
     }
   }, [showCheckout]);
 
-  /**
-   * Pushes a deflected threat notification to the stack
-   */
   const pushNotification = useCallback((broker) => {
     if (!broker) return;
     const id = Date.now();
@@ -85,10 +88,6 @@ function App() {
     }, 4000);
   }, []);
 
-  /**
-   * Core Data Synchronization Hook
-   * Fetches latest audit logs, aliases, and virtual cards
-   */
   const syncDefenseData = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/dashboard/sync`);
@@ -112,9 +111,7 @@ function App() {
       const finRes = await fetch(`${API_BASE_URL}/financials/data`);
       const finData = await finRes.json();
       setCards(finData.cards || []);
-    } catch (err) { 
-      console.log("Heartbeat active - awaiting connection..."); 
-    }
+    } catch (err) { }
   }, [pushNotification]);
 
   useEffect(() => {
@@ -128,9 +125,6 @@ function App() {
     return () => clearInterval(interval);
   }, [showShield, syncDefenseData]);
 
-  /**
-   * Handles total platform purge (Emergency Burn)
-   */
   const handleEmergencyBurn = async () => {
     setIsEmergencyWipe(true);
     triggerToast("INITIATING TOTAL PURGE...");
@@ -146,9 +140,6 @@ function App() {
     }, 2000);
   };
 
-  /**
-   * Mints a new virtual shield card via the backend (FIXED)
-   */
   const handleMintCard = async () => {
     if (!newCardLabel) {
         triggerToast("ENTER MERCHANT NAME");
@@ -163,7 +154,6 @@ function App() {
       });
       if (response.ok) {
         const newCard = await response.json();
-        // Immediately add new card to top of list and close modal
         setCards(prev => [newCard, ...prev]);
         setNewCardLabel("");
         setShowMintModal(false);
@@ -176,9 +166,6 @@ function App() {
     }
   };
 
-  /**
-   * Destroys a single virtual card node
-   */
   const handleKillCard = async (id) => {
     triggerToast("TERMINATING NODE...");
     try {
@@ -190,9 +177,6 @@ function App() {
     }
   };
 
-  /**
-   * Cycles identity aliases via backend regeneration
-   */
   const handleCycleAliases = async () => {
     triggerToast("CYCLING IDENTITY NODES...");
     try {
@@ -247,22 +231,14 @@ function App() {
         triggerToast("REQUIRED FIELDS MISSING");
         return;
     }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
     setIsScanning(true);
     triggerToast("CONNECTING TO SCRUB NODES...");
-
     try {
         const response = await fetch(`${API_BASE_URL}/financials/profile`, {
             method: "POST", 
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(targetProfile),
-            signal: controller.signal
+            body: JSON.stringify(targetProfile)
         });
-
-        clearTimeout(timeoutId);
-
         if (response.ok) {
             setShowCheckout(false); 
             setShowPricing(false);
@@ -270,10 +246,10 @@ function App() {
             setShowShield(true); 
             setProgress(100);
             triggerToast("IDENTITY PURGE INITIATED");
-            syncDefenseData(); // Pull data immediately
+            syncDefenseData();
         } else { 
             setIsScanning(false);
-            triggerToast(`NODE ERROR: ${response.status}`); 
+            triggerToast("NODE ERROR"); 
         }
     } catch (err) { 
         setIsScanning(false);
@@ -281,9 +257,21 @@ function App() {
     }
   };
 
+  // UX FIX: MASKED NUMERIC DOB INPUT (MM/DD/YYYY)
+  const handleNumericDateInput = (e) => {
+    let val = e.target.value.replace(/\D/g, ''); // Numeric only
+    if (val.length > 8) val = val.slice(0, 8);
+    let formatted = val;
+    if (val.length > 4) {
+        formatted = `${val.slice(0, 2)}/${val.slice(2, 4)}/${val.slice(4)}`;
+    } else if (val.length > 2) {
+        formatted = `${val.slice(0, 2)}/${val.slice(2)}`;
+    }
+    setTargetProfile({...targetProfile, dob: formatted});
+  };
+
   return (
     <div className={`app-container ${isEmergencyWipe ? 'wipe-shake' : ''}`}>
-      {/* HUD OVERLAY: PROGRESS AND STATUS */}
       <div className="progress-bar-container">
         <div className="progress-bar-fill" style={{ width: `${progress}%` }}></div>
         <span className="secure-connection-text">
@@ -301,7 +289,6 @@ function App() {
         ))}
       </div>
 
-      {/* MINTING MERCHANT MODAL */}
       {showMintModal && (
         <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => setShowMintModal(false)}>
           <div className="price-box" onClick={e => e.stopPropagation()} style={{border: '1px solid var(--tiger-blue)'}}>
@@ -322,7 +309,6 @@ function App() {
         </div>
       )}
 
-      {/* GLOBAL MODALS */}
       {showLegal && (
         <div className="modal-overlay" onClick={() => setShowLegal(null)}>
           <div className="info-modal-content" onClick={e => e.stopPropagation()}>
@@ -343,48 +329,27 @@ function App() {
         </div>
       )}
 
-      {/* --- MAIN NAVIGATION VIEW --- */}
       <main>
         {showShield ? (
-          /* SCREEN: MAIN SHIELD DASHBOARD (VERTICAL STACK FIX) */
           <div className="shield-container fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
             <h2 className="shield-text">🛡️ SHIELD ACTIVE</h2>
             
-            {/* 1. EMAIL ALIAS */}
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column' }}>
               <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 5px'}}>
                 <p className="tool-label">ENCRYPTED IDENTITY EMAIL</p>
-                <button 
-                   className="main-button" 
-                   style={{ fontSize: '0.65rem', padding: '8px 15px', width: 'auto', minWidth: '110px' }} 
-                   onClick={handleCycleAliases}
-                >
-                  CYCLE ALIAS
-                </button>
+                <button className="main-button" style={{ fontSize: '0.65rem', padding: '8px 15px', width: 'auto', minWidth: '110px' }} onClick={handleCycleAliases}>CYCLE ALIAS</button>
               </div>
-              <div className="masked-display" onClick={() => {navigator.clipboard.writeText(maskedEmail); triggerToast("COPIED")}}>
-                {maskedEmail}
-              </div>
+              <div className="masked-display" onClick={() => {navigator.clipboard.writeText(maskedEmail); triggerToast("COPIED")}}>{maskedEmail}</div>
             </div>
 
-            {/* 2. PHONE ALIAS (NEW CYCLE BUTTON ADDED) */}
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column' }}>
               <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 5px'}}>
                 <p className="tool-label">ENCRYPTED PHONE ALIAS</p>
-                <button 
-                  className="main-button" 
-                  style={{ fontSize: '0.65rem', padding: '8px 15px', width: 'auto', minWidth: '110px' }} 
-                  onClick={handleCycleAliases}
-                >
-                  CYCLE ALIAS
-                </button>
+                <button className="main-button" style={{ fontSize: '0.65rem', padding: '8px 15px', width: 'auto', minWidth: '110px' }} onClick={handleCycleAliases}>CYCLE ALIAS</button>
               </div>
-              <div className="masked-display" onClick={() => {navigator.clipboard.writeText(maskedPhone); triggerToast("COPIED")}}>
-                {maskedPhone}
-              </div>
+              <div className="masked-display" onClick={() => {navigator.clipboard.writeText(maskedPhone); triggerToast("COPIED")}}>{maskedPhone}</div>
             </div>
 
-            {/* 3. VIRTUAL SHIELD CARDS (Vertical Stack) */}
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '20px' }}>VIRTUAL SHIELD CARDS</p>
               <div className="card-manager-list" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -395,23 +360,18 @@ function App() {
                          <span className="card-nickname" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>{c.label.toUpperCase()}</span>
                          <button className="kill-text-bold" onClick={() => handleKillCard(c.id)}>TERMINATE</button>
                       </div>
-                      <code className="card-digits" onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("COPIED")}}>
-                        {c.number}
-                      </code>
+                      <code className="card-digits" onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("COPIED")}}> {c.number} </code>
                       <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #111', paddingTop: '10px', marginTop: '10px'}}>
-                         <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>EXP</span><strong style={{fontSize: '0.9rem'}}>{c.expiry || '08/28'}</strong></div>
-                         <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>CVV</span><strong style={{fontSize: '0.9rem'}}>{c.cvv || '442'}</strong></div>
+                         <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>EXP</span><strong>{c.expiry || '08/28'}</strong></div>
+                         <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>CVV</span><strong>{c.cvv || '442'}</strong></div>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowMintModal(true)}>
-                + MINT NEW SHIELD
-              </button>
+              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowMintModal(true)}> + MINT NEW SHIELD </button>
             </div>
 
-            {/* 4. SECURITY AUDIT */}
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
               <p className="tool-label" style={{ textAlign: 'center' }}>LIVE SECURITY AUDIT</p>
               <div className="audit-list" style={{ maxHeight: '200px', overflowY: 'auto' }}>
@@ -422,19 +382,15 @@ function App() {
                   </div>
                 ))}
               </div>
-              <button className="pdf-btn" style={{ width: '100%', marginTop: '15px' }} onClick={handleDownloadPDF} disabled={isGenerating}>
-                GENERATE AUDIT PDF
-              </button>
+              <button className="pdf-btn" style={{ width: '100%', marginTop: '15px' }} onClick={handleDownloadPDF} disabled={isGenerating}>GENERATE AUDIT PDF</button>
             </div>
 
-            {/* LOGOUT AND BURN */}
             <div style={{display: 'flex', flexDirection: 'column', gap: '15px', width: '100%', maxWidth: '400px', marginTop: '40px'}}>
               <button className="reset-btn" onClick={() => {localStorage.clear(); window.location.reload();}}>LOGOUT SECURELY</button>
               <button className="burn-all-btn" onClick={() => { if(window.confirm("CONFIRM TOTAL PURGE?")) handleEmergencyBurn(); }}>EMERGENCY BURN</button>
             </div>
           </div>
         ) : (
-          /* SECONDARY VIEW (Onboarding/Sales Flow) */
           <div className="onboarding-flow">
             {!showPricing && !showCheckout && !isScanning && !show2FA && (
               <div className="fade-in" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '60vh', justifyContent: 'center'}}>
@@ -454,14 +410,7 @@ function App() {
               <div className="pricing-card fade-in">
                 <div className="price-box">
                   <h3 className="tiger-text">MFA CHALLENGE</h3>
-                  <p style={{fontSize: '0.7rem', color: '#94A3B8', marginBottom: '20px'}}>ENTER SECURE ACCESS TOKEN</p>
-                  <input 
-                    id="mfa_code"
-                    name="mfa_code"
-                    className="mask-btn" 
-                    style={{width: '100%', textAlign: 'center', fontSize: '1.2rem', letterSpacing: '5px'}} 
-                    placeholder="******" 
-                  />
+                  <input id="mfa_code" name="mfa_code" className="mask-btn" style={{width: '100%', textAlign: 'center', fontSize: '1.2rem', letterSpacing: '5px'}} placeholder="******" />
                   <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={verify2FA}>VERIFY</button>
                   <button className="reset-btn" style={{width: '100%'}} onClick={() => setShow2FA(false)}>CANCEL</button>
                 </div>
@@ -493,7 +442,17 @@ function App() {
                       <input id="last_name" name="last_name" className="mask-btn" placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
                       <input id="email" name="email" className="mask-btn" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
                       <input id="address" name="address" className="mask-btn" placeholder="Home Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
-                      <input id="dob" name="dob" className="mask-btn" type="date" value={targetProfile.dob} onChange={(e) => setTargetProfile({...targetProfile, dob: e.target.value})} />
+                      
+                      {/* UX FIX: DATE OF BIRTH MASKED TEXT INPUT */}
+                      <input 
+                        id="dob" name="dob" className="mask-btn" 
+                        type="text" 
+                        inputMode="numeric"
+                        placeholder="Date of Birth: MM/DD/YYYY" 
+                        value={targetProfile.dob} 
+                        onChange={handleNumericDateInput} 
+                      />
+
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '15px' }}>
                         <input type="checkbox" checked={targetProfile.termsAccepted} onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})} />
                         <label style={{ fontSize: '0.65rem', color: '#94A3B8' }}>Authorize Full PII Scrub and Burn</label>
@@ -511,11 +470,8 @@ function App() {
                   <div className="terminal-line">{'>> INITIATING HANDSHAKE...'}</div>
                   <div className="terminal-line">{'>> BYPASSING DATA BROKER FIREWALLS...'}</div>
                   <div className="terminal-line">{'>> UPLOADING PURGE REQUESTS...'}</div>
-                  <div className="terminal-line">{'>> DECRYPTING BROKER RESPONSE NODES...'}</div>
-                  <div className="terminal-line">{'>> VERIFYING IDENTITY FRAGMENTS...'}</div>
                   <div className="terminal-line">{'>> ESTABLISHING SECURE ALIAS TUNNEL...'}</div>
                   <div className="terminal-line">{'>> ENCRYPTING VAULT ASSETS...'}</div>
-                  <div className="terminal-line">{'>> SHIELD ENGAGEMENT CONFIRMED...'}</div>
                 </div>
                 <h2 className="shield-text" style={{marginTop: '20px'}}>SCRUBBING NODES...</h2>
               </div>
@@ -524,14 +480,12 @@ function App() {
         )}
       </main>
 
-      {/* PERSISTENT GLOBAL FOOTER */}
       <footer className="home-footer">
           <span onClick={() => setShowLegal('privacy')}>PRIVACY POLICY</span>
           <span className="footer-divider">|</span>
           <span onClick={() => setShowLegal('terms')}>TERMS OF SERVICE</span>
           <span className="admin-trigger" onClick={() => setShowAdmin(true)}>.</span>
       </footer>
-
     </div>
   );
 }
