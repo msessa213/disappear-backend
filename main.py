@@ -58,9 +58,9 @@ class DBProfile(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-# --- SCHEMA REFRESH BLOCK ---
-# This forces the DB to sync with the code and resolves the 500 error
-Base.metadata.drop_all(bind=engine) 
+# --- SCHEMA PERSISTENCE ---
+# create_all is safe to keep; it only creates tables if they don't exist.
+# drop_all was removed to prevent 500 errors during server restarts.
 Base.metadata.create_all(bind=engine)
 
 
@@ -202,7 +202,8 @@ async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         print(f"CRITICAL DB ERROR DURING MINT: {str(e)}")
-        raise HTTPException(status_code=500, detail="Node Database Failure")
+        # Returns exact error to frontend console to help us if it fails again
+        raise HTTPException(status_code=500, detail=f"MINT_ERROR: {str(e)}")
 
 
 # --- THE DEFINITIVE 404 RESOLUTION BLOCK ---
@@ -269,8 +270,9 @@ async def regenerate_alias():
 
 if __name__ == "__main__":
     import uvicorn
+    # Final check for port binding compatibility with Render environment
     target_port = int(os.environ.get("PORT", 10000))
     uvicorn.run("main:app", host="0.0.0.0", port=target_port, reload=False)
 
 
-# --- END OF MAIN.PY CORE ENGINE VERSION 2.1.5 --- # Refresh Deploy 2
+# --- END OF MAIN.PY CORE ENGINE VERSION 2.1.5 --- # FINAL SYNC
