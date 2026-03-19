@@ -147,7 +147,7 @@ function App() {
   };
 
   /**
-   * Mints a new virtual shield card via the backend
+   * Mints a new virtual shield card via the backend (FIXED)
    */
   const handleMintCard = async () => {
     if (!newCardLabel) {
@@ -163,13 +163,16 @@ function App() {
       });
       if (response.ok) {
         const newCard = await response.json();
+        // Immediately add new card to top of list and close modal
         setCards(prev => [newCard, ...prev]);
         setNewCardLabel("");
         setShowMintModal(false);
         triggerToast("NODE SECURED");
+      } else {
+        triggerToast("MINT REJECTED BY SERVER");
       }
     } catch (err) {
-      triggerToast("MINTING FAILED");
+      triggerToast("CONNECTION ERROR");
     }
   };
 
@@ -267,6 +270,7 @@ function App() {
             setShowShield(true); 
             setProgress(100);
             triggerToast("IDENTITY PURGE INITIATED");
+            syncDefenseData(); // Pull data immediately
         } else { 
             setIsScanning(false);
             triggerToast(`NODE ERROR: ${response.status}`); 
@@ -306,7 +310,7 @@ function App() {
             <input 
               className="mask-btn" 
               style={{width: '100%', color: 'white', textAlign: 'center'}} 
-              placeholder="Amazon, Netflix, Apple, etc." 
+              placeholder="e.g. hsn, Amazon, Target" 
               value={newCardLabel}
               onChange={(e) => setNewCardLabel(e.target.value)}
             />
