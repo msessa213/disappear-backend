@@ -27,11 +27,12 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 # Create the engine and session local factory for database connectivity
-# FIXED: Added pool_pre_ping=True to prevent 500 errors during DB idle states
+# FIXED: Added pool_pre_ping=True and sslmode requirement to prevent 500 errors
 engine = create_engine(
     DATABASE_URL, 
     pool_pre_ping=True,
-    pool_recycle=300
+    pool_recycle=300,
+    connect_args={"sslmode": "require"}
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -199,19 +200,24 @@ async def financials(db: Session = Depends(get_db)):
 @app.post("/financials/mint")
 async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
     """Initiates a new virtual card minting process on the secure node"""
-    card_id = f"vcc_{random.randint(1000, 9999)}"
-    
-    new_card = DBCard(
-        id=card_id,
-        label=request.label,
-        number=f"4242 {random.randint(1000, 9999)} {random.randint(1000, 9999)} {random.randint(1000, 9999)}",
-        expiry="08/28",
-        cvv=str(random.randint(100, 999))
-    )
-    db.add(new_card)
-    db.commit()
-    db.refresh(new_card)
-    return new_card
+    try:
+        card_id = f"vcc_{random.randint(1000, 9999)}"
+        
+        new_card = DBCard(
+            id=card_id,
+            label=request.label,
+            number=f"4242 {random.randint(1000, 9999)} {random.randint(1000, 9999)} {random.randint(1000, 9999)}",
+            expiry="08/28",
+            cvv=str(random.randint(100, 999))
+        )
+        db.add(new_card)
+        db.commit()
+        db.refresh(new_card)
+        return new_card
+    except Exception as e:
+        db.rollback()
+        print(f"CRITICAL DB ERROR DURING MINT: {str(e)}")
+        raise HTTPException(status_code=500, detail="Node Database Failure")
 
 
 # --- THE DEFINITIVE 404 RESOLUTION BLOCK ---
@@ -242,6 +248,7 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         return {"status": "success", "profile_id": profile_id}
         
     except Exception as e:
+        db.rollback()
         print(f"CRITICAL NODE ERROR: {str(e)}")
         return {"status": "error", "message": str(e)}
 
