@@ -71,7 +71,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 # Global CORS Policy: Explicitly open for Vercel/Localhost connectivity
-# FIXED: Replaced "*" with explicit origins to satisfy modern browser security
+# FIXED: Broadened to handle all Vercel sub-deployments and prevent 'Missing Header' errors
 origins = [
     "https://disappear-frontend-v2.vercel.app",
     "http://localhost:5173",
@@ -80,9 +80,9 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"], # Temporarily using wildcard to bypass preflight 'Missing Header' blockage
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
