@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 
-// --- FIXED IMPORTS (Using curly braces for Named Exports) ---
+// --- FIXED IMPORTS ---
 import { Manifesto } from './Manifesto';
 import { Privacy } from './Privacy';
 import { Terms } from './Terms';
@@ -11,7 +11,6 @@ import AdminDashboard from './AdminDashboard';
 import './App.css';
 
 // --- CONFIGURATION ---
-// Ensure this matches your Render service URL exactly
 const API_BASE_URL = "https://disappear-backend.onrender.com"; 
 
 function App() {
@@ -56,7 +55,6 @@ function App() {
   // Pre-fetch health check to wake up Render node
   useEffect(() => {
     if (showCheckout) {
-      // Poking the root endpoint to wake the service from sleep
       fetch(`${API_BASE_URL}/`).catch(() => console.log("Handshake initialized..."));
     }
   }, [showCheckout]);
@@ -186,7 +184,6 @@ function App() {
     triggerToast("CONNECTING TO SCRUB NODES...");
 
     try {
-        // Construct clean path matching backend fix
         const targetURL = `${API_BASE_URL.replace(/\/$/, "")}/financials/profile`;
         
         const response = await fetch(targetURL, {
@@ -209,14 +206,15 @@ function App() {
         clearTimeout(timeoutId);
 
         if (response.ok) {
+            // FIX: Explicitly turn off pricing/checkout when shield activates
             setShowCheckout(false); 
+            setShowPricing(false);
             setIsScanning(false);
             setShowShield(true); 
             setProgress(100);
             triggerToast("IDENTITY PURGE INITIATED");
         } else { 
             setIsScanning(false);
-            // Enhanced logging for node errors
             triggerToast(`NODE ERROR: ${response.status}`); 
         }
     } catch (err) { 
@@ -231,6 +229,7 @@ function App() {
 
   return (
     <div className={`app-container ${isEmergencyWipe ? 'wipe-shake' : ''}`}>
+      {/* GLOBAL HUD ELEMENTS */}
       <div className="progress-bar-container">
         <div className="progress-bar-fill" style={{ width: `${progress}%` }}></div>
         <span className="secure-connection-text">
@@ -248,7 +247,7 @@ function App() {
         ))}
       </div>
 
-      {/* MODALS */}
+      {/* MODAL OVERLAYS */}
       {showLegal && (
         <div className="modal-overlay" onClick={() => setShowLegal(null)}>
           <div className="info-modal-content" onClick={e => e.stopPropagation()}>
@@ -269,221 +268,207 @@ function App() {
         </div>
       )}
 
-      {/* SCREEN: HOME */}
-      {!showShield && !showPricing && !showCheckout && !isScanning && !show2FA && (
-        <div className="fade-in" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '60vh', justifyContent: 'center'}}>
-          <h1 className="brand-name">DISAPPEAR</h1>
-          <p className="subtitle">Privacy-as-a-Service</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', marginTop: '40px' }}>
-            <div style={{ display: 'flex', gap: '20px' }}>
-              <button className="main-button" onClick={() => setShowPricing(true)}>IDENTITY CLEANUP</button>
-              <button className="login-btn-outline" onClick={startLoginFlow}>CLIENT LOGIN</button>
-            </div>
-            <button className="info-link-btn" onClick={() => setShowLegal('manifesto')}>WHY IS THIS CRITICAL? [MANIFESTO]</button>
-          </div>
-        </div>
-      )}
-
-      {/* SCREEN: 2FA LOGIN */}
-      {show2FA && (
-        <div className="pricing-card fade-in">
-          <div className="price-box">
-            <h3 className="tiger-text">MFA CHALLENGE</h3>
-            <p style={{fontSize: '0.7rem', color: '#94A3B8', marginBottom: '20px'}}>ENTER SECURE ACCESS TOKEN</p>
-            <input 
-              id="mfa_input"
-              name="mfa_input"
-              className="mask-btn" 
-              style={{width: '100%', textAlign: 'center', fontSize: '1.2rem', letterSpacing: '5px'}} 
-              placeholder="******" 
-            />
-            <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={verify2FA}>VERIFY</button>
-            <button className="reset-btn" style={{width: '100%'}} onClick={() => setShow2FA(false)}>CANCEL</button>
-          </div>
-        </div>
-      )}
-
-      {/* SCREEN: PRICING */}
-      {showPricing && !showCheckout && (
-        <div className="pricing-card">
-          <div className="billing-toggle">
-            <button className={billingCycle === 'monthly' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('monthly')}>Monthly</button>
-            <button className={billingCycle === 'annual' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('annual')}>Annual</button>
-          </div>
-          <div className="price-box">
-            <h3 className="tiger-text">PREMIUM PAAS</h3>
-            <div className="price-amount">${billingCycle === 'monthly' ? '19.99' : '15.99'}</div>
-            <button className="main-button" style={{width: '100%'}} onClick={() => setShowCheckout(true)}>PROCEED</button>
-            <button className="reset-btn" style={{width: '100%'}} onClick={() => setShowPricing(false)}>CANCEL</button>
-          </div>
-        </div>
-      )}
-
-      {/* SCREEN: CHECKOUT/PROFILE */}
-      {showCheckout && !isScanning && (
-        <div className="pricing-card">
-          <div className="price-box" style={{maxWidth: '450px', width: '100%', margin: '0 auto'}}>
-            <h3 className="tiger-text">TARGET PROFILE DATA</h3>
-            <div style={{display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', textAlign: 'left'}}>
-                
-                <div className="accessible-field">
-                  <label htmlFor="firstName" className="field-label">First Name</label>
-                  <input id="firstName" name="firstName" className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="First Name" autoComplete="given-name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
+      {/* MAIN VIEW LOGIC - FIXING OVERLAP */}
+      <main className="main-content-area">
+        
+        {/* VIEW 1: ACTIVE DASHBOARD (High Priority) */}
+        {showShield ? (
+          <div className="shield-container fade-in">
+            <h2 className="shield-text">🛡️ SHIELD ACTIVE</h2>
+            <div className="tools-grid">
+              
+              {/* Tool: Email Masking */}
+              <div className="masking-tool">
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <p className="tool-label">ENCRYPTED IDENTITY EMAIL</p>
+                  <button className="filter-btn active" onClick={() => {
+                     fetch(`${API_BASE_URL}/financials/regenerate`, { method: "POST" })
+                     .then(r => r.json()).then(data => { 
+                       setMaskedEmail(data.email_alias); setMaskedPhone(data.phone_alias);
+                       triggerToast("ALIASES CYCLED"); 
+                     });
+                  }}>CYCLE ALIAS</button>
                 </div>
-
-                <div className="accessible-field">
-                  <label htmlFor="middleName" className="field-label">Middle Name</label>
-                  <input id="middleName" name="middleName" className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Middle Name (Optional)" autoComplete="additional-name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
+                <div className="masked-display" onClick={() => {navigator.clipboard.writeText(maskedEmail); triggerToast("COPIED")}}>
+                  {maskedEmail}
                 </div>
-
-                <div className="accessible-field">
-                  <label htmlFor="lastName" className="field-label">Last Name</label>
-                  <input id="lastName" name="lastName" className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Last Name" autoComplete="family-name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
-                </div>
-                
-                <div className="accessible-field">
-                  <label htmlFor="email" className="field-label">Email Address</label>
-                  <input id="email" name="email" className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Primary Email Address" autoComplete="email" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
-                </div>
-                
-                <div className="accessible-field">
-                  <label htmlFor="address" className="field-label">Home Address</label>
-                  <input 
-                    id="address"
-                    name="address"
-                    className="mask-btn" 
-                    style={{width: '100%', color: 'white'}} 
-                    placeholder="Home Address (Verified)" 
-                    autoComplete="street-address"
-                    value={targetProfile.address} 
-                    onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} 
-                  />
-                </div>
-
-                <div className="accessible-field">
-                    <label htmlFor="dob" className="field-label">Date of Birth</label>
-                    <input id="dob" name="dob" className="mask-btn" style={{width: '100%', color: 'white'}} type="date" value={targetProfile.dob} onChange={(e) => setTargetProfile({...targetProfile, dob: e.target.value})} />
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '15px', padding: '0 10px' }}>
-                  <input 
-                    type="checkbox" 
-                    id="terms-check" 
-                    name="terms-check"
-                    style={{ marginTop: '4px' }}
-                    checked={targetProfile.termsAccepted}
-                    onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})}
-                  />
-                  <label htmlFor="terms-check" style={{ fontSize: '0.65rem', color: '#94A3B8', textAlign: 'left', lineHeight: '1.4' }}>
-                    I agree to the <span className="legal-link" onClick={() => setShowLegal('terms')}>Terms of Service</span> and understand that burning a card does not absolve me of existing financial obligations.
-                  </label>
-                </div>
-            </div>
-
-            <button 
-              className="main-button" 
-              style={{ 
-                width: '100%', 
-                marginTop: '25px', 
-                opacity: targetProfile.termsAccepted ? 1 : 0.4,
-                cursor: targetProfile.termsAccepted ? 'pointer' : 'not-allowed' 
-              }} 
-              onClick={handleFinalPurchase}
-              disabled={!targetProfile.termsAccepted}
-            >
-              CONFIRM & INITIATE SCRUB
-            </button>
-            <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowCheckout(false)}>BACK</button>
-          </div>
-        </div>
-      )}
-
-      {/* SCREEN: SCANNING ANIMATION */}
-      {isScanning && (
-        <div className="shield-container">
-          <div className="recon-terminal" style={{maxWidth: '500px', margin: '0 auto'}}>
-            <div className="terminal-line">{'>> INITIATING HANDSHAKE...'}</div>
-            <div className="terminal-line">{'>> BYPASSING DATA BROKER FIREWALLS...'}</div>
-            <div className="terminal-line">{'>> UPLOADING PURGE REQUESTS...'}</div>
-          </div>
-          <h2 className="shield-text" style={{marginTop: '20px'}}>SCRUBBING NODES...</h2>
-        </div>
-      )}
-
-      {/* SCREEN: MAIN SHIELD DASHBOARD */}
-      {showShield && (
-        <div className="shield-container">
-          <h2 className="shield-text">🛡️ SHIELD ACTIVE</h2>
-          <div className="tools-grid">
-            <div className="masking-tool">
-              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                <p className="tool-label">ENCRYPTED IDENTITY EMAIL</p>
-                <button className="filter-btn active" onClick={() => {
-                   fetch(`${API_BASE_URL}/financials/regenerate`, { method: "POST" })
-                   .then(r => r.json()).then(data => { 
-                     setMaskedEmail(data.email_alias); setMaskedPhone(data.phone_alias);
-                     triggerToast("ALIASES CYCLED"); 
-                   });
-                }}>CYCLE ALIAS</button>
               </div>
-              <div className="masked-display" onClick={() => {navigator.clipboard.writeText(maskedEmail); triggerToast("COPIED")}}>
-                {maskedEmail}
-              </div>
-            </div>
 
-            <div className="masking-tool">
-              <p className="tool-label">ENCRYPTED PHONE ALIAS</p>
-              <div className="masked-display" onClick={() => {navigator.clipboard.writeText(maskedPhone); triggerToast("COPIED")}}>
-                {maskedPhone}
+              {/* Tool: Phone Masking */}
+              <div className="masking-tool">
+                <p className="tool-label">ENCRYPTED PHONE ALIAS</p>
+                <div className="masked-display" onClick={() => {navigator.clipboard.writeText(maskedPhone); triggerToast("COPIED")}}>
+                  {maskedPhone}
+                </div>
               </div>
-            </div>
 
-            <div className="masking-tool full-width-tool">
-              <p className="tool-label" style={{paddingLeft: '30px'}}>VIRTUAL SHIELD CARDS</p>
-              <div className="card-manager-list" style={{padding: '0 30px'}}>
-                {cards.map(c => (
-                  <div key={c.id} className="managed-card-row enhanced-card">
-                    <div className="card-row-info">
-                      <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
-                         <span className="card-nickname" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>{c.label.toUpperCase()}</span>
-                         <button className="kill-text-bold" onClick={() => handleKillCard(c.id)}>TERMINATE</button>
-                      </div>
-                      <code className="card-digits" onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("COPIED")}}>
-                        {c.number}
-                      </code>
-                      <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #111', paddingTop: '10px', marginTop: '10px'}}>
-                         <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>EXP</span><strong style={{fontSize: '0.9rem'}}>{c.expiry || '08/28'}</strong></div>
-                         <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>CVV</span><strong style={{fontSize: '0.9rem'}}>{c.cvv || '442'}</strong></div>
+              {/* Tool: Virtual Cards */}
+              <div className="masking-tool full-width-tool">
+                <p className="tool-label" style={{paddingLeft: '30px'}}>VIRTUAL SHIELD CARDS</p>
+                <div className="card-manager-list" style={{padding: '0 30px'}}>
+                  {cards.map(c => (
+                    <div key={c.id} className="managed-card-row enhanced-card">
+                      <div className="card-row-info">
+                        <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
+                           <span className="card-nickname" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>{c.label.toUpperCase()}</span>
+                           <button className="kill-text-bold" onClick={() => handleKillCard(c.id)}>TERMINATE</button>
+                        </div>
+                        <code className="card-digits" onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("COPIED")}}>
+                          {c.number}
+                        </code>
+                        <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #111', paddingTop: '10px', marginTop: '10px'}}>
+                           <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>EXP</span><strong style={{fontSize: '0.9rem'}}>{c.expiry || '08/28'}</strong></div>
+                           <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>CVV</span><strong style={{fontSize: '0.9rem'}}>{c.cvv || '442'}</strong></div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+                <div style={{padding: '0 30px'}}>
+                  <button className="mask-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => triggerToast("MINTING...")}>+ MINT NEW SHIELD</button>
+                </div>
               </div>
-              <div style={{padding: '0 30px'}}>
-                <button className="mask-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => triggerToast("MINTING...")}>+ MINT NEW SHIELD</button>
+
+              {/* Tool: Security Audit */}
+              <div className="masking-tool">
+                <p className="tool-label">LIVE SECURITY AUDIT</p>
+                <div className="audit-list">
+                  {auditLog.map((log, i) => (
+                    <div key={i} className="audit-row">
+                      <span className="audit-broker">[{log.broker}]</span>
+                      <span className="audit-action">{log.action}</span>
+                    </div>
+                  ))}
+                </div>
+                <button className="pdf-btn" onClick={handleDownloadPDF} disabled={isGenerating}>GENERATE AUDIT PDF</button>
               </div>
             </div>
 
-            <div className="masking-tool">
-              <p className="tool-label">LIVE SECURITY AUDIT</p>
-              <div className="audit-list">
-                {auditLog.map((log, i) => (
-                  <div key={i} className="audit-row">
-                    <span className="audit-broker">[{log.broker}]</span>
-                    <span className="audit-action">{log.action}</span>
-                  </div>
-                ))}
-              </div>
-              <button className="pdf-btn" onClick={handleDownloadPDF} disabled={isGenerating}>GENERATE AUDIT PDF</button>
+            <div style={{display: 'flex', gap: '20px', marginTop: '40px'}}>
+              <button className="reset-btn" onClick={() => {localStorage.clear(); window.location.reload();}}>Logout Securely</button>
+              <button className="burn-all-btn" onClick={() => { if(window.confirm("CONFIRM TOTAL PURGE?")) handleEmergencyBurn(); }}>EMERGENCY BURN</button>
             </div>
           </div>
+        ) : (
+          /* VIEW 2: SALES & ONBOARDING (Only shows if showShield is false) */
+          <div className="onboarding-flow">
+            
+            {/* SCREEN: HOME/LANDING */}
+            {!showPricing && !showCheckout && !isScanning && !show2FA && (
+              <div className="fade-in" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '60vh', justifyContent: 'center'}}>
+                <h1 className="brand-name">DISAPPEAR</h1>
+                <p className="subtitle">Privacy-as-a-Service</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', marginTop: '40px' }}>
+                  <div style={{ display: 'flex', gap: '20px' }}>
+                    <button className="main-button" onClick={() => setShowPricing(true)}>IDENTITY CLEANUP</button>
+                    <button className="login-btn-outline" onClick={startLoginFlow}>CLIENT LOGIN</button>
+                  </div>
+                  <button className="info-link-btn" onClick={() => setShowLegal('manifesto')}>WHY IS THIS CRITICAL? [MANIFESTO]</button>
+                </div>
+              </div>
+            )}
 
-          <div style={{display: 'flex', gap: '20px', marginTop: '40px'}}>
-            <button className="reset-btn" onClick={() => {localStorage.clear(); window.location.reload();}}>Logout Securely</button>
-            <button className="burn-all-btn" onClick={() => { if(window.confirm("CONFIRM TOTAL PURGE?")) handleEmergencyBurn(); }}>EMERGENCY BURN</button>
+            {/* SCREEN: 2FA LOGIN */}
+            {show2FA && (
+              <div className="pricing-card fade-in">
+                <div className="price-box">
+                  <h3 className="tiger-text">MFA CHALLENGE</h3>
+                  <p style={{fontSize: '0.7rem', color: '#94A3B8', marginBottom: '20px'}}>ENTER SECURE ACCESS TOKEN</p>
+                  <input 
+                    id="mfa_input"
+                    className="mask-btn" 
+                    style={{width: '100%', textAlign: 'center', fontSize: '1.2rem', letterSpacing: '5px'}} 
+                    placeholder="******" 
+                  />
+                  <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={verify2FA}>VERIFY</button>
+                  <button className="reset-btn" style={{width: '100%'}} onClick={() => setShow2FA(false)}>CANCEL</button>
+                </div>
+              </div>
+            )}
+
+            {/* SCREEN: PRICING (THIS WAS THE OVERLAPPING COMPONENT) */}
+            {showPricing && !showCheckout && !isScanning && (
+              <div className="pricing-card fade-in">
+                <div className="billing-toggle">
+                  <button className={billingCycle === 'monthly' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('monthly')}>Monthly</button>
+                  <button className={billingCycle === 'annual' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('annual')}>Annual</button>
+                </div>
+                <div className="price-box">
+                  <h3 className="tiger-text">PREMIUM PAAS</h3>
+                  <div className="price-amount">${billingCycle === 'monthly' ? '19.99' : '15.99'}</div>
+                  <button className="main-button" style={{width: '100%'}} onClick={() => setShowCheckout(true)}>PROCEED</button>
+                  <button className="reset-btn" style={{width: '100%'}} onClick={() => setShowPricing(false)}>CANCEL</button>
+                </div>
+              </div>
+            )}
+
+            {/* SCREEN: CHECKOUT/PROFILE */}
+            {showCheckout && !isScanning && (
+              <div className="pricing-card fade-in">
+                <div className="price-box" style={{maxWidth: '450px', width: '100%', margin: '0 auto'}}>
+                  <h3 className="tiger-text">TARGET PROFILE DATA</h3>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', textAlign: 'left'}}>
+                      
+                      <div className="accessible-field">
+                        <label htmlFor="firstName" className="field-label">First Name</label>
+                        <input id="firstName" className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="First Name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
+                      </div>
+
+                      <div className="accessible-field">
+                        <label htmlFor="lastName" className="field-label">Last Name</label>
+                        <input id="lastName" className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
+                      </div>
+                      
+                      <div className="accessible-field">
+                        <label htmlFor="email" className="field-label">Email Address</label>
+                        <input id="email" className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Primary Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
+                      </div>
+                      
+                      <div className="accessible-field">
+                        <label htmlFor="address" className="field-label">Home Address</label>
+                        <input id="address" className="mask-btn" style={{width: '100%', color: 'white'}} placeholder="Home Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
+                      </div>
+
+                      <div className="accessible-field">
+                          <label htmlFor="dob" className="field-label">Date of Birth</label>
+                          <input id="dob" className="mask-btn" style={{width: '100%', color: 'white'}} type="date" value={targetProfile.dob} onChange={(e) => setTargetProfile({...targetProfile, dob: e.target.value})} />
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '15px' }}>
+                        <input type="checkbox" id="terms-check" checked={targetProfile.termsAccepted} onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})} />
+                        <label htmlFor="terms-check" style={{ fontSize: '0.65rem', color: '#94A3B8' }}>
+                          I agree to the <span className="legal-link" onClick={() => setShowLegal('terms')}>Terms</span> and authorize the purge.
+                        </label>
+                      </div>
+                  </div>
+
+                  <button 
+                    className="main-button" 
+                    style={{ width: '100%', marginTop: '25px', opacity: targetProfile.termsAccepted ? 1 : 0.4 }} 
+                    onClick={handleFinalPurchase}
+                    disabled={!targetProfile.termsAccepted}
+                  >
+                    CONFIRM & INITIATE SCRUB
+                  </button>
+                  <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowCheckout(false)}>BACK</button>
+                </div>
+              </div>
+            )}
+
+            {/* SCREEN: SCANNING ANIMATION */}
+            {isScanning && (
+              <div className="shield-container">
+                <div className="recon-terminal" style={{maxWidth: '500px', margin: '0 auto'}}>
+                  <div className="terminal-line">{'>> INITIATING HANDSHAKE...'}</div>
+                  <div className="terminal-line">{'>> BYPASSING DATA BROKER FIREWALLS...'}</div>
+                  <div className="terminal-line">{'>> UPLOADING PURGE REQUESTS...'}</div>
+                </div>
+                <h2 className="shield-text" style={{marginTop: '20px'}}>SCRUBBING NODES...</h2>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </main>
 
       {/* PERSISTENT GLOBAL FOOTER */}
       <footer className="home-footer">
