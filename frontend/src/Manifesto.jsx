@@ -13,8 +13,8 @@ export const Manifesto = () => {
       <p>
         In 2026, your identity is the most valuable commodity on earth. Data brokers 
         and hackers are fighting for a piece of your digital life. Every time you 
-        use your "real" credit card, you leave a permanent trail that can be 
-        bought, sold, and weaponized.
+        use your "real" credit card, phone number, or primary email, you leave a 
+        permanent trail that is bought, sold, and weaponized.
       </p>
       
       <p>
@@ -30,6 +30,16 @@ export const Manifesto = () => {
       <ul style={{ marginTop: '20px' }}>
         <li>
           <strong>No Tracking:</strong> Merchants and trackers see a ghost, not a profile.
+        </li>
+        <li>
+          <strong>Neutralize Scam Ecosystems:</strong> Scammers can't call a number they can't find. 
+          By using our Encrypted Phone Aliases, you starve the auto-dialers and "spoofing" 
+          networks that rely on leaked broker data.
+        </li>
+        <li>
+          <strong>Kill Phishing at the Source:</strong> Your primary inbox is a target. Our 
+          Burnable Email Nodes ensure that if a merchant is breached or a list is sold, 
+          the spam and phishing attempts hit a dead-end alias, not your personal life.
         </li>
         <li>
           <strong>No Permanent Records:</strong> Every digital asset we issue is 
