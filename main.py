@@ -82,7 +82,7 @@ except Exception as e:
 
 app = FastAPI(title="Disappear PaaS Engine")
 
-# FIXED: Standardizing the origin list for Vercel Handshake
+# FIXED: Explicit Origins for Vercel Handshake
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -98,10 +98,21 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# FIXED: Explicitly handling OPTIONS for the sync route to stop 404s in production
-@app.options("/{rest_of_path:path}")
-async def preflight_handler(request: Request, rest_of_path: str):
-    return Response(status_code=200)
+# FIXED: Middleware to force CORS headers on 404s and preflights
+@app.middleware("http")
+async def add_cors_header(request: Request, call_next):
+    if request.method == "OPTIONS":
+        response = Response(status_code=200)
+    else:
+        response = await call_next(request)
+    
+    origin = request.headers.get("origin")
+    if origin in origins:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
 
 # Database Dependency Injection
 def get_db():
