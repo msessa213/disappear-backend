@@ -15,19 +15,24 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- DATABASE CONFIGURATION ---
+# Default to Docker 'db' service if environment variable is missing
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql://postgres.chymgteinnczqfjqknan:%40Chase246642@aws-1-us-east-1.pooler.supabase.com:6543/postgres"
+    "postgresql://postgres:postgres@db:5432/postgres"
 )
 
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
+# FIX: Local Docker DB doesn't support SSL; Supabase Cloud requires it.
+is_local = "@db:" in DATABASE_URL or "localhost" in DATABASE_URL or "127.0.0.1" in DATABASE_URL
+connect_args = {"sslmode": "require"} if not is_local else {}
+
 engine = create_engine(
     DATABASE_URL, 
     pool_pre_ping=True,
     pool_recycle=300,
-    connect_args={"sslmode": "require"}
+    connect_args=connect_args
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -37,7 +42,6 @@ Base = declarative_base()
 
 class DBCard(Base):
     """Represents a virtual shield card asset in the secure vault"""
-    # CHANGED TABLE NAME TO FORCE SCHEMA SYNC
     __tablename__ = "shield_assets_v3"
     id = Column(String, primary_key=True, index=True)
     label = Column(String)
@@ -79,7 +83,7 @@ app = FastAPI()
 # FIXED: Explicit CORS Policy for Docker stability
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, replace with your frontend URL
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -155,9 +159,6 @@ async def sync(db: Session = Depends(get_db)):
     minute_seed = now.minute + now.hour
     random.seed(minute_seed)
     
-    # Fetch aliases to keep UI lists separate
-    all_aliases = db.query(DBAlias).all()
-
     logs = []
     for i in range(5):
         logs.append({
