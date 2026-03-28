@@ -421,3 +421,54 @@ input[type="checkbox"] {
     top: 10px;
   }
 }
+
+/* --- 10. NEW: ALIAS MANAGER (Multiple Emails & Phones) --- */
+.alias-manager-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 15px;
+  text-align: left;
+}
+
+.alias-row {
+  background: #050505;
+  border: 1px solid var(--border-dim);
+  padding: 15px;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: 0.3s;
+}
+
+.alias-row:hover {
+  border-color: var(--tiger-blue);
+}
+
+.alias-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.alias-label {
+  font-size: 0.65rem;
+  color: var(--tiger-blue);
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.alias-content {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  color: white;
+}
+
+.alias-type-tag {
+  font-size: 0.55rem;
+  background: #1e293b;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+}

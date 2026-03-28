@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import create_engine, Column, String, DateTime
+from sqlalchemy import create_engine, Column, String, DateTime, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from pydantic import BaseModel
@@ -37,13 +37,22 @@ Base = declarative_base()
 
 class DBCard(Base):
     """Represents a virtual shield card asset in the secure vault"""
-    # CHANGED TABLE NAME TO FORCE SCHEMA SYNC
     __tablename__ = "shield_assets_v3"
     id = Column(String, primary_key=True, index=True)
     label = Column(String)
     number = Column(String)
     expiry = Column(String) 
     cvv = Column(String)    
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class DBAlias(Base):
+    """NEW: Represents a dynamically managed PII alias (Multiple Emails or Phones)"""
+    __tablename__ = "shield_aliases_v3"
+    id = Column(String, primary_key=True, index=True)
+    type = Column(String)  # "email" or "phone"
+    content = Column(String)
+    label = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -66,8 +75,6 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# Global CORS Policy
-# FIXED: Using explicit list for methods to prevent "Rejected" errors
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -92,6 +99,7 @@ THREAT_TYPES = ["IDENTITY_QUERY_DEFLECTED", "PII_SCRUB_VERIFIED", "NODE_ENCRYPTE
 BROKERS = ["SPOKEO", "ACXIOM", "INTELIUS", "WHITEPAGES", "PEOPLELOOKER"]
 DOMAINS = ["disappear.private", "shield.mask", "cloak.node", "ghost.vault"]
 
+# Keeping these for backwards compatibility, but we will move to DB-backed lists
 STABLE_EMAIL = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
 STABLE_PHONE = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
 
@@ -99,6 +107,12 @@ STABLE_PHONE = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)
 # --- SCHEMAS ---
 
 class CardRequest(BaseModel):
+    label: str
+
+
+class AliasRequest(BaseModel):
+    """NEW: Request schema for adding custom email/phone aliases"""
+    type: str  # "email" or "phone"
     label: str
 
 
@@ -119,11 +133,13 @@ async def get_admin_stats(db: Session = Depends(get_db)):
     """Aggregates platform-wide metrics for the Central Command Dashboard"""
     total_users = db.query(DBProfile).count()
     total_cards = db.query(DBCard).count()
-    total_removals = total_users * 47 
+    total_aliases = db.query(DBAlias).count()
+    total_removals = (total_users + total_aliases) * 47 
     
     return {
         "total_users": total_users,
         "total_cards": total_cards,
+        "total_aliases": total_aliases,
         "total_removals": total_removals,
         "system_health": "OPTIMAL",
         "last_purge": datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -131,12 +147,15 @@ async def get_admin_stats(db: Session = Depends(get_db)):
 
 
 @app.get("/dashboard/sync")
-async def sync():
+async def sync(db: Session = Depends(get_db)):
     """Synchronizes dashboard with live threat intelligence and node map data"""
     now = datetime.now()
     minute_seed = now.minute + now.hour
     random.seed(minute_seed)
     
+    # Fetch DB-backed aliases
+    active_aliases = db.query(DBAlias).all()
+
     logs = []
     for i in range(5):
         logs.append({
@@ -158,8 +177,9 @@ async def sync():
 
     return {
         "profile": {
-            "email_alias": STABLE_EMAIL,
-            "phone_alias": STABLE_PHONE,
+            "email_alias": STABLE_EMAIL, # Legacy support
+            "phone_alias": STABLE_PHONE, # Legacy support
+            "active_aliases": active_aliases, # New multi-item list
             "threat_level": "NOMINAL",
             "uptime": "99.998%",
             "active_nodes": 32 
@@ -169,6 +189,54 @@ async def sync():
         "system_status": "ENCRYPTED_TUNNEL_STABLE"
     }
 
+
+# --- NEW: MULTI-ALIAS CONTROL ENDPOINTS ---
+
+@app.get("/aliases/data")
+async def get_aliases(db: Session = Depends(get_db)):
+    """Retrieves list of all active email/phone aliases"""
+    aliases = db.query(DBAlias).order_by(DBAlias.created_at.desc()).all()
+    return {"aliases": aliases if aliases else []}
+
+
+@app.post("/aliases/mint")
+async def mint_alias(request: AliasRequest, db: Session = Depends(get_db)):
+    """Mints a new email or phone alias for full customer control"""
+    try:
+        alias_id = f"als_{int(time.time())}_{random.randint(100, 999)}"
+        
+        if request.type.lower() == "email":
+            content = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
+        else:
+            content = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
+            
+        new_alias = DBAlias(
+            id=alias_id,
+            type=request.type,
+            label=request.label,
+            content=content
+        )
+        db.add(new_alias)
+        db.commit()
+        db.refresh(new_alias)
+        return new_alias
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/aliases/kill/{alias_id}")
+async def kill_alias(alias_id: str, db: Session = Depends(get_db)):
+    """Permanently terminates an email or phone alias"""
+    alias = db.query(DBAlias).filter(DBAlias.id == alias_id).first()
+    if alias:
+        db.delete(alias)
+        db.commit()
+        return {"status": "alias_terminated"}
+    raise HTTPException(status_code=404, detail="Alias not found")
+
+
+# --- FINANCIALS & PROFILE SYSTEM ---
 
 @app.get("/financials/data")
 async def financials(db: Session = Depends(get_db)):
@@ -184,9 +252,7 @@ async def financials(db: Session = Depends(get_db)):
 async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
     """Initiates a new virtual card minting process on the secure node"""
     try:
-        # Create a more unique ID to prevent 500 duplicate key errors
         card_id = f"vcc_{int(time.time())}_{random.randint(100, 999)}"
-        
         new_card = DBCard(
             id=card_id,
             label=request.label,
@@ -200,7 +266,6 @@ async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
         return new_card
     except Exception as e:
         db.rollback()
-        print(f"CRITICAL DB ERROR DURING MINT: {str(e)}")
         raise HTTPException(status_code=500, detail=f"MINT_ERROR: {str(e)}")
 
 
@@ -224,7 +289,6 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         db.add(new_profile)
         db.commit()
         return {"status": "success", "profile_id": profile_id}
-        
     except Exception as e:
         db.rollback()
         return {"status": "error", "message": str(e)}
@@ -243,8 +307,9 @@ async def kill_card(card_id: str, db: Session = Depends(get_db)):
 
 @app.post("/financials/burn-all")
 async def burn_all_assets(db: Session = Depends(get_db)):
-    """Global wipe command: Deletes all profiles and cards from the node"""
+    """Global wipe command: Deletes all profiles, cards, and aliases from the node"""
     db.query(DBCard).delete()
+    db.query(DBAlias).delete()
     db.query(DBProfile).delete()
     db.commit()
     return {"status": "TOTAL_PURGE_COMPLETE"}
@@ -261,7 +326,5 @@ async def regenerate_alias():
 
 if __name__ == "__main__":
     import uvicorn
-    target_port = int(os.environ.get("PORT", 10000))
+    target_port = int(os.environ.get("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=target_port, reload=False)
-
-# --- END OF MAIN.PY FINAL STABLE VERSION ---

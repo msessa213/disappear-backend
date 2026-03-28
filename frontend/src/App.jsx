@@ -16,7 +16,7 @@ import './App.css';
  * Fixes: Masked DOB Input, Persistence Sync, UX Polish
  */
 
-const API_BASE_URL = "https://disappear-backend.onrender.com"; 
+const API_BASE_URL = "http://localhost:8000"; 
 
 function App() {
   const [showShield, setShowShield] = useState(false);
@@ -33,6 +33,12 @@ function App() {
 
   const [showMintModal, setShowMintModal] = useState(false);
   const [newCardLabel, setNewCardLabel] = useState("");
+
+  // --- NEW: ALIAS STATE FOR MULTI-ITEM CONTROL ---
+  const [showAliasModal, setShowAliasModal] = useState(false);
+  const [aliasType, setAliasType] = useState("email");
+  const [aliasLabel, setAliasLabel] = useState("");
+  const [aliases, setAliases] = useState([]);
 
   const [targetProfile, setTargetProfile] = useState({
     firstName: "", 
@@ -111,6 +117,12 @@ function App() {
       const finRes = await fetch(`${API_BASE_URL}/financials/data`);
       const finData = await finRes.json();
       setCards(finData.cards || []);
+
+      // NEW: FETCH MULTI-ALIAS DATA
+      const aliasRes = await fetch(`${API_BASE_URL}/aliases/data`);
+      const aliasData = await aliasRes.json();
+      setAliases(aliasData.aliases || []);
+
     } catch (err) { }
   }, [pushNotification]);
 
@@ -124,6 +136,35 @@ function App() {
     }
     return () => clearInterval(interval);
   }, [showShield, syncDefenseData]);
+
+  // --- NEW: ALIAS MANAGEMENT HANDLERS ---
+  const handleMintAlias = async () => {
+    if (!aliasLabel) { triggerToast("ENTER LABEL"); return; }
+    triggerToast(`MINTING ${aliasType.toUpperCase()}...`);
+    try {
+      const res = await fetch(`${API_BASE_URL}/aliases/mint`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: aliasType, label: aliasLabel })
+      });
+      if (res.ok) {
+        const newAlias = await res.json();
+        setAliases(prev => [newAlias, ...prev]);
+        setAliasLabel("");
+        setShowAliasModal(false);
+        triggerToast("ALIAS SECURED");
+      }
+    } catch (err) { triggerToast("CONNECTION ERROR"); }
+  };
+
+  const handleKillAlias = async (id) => {
+    triggerToast("PURGING ALIAS...");
+    try {
+      await fetch(`${API_BASE_URL}/aliases/kill/${id}`, { method: "DELETE" });
+      setAliases(prev => prev.filter(a => a.id !== id));
+      triggerToast("ALIAS TERMINATED");
+    } catch (err) { triggerToast("ERROR"); }
+  };
 
   const handleEmergencyBurn = async () => {
     setIsEmergencyWipe(true);
@@ -257,7 +298,6 @@ function App() {
     }
   };
 
-  // UX FIX: MASKED NUMERIC DOB INPUT (MM/DD/YYYY)
   const handleNumericDateInput = (e) => {
     let val = e.target.value.replace(/\D/g, ''); // Numeric only
     if (val.length > 8) val = val.slice(0, 8);
@@ -288,6 +328,22 @@ function App() {
           </div>
         ))}
       </div>
+
+      {showAliasModal && (
+        <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => setShowAliasModal(false)}>
+          <div className="price-box" onClick={e => e.stopPropagation()}>
+            <h3 className="tiger-text">MINT IDENTITY ALIAS</h3>
+            <div className="billing-toggle" style={{marginBottom: '15px'}}>
+               <button className={aliasType === 'email' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setAliasType('email')}>Email</button>
+               <button className={aliasType === 'phone' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setAliasType('phone')}>Phone</button>
+            </div>
+            <p className="field-label">ALIAS LABEL</p>
+            <input className="mask-btn" style={{color: 'white', textAlign: 'center'}} placeholder="e.g. Work, Shopping, Private" value={aliasLabel} onChange={(e) => setAliasLabel(e.target.value)} />
+            <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={handleMintAlias}>AUTHORIZE ALIAS</button>
+            <button className="reset-btn" style={{width: '100%'}} onClick={() => setShowAliasModal(false)}>CANCEL</button>
+          </div>
+        </div>
+      )}
 
       {showMintModal && (
         <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => setShowMintModal(false)}>
@@ -334,20 +390,20 @@ function App() {
           <div className="shield-container fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
             <h2 className="shield-text">🛡️ SHIELD ACTIVE</h2>
             
-            <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column' }}>
-              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 5px'}}>
-                <p className="tool-label">ENCRYPTED IDENTITY EMAIL</p>
-                <button className="main-button" style={{ fontSize: '0.65rem', padding: '8px 15px', width: 'auto', minWidth: '110px' }} onClick={handleCycleAliases}>CYCLE ALIAS</button>
+            <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
+              <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>IDENTITY ALIAS VAULT</p>
+              <div className="alias-manager-list">
+                {aliases.map(a => (
+                  <div key={a.id} className="alias-row">
+                    <div className="alias-info">
+                      <span className="alias-label">{a.label.toUpperCase()} <span className="alias-type-tag">{a.type}</span></span>
+                      <span className="alias-content" onClick={() => {navigator.clipboard.writeText(a.content); triggerToast("COPIED")}}>{a.content}</span>
+                    </div>
+                    <button className="kill-text-bold" onClick={() => handleKillAlias(a.id)}>TERMINATE</button>
+                  </div>
+                ))}
               </div>
-              <div className="masked-display" onClick={() => {navigator.clipboard.writeText(maskedEmail); triggerToast("COPIED")}}>{maskedEmail}</div>
-            </div>
-
-            <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column' }}>
-              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 5px'}}>
-                <p className="tool-label">ENCRYPTED PHONE ALIAS</p>
-                <button className="main-button" style={{ fontSize: '0.65rem', padding: '8px 15px', width: 'auto', minWidth: '110px' }} onClick={handleCycleAliases}>CYCLE ALIAS</button>
-              </div>
-              <div className="masked-display" onClick={() => {navigator.clipboard.writeText(maskedPhone); triggerToast("COPIED")}}>{maskedPhone}</div>
+              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowAliasModal(true)}> + MINT NEW ALIAS </button>
             </div>
 
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
