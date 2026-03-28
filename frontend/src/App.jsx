@@ -459,6 +459,7 @@ function App() {
                   <h3 className="tiger-text">TARGET PROFILE DATA</h3>
                   <div style={{display: 'flex', flexDirection: 'column', gap: '15px', textAlign: 'left'}}>
                       <input className="mask-btn" placeholder="First Name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
+                      <input className="mask-btn" placeholder="Middle Name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
                       <input className="mask-btn" placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
                       <input className="mask-btn" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
                       <input className="mask-btn" placeholder="Home Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
