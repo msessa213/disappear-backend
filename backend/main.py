@@ -64,7 +64,10 @@ class DBProfile(Base):
     """Represents a target profile for PII scrub queuing"""
     __tablename__ = "shield_profiles_v3"
     id = Column(String, primary_key=True, index=True)
-    full_name = Column(String)
+    # UPDATED: Split name fields for granular broker searching
+    first_name = Column(String)
+    middle_name = Column(String)
+    last_name = Column(String)
     email = Column(String)
     address = Column(String)
     dob = Column(String)
@@ -305,16 +308,16 @@ async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
 @app.post("/financials/profile")
 @app.post("/financials/profile/")
 async def save_profile(request: Request, db: Session = Depends(get_db)):
-    """Handles raw profile ingestion to bypass strict validation 404s"""
+    """Handles raw profile ingestion with granular name separation"""
     try:
         data = await request.json()
         profile_id = f"user_{random.randint(1000, 9999)}"
-        fn, mn, ln = data.get("firstName", ""), data.get("middleName", ""), data.get("lastName", "")
-        combined_name = f"{fn} {mn} {ln}".replace("  ", " ").strip()
         
         new_profile = DBProfile(
             id=profile_id,
-            full_name=combined_name if combined_name else data.get("fullName", "Unknown"),
+            first_name=data.get("firstName", "Unknown"),
+            middle_name=data.get("middleName", ""),
+            last_name=data.get("lastName", ""),
             email=data.get("email"),
             address=data.get("address"),
             dob=data.get("dob")
