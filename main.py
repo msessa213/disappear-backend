@@ -24,9 +24,9 @@ DATABASE_URL = os.getenv(
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# FIX: Local Docker DB doesn't support SSL; Supabase Cloud requires it.
-is_local = "@db:" in DATABASE_URL or "localhost" in DATABASE_URL or "127.0.0.1" in DATABASE_URL
-connect_args = {"sslmode": "require"} if not is_local else {}
+# FIX: Check if we are connecting to a local Docker service or Supabase cloud
+is_cloud = "supabase.com" in DATABASE_URL
+connect_args = {"sslmode": "require"} if is_cloud else {}
 
 engine = create_engine(
     DATABASE_URL, 
@@ -326,6 +326,6 @@ async def regenerate_alias():
 
 if __name__ == "__main__":
     import uvicorn
-    # FIXED: Ensure host is 0.0.0.0 for Docker container mapping
+    # Host must be 0.0.0.0 for Docker container mapping
     target_port = int(os.environ.get("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=target_port, reload=False)
