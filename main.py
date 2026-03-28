@@ -23,7 +23,6 @@ DATABASE_URL = os.getenv(
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# FIX: Conditional SSL Mode for Local Docker vs Supabase Cloud
 is_cloud = "supabase.com" in DATABASE_URL
 connect_args = {"sslmode": "require"} if is_cloud else {}
 
@@ -36,11 +35,9 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-
 # --- DATABASE MODELS ---
 
 class DBCard(Base):
-    """Represents a virtual shield card asset in the secure vault"""
     __tablename__ = "shield_assets_v3"
     id = Column(String, primary_key=True, index=True)
     label = Column(String)
@@ -49,19 +46,15 @@ class DBCard(Base):
     cvv = Column(String)    
     created_at = Column(DateTime, default=datetime.utcnow)
 
-
 class DBAlias(Base):
-    """Represents separate managed PII aliases (Emails or Phones)"""
     __tablename__ = "shield_aliases_v3"
     id = Column(String, primary_key=True, index=True)
-    type = Column(String)  # "email" or "phone"
+    type = Column(String)
     content = Column(String)
     label = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-
 class DBProfile(Base):
-    """Represents a target profile for PII scrub queuing"""
     __tablename__ = "shield_profiles_v3"
     id = Column(String, primary_key=True, index=True)
     full_name = Column(String)
@@ -70,19 +63,16 @@ class DBProfile(Base):
     dob = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-
-# Auto-create tables on startup
 try:
     Base.metadata.create_all(bind=engine)
 except Exception as e:
     print(f"ALARM: DB Sync Deferred - {e}")
 
-
 # --- APP CONFIGURATION ---
 
 app = FastAPI(title="Disappear PaaS Engine")
 
-# FIXED: Explicit Origins and Header Exposure for Vercel/Render Handshake
+# FIX: Explicit Handshake for Vercel + Preflight Support
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -95,23 +85,21 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
-    expose_headers=["*"], # Critical for Vercel to see the response
+    expose_headers=["*"],
 )
 
-# FIXED: Catch-all OPTIONS handler to prevent 404s during browser preflight
+# FIX: Global OPTIONS handler to prevent 404s on browser preflight checks
 @app.options("/{rest_of_path:path}")
 async def preflight_handler(request: Request, rest_of_path: str):
-    return Response(status_code=200)
+    response = Response(status_code=200)
+    return response
 
-
-# Database Dependency Injection
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
-
 
 # --- DATA SEEDING & STABILITY STORAGE ---
 
@@ -122,38 +110,30 @@ DOMAINS = ["disappear.private", "shield.mask", "cloak.node", "ghost.vault"]
 STABLE_EMAIL = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
 STABLE_PHONE = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
 
-
 # --- SCHEMAS ---
 
 class CardRequest(BaseModel):
     label: str
 
-
 class AliasRequest(BaseModel):
-    type: str  # "email" or "phone"
+    type: str 
     label: str
-
 
 class LoginRequest(BaseModel):
     token: str = None
-
 
 # --- CORE SYSTEM ROUTES ---
 
 @app.get("/")
 async def health_status():
-    """Health check endpoint"""
     return {"status": "ACTIVE", "timestamp": datetime.now().isoformat(), "engine": "Disappear v2.1.6"}
-
 
 @app.get("/admin/stats")
 async def get_admin_stats(db: Session = Depends(get_db)):
-    """Aggregates platform-wide metrics"""
     total_users = db.query(DBProfile).count()
     total_cards = db.query(DBCard).count()
     total_aliases = db.query(DBAlias).count()
     total_removals = (total_users + total_aliases) * 47 
-    
     return {
         "total_users": total_users,
         "total_cards": total_cards,
@@ -163,10 +143,8 @@ async def get_admin_stats(db: Session = Depends(get_db)):
         "last_purge": datetime.now().strftime("%Y-%m-%d %H:%M")
     }
 
-
 @app.get("/dashboard/sync")
 async def sync(db: Session = Depends(get_db)):
-    """Synchronizes dashboard data"""
     now = datetime.now()
     minute_seed = now.minute + now.hour
     random.seed(minute_seed)
@@ -203,7 +181,6 @@ async def sync(db: Session = Depends(get_db)):
         "system_status": "ENCRYPTED_TUNNEL_STABLE"
     }
 
-
 # --- PII CONTROL ROUTES ---
 
 @app.get("/aliases/data")
@@ -211,27 +188,19 @@ async def get_aliases(db: Session = Depends(get_db)):
     aliases = db.query(DBAlias).order_by(DBAlias.created_at.desc()).all()
     return {"aliases": aliases if aliases else []}
 
-
 @app.post("/aliases/mint")
 async def mint_alias(request: AliasRequest, db: Session = Depends(get_db)):
     alias_id = f"als_{int(time.time())}_{random.randint(100, 999)}"
-    
     if request.type.lower() == "email":
         content = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
     else:
         content = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
         
-    new_alias = DBAlias(
-        id=alias_id,
-        type=request.type.lower(),
-        label=request.label,
-        content=content
-    )
+    new_alias = DBAlias(id=alias_id, type=request.type.lower(), label=request.label, content=content)
     db.add(new_alias)
     db.commit()
     db.refresh(new_alias)
     return new_alias
-
 
 @app.delete("/aliases/kill/{alias_id}")
 async def kill_alias(alias_id: str, db: Session = Depends(get_db)):
@@ -241,7 +210,6 @@ async def kill_alias(alias_id: str, db: Session = Depends(get_db)):
         db.commit()
         return {"status": "node_purged"}
     raise HTTPException(status_code=404, detail="Node not found")
-
 
 # --- FINANCIALS & PROFILE STORAGE ---
 
@@ -253,12 +221,10 @@ async def financials(db: Session = Depends(get_db)):
     except Exception as e:
         return {"cards": [], "error": str(e)}
 
-
 @app.post("/financials/mint")
 async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
     try:
         card_id = f"vcc_{int(time.time())}_{random.randint(100, 999)}"
-        
         new_card = DBCard(
             id=card_id,
             label=request.label,
@@ -274,7 +240,6 @@ async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=500, detail=f"MINT_ERROR: {str(e)}")
 
-
 @app.post("/financials/profile")
 @app.post("/financials/profile/")
 async def save_profile(request: Request, db: Session = Depends(get_db)):
@@ -283,7 +248,6 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         profile_id = f"user_{random.randint(1000, 9999)}"
         fn, mn, ln = data.get("firstName", ""), data.get("middleName", ""), data.get("lastName", "")
         combined_name = f"{fn} {mn} {ln}".replace("  ", " ").strip()
-        
         new_profile = DBProfile(
             id=profile_id,
             full_name=combined_name if combined_name else data.get("fullName", "Unknown"),
@@ -294,11 +258,9 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         db.add(new_profile)
         db.commit()
         return {"status": "success", "profile_id": profile_id}
-        
     except Exception as e:
         db.rollback()
         return {"status": "error", "message": str(e)}
-
 
 @app.delete("/financials/kill/{card_id}")
 async def kill_card(card_id: str, db: Session = Depends(get_db)):
@@ -309,7 +271,6 @@ async def kill_card(card_id: str, db: Session = Depends(get_db)):
         return {"status": "node_terminated"}
     raise HTTPException(status_code=404, detail="Asset not found")
 
-
 @app.post("/financials/burn-all")
 async def burn_all_assets(db: Session = Depends(get_db)):
     db.query(DBCard).delete()
@@ -318,7 +279,6 @@ async def burn_all_assets(db: Session = Depends(get_db)):
     db.commit()
     return {"status": "TOTAL_PURGE_COMPLETE"}
 
-
 @app.post("/financials/regenerate")
 async def regenerate_alias():
     global STABLE_EMAIL, STABLE_PHONE
@@ -326,8 +286,8 @@ async def regenerate_alias():
     STABLE_PHONE = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
     return {"email_alias": STABLE_EMAIL, "phone_alias": STABLE_PHONE}
 
-
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
+    # 0.0.0.0 is critical for Render/Docker to work
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
