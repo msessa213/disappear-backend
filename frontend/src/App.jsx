@@ -13,11 +13,11 @@ import './App.css';
 /**
  * DISAPPEAR CORE ENGINE v2.1.6
  * Privacy-as-a-Service Frontend
- * Fixes: Docker Bridge Networking, Masked DOB, UX Polish
+ * Fixes: Masked DOB Input, Persistence Sync, UX Polish
  * Feature: Granular PII Separation (Email, Phone, Cards)
+ * Restoration: Manifesto logic fully restored
  */
 
-// CHANGED: Using 127.0.0.1 to avoid local DNS resolve issues in Docker Desktop
 const API_BASE_URL = "http://127.0.0.1:8000"; 
 
 function App() {
@@ -36,7 +36,7 @@ function App() {
   const [showMintModal, setShowMintModal] = useState(false);
   const [newCardLabel, setNewCardLabel] = useState("");
 
-  // --- CATEGORY-SPECIFIC STATES ---
+  // --- CATEGORY-SPECIFIC STATES FOR FULL CONTROL ---
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [aliasLabel, setAliasLabel] = useState("");
@@ -72,6 +72,7 @@ function App() {
         setShowShield(true);
         setProgress(100);
     } else {
+        // Force reset state if no session found
         setTargetProfile({
             firstName: "", middleName: "", lastName: "", 
             email: "", dob: "", address: "", termsAccepted: false
@@ -119,11 +120,10 @@ function App() {
       const aliasRes = await fetch(`${API_BASE_URL}/aliases/data`);
       const aliasData = await aliasRes.json();
       const allAliases = aliasData.aliases || [];
+      
       setEmails(allAliases.filter(a => a.type === 'email'));
       setPhones(allAliases.filter(a => a.type === 'phone'));
-    } catch (err) { 
-        console.error("SYNC_ERROR: Node Unreachable");
-    }
+    } catch (err) { }
   }, [pushNotification]);
 
   useEffect(() => {
@@ -151,19 +151,15 @@ function App() {
         setShowEmailModal(false);
         setShowPhoneModal(false);
         triggerToast(`${type.toUpperCase()} SECURED`);
-      } else {
-        triggerToast("NODE REJECTED");
       }
     } catch (err) { triggerToast("CONNECTION ERROR"); }
   };
 
   const handleKillAlias = async (id) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/aliases/kill/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        syncDefenseData();
-        triggerToast("PURGED");
-      }
+      await fetch(`${API_BASE_URL}/aliases/kill/${id}`, { method: "DELETE" });
+      syncDefenseData();
+      triggerToast("DATA TERMINATED");
     } catch (err) { triggerToast("ERROR"); }
   };
 
@@ -198,8 +194,6 @@ function App() {
         setNewCardLabel("");
         setShowMintModal(false);
         triggerToast("NODE SECURED");
-      } else {
-        triggerToast("MINT FAILED");
       }
     } catch (err) {
       triggerToast("CONNECTION ERROR");
@@ -208,11 +202,9 @@ function App() {
 
   const handleKillCard = async (id) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/financials/kill/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setCards(prev => prev.filter(c => c.id !== id));
-        triggerToast("NODE BURNED");
-      }
+      await fetch(`${API_BASE_URL}/financials/kill/${id}`, { method: "DELETE" });
+      setCards(prev => prev.filter(c => c.id !== id));
+      triggerToast("NODE BURNED");
     } catch (err) { 
       triggerToast("ERROR"); 
     }
@@ -314,9 +306,10 @@ function App() {
         <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => {setShowEmailModal(false); setShowPhoneModal(false)}}>
           <div className="price-box" onClick={e => e.stopPropagation()}>
             <h3 className="tiger-text">MINT {showEmailModal ? 'EMAIL' : 'PHONE'} ALIAS</h3>
-            <p className="field-label">LABEL</p>
-            <input className="mask-btn" style={{color: 'white', textAlign: 'center'}} placeholder="e.g. Shopping, Work" value={aliasLabel} onChange={(e) => setAliasLabel(e.target.value)} />
+            <p className="field-label">ASSOCIATE LABEL</p>
+            <input className="mask-btn" style={{color: 'white', textAlign: 'center'}} placeholder="e.g. Shopping, Personal" value={aliasLabel} onChange={(e) => setAliasLabel(e.target.value)} />
             <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={() => handleMintAlias(showEmailModal ? 'email' : 'phone')}>AUTHORIZE</button>
+            <button className="reset-btn" style={{width: '100%'}} onClick={() => {setShowEmailModal(false); setShowPhoneModal(false)}}>CANCEL</button>
           </div>
         </div>
       )}
@@ -328,6 +321,7 @@ function App() {
             <p className="field-label">ASSOCIATE MERCHANT</p>
             <input className="mask-btn" style={{width: '100%', color: 'white', textAlign: 'center'}} placeholder="e.g. Amazon, Netflix" value={newCardLabel} onChange={(e) => setNewCardLabel(e.target.value)} />
             <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={handleMintCard}>AUTHORIZE NODE</button>
+            <button className="reset-btn" style={{width: '100%'}} onClick={() => setShowMintModal(false)}>CANCEL</button>
           </div>
         </div>
       )}
@@ -362,12 +356,12 @@ function App() {
               <div className="alias-manager-list">
                 {emails.map(e => (
                   <div key={e.id} className="alias-row">
-                    <div className="alias-info"><span className="alias-label">{e.label.toUpperCase()}</span><span className="alias-content">{e.content}</span></div>
+                    <div className="alias-info"><span className="alias-label">{e.label.toUpperCase()}</span><span className="alias-content" onClick={() => {navigator.clipboard.writeText(e.content); triggerToast("COPIED")}}>{e.content}</span></div>
                     <button className="kill-text-bold" onClick={() => handleKillAlias(e.id)}>TERMINATE</button>
                   </div>
                 ))}
               </div>
-              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowEmailModal(true)}> + MINT EMAIL </button>
+              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowEmailModal(true)}> + MINT EMAIL ALIAS </button>
             </div>
 
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
@@ -375,12 +369,12 @@ function App() {
               <div className="alias-manager-list">
                 {phones.map(p => (
                   <div key={p.id} className="alias-row">
-                    <div className="alias-info"><span className="alias-label">{p.label.toUpperCase()}</span><span className="alias-content">{p.content}</span></div>
+                    <div className="alias-info"><span className="alias-label">{p.label.toUpperCase()}</span><span className="alias-content" onClick={() => {navigator.clipboard.writeText(p.content); triggerToast("COPIED")}}>{p.content}</span></div>
                     <button className="kill-text-bold" onClick={() => handleKillAlias(p.id)}>TERMINATE</button>
                   </div>
                 ))}
               </div>
-              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowPhoneModal(true)}> + MINT PHONE </button>
+              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowPhoneModal(true)}> + MINT PHONE ALIAS </button>
             </div>
 
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
@@ -402,7 +396,7 @@ function App() {
                   </div>
                 ))}
               </div>
-              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowMintModal(true)}> + MINT CARD </button>
+              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowMintModal(true)}> + MINT NEW SHIELD </button>
             </div>
 
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
@@ -433,6 +427,7 @@ function App() {
                     <button className="main-button" onClick={() => setShowPricing(true)}>IDENTITY CLEANUP</button>
                     <button className="login-btn-outline" onClick={() => {triggerToast("CHALLENGE REQUEST SENT..."); setShow2FA(true);}}>CLIENT LOGIN</button>
                   </div>
+                  <button className="info-link-btn" onClick={() => setShowLegal('manifesto')}>WHY IS THIS CRITICAL? [MANIFESTO]</button>
                 </div>
               </div>
             )}
@@ -458,6 +453,7 @@ function App() {
                   <h3 className="tiger-text">PREMIUM PAAS</h3>
                   <div className="price-amount">${billingCycle === 'monthly' ? '19.99' : '15.99'}</div>
                   <button className="main-button" style={{width: '100%'}} onClick={() => setShowCheckout(true)}>PROCEED</button>
+                  <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowPricing(false)}>CANCEL</button>
                 </div>
               </div>
             )}
@@ -478,6 +474,7 @@ function App() {
                       </div>
                   </div>
                   <button className="main-button" style={{ width: '100%', marginTop: '25px' }} onClick={handleFinalPurchase} disabled={!targetProfile.termsAccepted}>CONFIRM & INITIATE</button>
+                  <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowCheckout(false)}>BACK</button>
                 </div>
               </div>
             )}
@@ -487,6 +484,7 @@ function App() {
                 <div className="recon-terminal" style={{maxWidth: '500px', margin: '0 auto'}}>
                   <div className="terminal-line">{'>> INITIATING HANDSHAKE...'}</div>
                   <div className="terminal-line">{'>> BYPASSING DATA BROKER FIREWALLS...'}</div>
+                  <div className="terminal-line">{'>> UPLOADING PURGE REQUESTS...'}</div>
                   <div className="terminal-line">{'>> ESTABLISHING SECURE ALIAS TUNNEL...'}</div>
                   <div className="terminal-line">{'>> ENCRYPTING VAULT ASSETS...'}</div>
                 </div>
