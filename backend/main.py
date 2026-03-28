@@ -76,13 +76,14 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# Global CORS Policy
+# FIXED: Explicit CORS Policy for Docker stability
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"], # In production, replace with your frontend URL
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"]
 )
 
 
@@ -324,5 +325,6 @@ async def regenerate_alias():
 
 if __name__ == "__main__":
     import uvicorn
+    # FIXED: Ensure host is 0.0.0.0 for Docker container mapping
     target_port = int(os.environ.get("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=target_port, reload=False)

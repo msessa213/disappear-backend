@@ -13,11 +13,12 @@ import './App.css';
 /**
  * DISAPPEAR CORE ENGINE v2.1.6
  * Privacy-as-a-Service Frontend
- * Fixes: Masked DOB Input, Persistence Sync, UX Polish
+ * Fixes: Docker Bridge Networking, Masked DOB, UX Polish
  * Feature: Granular PII Separation (Email, Phone, Cards)
  */
 
-const API_BASE_URL = "http://localhost:8000"; 
+// CHANGED: Using 127.0.0.1 to avoid local DNS resolve issues in Docker Desktop
+const API_BASE_URL = "http://127.0.0.1:8000"; 
 
 function App() {
   const [showShield, setShowShield] = useState(false);
@@ -35,7 +36,7 @@ function App() {
   const [showMintModal, setShowMintModal] = useState(false);
   const [newCardLabel, setNewCardLabel] = useState("");
 
-  // --- NEW: CATEGORY-SPECIFIC STATES ---
+  // --- CATEGORY-SPECIFIC STATES ---
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [aliasLabel, setAliasLabel] = useState("");
@@ -71,7 +72,6 @@ function App() {
         setShowShield(true);
         setProgress(100);
     } else {
-        // Force reset state if no session found
         setTargetProfile({
             firstName: "", middleName: "", lastName: "", 
             email: "", dob: "", address: "", termsAccepted: false
@@ -121,7 +121,9 @@ function App() {
       const allAliases = aliasData.aliases || [];
       setEmails(allAliases.filter(a => a.type === 'email'));
       setPhones(allAliases.filter(a => a.type === 'phone'));
-    } catch (err) { }
+    } catch (err) { 
+        console.error("SYNC_ERROR: Node Unreachable");
+    }
   }, [pushNotification]);
 
   useEffect(() => {
@@ -149,15 +151,19 @@ function App() {
         setShowEmailModal(false);
         setShowPhoneModal(false);
         triggerToast(`${type.toUpperCase()} SECURED`);
+      } else {
+        triggerToast("NODE REJECTED");
       }
     } catch (err) { triggerToast("CONNECTION ERROR"); }
   };
 
   const handleKillAlias = async (id) => {
     try {
-      await fetch(`${API_BASE_URL}/aliases/kill/${id}`, { method: "DELETE" });
-      syncDefenseData();
-      triggerToast("PURGED");
+      const res = await fetch(`${API_BASE_URL}/aliases/kill/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        syncDefenseData();
+        triggerToast("PURGED");
+      }
     } catch (err) { triggerToast("ERROR"); }
   };
 
@@ -192,6 +198,8 @@ function App() {
         setNewCardLabel("");
         setShowMintModal(false);
         triggerToast("NODE SECURED");
+      } else {
+        triggerToast("MINT FAILED");
       }
     } catch (err) {
       triggerToast("CONNECTION ERROR");
@@ -200,9 +208,11 @@ function App() {
 
   const handleKillCard = async (id) => {
     try {
-      await fetch(`${API_BASE_URL}/financials/kill/${id}`, { method: "DELETE" });
-      setCards(prev => prev.filter(c => c.id !== id));
-      triggerToast("NODE BURNED");
+      const res = await fetch(`${API_BASE_URL}/financials/kill/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setCards(prev => prev.filter(c => c.id !== id));
+        triggerToast("NODE BURNED");
+      }
     } catch (err) { 
       triggerToast("ERROR"); 
     }
@@ -477,7 +487,6 @@ function App() {
                 <div className="recon-terminal" style={{maxWidth: '500px', margin: '0 auto'}}>
                   <div className="terminal-line">{'>> INITIATING HANDSHAKE...'}</div>
                   <div className="terminal-line">{'>> BYPASSING DATA BROKER FIREWALLS...'}</div>
-                  <div className="terminal-line">{'>> UPLOADING PURGE REQUESTS...'}</div>
                   <div className="terminal-line">{'>> ESTABLISHING SECURE ALIAS TUNNEL...'}</div>
                   <div className="terminal-line">{'>> ENCRYPTING VAULT ASSETS...'}</div>
                 </div>
