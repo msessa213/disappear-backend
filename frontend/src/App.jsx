@@ -11,9 +11,9 @@ import AdminDashboard from './AdminDashboard';
 import './App.css';
 
 /**
- * DISAPPEAR CORE ENGINE v2.1.8
+ * DISAPPEAR CORE ENGINE v2.2.4
  * Privacy-as-a-Service Frontend
- * Handshake Fix: Correcting Production URL to match Live Render Logs
+ * Feature: Stripe Payment Detection & Grid-Aligned Checkout
  */
 
 // --- DYNAMIC API ROUTING ---
@@ -59,7 +59,7 @@ function App() {
   });
 
   const [billingCycle, setBillingCycle] = useState("monthly");
-  const [nodeCount, setNodeCount] = useState(0);
+  const [credits, setCredits] = useState({ total: 6, used: 0, available: 6 });
   const [auditLog, setAuditLog] = useState([]);
   const [cards, setCards] = useState([]);
   const [progress, setProgress] = useState(15);
@@ -70,9 +70,16 @@ function App() {
     setTimeout(() => setShowToast(""), 3000); 
   };
 
-  // PERSISTENCE SYNC
+  // PERSISTENCE & PAYMENT SYNC
   useEffect(() => {
     const session = localStorage.getItem("disappear_session");
+    const query = new URLSearchParams(window.location.search);
+    
+    if (query.get("payment") === "success") {
+        triggerToast("CREDIT AUTHORIZED: NODE EXPANDED");
+        window.history.replaceState({}, document.title, "/");
+    }
+
     if (session === "active") {
         setShowShield(true);
         setProgress(100);
@@ -103,7 +110,13 @@ function App() {
     try {
       const res = await fetch(`${API_BASE_URL}/dashboard/sync`);
       const data = await res.json();
-      
+      if (data.profile) {
+          setCredits({
+              total: data.profile.credits_total || 6,
+              used: data.profile.credits_used || 0,
+              available: data.profile.credits_available || 0
+          });
+      }
       setAuditLog(prevLog => {
         if (data.recent_audit?.length > 0) {
             const latest = data.recent_audit[0];
@@ -114,13 +127,9 @@ function App() {
         }
         return data.recent_audit || [];
       });
-
-      setNodeCount(data.profile?.active_nodes || 0);
-
       const finRes = await fetch(`${API_BASE_URL}/financials/data`);
       const finData = await finRes.json();
       setCards(finData.cards || []);
-
       const aliasRes = await fetch(`${API_BASE_URL}/aliases/data`);
       const aliasData = await aliasRes.json();
       const allAliases = aliasData.aliases || [];
@@ -143,6 +152,15 @@ function App() {
     return () => clearInterval(interval);
   }, [showShield, syncDefenseData]);
 
+  const handlePurchaseSlot = async () => {
+    triggerToast("CONTACTING SECURE GATEWAY...");
+    try {
+      const res = await fetch(`${API_BASE_URL}/payments/create-session`, { method: "POST" });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch (err) { triggerToast("PAYMENT NODE OFFLINE"); }
+  };
+
   const handleMintAlias = async (type) => {
     if (!aliasLabel) { triggerToast("ENTER LABEL"); return; }
     try {
@@ -151,6 +169,8 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type, label: aliasLabel })
       });
+      if (res.status === 403) { triggerToast("IDENTITY CAPACITY FULL"); return; }
+      if (res.status === 429) { triggerToast("COOL-DOWN ACTIVE: 24H"); return; }
       if (res.ok) {
         syncDefenseData();
         setAliasLabel("");
@@ -192,6 +212,7 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ label: newCardLabel })
       });
+      if (response.status === 403) { triggerToast("IDENTITY CAPACITY FULL"); return; }
       if (response.ok) {
         syncDefenseData();
         setNewCardLabel("");
@@ -283,7 +304,7 @@ function App() {
       <div className="progress-bar-container">
         <div className="progress-bar-fill" style={{ width: `${progress}%` }}></div>
         <span className="secure-connection-text">
-          {showShield ? `SHIELD ACTIVE | ${nodeCount} NODES ONLINE` : `INITIALIZING SHIELD: ${progress}%`}
+          {showShield ? `SHIELD ACTIVE | ${credits.available} SLOTS AVAILABLE` : `INITIALIZING SHIELD: ${progress}%`}
         </span>
       </div>
 
@@ -345,7 +366,16 @@ function App() {
         {showShield ? (
           <div className="shield-container fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
             <h2 className="shield-text">🛡️ SHIELD ACTIVE</h2>
-            
+            <div className="masking-tool" style={{ border: '1px solid #111', background: '#050505', width: '100%', maxWidth: '600px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <span className="field-label">IDENTITY CAPACITY</span>
+                    <span className="tiger-text">{credits.used} / {credits.total} USED</span>
+                </div>
+                <div className="progress-bar-container" style={{ height: '8px', background: '#111', position: 'relative' }}>
+                    <div className="progress-bar-fill" style={{ width: `${(credits.used / credits.total) * 100}%`, background: 'var(--tiger-blue)' }}></div>
+                </div>
+                {credits.available === 0 && <button className="purchase-btn" onClick={handlePurchaseSlot}>BUY EXTRA SHIELD SLOT ($4.99)</button>}
+            </div>
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>EMAIL PROTECTION</p>
               <div className="alias-manager-list">
@@ -358,7 +388,6 @@ function App() {
               </div>
               <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowEmailModal(true)}> + MINT EMAIL ALIAS </button>
             </div>
-
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>PHONE PROTECTION</p>
               <div className="alias-manager-list">
@@ -371,7 +400,6 @@ function App() {
               </div>
               <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowPhoneModal(true)}> + MINT PHONE ALIAS </button>
             </div>
-
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '20px' }}>VIRTUAL SHIELD CARDS</p>
               <div className="card-manager-list">
@@ -393,7 +421,6 @@ function App() {
               </div>
               <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowMintModal(true)}> + MINT NEW SHIELD </button>
             </div>
-
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
               <p className="tool-label" style={{ textAlign: 'center' }}>LIVE SECURITY AUDIT</p>
               <div className="audit-list" style={{ maxHeight: '200px', overflowY: 'auto' }}>
@@ -405,7 +432,6 @@ function App() {
               </div>
               <button className="pdf-btn" style={{ width: '100%', marginTop: '15px' }} onClick={handleDownloadPDF} disabled={isGenerating}>GENERATE AUDIT PDF</button>
             </div>
-
             <div style={{display: 'flex', flexDirection: 'column', gap: '15px', width: '100%', maxWidth: '400px', marginTop: '40px'}}>
               <button className="reset-btn" onClick={() => {localStorage.clear(); window.location.reload();}}>LOGOUT SECURELY</button>
               <button className="burn-all-btn" onClick={() => { if(window.confirm("CONFIRM TOTAL PURGE?")) handleEmergencyBurn(); }}>EMERGENCY BURN</button>
@@ -426,7 +452,6 @@ function App() {
                 </div>
               </div>
             )}
-
             {show2FA && (
               <div className="pricing-card fade-in">
                 <div className="price-box">
@@ -437,7 +462,6 @@ function App() {
                 </div>
               </div>
             )}
-
             {showPricing && !showCheckout && !isScanning && (
               <div className="pricing-card fade-in">
                 <div className="billing-toggle">
@@ -452,29 +476,27 @@ function App() {
                 </div>
               </div>
             )}
-
             {showCheckout && !isScanning && (
               <div className="pricing-card fade-in">
                 <div className="price-box" style={{maxWidth: '450px', width: '100%', margin: '0 auto'}}>
                   <h3 className="tiger-text">TARGET PROFILE DATA</h3>
-                  <div style={{display: 'flex', flexDirection: 'column', gap: '15px', textAlign: 'left'}}>
+                  <div className="checkout-grid">
                       <input className="mask-btn" placeholder="First Name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
                       <input className="mask-btn" placeholder="Middle Name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
-                      <input className="mask-btn" placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
-                      <input className="mask-btn" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
-                      <input className="mask-btn" placeholder="Home Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
-                      <input className="mask-btn" type="text" inputMode="numeric" placeholder="MM/DD/YYYY" value={targetProfile.dob} onChange={handleNumericDateInput} />
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '15px' }}>
-                        <input type="checkbox" checked={targetProfile.termsAccepted} onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})} />
-                        <label style={{ fontSize: '0.65rem', color: '#94A3B8' }}>Authorize Full PII Scrub and Burn</label>
-                      </div>
+                      <input className="mask-btn full-row" placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
+                      <input className="mask-btn full-row" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
+                      <input className="mask-btn full-row" placeholder="Home Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
+                      <input className="mask-btn full-row" type="text" inputMode="numeric" placeholder="MM/DD/YYYY" value={targetProfile.dob} onChange={handleNumericDateInput} />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '15px' }}>
+                    <input type="checkbox" checked={targetProfile.termsAccepted} onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})} />
+                    <label style={{ fontSize: '0.65rem', color: '#94A3B8' }}>Authorize Full PII Scrub and Burn</label>
                   </div>
                   <button className="main-button" style={{ width: '100%', marginTop: '25px' }} onClick={handleFinalPurchase} disabled={!targetProfile.termsAccepted}>CONFIRM & INITIATE</button>
                   <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowCheckout(false)}>BACK</button>
                 </div>
               </div>
             )}
-
             {isScanning && (
               <div className="shield-container">
                 <div className="recon-terminal" style={{maxWidth: '500px', margin: '0 auto'}}>
@@ -490,7 +512,6 @@ function App() {
           </div>
         )}
       </main>
-
       <footer className="home-footer">
           <span onClick={() => setShowLegal('privacy')}>PRIVACY POLICY</span>
           <span className="footer-divider">|</span>

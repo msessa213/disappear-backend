@@ -435,3 +435,10 @@ input[type="checkbox"] {
   box-shadow: 0 0 10px var(--tiger-blue);
   transition: width 0.5s ease;
 }
+
+/* PROFIT PROTECTION: CAPACITY BAR & PURCHASE BUTTONS */
+.capacity-progress { height: 8px; background: #111; border-radius: 10px; overflow: hidden; margin-top: 5px; }
+.capacity-fill { height: 100%; background: var(--tiger-blue); box-shadow: 0 0 10px var(--tiger-blue); transition: width 0.5s; }
+.purchase-btn { width: 100%; margin-top: 15px; padding: 10px; border: 1px dashed var(--tiger-blue); color: var(--tiger-blue); font-size: 0.6rem; background: transparent; cursor: pointer; }
+.checkout-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+.full-row { grid-column: span 2; }
