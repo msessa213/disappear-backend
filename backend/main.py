@@ -7,12 +7,15 @@ from pydantic import BaseModel
 import random
 import os
 import time
-from datetime import datetime
+import stripe
+from datetime import datetime, timedelta
 from typing import List, Optional
 from dotenv import load_dotenv
 
 # --- INITIALIZATION BLOCK ---
 load_dotenv()
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 # --- DATABASE CONFIGURATION ---
 DATABASE_URL = os.getenv(
@@ -73,6 +76,7 @@ class DBProfile(Base):
     dob = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
 # NEW: Admin Purge Log Model for Central Command History
 class DBPurgeLog(Base):
     """Audit trail for identity 'burn' actions"""
@@ -110,6 +114,7 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+
 # FIXED: Middleware to force CORS headers on 404s and preflights
 @app.middleware("http")
 async def add_cors_header(request: Request, call_next):
@@ -126,6 +131,7 @@ async def add_cors_header(request: Request, call_next):
         response.headers["Access-Control-Allow-Headers"] = "*"
     return response
 
+
 # Database Dependency Injection
 def get_db():
     db = SessionLocal()
@@ -133,6 +139,12 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+# --- PROFIT PROTECTION CONSTANTS ---
+
+MAX_IDENTITY_CREDITS = 6
+COOLDOWN_HOURS = 24
 
 
 # --- DATA SEEDING & STABILITY STORAGE ---
@@ -188,7 +200,11 @@ async def get_admin_stats(db: Session = Depends(get_db)):
 
 @app.get("/dashboard/sync")
 async def sync(db: Session = Depends(get_db)):
-    """Synchronizes dashboard with live threat intelligence and node map data"""
+    """Synchronizes dashboard with credits and threat intelligence"""
+    active_cards = db.query(DBCard).count()
+    active_aliases = db.query(DBAlias).count()
+    total_used = active_cards + active_aliases
+    
     now = datetime.now()
     minute_seed = now.minute + now.hour
     random.seed(minute_seed)
@@ -216,14 +232,58 @@ async def sync(db: Session = Depends(get_db)):
         "profile": {
             "email_alias": STABLE_EMAIL,
             "phone_alias": STABLE_PHONE,
+            "credits_total": MAX_IDENTITY_CREDITS,
+            "credits_used": total_used,
+            "credits_available": max(0, MAX_IDENTITY_CREDITS - total_used),
             "threat_level": "NOMINAL",
             "uptime": "99.998%",
-            "active_nodes": 32 
+            "active_nodes": total_used 
         },
         "recent_audit": logs,
         "map_nodes": map_nodes,
         "system_status": "ENCRYPTED_TUNNEL_STABLE"
     }
+
+
+# --- PAYMENTS & WEBHOOKS ---
+
+@app.post("/payments/create-session")
+async def create_checkout_session():
+    """Generates a secure Stripe Checkout URL for extra credits"""
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'product_data': {'name': 'Additional Identity Shield Slot'},
+                    'unit_amount': 499,
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url="https://disappear-frontend-v2.vercel.app?payment=success",
+            cancel_url="https://disappear-frontend-v2.vercel.app?payment=cancel",
+        )
+        return {"url": session.url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/payments/webhook")
+async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
+    """Asynchronous listener for Stripe payment success events"""
+    payload = await request.body()
+    sig_header = request.headers.get('stripe-signature')
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+        if event['type'] == 'checkout.session.completed':
+            log = DBPurgeLog(action_type="CREDIT_PURCHASED", node_id="SECURE_GATEWAY")
+            db.add(log)
+            db.commit()
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Webhook Error: {str(e)}")
 
 
 # --- PII CONTROL ROUTES ---
@@ -237,7 +297,15 @@ async def get_aliases(db: Session = Depends(get_db)):
 
 @app.post("/aliases/mint")
 async def mint_alias(request: AliasRequest, db: Session = Depends(get_db)):
-    """Mints a separate Email or Phone alias for full control"""
+    """Mints an alias if under credit limit and not in cool-down"""
+    total_active = db.query(DBAlias).count() + db.query(DBCard).count()
+    if total_active >= MAX_IDENTITY_CREDITS:
+        raise HTTPException(status_code=403, detail="IDENTITY_LIMIT_REACHED")
+
+    last_burn = db.query(DBPurgeLog).filter(DBPurgeLog.action_type == "ALIAS_TERMINATED").order_by(DBPurgeLog.timestamp.desc()).first()
+    if last_burn and (datetime.utcnow() - last_burn.timestamp) < timedelta(hours=COOLDOWN_HOURS):
+        raise HTTPException(status_code=429, detail="COOL_DOWN_ACTIVE")
+
     alias_id = f"als_{int(time.time())}_{random.randint(100, 999)}"
     
     if request.type.lower() == "email":
@@ -286,6 +354,10 @@ async def financials(db: Session = Depends(get_db)):
 @app.post("/financials/mint")
 async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
     """Initiates a new virtual card minting process on the secure node"""
+    total_active = db.query(DBCard).count() + db.query(DBAlias).count()
+    if total_active >= MAX_IDENTITY_CREDITS:
+        raise HTTPException(status_code=403, detail="IDENTITY_LIMIT_REACHED")
+        
     try:
         card_id = f"vcc_{int(time.time())}_{random.randint(100, 999)}"
         
