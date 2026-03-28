@@ -11,14 +11,15 @@ import AdminDashboard from './AdminDashboard';
 import './App.css';
 
 /**
- * DISAPPEAR CORE ENGINE v2.1.7
+ * DISAPPEAR CORE ENGINE v2.1.8
  * Privacy-as-a-Service Frontend
- * Universal Handshake: Auto-detects Local vs. Vercel Environment
+ * Handshake Fix: Correcting Production URL to match Live Render Logs
  */
 
 // --- DYNAMIC API ROUTING ---
 const LOCAL_API = "http://127.0.0.1:8000";
-const PROD_API = "https://disappear-backend-v2.onrender.com"; // Your Render/Production URL
+// FIXED: Removed the '-v2' to match your verified Live Render URL from the logs
+const PROD_API = "https://disappear-backend.onrender.com"; 
 
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
   ? LOCAL_API
