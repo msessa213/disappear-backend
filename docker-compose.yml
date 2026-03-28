@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=disappear_secret
+      - POSTGRES_DB=freedom_db
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: ./backend
+    # FIX: This ensures if the DB is slow to start, the backend just retries
+    restart: on-failure
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql://admin:disappear_secret@db:5432/freedom_db
+    stdin_open: true
+    tty: true
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    # FIX: This maps your code but PROTECTS the container's node_modules 
+    # so the '@rollup/rollup-linux-x64-musl' error goes away.
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    stdin_open: true
+    tty: true
