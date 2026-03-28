@@ -11,15 +11,18 @@ import AdminDashboard from './AdminDashboard';
 import './App.css';
 
 /**
- * DISAPPEAR CORE ENGINE v2.1.6
+ * DISAPPEAR CORE ENGINE v2.1.7
  * Privacy-as-a-Service Frontend
- * Sync Fix: Updated API_BASE_URL for Local Network/Phone access
- * Feature: Granular PII Separation (Email, Phone, Cards)
- * Restoration: Manifesto logic fully restored
+ * Universal Handshake: Auto-detects Local vs. Vercel Environment
  */
 
-// REPLACE '192.168.1.XX' with your computer's actual IPv4 address from 'ipconfig'
-const API_BASE_URL = "http://127.0.0.1:8000";
+// --- DYNAMIC API ROUTING ---
+const LOCAL_API = "http://127.0.0.1:8000";
+const PROD_API = "https://disappear-backend-v2.onrender.com"; // Your Render/Production URL
+
+const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+  ? LOCAL_API
+  : PROD_API;
 
 function App() {
   const [showShield, setShowShield] = useState(false);
@@ -37,7 +40,7 @@ function App() {
   const [showMintModal, setShowMintModal] = useState(false);
   const [newCardLabel, setNewCardLabel] = useState("");
 
-  // --- CATEGORY-SPECIFIC STATES FOR FULL CONTROL ---
+  // --- CATEGORY-SPECIFIC STATES ---
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [aliasLabel, setAliasLabel] = useState("");
@@ -124,7 +127,7 @@ function App() {
       setEmails(allAliases.filter(a => a.type === 'email'));
       setPhones(allAliases.filter(a => a.type === 'phone'));
     } catch (err) { 
-        console.error("Connection Error: Node Unavailable");
+        console.error("Connection Error: API Unreachable at " + API_BASE_URL);
     }
   }, [pushNotification]);
 
@@ -209,7 +212,9 @@ function App() {
     triggerToast("AUTHENTICATING...");
     setTimeout(() => {
       localStorage.setItem("disappear_session", "active");
-      setShow2FA(false); setShowShield(true); setProgress(100);
+      setShow2FA(false); 
+      setShowShield(true); 
+      setProgress(100);
       triggerToast("WELCOME BACK, AGENT");
     }, 1500);
   };
@@ -232,29 +237,43 @@ function App() {
 
   const handleFinalPurchase = async () => {
     if(!targetProfile.firstName || !targetProfile.lastName || !targetProfile.email || !targetProfile.address) {
-        triggerToast("REQUIRED FIELDS MISSING"); return;
+        triggerToast("REQUIRED FIELDS MISSING");
+        return;
     }
     setIsScanning(true);
     try {
         const response = await fetch(`${API_BASE_URL}/financials/profile`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
+            method: "POST", 
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(targetProfile)
         });
         if (response.ok) {
-            setShowCheckout(false); setShowPricing(false); setIsScanning(false);
-            setShowShield(true); setProgress(100);
+            setShowCheckout(false); 
+            setShowPricing(false);
+            setIsScanning(false);
+            setShowShield(true); 
+            setProgress(100);
             triggerToast("IDENTITY PURGE INITIATED");
             syncDefenseData();
-        } else { setIsScanning(false); triggerToast("NODE ERROR"); }
-    } catch (err) { setIsScanning(false); triggerToast("NODE OFFLINE"); }
+        } else { 
+            setIsScanning(false);
+            triggerToast("NODE ERROR"); 
+        }
+    } catch (err) { 
+        setIsScanning(false);
+        triggerToast("NODE OFFLINE");
+    }
   };
 
   const handleNumericDateInput = (e) => {
     let val = e.target.value.replace(/\D/g, ''); 
     if (val.length > 8) val = val.slice(0, 8);
     let formatted = val;
-    if (val.length > 4) formatted = `${val.slice(0, 2)}/${val.slice(2, 4)}/${val.slice(4)}`;
-    else if (val.length > 2) formatted = `${val.slice(0, 2)}/${val.slice(2)}`;
+    if (val.length > 4) {
+        formatted = `${val.slice(0, 2)}/${val.slice(2, 4)}/${val.slice(4)}`;
+    } else if (val.length > 2) {
+        formatted = `${val.slice(0, 2)}/${val.slice(2)}`;
+    }
     setTargetProfile({...targetProfile, dob: formatted});
   };
 
@@ -277,7 +296,6 @@ function App() {
         ))}
       </div>
 
-      {/* --- PII MODALS --- */}
       {(showEmailModal || showPhoneModal) && (
         <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => {setShowEmailModal(false); setShowPhoneModal(false)}}>
           <div className="price-box" onClick={e => e.stopPropagation()}>

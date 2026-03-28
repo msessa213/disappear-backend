@@ -34,7 +34,7 @@ body, html, #root {
 .app-container {
   width: 100%;
   max-width: 1000px;
-  padding: 100px 20px 120px 20px;
+  padding: 100px 20px 140px 20px; /* Increased bottom padding for footer clearance */
   margin: 0 auto;
   text-align: center;
   display: flex;
@@ -42,7 +42,7 @@ body, html, #root {
   min-height: 100vh;
 }
 
-/* 2. THE ALIGNMENT FIX */
+/* 2. THE ALIGNMENT FIX (Centered & Structured) */
 .price-box {
   background-color: var(--card-bg);
   border: 1px solid var(--tiger-blue);
@@ -58,7 +58,6 @@ body, html, #root {
   gap: 15px;
 }
 
-/* ADDED ACCESSIBILITY CLASSES */
 .accessible-field {
   width: 100%;
   display: flex;
@@ -76,6 +75,7 @@ body, html, #root {
   margin-left: 5px;
 }
 
+/* Standardized Inputs for Dashboard & Onboarding */
 .price-box .mask-btn, 
 .price-box .main-button, 
 .price-box .reset-btn,
@@ -97,14 +97,14 @@ body, html, #root {
 
 .price-box input:focus {
   border-color: var(--tiger-blue);
+  box-shadow: 0 0 10px rgba(0, 71, 171, 0.3);
 }
 
-/* DOB INPUT FIX: Ensure placeholder is visible and consistent */
 .price-box input::placeholder {
   color: #475569;
 }
 
-/* 3. COMPLIANCE CHECKBOX STYLING */
+/* 3. COMPLIANCE & CHECKBOX */
 .legal-link {
   color: var(--tiger-blue);
   text-decoration: underline;
@@ -123,7 +123,7 @@ input[type="checkbox"] {
   cursor: pointer;
 }
 
-/* 4. DASHBOARD STABILITY - FIXED FOR VERTICAL STACKING */
+/* 4. DASHBOARD STABILITY */
 .tools-grid {
   display: flex; 
   flex-direction: column; 
@@ -131,10 +131,6 @@ input[type="checkbox"] {
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
-}
-
-.full-width-tool {
-  width: 100%;
 }
 
 .masking-tool {
@@ -147,21 +143,13 @@ input[type="checkbox"] {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  transition: border 0.3s ease;
-  margin-bottom: 25px; /* Added spacing between tools */
+  transition: border 0.3s ease, box-shadow 0.3s ease;
+  margin-bottom: 25px;
 }
 
-.filter-btn.active {
-  background-color: var(--tiger-blue);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  font-weight: bold;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  cursor: pointer;
+.masking-tool:hover {
+  border-color: var(--tiger-blue);
+  box-shadow: 0 0 20px rgba(0, 71, 171, 0.1);
 }
 
 .masked-display {
@@ -179,16 +167,18 @@ input[type="checkbox"] {
 }
 
 .audit-list {
-  height: 220px;
+  max-height: 220px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  scrollbar-width: thin;
+  scrollbar-color: var(--tiger-blue) #000;
 }
 
 .audit-row {
   display: flex;
   justify-content: space-between;
-  padding: 10px 0;
+  padding: 12px 0;
   border-bottom: 1px solid #111;
   font-size: 0.75rem;
   text-align: left;
@@ -210,7 +200,7 @@ input[type="checkbox"] {
   margin-bottom: 5px;
 }
 
-/* 5. SEPARATE MANAGERS (EMAILS, PHONES, CARDS) */
+/* 5. ASSET MANAGERS */
 .alias-manager-list, .card-manager-list {
   display: flex;
   flex-direction: column;
@@ -219,8 +209,8 @@ input[type="checkbox"] {
 }
 
 .alias-row, .managed-card-row {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  border: 1px solid #334155;
+  background: linear-gradient(135deg, #0f172a 0%, #0a0a0a 100%);
+  border: 1px solid #1e293b;
   border-radius: 12px;
   padding: 20px;
   text-align: left;
@@ -229,32 +219,14 @@ input[type="checkbox"] {
   align-items: center;
 }
 
-.alias-info {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.alias-label {
-  font-size: 0.65rem;
-  color: var(--tiger-blue);
-  font-weight: bold;
-  text-transform: uppercase;
-}
-
-.alias-content {
-  font-family: 'Courier New', monospace;
-  font-size: 0.95rem;
-  color: white;
-}
-
 .card-digits {
   font-family: 'Courier New', monospace;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   letter-spacing: 2px;
   display: block;
   margin: 10px 0;
   cursor: pointer;
+  color: #fff;
 }
 
 .kill-text-bold {
@@ -265,9 +237,14 @@ input[type="checkbox"] {
   font-size: 0.7rem;
   cursor: pointer;
   text-transform: uppercase;
+  padding: 5px;
 }
 
-/* 6. GUARANTEED VISIBILITY FOOTER (FIXED) */
+.kill-text-bold:hover {
+  text-decoration: underline;
+}
+
+/* 6. GUARANTEED FOOTER (The "Vercel Fix") */
 .home-footer {
   position: fixed !important;
   bottom: 0 !important;
@@ -281,8 +258,6 @@ input[type="checkbox"] {
   justify-content: center !important;
   gap: 15px !important;
   z-index: 9999 !important;
-  padding: 0 !important;
-  margin: 0 !important;
 }
 
 .home-footer span {
@@ -293,19 +268,10 @@ input[type="checkbox"] {
   cursor: pointer !important;
   text-transform: uppercase !important;
   letter-spacing: 1px !important;
-  display: inline-block !important;
-  visibility: visible !important;
 }
 
 .home-footer span:hover {
   color: white !important;
-}
-
-.footer-divider {
-  color: #334155 !important;
-  text-decoration: none !important;
-  opacity: 0.5;
-  cursor: default !important;
 }
 
 /* 7. BRANDING & UI */
@@ -316,6 +282,15 @@ input[type="checkbox"] {
   letter-spacing: clamp(5px, 2vw, 15px);
   text-transform: uppercase;
   margin: 0;
+  text-shadow: 0 0 20px rgba(0, 71, 171, 0.4);
+}
+
+.subtitle {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  margin-top: 10px;
 }
 
 .main-button {
@@ -332,13 +307,8 @@ input[type="checkbox"] {
 }
 
 .main-button:hover:not(:disabled) {
-  transform: scale(1.02);
+  transform: translateY(-2px);
   box-shadow: 0 0 30px rgba(0, 71, 171, 0.6);
-}
-
-.main-button:disabled {
-  background-color: #1e293b;
-  color: #475569;
 }
 
 .reset-btn {
@@ -348,42 +318,36 @@ input[type="checkbox"] {
   border-radius: 50px;
   cursor: pointer;
   padding: 10px 20px;
+  transition: 0.3s;
 }
 
-/* 8. LEGAL DOCUMENT STYLING */
-.legal-document {
-  padding: 10px 0;
-}
-
-.legal-document h2 {
-  color: var(--tiger-blue);
-  margin-bottom: 20px;
-}
-
-.legal-document h3 {
+.reset-btn:hover {
+  border-color: var(--text-dim);
   color: white;
-  margin-top: 25px;
-  margin-bottom: 10px;
-  font-size: 1rem;
 }
 
-.legal-document p {
-  color: var(--text-dim);
-  line-height: 1.6;
-  margin-bottom: 15px;
-  font-size: 0.9rem;
+/* 8. STATUS MESSAGES & TOASTS */
+.status-message.toast-fixed {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--tiger-blue);
+  color: white;
+  padding: 15px 25px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.8rem;
+  z-index: 100000;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  animation: slideIn 0.3s ease-out;
 }
 
-.legal-document ul {
-  margin-left: 20px;
-  color: var(--text-dim);
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
 
-.legal-document li {
-  margin-bottom: 10px;
-}
-
-/* MODALS */
+/* 9. MODALS */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -409,38 +373,65 @@ input[type="checkbox"] {
   max-height: 85vh;
   overflow-y: auto;
   text-align: left;
-  box-shadow: 0 0 50px rgba(0, 0, 0, 1);
 }
 
-/* --- 9. MOBILE RESPONSIVE OVERRIDES --- */
+/* 10. MOBILE RESPONSIVE OVERRIDES */
 @media (max-width: 768px) {
   .app-container {
     padding: 60px 15px 120px 15px;
   }
 
-  div[style*="display: flex"][style*="gap: 20px"] {
-    flex-direction: column !important;
-    width: 100% !important;
-  }
-
-  .tools-grid {
-    flex-direction: column !important;
-  }
-
-  .full-width-tool {
-    width: 100% !important;
+  .brand-name {
+    font-size: 2.2rem;
   }
 
   .price-box, .info-modal-content {
     padding: 25px 20px;
   }
 
-  .brand-name {
-    margin-top: 20px;
+  .onboarding-flow div[style*="display: flex"] {
+    flex-direction: column !important;
+    gap: 15px !important;
+    width: 100%;
   }
 
-  .status-message.toast-fixed {
-    width: 90%;
-    top: 10px;
+  .main-button, .login-btn-outline {
+    width: 100% !important;
   }
+
+  .home-footer {
+    height: 80px !important;
+    flex-direction: column;
+    gap: 5px !important;
+  }
+
+  .footer-divider {
+    display: none !important;
+  }
+}
+
+.secure-connection-text {
+  font-size: 0.6rem;
+  color: var(--tiger-blue);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-top: 10px;
+  display: block;
+}
+
+.progress-bar-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: #111;
+  z-index: 10000;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--tiger-blue);
+  box-shadow: 0 0 10px var(--tiger-blue);
+  transition: width 0.5s ease;
 }

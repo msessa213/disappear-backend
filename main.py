@@ -24,7 +24,6 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 # FIX: Conditional SSL Mode for Local Docker vs Supabase Cloud
-# Local Docker 'db' does not support SSL. Supabase Cloud URLs REQUIRE it.
 is_cloud = "supabase.com" in DATABASE_URL
 connect_args = {"sslmode": "require"} if is_cloud else {}
 
@@ -72,7 +71,7 @@ class DBProfile(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-# Auto-create tables on startup with crash protection
+# Auto-create tables on startup
 try:
     Base.metadata.create_all(bind=engine)
 except Exception as e:
@@ -81,12 +80,18 @@ except Exception as e:
 
 # --- APP CONFIGURATION ---
 
-app = FastAPI()
+app = FastAPI(title="Disappear PaaS Engine")
 
-# Global CORS Policy
+# FIXED: Explicit CORS for both Local and Vercel Environments
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://disappear-frontend-v2.vercel.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -131,13 +136,13 @@ class LoginRequest(BaseModel):
 
 @app.get("/")
 async def health_status():
-    """Health check endpoint to keep the Render node from entering deep sleep"""
-    return {"status": "ACTIVE", "timestamp": datetime.now().isoformat()}
+    """Health check endpoint"""
+    return {"status": "ACTIVE", "timestamp": datetime.now().isoformat(), "engine": "Disappear v2.1.6"}
 
 
 @app.get("/admin/stats")
 async def get_admin_stats(db: Session = Depends(get_db)):
-    """Aggregates platform-wide metrics for the Central Command Dashboard"""
+    """Aggregates platform-wide metrics"""
     total_users = db.query(DBProfile).count()
     total_cards = db.query(DBCard).count()
     total_aliases = db.query(DBAlias).count()
@@ -155,7 +160,7 @@ async def get_admin_stats(db: Session = Depends(get_db)):
 
 @app.get("/dashboard/sync")
 async def sync(db: Session = Depends(get_db)):
-    """Synchronizes dashboard with live threat intelligence and node map data"""
+    """Synchronizes dashboard data"""
     now = datetime.now()
     minute_seed = now.minute + now.hour
     random.seed(minute_seed)
@@ -197,14 +202,12 @@ async def sync(db: Session = Depends(get_db)):
 
 @app.get("/aliases/data")
 async def get_aliases(db: Session = Depends(get_db)):
-    """Retrieves all active aliases for separate rendering"""
     aliases = db.query(DBAlias).order_by(DBAlias.created_at.desc()).all()
     return {"aliases": aliases if aliases else []}
 
 
 @app.post("/aliases/mint")
 async def mint_alias(request: AliasRequest, db: Session = Depends(get_db)):
-    """Mints a separate Email or Phone alias for full control"""
     alias_id = f"als_{int(time.time())}_{random.randint(100, 999)}"
     
     if request.type.lower() == "email":
@@ -226,7 +229,6 @@ async def mint_alias(request: AliasRequest, db: Session = Depends(get_db)):
 
 @app.delete("/aliases/kill/{alias_id}")
 async def kill_alias(alias_id: str, db: Session = Depends(get_db)):
-    """TERMINATE command for a specific PII node"""
     alias = db.query(DBAlias).filter(DBAlias.id == alias_id).first()
     if alias:
         db.delete(alias)
@@ -239,7 +241,6 @@ async def kill_alias(alias_id: str, db: Session = Depends(get_db)):
 
 @app.get("/financials/data")
 async def financials(db: Session = Depends(get_db)):
-    """Retrieves list of active virtual cards from the secure ledger"""
     try:
         cards = db.query(DBCard).order_by(DBCard.created_at.desc()).all()
         return {"cards": cards if cards else []}
@@ -249,7 +250,6 @@ async def financials(db: Session = Depends(get_db)):
 
 @app.post("/financials/mint")
 async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
-    """Initiates a new virtual card minting process on the secure node"""
     try:
         card_id = f"vcc_{int(time.time())}_{random.randint(100, 999)}"
         
@@ -272,7 +272,6 @@ async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
 @app.post("/financials/profile")
 @app.post("/financials/profile/")
 async def save_profile(request: Request, db: Session = Depends(get_db)):
-    """Handles raw profile ingestion to bypass strict validation 404s"""
     try:
         data = await request.json()
         profile_id = f"user_{random.randint(1000, 9999)}"
@@ -297,7 +296,6 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
 
 @app.delete("/financials/kill/{card_id}")
 async def kill_card(card_id: str, db: Session = Depends(get_db)):
-    """Permanently deletes a card asset from the database"""
     card = db.query(DBCard).filter(DBCard.id == card_id).first()
     if card:
         db.delete(card)
@@ -308,7 +306,6 @@ async def kill_card(card_id: str, db: Session = Depends(get_db)):
 
 @app.post("/financials/burn-all")
 async def burn_all_assets(db: Session = Depends(get_db)):
-    """Global wipe command: Deletes all profiles, cards, and aliases from the node"""
     db.query(DBCard).delete()
     db.query(DBAlias).delete()
     db.query(DBProfile).delete()
@@ -318,7 +315,6 @@ async def burn_all_assets(db: Session = Depends(get_db)):
 
 @app.post("/financials/regenerate")
 async def regenerate_alias():
-    """Cycles identity aliases for the shield dashboard interface"""
     global STABLE_EMAIL, STABLE_PHONE
     STABLE_EMAIL = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
     STABLE_PHONE = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
@@ -327,5 +323,7 @@ async def regenerate_alias():
 
 if __name__ == "__main__":
     import uvicorn
-    # 0.0.0.0 allows Docker to bridge to your browser 127.0.0.1
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
+    # Dynamic port detection for Cloud vs Local
+    port = int(os.environ.get("PORT", 8000))
+    # 0.0.0.0 is required for Docker port mapping to work
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
