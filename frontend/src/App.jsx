@@ -19,7 +19,7 @@ import './App.css';
  */
 
 // REPLACE '192.168.1.XX' with your computer's actual IPv4 address from 'ipconfig'
-const API_BASE_URL = "http://192.168.1.XX:8000"; 
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 function App() {
   const [showShield, setShowShield] = useState(false);
