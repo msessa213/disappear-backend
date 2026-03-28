@@ -13,11 +13,10 @@ import './App.css';
 /**
  * DISAPPEAR CORE ENGINE v2.1.6
  * Privacy-as-a-Service Frontend
- * Fixes: Masked DOB Input, Persistence Sync, UX Polish
- * Feature: Granular PII Separation (Email, Phone, Cards)
- * Restoration: Manifesto logic fully restored
+ * Fixes: ERR_CONNECTION_REFUSED, Manifesto Restoration, Syntax 9+ Fix
  */
 
+// FIXED: Using numeric IP to match your working backend screenshot
 const API_BASE_URL = "http://127.0.0.1:8000"; 
 
 function App() {
@@ -36,7 +35,7 @@ function App() {
   const [showMintModal, setShowMintModal] = useState(false);
   const [newCardLabel, setNewCardLabel] = useState("");
 
-  // --- CATEGORY-SPECIFIC STATES FOR FULL CONTROL ---
+  // --- CATEGORY-SPECIFIC STATES ---
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [aliasLabel, setAliasLabel] = useState("");
@@ -65,14 +64,13 @@ function App() {
     setTimeout(() => setShowToast(""), 3000); 
   };
 
-  // PERSISTENCE SYNC: Ensures old data from other devices/sessions doesn't bleed in
+  // PERSISTENCE SYNC
   useEffect(() => {
     const session = localStorage.getItem("disappear_session");
     if (session === "active") {
         setShowShield(true);
         setProgress(100);
     } else {
-        // Force reset state if no session found
         setTargetProfile({
             firstName: "", middleName: "", lastName: "", 
             email: "", dob: "", address: "", termsAccepted: false
@@ -123,7 +121,9 @@ function App() {
       
       setEmails(allAliases.filter(a => a.type === 'email'));
       setPhones(allAliases.filter(a => a.type === 'phone'));
-    } catch (err) { }
+    } catch (err) { 
+        console.error("CONNECTION_ERROR");
+    }
   }, [pushNotification]);
 
   useEffect(() => {
@@ -179,10 +179,7 @@ function App() {
   };
 
   const handleMintCard = async () => {
-    if (!newCardLabel) {
-        triggerToast("ENTER MERCHANT NAME");
-        return;
-    }
+    if (!newCardLabel) { triggerToast("ENTER MERCHANT NAME"); return; }
     try {
       const response = await fetch(`${API_BASE_URL}/financials/mint`, {
         method: "POST",
@@ -195,9 +192,7 @@ function App() {
         setShowMintModal(false);
         triggerToast("NODE SECURED");
       }
-    } catch (err) {
-      triggerToast("CONNECTION ERROR");
-    }
+    } catch (err) { triggerToast("CONNECTION ERROR"); }
   };
 
   const handleKillCard = async (id) => {
@@ -205,9 +200,7 @@ function App() {
       await fetch(`${API_BASE_URL}/financials/kill/${id}`, { method: "DELETE" });
       setCards(prev => prev.filter(c => c.id !== id));
       triggerToast("NODE BURNED");
-    } catch (err) { 
-      triggerToast("ERROR"); 
-    }
+    } catch (err) { triggerToast("ERROR"); }
   };
 
   const verify2FA = () => {
@@ -233,11 +226,7 @@ function App() {
         doc.text("DISAPPEAR | PRIVACY AUDIT", 15, 25);
         doc.save(`AUDIT_${Date.now()}.pdf`);
         triggerToast("AUDIT DOWNLOADED");
-      } catch (err) { 
-        triggerToast("FAILED"); 
-      } finally { 
-        setIsGenerating(false); 
-      }
+      } catch (err) { triggerToast("FAILED"); } finally { setIsGenerating(false); }
     }, 1500);
   };
 
@@ -436,7 +425,7 @@ function App() {
               <div className="pricing-card fade-in">
                 <div className="price-box">
                   <h3 className="tiger-text">MFA CHALLENGE</h3>
-                  <input id="mfa_code" name="mfa_code" className="mask-btn" style={{width: '100%', textAlign: 'center', fontSize: '1.2rem', letterSpacing: '5px'}} placeholder="******" />
+                  <input id="mfa_code" className="mask-btn" style={{width: '100%', textAlign: 'center'}} placeholder="******" />
                   <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={verify2FA}>VERIFY</button>
                   <button className="reset-btn" style={{width: '100%'}} onClick={() => setShow2FA(false)}>CANCEL</button>
                 </div>
@@ -463,11 +452,11 @@ function App() {
                 <div className="price-box" style={{maxWidth: '450px', width: '100%', margin: '0 auto'}}>
                   <h3 className="tiger-text">TARGET PROFILE DATA</h3>
                   <div style={{display: 'flex', flexDirection: 'column', gap: '15px', textAlign: 'left'}}>
-                      <input id="fn" name="fn" className="mask-btn" placeholder="First Name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
-                      <input id="ln" name="ln" className="mask-btn" placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
-                      <input id="em" name="em" className="mask-btn" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
-                      <input id="ad" name="ad" className="mask-btn" placeholder="Home Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
-                      <input id="dob" name="dob" className="mask-btn" type="text" inputMode="numeric" placeholder="MM/DD/YYYY" value={targetProfile.dob} onChange={handleNumericDateInput} />
+                      <input className="mask-btn" placeholder="First Name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
+                      <input className="mask-btn" placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
+                      <input className="mask-btn" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
+                      <input className="mask-btn" placeholder="Home Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
+                      <input className="mask-btn" type="text" inputMode="numeric" placeholder="MM/DD/YYYY" value={targetProfile.dob} onChange={handleNumericDateInput} />
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '15px' }}>
                         <input type="checkbox" checked={targetProfile.termsAccepted} onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})} />
                         <label style={{ fontSize: '0.65rem', color: '#94A3B8' }}>Authorize Full PII Scrub and Burn</label>

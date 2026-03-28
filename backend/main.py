@@ -15,16 +15,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- DATABASE CONFIGURATION ---
-# Default to Docker 'db' service if environment variable is missing
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql://postgres:postgres@db:5432/postgres"
+    "postgresql://postgres.chymgteinnczqfjqknan:%40Chase246642@aws-1-us-east-1.pooler.supabase.com:6543/postgres"
 )
 
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# FIX: Check if we are connecting to a local Docker service or Supabase cloud
+# FIX: Conditional SSL Mode for Local Docker vs Supabase Cloud
+# Local Docker 'db' does not support SSL. Supabase Cloud URLs REQUIRE it.
 is_cloud = "supabase.com" in DATABASE_URL
 connect_args = {"sslmode": "require"} if is_cloud else {}
 
@@ -52,7 +52,7 @@ class DBCard(Base):
 
 
 class DBAlias(Base):
-    """NEW: Represents separate managed PII aliases (Emails or Phones)"""
+    """Represents separate managed PII aliases (Emails or Phones)"""
     __tablename__ = "shield_aliases_v3"
     id = Column(String, primary_key=True, index=True)
     type = Column(String)  # "email" or "phone"
@@ -72,22 +72,24 @@ class DBProfile(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
-# Auto-create tables on startup
-Base.metadata.create_all(bind=engine)
+# Auto-create tables on startup with crash protection
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print(f"ALARM: DB Sync Deferred - {e}")
 
 
 # --- APP CONFIGURATION ---
 
 app = FastAPI()
 
-# FIXED: Explicit CORS Policy for Docker stability
+# Global CORS Policy
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
-    expose_headers=["*"]
 )
 
 
@@ -117,7 +119,6 @@ class CardRequest(BaseModel):
 
 
 class AliasRequest(BaseModel):
-    """NEW: Separate request for email or phone aliases"""
     type: str  # "email" or "phone"
     label: str
 
@@ -192,7 +193,7 @@ async def sync(db: Session = Depends(get_db)):
     }
 
 
-# --- NEW: SEPARATE PII CONTROL ROUTES ---
+# --- PII CONTROL ROUTES ---
 
 @app.get("/aliases/data")
 async def get_aliases(db: Session = Depends(get_db)):
@@ -326,6 +327,6 @@ async def regenerate_alias():
 
 if __name__ == "__main__":
     import uvicorn
-    # Host must be 0.0.0.0 for Docker container mapping
+    # FIXED: Mandatory 0.0.0.0 for Docker port mapping to host Windows machine
     target_port = int(os.environ.get("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=target_port, reload=False)
