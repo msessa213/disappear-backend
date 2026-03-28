@@ -70,6 +70,15 @@ class DBProfile(Base):
     dob = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+# NEW: Admin Purge Log Model for Central Command History
+class DBPurgeLog(Base):
+    """Audit trail for identity 'burn' actions"""
+    __tablename__ = "purge_logs_v1"
+    id = Column(Integer, primary_key=True, index=True)
+    action_type = Column(String)
+    node_id = Column(String)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
 
 # Auto-create tables on startup with crash protection
 try:
@@ -250,6 +259,9 @@ async def kill_alias(alias_id: str, db: Session = Depends(get_db)):
     """TERMINATE command for a specific PII node"""
     alias = db.query(DBAlias).filter(DBAlias.id == alias_id).first()
     if alias:
+        # LOG ACTION FOR ADMIN
+        log = DBPurgeLog(action_type="ALIAS_TERMINATED", node_id=alias_id)
+        db.add(log)
         db.delete(alias)
         db.commit()
         return {"status": "node_purged"}
@@ -321,6 +333,9 @@ async def kill_card(card_id: str, db: Session = Depends(get_db)):
     """Permanently deletes a card asset from the database"""
     card = db.query(DBCard).filter(DBCard.id == card_id).first()
     if card:
+        # LOG ACTION FOR ADMIN
+        log = DBPurgeLog(action_type="CARD_TERMINATED", node_id=card_id)
+        db.add(log)
         db.delete(card)
         db.commit()
         return {"status": "node_terminated"}
@@ -333,6 +348,9 @@ async def burn_all_assets(db: Session = Depends(get_db)):
     db.query(DBCard).delete()
     db.query(DBAlias).delete()
     db.query(DBProfile).delete()
+    # LOG GLOBAL PURGE
+    log = DBPurgeLog(action_type="TOTAL_SYSTEM_PURGE", node_id="GLOBAL_NODE")
+    db.add(log)
     db.commit()
     return {"status": "TOTAL_PURGE_COMPLETE"}
 
