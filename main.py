@@ -82,10 +82,17 @@ except Exception as e:
 
 app = FastAPI(title="Disappear PaaS Engine")
 
-# FIXED: Wildcard CORS to resolve Vercel/Production handshake issues
+# FIXED: Explicit Origins for Vercel and Local environments
+# Standard browsers block wildcard "*" when allow_credentials is True
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://disappear-frontend-v2.vercel.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],

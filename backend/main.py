@@ -82,7 +82,8 @@ except Exception as e:
 
 app = FastAPI(title="Disappear PaaS Engine")
 
-# FIXED: Explicit CORS for both Local and Vercel Environments
+# FIXED: Explicit Origins for Vercel and Local environments
+# Standard browsers block wildcard "*" when allow_credentials is True
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
