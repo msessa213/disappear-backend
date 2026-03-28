@@ -37,6 +37,7 @@ Base = declarative_base()
 
 class DBCard(Base):
     """Represents a virtual shield card asset in the secure vault"""
+    # CHANGED TABLE NAME TO FORCE SCHEMA SYNC
     __tablename__ = "shield_assets_v3"
     id = Column(String, primary_key=True, index=True)
     label = Column(String)
@@ -47,7 +48,7 @@ class DBCard(Base):
 
 
 class DBAlias(Base):
-    """NEW: Represents a dynamically managed PII alias (Multiple Emails or Phones)"""
+    """NEW: Represents separate managed PII aliases (Emails or Phones)"""
     __tablename__ = "shield_aliases_v3"
     id = Column(String, primary_key=True, index=True)
     type = Column(String)  # "email" or "phone"
@@ -75,6 +76,7 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+# Global CORS Policy
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -99,7 +101,6 @@ THREAT_TYPES = ["IDENTITY_QUERY_DEFLECTED", "PII_SCRUB_VERIFIED", "NODE_ENCRYPTE
 BROKERS = ["SPOKEO", "ACXIOM", "INTELIUS", "WHITEPAGES", "PEOPLELOOKER"]
 DOMAINS = ["disappear.private", "shield.mask", "cloak.node", "ghost.vault"]
 
-# Keeping these for backwards compatibility, but we will move to DB-backed lists
 STABLE_EMAIL = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
 STABLE_PHONE = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
 
@@ -111,7 +112,7 @@ class CardRequest(BaseModel):
 
 
 class AliasRequest(BaseModel):
-    """NEW: Request schema for adding custom email/phone aliases"""
+    """NEW: Separate request for email or phone aliases"""
     type: str  # "email" or "phone"
     label: str
 
@@ -153,8 +154,8 @@ async def sync(db: Session = Depends(get_db)):
     minute_seed = now.minute + now.hour
     random.seed(minute_seed)
     
-    # Fetch DB-backed aliases
-    active_aliases = db.query(DBAlias).all()
+    # Fetch aliases to keep UI lists separate
+    all_aliases = db.query(DBAlias).all()
 
     logs = []
     for i in range(5):
@@ -177,9 +178,8 @@ async def sync(db: Session = Depends(get_db)):
 
     return {
         "profile": {
-            "email_alias": STABLE_EMAIL, # Legacy support
-            "phone_alias": STABLE_PHONE, # Legacy support
-            "active_aliases": active_aliases, # New multi-item list
+            "email_alias": STABLE_EMAIL,
+            "phone_alias": STABLE_PHONE,
             "threat_level": "NOMINAL",
             "uptime": "99.998%",
             "active_nodes": 32 
@@ -190,53 +190,49 @@ async def sync(db: Session = Depends(get_db)):
     }
 
 
-# --- NEW: MULTI-ALIAS CONTROL ENDPOINTS ---
+# --- NEW: SEPARATE PII CONTROL ROUTES ---
 
 @app.get("/aliases/data")
 async def get_aliases(db: Session = Depends(get_db)):
-    """Retrieves list of all active email/phone aliases"""
+    """Retrieves all active aliases for separate rendering"""
     aliases = db.query(DBAlias).order_by(DBAlias.created_at.desc()).all()
     return {"aliases": aliases if aliases else []}
 
 
 @app.post("/aliases/mint")
 async def mint_alias(request: AliasRequest, db: Session = Depends(get_db)):
-    """Mints a new email or phone alias for full customer control"""
-    try:
-        alias_id = f"als_{int(time.time())}_{random.randint(100, 999)}"
+    """Mints a separate Email or Phone alias for full control"""
+    alias_id = f"als_{int(time.time())}_{random.randint(100, 999)}"
+    
+    if request.type.lower() == "email":
+        content = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
+    else:
+        content = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
         
-        if request.type.lower() == "email":
-            content = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
-        else:
-            content = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
-            
-        new_alias = DBAlias(
-            id=alias_id,
-            type=request.type,
-            label=request.label,
-            content=content
-        )
-        db.add(new_alias)
-        db.commit()
-        db.refresh(new_alias)
-        return new_alias
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+    new_alias = DBAlias(
+        id=alias_id,
+        type=request.type.lower(),
+        label=request.label,
+        content=content
+    )
+    db.add(new_alias)
+    db.commit()
+    db.refresh(new_alias)
+    return new_alias
 
 
 @app.delete("/aliases/kill/{alias_id}")
 async def kill_alias(alias_id: str, db: Session = Depends(get_db)):
-    """Permanently terminates an email or phone alias"""
+    """TERMINATE command for a specific PII node"""
     alias = db.query(DBAlias).filter(DBAlias.id == alias_id).first()
     if alias:
         db.delete(alias)
         db.commit()
-        return {"status": "alias_terminated"}
-    raise HTTPException(status_code=404, detail="Alias not found")
+        return {"status": "node_purged"}
+    raise HTTPException(status_code=404, detail="Node not found")
 
 
-# --- FINANCIALS & PROFILE SYSTEM ---
+# --- FINANCIALS & PROFILE STORAGE ---
 
 @app.get("/financials/data")
 async def financials(db: Session = Depends(get_db)):
@@ -253,6 +249,7 @@ async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
     """Initiates a new virtual card minting process on the secure node"""
     try:
         card_id = f"vcc_{int(time.time())}_{random.randint(100, 999)}"
+        
         new_card = DBCard(
             id=card_id,
             label=request.label,
@@ -289,6 +286,7 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         db.add(new_profile)
         db.commit()
         return {"status": "success", "profile_id": profile_id}
+        
     except Exception as e:
         db.rollback()
         return {"status": "error", "message": str(e)}

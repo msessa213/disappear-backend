@@ -148,6 +148,7 @@ input[type="checkbox"] {
   flex-direction: column;
   justify-content: center;
   transition: border 0.3s ease;
+  margin-bottom: 25px; /* Added spacing between tools */
 }
 
 .filter-btn.active {
@@ -209,20 +210,42 @@ input[type="checkbox"] {
   margin-bottom: 5px;
 }
 
-/* 5. VCC CARDS */
-.card-manager-list {
+/* 5. SEPARATE MANAGERS (EMAILS, PHONES, CARDS) */
+.alias-manager-list, .card-manager-list {
   display: flex;
   flex-direction: column;
   gap: 15px;
   margin-top: 20px;
 }
 
-.managed-card-row {
+.alias-row, .managed-card-row {
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   border: 1px solid #334155;
   border-radius: 12px;
   padding: 20px;
   text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.alias-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.alias-label {
+  font-size: 0.65rem;
+  color: var(--tiger-blue);
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.alias-content {
+  font-family: 'Courier New', monospace;
+  font-size: 0.95rem;
+  color: white;
 }
 
 .card-digits {
@@ -420,55 +443,4 @@ input[type="checkbox"] {
     width: 90%;
     top: 10px;
   }
-}
-
-/* --- 10. NEW: ALIAS MANAGER (Multiple Emails & Phones) --- */
-.alias-manager-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 15px;
-  text-align: left;
-}
-
-.alias-row {
-  background: #050505;
-  border: 1px solid var(--border-dim);
-  padding: 15px;
-  border-radius: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: 0.3s;
-}
-
-.alias-row:hover {
-  border-color: var(--tiger-blue);
-}
-
-.alias-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.alias-label {
-  font-size: 0.65rem;
-  color: var(--tiger-blue);
-  text-transform: uppercase;
-  font-weight: bold;
-}
-
-.alias-content {
-  font-family: 'Courier New', monospace;
-  font-size: 0.9rem;
-  color: white;
-}
-
-.alias-type-tag {
-  font-size: 0.55rem;
-  background: #1e293b;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-left: 8px;
 }

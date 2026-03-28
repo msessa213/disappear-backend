@@ -14,6 +14,7 @@ import './App.css';
  * DISAPPEAR CORE ENGINE v2.1.6
  * Privacy-as-a-Service Frontend
  * Fixes: Masked DOB Input, Persistence Sync, UX Polish
+ * Feature: Granular PII Separation (Email, Phone, Cards)
  */
 
 const API_BASE_URL = "http://localhost:8000"; 
@@ -34,11 +35,12 @@ function App() {
   const [showMintModal, setShowMintModal] = useState(false);
   const [newCardLabel, setNewCardLabel] = useState("");
 
-  // --- NEW: ALIAS STATE FOR MULTI-ITEM CONTROL ---
-  const [showAliasModal, setShowAliasModal] = useState(false);
-  const [aliasType, setAliasType] = useState("email");
+  // --- NEW: CATEGORY-SPECIFIC STATES ---
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [aliasLabel, setAliasLabel] = useState("");
-  const [aliases, setAliases] = useState([]);
+  const [emails, setEmails] = useState([]);
+  const [phones, setPhones] = useState([]);
 
   const [targetProfile, setTargetProfile] = useState({
     firstName: "", 
@@ -51,8 +53,6 @@ function App() {
   });
 
   const [billingCycle, setBillingCycle] = useState("monthly");
-  const [maskedEmail, setMaskedEmail] = useState("****************@mask.com");
-  const [maskedPhone, setMaskedPhone] = useState("+1 (***) ***-****"); 
   const [nodeCount, setNodeCount] = useState(0);
   const [auditLog, setAuditLog] = useState([]);
   const [cards, setCards] = useState([]);
@@ -110,19 +110,17 @@ function App() {
         return data.recent_audit || [];
       });
 
-      setMaskedEmail(data.profile?.email_alias || "");
-      setMaskedPhone(data.profile?.phone_alias || "");
       setNodeCount(data.profile?.active_nodes || 0);
 
       const finRes = await fetch(`${API_BASE_URL}/financials/data`);
       const finData = await finRes.json();
       setCards(finData.cards || []);
 
-      // NEW: FETCH MULTI-ALIAS DATA
       const aliasRes = await fetch(`${API_BASE_URL}/aliases/data`);
       const aliasData = await aliasRes.json();
-      setAliases(aliasData.aliases || []);
-
+      const allAliases = aliasData.aliases || [];
+      setEmails(allAliases.filter(a => a.type === 'email'));
+      setPhones(allAliases.filter(a => a.type === 'phone'));
     } catch (err) { }
   }, [pushNotification]);
 
@@ -137,32 +135,29 @@ function App() {
     return () => clearInterval(interval);
   }, [showShield, syncDefenseData]);
 
-  // --- NEW: ALIAS MANAGEMENT HANDLERS ---
-  const handleMintAlias = async () => {
+  const handleMintAlias = async (type) => {
     if (!aliasLabel) { triggerToast("ENTER LABEL"); return; }
-    triggerToast(`MINTING ${aliasType.toUpperCase()}...`);
     try {
       const res = await fetch(`${API_BASE_URL}/aliases/mint`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: aliasType, label: aliasLabel })
+        body: JSON.stringify({ type, label: aliasLabel })
       });
       if (res.ok) {
-        const newAlias = await res.json();
-        setAliases(prev => [newAlias, ...prev]);
+        syncDefenseData();
         setAliasLabel("");
-        setShowAliasModal(false);
-        triggerToast("ALIAS SECURED");
+        setShowEmailModal(false);
+        setShowPhoneModal(false);
+        triggerToast(`${type.toUpperCase()} SECURED`);
       }
     } catch (err) { triggerToast("CONNECTION ERROR"); }
   };
 
   const handleKillAlias = async (id) => {
-    triggerToast("PURGING ALIAS...");
     try {
       await fetch(`${API_BASE_URL}/aliases/kill/${id}`, { method: "DELETE" });
-      setAliases(prev => prev.filter(a => a.id !== id));
-      triggerToast("ALIAS TERMINATED");
+      syncDefenseData();
+      triggerToast("PURGED");
     } catch (err) { triggerToast("ERROR"); }
   };
 
@@ -186,7 +181,6 @@ function App() {
         triggerToast("ENTER MERCHANT NAME");
         return;
     }
-    triggerToast("MINTING NEW SHIELD...");
     try {
       const response = await fetch(`${API_BASE_URL}/financials/mint`, {
         method: "POST",
@@ -194,13 +188,10 @@ function App() {
         body: JSON.stringify({ label: newCardLabel })
       });
       if (response.ok) {
-        const newCard = await response.json();
-        setCards(prev => [newCard, ...prev]);
+        syncDefenseData();
         setNewCardLabel("");
         setShowMintModal(false);
         triggerToast("NODE SECURED");
-      } else {
-        triggerToast("MINT REJECTED BY SERVER");
       }
     } catch (err) {
       triggerToast("CONNECTION ERROR");
@@ -208,7 +199,6 @@ function App() {
   };
 
   const handleKillCard = async (id) => {
-    triggerToast("TERMINATING NODE...");
     try {
       await fetch(`${API_BASE_URL}/financials/kill/${id}`, { method: "DELETE" });
       setCards(prev => prev.filter(c => c.id !== id));
@@ -218,24 +208,6 @@ function App() {
     }
   };
 
-  const handleCycleAliases = async () => {
-    triggerToast("CYCLING IDENTITY NODES...");
-    try {
-      const res = await fetch(`${API_BASE_URL}/financials/regenerate`, { method: "POST" });
-      const data = await res.json();
-      setMaskedEmail(data.email_alias);
-      setMaskedPhone(data.phone_alias);
-      triggerToast("IDENTITY UPDATED");
-    } catch (err) {
-      triggerToast("BACKEND ERROR");
-    }
-  };
-
-  const startLoginFlow = () => { 
-    triggerToast("CHALLENGE REQUEST SENT..."); 
-    setShow2FA(true); 
-  };
-  
   const verify2FA = () => {
     triggerToast("AUTHENTICATING...");
     setTimeout(() => {
@@ -273,7 +245,6 @@ function App() {
         return;
     }
     setIsScanning(true);
-    triggerToast("CONNECTING TO SCRUB NODES...");
     try {
         const response = await fetch(`${API_BASE_URL}/financials/profile`, {
             method: "POST", 
@@ -299,7 +270,7 @@ function App() {
   };
 
   const handleNumericDateInput = (e) => {
-    let val = e.target.value.replace(/\D/g, ''); // Numeric only
+    let val = e.target.value.replace(/\D/g, ''); 
     if (val.length > 8) val = val.slice(0, 8);
     let formatted = val;
     if (val.length > 4) {
@@ -329,38 +300,24 @@ function App() {
         ))}
       </div>
 
-      {showAliasModal && (
-        <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => setShowAliasModal(false)}>
+      {(showEmailModal || showPhoneModal) && (
+        <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => {setShowEmailModal(false); setShowPhoneModal(false)}}>
           <div className="price-box" onClick={e => e.stopPropagation()}>
-            <h3 className="tiger-text">MINT IDENTITY ALIAS</h3>
-            <div className="billing-toggle" style={{marginBottom: '15px'}}>
-               <button className={aliasType === 'email' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setAliasType('email')}>Email</button>
-               <button className={aliasType === 'phone' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setAliasType('phone')}>Phone</button>
-            </div>
-            <p className="field-label">ALIAS LABEL</p>
-            <input className="mask-btn" style={{color: 'white', textAlign: 'center'}} placeholder="e.g. Work, Shopping, Private" value={aliasLabel} onChange={(e) => setAliasLabel(e.target.value)} />
-            <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={handleMintAlias}>AUTHORIZE ALIAS</button>
-            <button className="reset-btn" style={{width: '100%'}} onClick={() => setShowAliasModal(false)}>CANCEL</button>
+            <h3 className="tiger-text">MINT {showEmailModal ? 'EMAIL' : 'PHONE'} ALIAS</h3>
+            <p className="field-label">LABEL</p>
+            <input className="mask-btn" style={{color: 'white', textAlign: 'center'}} placeholder="e.g. Shopping, Work" value={aliasLabel} onChange={(e) => setAliasLabel(e.target.value)} />
+            <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={() => handleMintAlias(showEmailModal ? 'email' : 'phone')}>AUTHORIZE</button>
           </div>
         </div>
       )}
 
       {showMintModal && (
         <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => setShowMintModal(false)}>
-          <div className="price-box" onClick={e => e.stopPropagation()} style={{border: '1px solid var(--tiger-blue)'}}>
+          <div className="price-box" onClick={e => e.stopPropagation()}>
             <h3 className="tiger-text">MINT NEW SHIELD</h3>
             <p className="field-label">ASSOCIATE MERCHANT</p>
-            <input 
-              id="merchant_name"
-              name="merchant_name"
-              className="mask-btn" 
-              style={{width: '100%', color: 'white', textAlign: 'center'}} 
-              placeholder="e.g. Amazon, Netflix, Target" 
-              value={newCardLabel}
-              onChange={(e) => setNewCardLabel(e.target.value)}
-            />
+            <input className="mask-btn" style={{width: '100%', color: 'white', textAlign: 'center'}} placeholder="e.g. Amazon, Netflix" value={newCardLabel} onChange={(e) => setNewCardLabel(e.target.value)} />
             <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={handleMintCard}>AUTHORIZE NODE</button>
-            <button className="reset-btn" style={{width: '100%'}} onClick={() => setShowMintModal(false)}>CANCEL</button>
           </div>
         </div>
       )}
@@ -391,24 +348,34 @@ function App() {
             <h2 className="shield-text">🛡️ SHIELD ACTIVE</h2>
             
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
-              <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>IDENTITY ALIAS VAULT</p>
+              <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>EMAIL PROTECTION</p>
               <div className="alias-manager-list">
-                {aliases.map(a => (
-                  <div key={a.id} className="alias-row">
-                    <div className="alias-info">
-                      <span className="alias-label">{a.label.toUpperCase()} <span className="alias-type-tag">{a.type}</span></span>
-                      <span className="alias-content" onClick={() => {navigator.clipboard.writeText(a.content); triggerToast("COPIED")}}>{a.content}</span>
-                    </div>
-                    <button className="kill-text-bold" onClick={() => handleKillAlias(a.id)}>TERMINATE</button>
+                {emails.map(e => (
+                  <div key={e.id} className="alias-row">
+                    <div className="alias-info"><span className="alias-label">{e.label.toUpperCase()}</span><span className="alias-content">{e.content}</span></div>
+                    <button className="kill-text-bold" onClick={() => handleKillAlias(e.id)}>TERMINATE</button>
                   </div>
                 ))}
               </div>
-              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowAliasModal(true)}> + MINT NEW ALIAS </button>
+              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowEmailModal(true)}> + MINT EMAIL </button>
+            </div>
+
+            <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
+              <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>PHONE PROTECTION</p>
+              <div className="alias-manager-list">
+                {phones.map(p => (
+                  <div key={p.id} className="alias-row">
+                    <div className="alias-info"><span className="alias-label">{p.label.toUpperCase()}</span><span className="alias-content">{p.content}</span></div>
+                    <button className="kill-text-bold" onClick={() => handleKillAlias(p.id)}>TERMINATE</button>
+                  </div>
+                ))}
+              </div>
+              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowPhoneModal(true)}> + MINT PHONE </button>
             </div>
 
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '20px' }}>VIRTUAL SHIELD CARDS</p>
-              <div className="card-manager-list" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div className="card-manager-list">
                 {cards.map(c => (
                   <div key={c.id} className="managed-card-row enhanced-card">
                     <div className="card-row-info">
@@ -425,7 +392,7 @@ function App() {
                   </div>
                 ))}
               </div>
-              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowMintModal(true)}> + MINT NEW SHIELD </button>
+              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowMintModal(true)}> + MINT CARD </button>
             </div>
 
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
@@ -433,8 +400,7 @@ function App() {
               <div className="audit-list" style={{ maxHeight: '200px', overflowY: 'auto' }}>
                 {auditLog.map((log, i) => (
                   <div key={i} className="audit-row" style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #111', padding: '10px 0' }}>
-                    <span className="audit-broker">[{log.broker}]</span>
-                    <span className="audit-action">{log.action}</span>
+                    <span className="audit-broker">[{log.broker}]</span><span className="audit-action">{log.action}</span>
                   </div>
                 ))}
               </div>
@@ -455,9 +421,8 @@ function App() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', marginTop: '40px' }}>
                   <div style={{ display: 'flex', gap: '20px' }}>
                     <button className="main-button" onClick={() => setShowPricing(true)}>IDENTITY CLEANUP</button>
-                    <button className="login-btn-outline" onClick={startLoginFlow}>CLIENT LOGIN</button>
+                    <button className="login-btn-outline" onClick={() => {triggerToast("CHALLENGE REQUEST SENT..."); setShow2FA(true);}}>CLIENT LOGIN</button>
                   </div>
-                  <button className="info-link-btn" onClick={() => setShowLegal('manifesto')}>WHY IS THIS CRITICAL? [MANIFESTO]</button>
                 </div>
               </div>
             )}
@@ -483,7 +448,6 @@ function App() {
                   <h3 className="tiger-text">PREMIUM PAAS</h3>
                   <div className="price-amount">${billingCycle === 'monthly' ? '19.99' : '15.99'}</div>
                   <button className="main-button" style={{width: '100%'}} onClick={() => setShowCheckout(true)}>PROCEED</button>
-                  <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowPricing(false)}>CANCEL</button>
                 </div>
               </div>
             )}
@@ -493,29 +457,17 @@ function App() {
                 <div className="price-box" style={{maxWidth: '450px', width: '100%', margin: '0 auto'}}>
                   <h3 className="tiger-text">TARGET PROFILE DATA</h3>
                   <div style={{display: 'flex', flexDirection: 'column', gap: '15px', textAlign: 'left'}}>
-                      <input id="first_name" name="first_name" className="mask-btn" placeholder="First Name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
-                      <input id="middle_name" name="middle_name" className="mask-btn" placeholder="Middle Name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
-                      <input id="last_name" name="last_name" className="mask-btn" placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
-                      <input id="email" name="email" className="mask-btn" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
-                      <input id="address" name="address" className="mask-btn" placeholder="Home Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
-                      
-                      {/* UX FIX: DATE OF BIRTH MASKED TEXT INPUT */}
-                      <input 
-                        id="dob" name="dob" className="mask-btn" 
-                        type="text" 
-                        inputMode="numeric"
-                        placeholder="Date of Birth: MM/DD/YYYY" 
-                        value={targetProfile.dob} 
-                        onChange={handleNumericDateInput} 
-                      />
-
+                      <input id="fn" name="fn" className="mask-btn" placeholder="First Name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
+                      <input id="ln" name="ln" className="mask-btn" placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
+                      <input id="em" name="em" className="mask-btn" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
+                      <input id="ad" name="ad" className="mask-btn" placeholder="Home Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
+                      <input id="dob" name="dob" className="mask-btn" type="text" inputMode="numeric" placeholder="MM/DD/YYYY" value={targetProfile.dob} onChange={handleNumericDateInput} />
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '15px' }}>
                         <input type="checkbox" checked={targetProfile.termsAccepted} onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})} />
                         <label style={{ fontSize: '0.65rem', color: '#94A3B8' }}>Authorize Full PII Scrub and Burn</label>
                       </div>
                   </div>
                   <button className="main-button" style={{ width: '100%', marginTop: '25px' }} onClick={handleFinalPurchase} disabled={!targetProfile.termsAccepted}>CONFIRM & INITIATE</button>
-                  <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowCheckout(false)}>BACK</button>
                 </div>
               </div>
             )}
