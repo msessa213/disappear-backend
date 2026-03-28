@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi import FastAPI, Depends, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, Column, String, DateTime, Integer
 from sqlalchemy.ext.declarative import declarative_base
@@ -82,8 +82,7 @@ except Exception as e:
 
 app = FastAPI(title="Disappear PaaS Engine")
 
-# FIXED: Explicit Origins for Vercel and Local environments
-# Standard browsers block wildcard "*" when allow_credentials is True
+# FIXED: Explicit Origins and Header Exposure for Vercel/Render Handshake
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -96,7 +95,13 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"], # Critical for Vercel to see the response
 )
+
+# FIXED: Catch-all OPTIONS handler to prevent 404s during browser preflight
+@app.options("/{rest_of_path:path}")
+async def preflight_handler(request: Request, rest_of_path: str):
+    return Response(status_code=200)
 
 
 # Database Dependency Injection
@@ -324,7 +329,5 @@ async def regenerate_alias():
 
 if __name__ == "__main__":
     import uvicorn
-    # Dynamic port detection for Cloud vs Local
     port = int(os.environ.get("PORT", 8000))
-    # 0.0.0.0 is required for Docker port mapping to work
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
