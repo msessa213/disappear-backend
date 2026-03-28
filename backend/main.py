@@ -327,6 +327,6 @@ async def regenerate_alias():
 
 if __name__ == "__main__":
     import uvicorn
-    # FIXED: Mandatory 0.0.0.0 for Docker port mapping to host Windows machine
     target_port = int(os.environ.get("PORT", 8000))
+    # CHANGE THIS LINE to exactly 0.0.0.0
     uvicorn.run("main:app", host="0.0.0.0", port=target_port, reload=False)
