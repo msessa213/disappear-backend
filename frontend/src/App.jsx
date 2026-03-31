@@ -11,14 +11,13 @@ import AdminDashboard from './AdminDashboard';
 import './App.css';
 
 /**
- * DISAPPEAR CORE ENGINE v2.2.4
+ * DISAPPEAR CORE ENGINE v2.2.5
  * Privacy-as-a-Service Frontend
- * Feature: Stripe Payment Detection & Grid-Aligned Checkout
+ * Feature: Stripe Integration & Operations Manual
  */
 
 // --- DYNAMIC API ROUTING ---
 const LOCAL_API = "http://127.0.0.1:8000";
-// FIXED: Removed the '-v2' to match your verified Live Render URL from the logs
 const PROD_API = "https://disappear-backend.onrender.com"; 
 
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
@@ -30,6 +29,7 @@ function App() {
   const [showPricing, setShowPricing] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [show2FA, setShow2FA] = useState(false); 
+  const [showHelp, setShowHelp] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [notifications, setNotifications] = useState([]); 
@@ -449,9 +449,66 @@ function App() {
                     <button className="login-btn-outline" onClick={() => {triggerToast("CHALLENGE REQUEST SENT..."); setShow2FA(true);}}>CLIENT LOGIN</button>
                   </div>
                   <button className="info-link-btn" onClick={() => setShowLegal('manifesto')}>WHY IS THIS CRITICAL? [MANIFESTO]</button>
+                  
+                  {/* --- HELP / OPS MANUAL TOGGLE --- */}
+                  <button className="info-link-btn" style={{marginTop: '10px'}} onClick={() => setShowHelp(!showHelp)}>
+                    {showHelp ? "[ CLOSE_MANUAL ]" : "[ VIEW_SYSTEM_OPERATIONS ]"}
+                  </button>
                 </div>
               </div>
             )}
+
+            {/* --- SYSTEM OPERATIONS & LIMITS MODAL --- */}
+            {showHelp && !showShield && !showCheckout && !show2FA && (
+              <div className="pricing-card fade-in" style={{ marginBottom: '40px', border: '1px solid #0047AB' }}>
+                <div className="price-box" style={{ textAlign: 'left', maxWidth: '600px' }}>
+                  <h3 className="tiger-text">SYSTEM_OPERATIONS_MANUAL v1.0</h3>
+                  
+                  <div style={{ marginBottom: '20px', borderLeft: '2px solid #111', paddingLeft: '15px' }}>
+                    <p className="field-label" style={{ color: 'var(--tiger-blue)', marginBottom: '5px' }}>01. THE PURGE (PII SCRUBBING)</p>
+                    <p style={{ fontSize: '0.75rem', lineHeight: '1.4' }}>
+                      Upon initiation, the engine generates encrypted removal requests to 47+ major data brokers (Spokeo, Acxiom, etc.). 
+                      <strong> Note:</strong> Initial scrubbing takes 24-72 hours to propagate across global databases.
+                    </p>
+                  </div>
+
+                  <div style={{ marginBottom: '20px', borderLeft: '2px solid #111', paddingLeft: '15px' }}>
+                    <p className="field-label" style={{ color: 'var(--tiger-blue)', marginBottom: '5px' }}>02. IDENTITY ALIASES</p>
+                    <p style={{ fontSize: '0.75rem', lineHeight: '1.4' }}>
+                      Use <strong>MINT</strong> to create burner emails/phones. 
+                      Route all non-essential signups through these nodes to keep your true PII off the "clear web."
+                    </p>
+                  </div>
+
+                  <div style={{ marginBottom: '20px', borderLeft: '2px solid #111', paddingLeft: '15px' }}>
+                    <p className="field-label" style={{ color: 'var(--tiger-blue)', marginBottom: '5px' }}>03. HARD_LIMITS & QUOTAS</p>
+                    <table style={{ width: '100%', fontSize: '0.7rem', borderCollapse: 'collapse' }}>
+                      <tbody>
+                        <tr style={{ borderBottom: '1px solid #111' }}>
+                          <td style={{ padding: '5px 0' }}>FREE_NODES</td>
+                          <td style={{ textAlign: 'right' }}>6 Total Slots</td>
+                        </tr>
+                        <tr style={{ borderBottom: '1px solid #111' }}>
+                          <td style={{ padding: '5px 0' }}>MINT_COOLDOWN</td>
+                          <td style={{ textAlign: 'right' }}>24 Hours after Termination</td>
+                        </tr>
+                        <tr style={{ borderBottom: '1px solid #111' }}>
+                          <td style={{ padding: '5px 0' }}>PURGE_DEPTH</td>
+                          <td style={{ textAlign: 'right' }}>Level 4 Encryption</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '5px 0' }}>EXTRA_SLOTS</td>
+                          <td style={{ textAlign: 'right' }}>$4.99 per node (Stripe)</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <button className="reset-btn" style={{ width: '100%' }} onClick={() => setShowHelp(false)}>ACKNOWLEDGE</button>
+                </div>
+              </div>
+            )}
+
             {show2FA && (
               <div className="pricing-card fade-in">
                 <div className="price-box">
