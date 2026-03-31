@@ -11,9 +11,9 @@ import AdminDashboard from './AdminDashboard';
 import './App.css';
 
 /**
- * DISAPPEAR CORE ENGINE v2.2.6
+ * DISAPPEAR CORE ENGINE v2.2.7
  * Privacy-as-a-Service Frontend
- * Feature: Enhanced System Manual with Asset Specs
+ * Feature: Global Wallet Node & Layman Help Manual
  */
 
 // --- DYNAMIC API ROUTING ---
@@ -366,6 +366,35 @@ function App() {
         {showShield ? (
           <div className="shield-container fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
             <h2 className="shield-text">🛡️ SHIELD ACTIVE</h2>
+            
+            {/* --- GLOBAL WALLET NODE (Digital Wallet Card) --- */}
+            <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #FFD700', background: '#050505' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                <p className="tool-label" style={{ margin: 0, color: '#FFD700' }}>GLOBAL WALLET NODE</p>
+                <span style={{ fontSize: '0.6rem', color: '#444' }}>WALLETS_ENABLED: [TRUE]</span>
+              </div>
+              <div className="managed-card-row enhanced-card" style={{ background: 'linear-gradient(135deg, #050505 0%, #111 100%)' }}>
+                <div className="card-row-info">
+                  <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
+                     <span className="card-nickname" style={{color: '#FFD700', fontWeight: 'bold'}}>PRIMARY_PAY_NODE</span>
+                     <button className="kill-text-bold" onClick={() => { if(window.confirm("RESET NODE? Old card will be burned and a new one issued.")) handleKillCard('global-1'); }}>RESET_NODE</button>
+                  </div>
+                  <code className="card-digits" style={{ fontSize: '1.2rem', letterSpacing: '3px' }}> 4242 8888 9999 0001 </code>
+                  <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #222', paddingTop: '10px', marginTop: '10px'}}>
+                     <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>EXP</span><strong>12/29</strong></div>
+                     <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>CVV</span><strong>***</strong></div>
+                     <div style={{ marginLeft: 'auto' }}>
+                        <span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>TYPE</span>
+                        <span style={{ fontSize: '0.7rem' }}>VISA_DEBIT</span>
+                     </div>
+                  </div>
+                </div>
+              </div>
+              <p style={{ fontSize: '0.65rem', color: '#94A3B8', marginTop: '10px', fontStyle: 'italic' }}>
+                * Add this to Apple/Google Pay. Use RESET_NODE to instantly kill the card if it's compromised.
+              </p>
+            </div>
+
             <div className="masking-tool" style={{ border: '1px solid #111', background: '#050505', width: '100%', maxWidth: '600px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                     <span className="field-label">IDENTITY CAPACITY</span>
@@ -376,6 +405,7 @@ function App() {
                 </div>
                 {credits.available === 0 && <button className="purchase-btn" onClick={handlePurchaseSlot}>BUY EXTRA SHIELD SLOT ($4.99)</button>}
             </div>
+            
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>EMAIL PROTECTION</p>
               <div className="alias-manager-list">
@@ -388,6 +418,7 @@ function App() {
               </div>
               <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowEmailModal(true)}> + MINT EMAIL ALIAS </button>
             </div>
+
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>PHONE PROTECTION</p>
               <div className="alias-manager-list">
@@ -400,6 +431,7 @@ function App() {
               </div>
               <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowPhoneModal(true)}> + MINT PHONE ALIAS </button>
             </div>
+
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '20px' }}>VIRTUAL SHIELD CARDS</p>
               <div className="card-manager-list">
@@ -421,6 +453,7 @@ function App() {
               </div>
               <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowMintModal(true)}> + MINT NEW SHIELD </button>
             </div>
+
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
               <p className="tool-label" style={{ textAlign: 'center' }}>LIVE SECURITY AUDIT</p>
               <div className="audit-list" style={{ maxHeight: '200px', overflowY: 'auto' }}>
@@ -432,6 +465,7 @@ function App() {
               </div>
               <button className="pdf-btn" style={{ width: '100%', marginTop: '15px' }} onClick={handleDownloadPDF} disabled={isGenerating}>GENERATE AUDIT PDF</button>
             </div>
+
             <div style={{display: 'flex', flexDirection: 'column', gap: '15px', width: '100%', maxWidth: '400px', marginTop: '40px'}}>
               <button className="reset-btn" onClick={() => {localStorage.clear(); window.location.reload();}}>LOGOUT SECURELY</button>
               <button className="burn-all-btn" onClick={() => { if(window.confirm("CONFIRM TOTAL PURGE?")) handleEmergencyBurn(); }}>EMERGENCY BURN</button>
@@ -450,7 +484,6 @@ function App() {
                   </div>
                   <button className="info-link-btn" onClick={() => setShowLegal('manifesto')}>WHY IS THIS CRITICAL? [MANIFESTO]</button>
                   
-                  {/* --- HELP / OPS MANUAL TOGGLE --- */}
                   <button className="info-link-btn" style={{marginTop: '10px'}} onClick={() => setShowHelp(!showHelp)}>
                     {showHelp ? "[ CLOSE_MANUAL ]" : "[ VIEW_SYSTEM_OPERATIONS ]"}
                   </button>
@@ -458,74 +491,68 @@ function App() {
               </div>
             )}
 
-            {/* --- SYSTEM OPERATIONS & LIMITS MODAL (HIGH DETAIL) --- */}
+            {/* --- LAYMAN-FRIENDLY SYSTEM OPERATIONS MANUAL --- */}
             {showHelp && !showShield && !showCheckout && !show2FA && (
               <div className="pricing-card fade-in" style={{ marginBottom: '40px', border: '1px solid #0047AB', background: '#020202' }}>
                 <div className="price-box" style={{ textAlign: 'left', maxWidth: '600px' }}>
-                  <h3 className="tiger-text" style={{letterSpacing: '2px'}}>SYSTEM_OPERATIONS_MANUAL v1.1</h3>
-                  <p style={{fontSize: '0.6rem', color: '#444', marginBottom: '20px'}}>ENCRYPTED_ASSET_SPECIFICATIONS</p>
+                  <h3 className="tiger-text" style={{letterSpacing: '2px'}}>SYSTEM_OPERATIONS_MANUAL v1.2</h3>
+                  <p style={{fontSize: '0.6rem', color: '#444', marginBottom: '20px'}}>EASY-READ_USER_GUIDE</p>
                   
-                  {/* 01. VIRTUAL SHIELD CARDS */}
+                  {/* VIRTUAL CARDS */}
                   <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
-                    <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>🛡️ VIRTUAL SHIELD CARDS (FINANCIAL)</p>
+                    <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>💳 VIRTUAL PAYMENT CARDS</p>
                     <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
-                      Stop merchants from tracking your spending habits or charging hidden fees.
+                      These act like a digital shield for your bank account. Instead of giving a website your real card info, you give them a "fake" one from us.
                       <ul style={{ paddingLeft: '15px', marginTop: '5px' }}>
-                        <li><strong>Merchant Locked:</strong> Cards lock to the first merchant used.</li>
-                        <li><strong>Hard Limits:</strong> Set spend caps to prevent overcharging.</li>
-                        <li><strong>Total Burn:</strong> Terminate a card instantly if a site is breached.</li>
+                        <li><strong>Safe Shopping:</strong> Stores never see your actual bank details.</li>
+                        <li><strong>Stop Overcharging:</strong> If a site tries to charge you more than you agreed, the card blocks it.</li>
+                        <li><strong>One-Click Kill:</strong> If a site gets hacked, just delete the card. Your real money stays safe.</li>
                       </ul>
                     </p>
                   </div>
 
-                  {/* 02. EMAIL RELAY NODES */}
+                  {/* EMAIL RELAY */}
                   <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
-                    <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>📧 EMAIL RELAY NODES (COMMUNICATION)</p>
+                    <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>✉️ EMAIL RELAY NODES</p>
                     <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
-                      Stop your primary email from being sold to marketing databases.
+                      These are "throwaway" email addresses that forward mail to your real inbox without letting companies know who you are.
                       <ul style={{ paddingLeft: '15px', marginTop: '5px' }}>
-                        <li><strong>Identity Cloaking:</strong> Randomly generated addresses.</li>
-                        <li><strong>One-Way Tunnel:</strong> Forwards mail to you without revealing your true inbox.</li>
-                        <li><strong>Spam Kill-Switch:</strong> Delete the alias to stop junk instantly.</li>
+                        <li><strong>No More Spam:</strong> If a company sends too much junk, just delete that specific address.</li>
+                        <li><strong>Stay Private:</strong> Your real email address stays off marketing lists forever.</li>
                       </ul>
                     </p>
                   </div>
 
-                  {/* 03. PHONE SMS NODES */}
+                  {/* PHONE SMS */}
                   <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
-                    <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>📱 PHONE SMS NODES (VERIFICATION)</p>
+                    <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>📱 PHONE VERIFICATION NODES</p>
                     <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
-                      Protect your real number from 2FA tracking and telemarketers.
+                      Use these for those annoying sites that demand a phone number to "verify" your account.
                       <ul style={{ paddingLeft: '15px', marginTop: '5px' }}>
-                        <li><strong>Clean Slate:</strong> Pure, VoIP-based numbers for verification.</li>
-                        <li><strong>SMS Vault:</strong> View incoming codes directly in your dashboard.</li>
-                        <li><strong>No SIM Swap:</strong> These numbers aren't tied to your physical device.</li>
+                        <li><strong>Secure Codes:</strong> Receive verification texts safely in your dashboard.</li>
+                        <li><strong>No Harassment:</strong> Keep telemarketers and scammers away from your real phone.</li>
                       </ul>
                     </p>
                   </div>
 
-                  {/* 04. QUOTAS & UPGRADES */}
+                  {/* ACCOUNT LIMITS */}
                   <div style={{ marginBottom: '20px', borderTop: '1px solid #111', paddingTop: '15px' }}>
-                    <p className="field-label" style={{ color: 'var(--tiger-blue)', marginBottom: '10px' }}>SYSTEM QUOTAS</p>
+                    <p className="field-label" style={{ color: 'var(--tiger-blue)', marginBottom: '10px' }}>ACCOUNT LIMITS</p>
                     <table style={{ width: '100%', fontSize: '0.7rem', borderCollapse: 'collapse', color: '#94A3B8' }}>
                       <tbody>
                         <tr style={{ borderBottom: '1px solid #111' }}>
-                          <td style={{ padding: '8px 0' }}>FREE_TIER_CAPACITY</td>
+                          <td style={{ padding: '8px 0' }}>FREE_SLOTS</td>
                           <td style={{ textAlign: 'right', color: 'white' }}>6 Concurrent Slots</td>
                         </tr>
-                        <tr style={{ borderBottom: '1px solid #111' }}>
-                          <td style={{ padding: '8px 0' }}>RE-MINT COOL-DOWN</td>
-                          <td style={{ textAlign: 'right', color: 'white' }}>24 Hours after Termination</td>
-                        </tr>
                         <tr>
-                          <td style={{ padding: '8px 0' }}>NODE EXPANSION</td>
+                          <td style={{ padding: '8px 0' }}>ADD_MORE</td>
                           <td style={{ textAlign: 'right', color: 'white' }}>$4.99 per Permanent Slot</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
 
-                  <button className="reset-btn" style={{ width: '100%', marginTop: '10px' }} onClick={() => setShowHelp(false)}>DATA ACKNOWLEDGED</button>
+                  <button className="reset-btn" style={{ width: '100%', marginTop: '10px' }} onClick={() => setShowHelp(false)}>I UNDERSTAND</button>
                 </div>
               </div>
             )}
