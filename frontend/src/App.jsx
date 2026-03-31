@@ -11,9 +11,9 @@ import AdminDashboard from './AdminDashboard';
 import './App.css';
 
 /**
- * DISAPPEAR CORE ENGINE v2.2.5
+ * DISAPPEAR CORE ENGINE v2.2.6
  * Privacy-as-a-Service Frontend
- * Feature: Stripe Integration & Operations Manual
+ * Feature: Enhanced System Manual with Asset Specs
  */
 
 // --- DYNAMIC API ROUTING ---
@@ -458,53 +458,74 @@ function App() {
               </div>
             )}
 
-            {/* --- SYSTEM OPERATIONS & LIMITS MODAL --- */}
+            {/* --- SYSTEM OPERATIONS & LIMITS MODAL (HIGH DETAIL) --- */}
             {showHelp && !showShield && !showCheckout && !show2FA && (
-              <div className="pricing-card fade-in" style={{ marginBottom: '40px', border: '1px solid #0047AB' }}>
+              <div className="pricing-card fade-in" style={{ marginBottom: '40px', border: '1px solid #0047AB', background: '#020202' }}>
                 <div className="price-box" style={{ textAlign: 'left', maxWidth: '600px' }}>
-                  <h3 className="tiger-text">SYSTEM_OPERATIONS_MANUAL v1.0</h3>
+                  <h3 className="tiger-text" style={{letterSpacing: '2px'}}>SYSTEM_OPERATIONS_MANUAL v1.1</h3>
+                  <p style={{fontSize: '0.6rem', color: '#444', marginBottom: '20px'}}>ENCRYPTED_ASSET_SPECIFICATIONS</p>
                   
-                  <div style={{ marginBottom: '20px', borderLeft: '2px solid #111', paddingLeft: '15px' }}>
-                    <p className="field-label" style={{ color: 'var(--tiger-blue)', marginBottom: '5px' }}>01. THE PURGE (PII SCRUBBING)</p>
-                    <p style={{ fontSize: '0.75rem', lineHeight: '1.4' }}>
-                      Upon initiation, the engine generates encrypted removal requests to 47+ major data brokers (Spokeo, Acxiom, etc.). 
-                      <strong> Note:</strong> Initial scrubbing takes 24-72 hours to propagate across global databases.
+                  {/* 01. VIRTUAL SHIELD CARDS */}
+                  <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                    <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>🛡️ VIRTUAL SHIELD CARDS (FINANCIAL)</p>
+                    <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
+                      Stop merchants from tracking your spending habits or charging hidden fees.
+                      <ul style={{ paddingLeft: '15px', marginTop: '5px' }}>
+                        <li><strong>Merchant Locked:</strong> Cards lock to the first merchant used.</li>
+                        <li><strong>Hard Limits:</strong> Set spend caps to prevent overcharging.</li>
+                        <li><strong>Total Burn:</strong> Terminate a card instantly if a site is breached.</li>
+                      </ul>
                     </p>
                   </div>
 
-                  <div style={{ marginBottom: '20px', borderLeft: '2px solid #111', paddingLeft: '15px' }}>
-                    <p className="field-label" style={{ color: 'var(--tiger-blue)', marginBottom: '5px' }}>02. IDENTITY ALIASES</p>
-                    <p style={{ fontSize: '0.75rem', lineHeight: '1.4' }}>
-                      Use <strong>MINT</strong> to create burner emails/phones. 
-                      Route all non-essential signups through these nodes to keep your true PII off the "clear web."
+                  {/* 02. EMAIL RELAY NODES */}
+                  <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                    <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>📧 EMAIL RELAY NODES (COMMUNICATION)</p>
+                    <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
+                      Stop your primary email from being sold to marketing databases.
+                      <ul style={{ paddingLeft: '15px', marginTop: '5px' }}>
+                        <li><strong>Identity Cloaking:</strong> Randomly generated addresses.</li>
+                        <li><strong>One-Way Tunnel:</strong> Forwards mail to you without revealing your true inbox.</li>
+                        <li><strong>Spam Kill-Switch:</strong> Delete the alias to stop junk instantly.</li>
+                      </ul>
                     </p>
                   </div>
 
-                  <div style={{ marginBottom: '20px', borderLeft: '2px solid #111', paddingLeft: '15px' }}>
-                    <p className="field-label" style={{ color: 'var(--tiger-blue)', marginBottom: '5px' }}>03. HARD_LIMITS & QUOTAS</p>
-                    <table style={{ width: '100%', fontSize: '0.7rem', borderCollapse: 'collapse' }}>
+                  {/* 03. PHONE SMS NODES */}
+                  <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                    <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>📱 PHONE SMS NODES (VERIFICATION)</p>
+                    <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
+                      Protect your real number from 2FA tracking and telemarketers.
+                      <ul style={{ paddingLeft: '15px', marginTop: '5px' }}>
+                        <li><strong>Clean Slate:</strong> Pure, VoIP-based numbers for verification.</li>
+                        <li><strong>SMS Vault:</strong> View incoming codes directly in your dashboard.</li>
+                        <li><strong>No SIM Swap:</strong> These numbers aren't tied to your physical device.</li>
+                      </ul>
+                    </p>
+                  </div>
+
+                  {/* 04. QUOTAS & UPGRADES */}
+                  <div style={{ marginBottom: '20px', borderTop: '1px solid #111', paddingTop: '15px' }}>
+                    <p className="field-label" style={{ color: 'var(--tiger-blue)', marginBottom: '10px' }}>SYSTEM QUOTAS</p>
+                    <table style={{ width: '100%', fontSize: '0.7rem', borderCollapse: 'collapse', color: '#94A3B8' }}>
                       <tbody>
                         <tr style={{ borderBottom: '1px solid #111' }}>
-                          <td style={{ padding: '5px 0' }}>FREE_NODES</td>
-                          <td style={{ textAlign: 'right' }}>6 Total Slots</td>
+                          <td style={{ padding: '8px 0' }}>FREE_TIER_CAPACITY</td>
+                          <td style={{ textAlign: 'right', color: 'white' }}>6 Concurrent Slots</td>
                         </tr>
                         <tr style={{ borderBottom: '1px solid #111' }}>
-                          <td style={{ padding: '5px 0' }}>MINT_COOLDOWN</td>
-                          <td style={{ textAlign: 'right' }}>24 Hours after Termination</td>
-                        </tr>
-                        <tr style={{ borderBottom: '1px solid #111' }}>
-                          <td style={{ padding: '5px 0' }}>PURGE_DEPTH</td>
-                          <td style={{ textAlign: 'right' }}>Level 4 Encryption</td>
+                          <td style={{ padding: '8px 0' }}>RE-MINT COOL-DOWN</td>
+                          <td style={{ textAlign: 'right', color: 'white' }}>24 Hours after Termination</td>
                         </tr>
                         <tr>
-                          <td style={{ padding: '5px 0' }}>EXTRA_SLOTS</td>
-                          <td style={{ textAlign: 'right' }}>$4.99 per node (Stripe)</td>
+                          <td style={{ padding: '8px 0' }}>NODE EXPANSION</td>
+                          <td style={{ textAlign: 'right', color: 'white' }}>$4.99 per Permanent Slot</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
 
-                  <button className="reset-btn" style={{ width: '100%' }} onClick={() => setShowHelp(false)}>ACKNOWLEDGE</button>
+                  <button className="reset-btn" style={{ width: '100%', marginTop: '10px' }} onClick={() => setShowHelp(false)}>DATA ACKNOWLEDGED</button>
                 </div>
               </div>
             )}
