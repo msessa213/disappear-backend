@@ -11,9 +11,8 @@ import AdminDashboard from './AdminDashboard';
 import './App.css';
 
 /**
- * DISAPPEAR CORE ENGINE v2.2.7
- * Privacy-as-a-Service Frontend
- * Feature: Global Wallet Node & Layman Help Manual
+ * DISAPPEAR CORE ENGINE v2.3.0
+ * Feature: Unique Key Fixes, Stripe Handshake State, & UI Spinners
  */
 
 // --- DYNAMIC API ROUTING ---
@@ -32,6 +31,7 @@ function App() {
   const [showHelp, setShowHelp] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false); 
   const [notifications, setNotifications] = useState([]); 
   
   const [showLegal, setShowLegal] = useState(null); 
@@ -41,7 +41,6 @@ function App() {
   const [showMintModal, setShowMintModal] = useState(false);
   const [newCardLabel, setNewCardLabel] = useState("");
 
-  // --- CATEGORY-SPECIFIC STATES ---
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [aliasLabel, setAliasLabel] = useState("");
@@ -49,13 +48,8 @@ function App() {
   const [phones, setPhones] = useState([]);
 
   const [targetProfile, setTargetProfile] = useState({
-    firstName: "", 
-    middleName: "", 
-    lastName: "", 
-    email: "", 
-    dob: "", 
-    address: "", 
-    termsAccepted: false
+    firstName: "", middleName: "", lastName: "", 
+    email: "", dob: "", address: "", termsAccepted: false
   });
 
   const [billingCycle, setBillingCycle] = useState("monthly");
@@ -70,7 +64,6 @@ function App() {
     setTimeout(() => setShowToast(""), 3000); 
   };
 
-  // PERSISTENCE & PAYMENT SYNC
   useEffect(() => {
     const session = localStorage.getItem("disappear_session");
     const query = new URLSearchParams(window.location.search);
@@ -78,6 +71,7 @@ function App() {
     if (query.get("payment") === "success") {
         triggerToast("CREDIT AUTHORIZED: NODE EXPANDED");
         window.history.replaceState({}, document.title, "/");
+        syncDefenseData();
     }
 
     if (session === "active") {
@@ -99,7 +93,7 @@ function App() {
 
   const pushNotification = useCallback((broker) => {
     if (!broker) return;
-    const id = Date.now();
+    const id = `notif-${Date.now()}-${Math.random()}`; 
     setNotifications(prev => [{ id, msg: `THREAT DEFLECTED: [${broker}]` }, ...prev].slice(0, 3));
     setTimeout(() => {
       setNotifications(prev => prev.filter(n => n.id !== id));
@@ -153,12 +147,21 @@ function App() {
   }, [showShield, syncDefenseData]);
 
   const handlePurchaseSlot = async () => {
+    if (isProcessingPayment) return;
+    setIsProcessingPayment(true);
     triggerToast("CONTACTING SECURE GATEWAY...");
     try {
       const res = await fetch(`${API_BASE_URL}/payments/create-session`, { method: "POST" });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
-    } catch (err) { triggerToast("PAYMENT NODE OFFLINE"); }
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("Handshake failed");
+      }
+    } catch (err) { 
+      triggerToast("PAYMENT NODE OFFLINE"); 
+      setIsProcessingPayment(false);
+    }
   };
 
   const handleMintAlias = async (type) => {
@@ -367,7 +370,6 @@ function App() {
           <div className="shield-container fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
             <h2 className="shield-text">🛡️ SHIELD ACTIVE</h2>
             
-            {/* --- GLOBAL WALLET NODE (Digital Wallet Card) --- */}
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #FFD700', background: '#050505' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                 <p className="tool-label" style={{ margin: 0, color: '#FFD700' }}>GLOBAL WALLET NODE</p>
@@ -403,13 +405,21 @@ function App() {
                 <div className="progress-bar-container" style={{ height: '8px', background: '#111', position: 'relative' }}>
                     <div className="progress-bar-fill" style={{ width: `${(credits.used / credits.total) * 100}%`, background: 'var(--tiger-blue)' }}></div>
                 </div>
-                {credits.available === 0 && <button className="purchase-btn" onClick={handlePurchaseSlot}>BUY EXTRA SHIELD SLOT ($4.99)</button>}
+                {credits.available === 0 && (
+                  <button 
+                    className="purchase-btn" 
+                    onClick={handlePurchaseSlot} 
+                    disabled={isProcessingPayment}
+                  >
+                    {isProcessingPayment ? "REDIRECTING TO SECURE NODE..." : "BUY EXTRA SHIELD SLOT ($4.99)"}
+                  </button>
+                )}
             </div>
             
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>EMAIL PROTECTION</p>
               <div className="alias-manager-list">
-                {emails.map(e => (
+                {emails.map((e) => (
                   <div key={e.id} className="alias-row">
                     <div className="alias-info"><span className="alias-label">{e.label.toUpperCase()}</span><span className="alias-content" onClick={() => {navigator.clipboard.writeText(e.content); triggerToast("COPIED")}}>{e.content}</span></div>
                     <button className="kill-text-bold" onClick={() => handleKillAlias(e.id)}>TERMINATE</button>
@@ -422,7 +432,7 @@ function App() {
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>PHONE PROTECTION</p>
               <div className="alias-manager-list">
-                {phones.map(p => (
+                {phones.map((p) => (
                   <div key={p.id} className="alias-row">
                     <div className="alias-info"><span className="alias-label">{p.label.toUpperCase()}</span><span className="alias-content" onClick={() => {navigator.clipboard.writeText(p.content); triggerToast("COPIED")}}>{p.content}</span></div>
                     <button className="kill-text-bold" onClick={() => handleKillAlias(p.id)}>TERMINATE</button>
@@ -435,7 +445,7 @@ function App() {
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '20px' }}>VIRTUAL SHIELD CARDS</p>
               <div className="card-manager-list">
-                {cards.map(c => (
+                {cards.map((c) => (
                   <div key={c.id} className="managed-card-row enhanced-card">
                     <div className="card-row-info">
                       <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
@@ -458,7 +468,7 @@ function App() {
               <p className="tool-label" style={{ textAlign: 'center' }}>LIVE SECURITY AUDIT</p>
               <div className="audit-list" style={{ maxHeight: '200px', overflowY: 'auto' }}>
                 {auditLog.map((log, i) => (
-                  <div key={i} className="audit-row" style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #111', padding: '10px 0' }}>
+                  <div key={`audit-${log.time}-${i}`} className="audit-row" style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #111', padding: '10px 0' }}>
                     <span className="audit-broker">[{log.broker}]</span><span className="audit-action">{log.action}</span>
                   </div>
                 ))}
@@ -476,7 +486,7 @@ function App() {
             {!showPricing && !showCheckout && !isScanning && !show2FA && (
               <div className="fade-in" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '60vh', justifyContent: 'center'}}>
                 <h1 className="brand-name">DISAPPEAR</h1>
-                <p className="subtitle">Privacy-as-a-Service</p>
+                <p className="subtitle">Privacy-as-a-Service (P-A-A-S)</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', marginTop: '40px' }}>
                   <div style={{ display: 'flex', gap: '20px' }}>
                     <button className="main-button" onClick={() => setShowPricing(true)}>IDENTITY CLEANUP</button>
@@ -491,14 +501,12 @@ function App() {
               </div>
             )}
 
-            {/* --- LAYMAN-FRIENDLY SYSTEM OPERATIONS MANUAL --- */}
             {showHelp && !showShield && !showCheckout && !show2FA && (
               <div className="pricing-card fade-in" style={{ marginBottom: '40px', border: '1px solid #0047AB', background: '#020202' }}>
                 <div className="price-box" style={{ textAlign: 'left', maxWidth: '600px' }}>
                   <h3 className="tiger-text" style={{letterSpacing: '2px'}}>SYSTEM_OPERATIONS_MANUAL v1.2</h3>
                   <p style={{fontSize: '0.6rem', color: '#444', marginBottom: '20px'}}>EASY-READ_USER_GUIDE</p>
                   
-                  {/* VIRTUAL CARDS */}
                   <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
                     <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>💳 VIRTUAL PAYMENT CARDS</p>
                     <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
@@ -511,7 +519,6 @@ function App() {
                     </p>
                   </div>
 
-                  {/* EMAIL RELAY */}
                   <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
                     <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>✉️ EMAIL RELAY NODES</p>
                     <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
@@ -523,7 +530,6 @@ function App() {
                     </p>
                   </div>
 
-                  {/* PHONE SMS */}
                   <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
                     <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>📱 PHONE VERIFICATION NODES</p>
                     <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
@@ -535,7 +541,6 @@ function App() {
                     </p>
                   </div>
 
-                  {/* ACCOUNT LIMITS */}
                   <div style={{ marginBottom: '20px', borderTop: '1px solid #111', paddingTop: '15px' }}>
                     <p className="field-label" style={{ color: 'var(--tiger-blue)', marginBottom: '10px' }}>ACCOUNT LIMITS</p>
                     <table style={{ width: '100%', fontSize: '0.7rem', borderCollapse: 'collapse', color: '#94A3B8' }}>
@@ -574,7 +579,7 @@ function App() {
                   <button className={billingCycle === 'annual' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('annual')}>Annual</button>
                 </div>
                 <div className="price-box">
-                  <h3 className="tiger-text">PREMIUM PAAS</h3>
+                  <h3 className="tiger-text">PREMIUM P-A-A-S</h3>
                   <div className="price-amount">${billingCycle === 'monthly' ? '19.99' : '15.99'}</div>
                   <button className="main-button" style={{width: '100%'}} onClick={() => setShowCheckout(true)}>PROCEED</button>
                   <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowPricing(false)}>CANCEL</button>

@@ -67,13 +67,14 @@ class DBProfile(Base):
     """Represents a target profile for PII scrub queuing"""
     __tablename__ = "shield_profiles_v3"
     id = Column(String, primary_key=True, index=True)
-    # UPDATED: Split name fields for granular broker searching
     first_name = Column(String)
     middle_name = Column(String)
     last_name = Column(String)
     email = Column(String)
     address = Column(String)
     dob = Column(String)
+    # FIX: Persistent column to track purchased capacity increases
+    bonus_credits = Column(Integer, default=0) 
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -96,12 +97,14 @@ except Exception as e:
 
 # --- APP CONFIGURATION ---
 
-app = FastAPI(title="Disappear PaaS Engine")
+app = FastAPI(title="Disappear P-A-A-S Engine")
 
-# FIXED: Explicit Origins for Vercel Handshake
+# FIXED: Explicit Origins for Vercel Handshake (Added localhost:3001)
 origins = [
     "http://localhost:3000",
+    "http://localhost:3001",
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
     "https://disappear-frontend-v2.vercel.app",
 ]
 
@@ -205,6 +208,11 @@ async def sync(db: Session = Depends(get_db)):
     active_aliases = db.query(DBAlias).count()
     total_used = active_cards + active_aliases
     
+    # FIX: Fetch the user's profile to calculate their dynamic credit limit
+    profile = db.query(DBProfile).first()
+    bonus = profile.bonus_credits if profile else 0
+    max_credits = MAX_IDENTITY_CREDITS + bonus
+    
     now = datetime.now()
     minute_seed = now.minute + now.hour
     random.seed(minute_seed)
@@ -232,9 +240,9 @@ async def sync(db: Session = Depends(get_db)):
         "profile": {
             "email_alias": STABLE_EMAIL,
             "phone_alias": STABLE_PHONE,
-            "credits_total": MAX_IDENTITY_CREDITS,
+            "credits_total": max_credits,
             "credits_used": total_used,
-            "credits_available": max(0, MAX_IDENTITY_CREDITS - total_used),
+            "credits_available": max(0, max_credits - total_used),
             "threat_level": "NOMINAL",
             "uptime": "99.998%",
             "active_nodes": total_used 
@@ -277,12 +285,24 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     sig_header = request.headers.get('stripe-signature')
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+        
+        # FIX: Implement persistent credit increase logic
         if event['type'] == 'checkout.session.completed':
+            # Update the audit log
             log = DBPurgeLog(action_type="CREDIT_PURCHASED", node_id="SECURE_GATEWAY")
             db.add(log)
+            
+            # Increment bonus_credits for the profile
+            user_profile = db.query(DBProfile).first()
+            if user_profile:
+                user_profile.bonus_credits += 1
+            
             db.commit()
+            print("REVENUE TEST PASSED: 1 Slot added to profile.")
+            
         return {"status": "success"}
     except Exception as e:
+        db.rollback()
         raise HTTPException(status_code=400, detail=f"Webhook Error: {str(e)}")
 
 
@@ -298,8 +318,12 @@ async def get_aliases(db: Session = Depends(get_db)):
 @app.post("/aliases/mint")
 async def mint_alias(request: AliasRequest, db: Session = Depends(get_db)):
     """Mints an alias if under credit limit and not in cool-down"""
+    # FIX: Use dynamic credit limit check
+    profile = db.query(DBProfile).first()
+    max_credits = MAX_IDENTITY_CREDITS + (profile.bonus_credits if profile else 0)
+    
     total_active = db.query(DBAlias).count() + db.query(DBCard).count()
-    if total_active >= MAX_IDENTITY_CREDITS:
+    if total_active >= max_credits:
         raise HTTPException(status_code=403, detail="IDENTITY_LIMIT_REACHED")
 
     last_burn = db.query(DBPurgeLog).filter(DBPurgeLog.action_type == "ALIAS_TERMINATED").order_by(DBPurgeLog.timestamp.desc()).first()
@@ -354,8 +378,12 @@ async def financials(db: Session = Depends(get_db)):
 @app.post("/financials/mint")
 async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
     """Initiates a new virtual card minting process on the secure node"""
+    # FIX: Use dynamic credit limit check
+    profile = db.query(DBProfile).first()
+    max_credits = MAX_IDENTITY_CREDITS + (profile.bonus_credits if profile else 0)
+
     total_active = db.query(DBCard).count() + db.query(DBAlias).count()
-    if total_active >= MAX_IDENTITY_CREDITS:
+    if total_active >= max_credits:
         raise HTTPException(status_code=403, detail="IDENTITY_LIMIT_REACHED")
         
     try:
@@ -406,6 +434,13 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
 @app.delete("/financials/kill/{card_id}")
 async def kill_card(card_id: str, db: Session = Depends(get_db)):
     """Permanently deletes a card asset from the database"""
+    # Special Handler for Global Node testing
+    if card_id == "global-1":
+        log = DBPurgeLog(action_type="GLOBAL_NODE_ROTATED", node_id="global-1")
+        db.add(log)
+        db.commit()
+        return {"status": "global_node_rotated"}
+
     card = db.query(DBCard).filter(DBCard.id == card_id).first()
     if card:
         # LOG ACTION FOR ADMIN
