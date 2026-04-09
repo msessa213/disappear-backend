@@ -443,7 +443,7 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
 @app.delete("/financials/kill/{card_id}")
 async def kill_card(card_id: str, db: Session = Depends(get_db)):
     """Permanently deletes a card asset from the database"""
-    # FIX: Special Handler for the Global Node
+    # FIX: Special Handler for the hardcoded Global Node ID
     if card_id == "global-1":
         log = DBPurgeLog(action_type="GLOBAL_NODE_ROTATED", node_id="global-1")
         db.add(log)
