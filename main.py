@@ -208,9 +208,9 @@ async def sync(db: Session = Depends(get_db)):
     active_aliases = db.query(DBAlias).count()
     total_used = active_cards + active_aliases
     
-    # FIX: Fetch the user's profile to calculate their dynamic credit limit
+    # FIX: Fetch the user's profile with a safety check if no profile exists
     profile = db.query(DBProfile).first()
-    bonus = profile.bonus_credits if profile else 0
+    bonus = profile.bonus_credits if profile and hasattr(profile, 'bonus_credits') else 0
     max_credits = MAX_IDENTITY_CREDITS + bonus
     
     now = datetime.now()
@@ -259,6 +259,11 @@ async def sync(db: Session = Depends(get_db)):
 async def create_checkout_session():
     """Generates a secure Stripe Checkout URL for extra credits"""
     try:
+        # Check if API Key exists
+        if not stripe.api_key:
+            print("STRIPE ERROR: Secret Key Missing from .env")
+            raise HTTPException(status_code=500, detail="Stripe API Key configuration error")
+
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=[{
@@ -275,6 +280,7 @@ async def create_checkout_session():
         )
         return {"url": session.url}
     except Exception as e:
+        print(f"STRIPE HANDSHAKE ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -303,6 +309,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         return {"status": "success"}
     except Exception as e:
         db.rollback()
+        print(f"WEBHOOK PROCESSING ERROR: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Webhook Error: {str(e)}")
 
 
@@ -318,9 +325,10 @@ async def get_aliases(db: Session = Depends(get_db)):
 @app.post("/aliases/mint")
 async def mint_alias(request: AliasRequest, db: Session = Depends(get_db)):
     """Mints an alias if under credit limit and not in cool-down"""
-    # FIX: Use dynamic credit limit check
+    # FIX: Use dynamic credit limit check with safety for null profile
     profile = db.query(DBProfile).first()
-    max_credits = MAX_IDENTITY_CREDITS + (profile.bonus_credits if profile else 0)
+    bonus = profile.bonus_credits if profile else 0
+    max_credits = MAX_IDENTITY_CREDITS + bonus
     
     total_active = db.query(DBAlias).count() + db.query(DBCard).count()
     if total_active >= max_credits:
@@ -378,9 +386,10 @@ async def financials(db: Session = Depends(get_db)):
 @app.post("/financials/mint")
 async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
     """Initiates a new virtual card minting process on the secure node"""
-    # FIX: Use dynamic credit limit check
+    # FIX: Use dynamic credit limit check with safety for null profile
     profile = db.query(DBProfile).first()
-    max_credits = MAX_IDENTITY_CREDITS + (profile.bonus_credits if profile else 0)
+    bonus = profile.bonus_credits if profile else 0
+    max_credits = MAX_IDENTITY_CREDITS + bonus
 
     total_active = db.query(DBCard).count() + db.query(DBAlias).count()
     if total_active >= max_credits:
@@ -434,7 +443,7 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
 @app.delete("/financials/kill/{card_id}")
 async def kill_card(card_id: str, db: Session = Depends(get_db)):
     """Permanently deletes a card asset from the database"""
-    # Special Handler for Global Node testing
+    # FIX: Special Handler for the Global Node
     if card_id == "global-1":
         log = DBPurgeLog(action_type="GLOBAL_NODE_ROTATED", node_id="global-1")
         db.add(log)
