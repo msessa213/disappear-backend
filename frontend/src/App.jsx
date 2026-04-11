@@ -11,8 +11,8 @@ import AdminDashboard from './AdminDashboard';
 import './App.css';
 
 /**
- * DISAPPEAR CORE ENGINE v2.3.6
- * Feature: Clickable FAQ Node Database with Global Wallet Intel
+ * DISAPPEAR CORE ENGINE v2.3.8
+ * Feature: Subscription Management & Full Operational FAQ Database
  */
 
 // --- DYNAMIC API ROUTING ---
@@ -328,6 +328,15 @@ function App() {
     setTargetProfile({...targetProfile, dob: formatted});
   };
 
+  const handleManageBilling = async () => {
+    triggerToast("UPLINKING TO STRIPE PORTAL...");
+    try {
+        const res = await fetch(`${API_BASE_URL}/payments/customer-portal`, { method: "POST" });
+        const data = await res.json();
+        if (data.url) window.location.href = data.url;
+    } catch (err) { triggerToast("PORTAL OFFLINE"); }
+  };
+
   return (
     <div className={`app-container ${isEmergencyWipe ? 'wipe-shake' : ''}`}>
       <div className="progress-bar-container">
@@ -354,21 +363,20 @@ function App() {
             <h3 className="tiger-text">FAQ // OPERATIONAL_MANUAL</h3>
             <p className="field-label" style={{marginBottom: '20px'}}>SELECT_NODE_FOR_STEP_BY_STEP_INTEL</p>
 
-            {/* GLOBAL WALLET NODE FAQ */}
-            <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'global' ? null : 'global')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '10px 0'}}>
+            {/* GLOBAL WALLET FAQ */}
+            <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'global' ? null : 'global')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
                 <div className="faq-trigger" style={{color: '#FFD700', fontWeight: 'bold'}}>
                   {activeFaqNode === 'global' ? '[-] GLOBAL_WALLET_NODE' : '[+] GLOBAL_WALLET_NODE'}
                 </div>
                 {activeFaqNode === 'global' && (
                     <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '2px solid #FFD700'}}>
-                        <p>Your primary bridge for high-limit transactions and Digital Wallet (Apple/Google Pay) integration.</p>
+                        <p>High-limit digital bridge for Apple/Google Pay and trusted merchant masking.</p>
                         <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION_STEPS:</strong>
                         <ol style={{paddingLeft: '15px'}}>
-                            <li>Access the 'GLOBAL WALLET NODE' module at the top of your shield dashboard.</li>
-                            <li>Copy the 16-digit card digits, Expiry, and CVV.</li>
-                            <li>Add these details to your Apple Pay or Google Wallet as a new Debit Card.</li>
-                            <li>Use it for any physical or digital purchase where high-trust masking is required.</li>
-                            <li><strong>To Rotate:</strong> If you believe the card was logged by a merchant, click 'RESET_NODE'. The old virtual hardware is burned and a fresh identity node is issued instantly.</li>
+                            <li>Access 'GLOBAL WALLET NODE' at dashboard origin.</li>
+                            <li>Add the 16-digit digits to your smartphone digital wallet.</li>
+                            <li>Use RESET_NODE instantly if you suspect merchant logging or data leaks.</li>
+                            <li>New identity hardware is provisioned immediately.</li>
                         </ol>
                     </div>
                 )}
@@ -381,14 +389,13 @@ function App() {
                 </div>
                 {activeFaqNode === 'vcc' && (
                     <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid #222'}}>
-                        <p>Merchant-locked cards that isolate specific subscriptions or single purchases.</p>
+                        <p>Merchant-locked isolation nodes for subscriptions and trials.</p>
                         <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION_STEPS:</strong>
                         <ol style={{paddingLeft: '15px'}}>
-                            <li>Locate 'VIRTUAL SHIELD CARDS' tool in your dashboard.</li>
-                            <li>Click 'MINT NEW SHIELD' and assign a label (e.g. Netflix).</li>
-                            <li>The system generates a unique merchant-locked card number.</li>
-                            <li>Copy digits and use them in checkout fields.</li>
-                            <li>Click 'TERMINATE' to kill the connection if you want to cancel a subscription instantly without talking to the merchant.</li>
+                            <li>Locate tool and click 'MINT NEW SHIELD'.</li>
+                            <li>Tag card with merchant name.</li>
+                            <li>Use exclusively for that endpoint.</li>
+                            <li>Click 'TERMINATE' to sever the funding link instantly.</li>
                         </ol>
                     </div>
                 )}
@@ -401,31 +408,13 @@ function App() {
                 </div>
                 {activeFaqNode === 'email' && (
                     <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid #222'}}>
-                        <p>Cloaked relays that scrub tracking pixels before forwarding mail to your primary inbox.</p>
+                        <p>PII-scrubbing relays that forward to your master inbox.</p>
                         <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION_STEPS:</strong>
                         <ol style={{paddingLeft: '15px'}}>
-                            <li>Navigate to 'EMAIL PROTECTION'.</li>
-                            <li>Click 'MINT EMAIL ALIAS' and enter a label.</li>
-                            <li>Use the generated @ghost.vault or @shield.mask address for web sign-ups.</li>
-                            <li>Incoming mail is scrubbed and forwarded. Click 'TERMINATE' to stop all future spam from that specific sender.</li>
-                        </ol>
-                    </div>
-                )}
-            </div>
-
-            {/* PHONE FAQ */}
-            <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'phone' ? null : 'phone')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '10px 0'}}>
-                <div className="faq-trigger" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>
-                  {activeFaqNode === 'phone' ? '[-] SMS_VERIFICATION_NODES' : '[+] SMS_VERIFICATION_NODES'}
-                </div>
-                {activeFaqNode === 'phone' && (
-                    <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid #222'}}>
-                        <p>Burner mobile nodes for account verification and 2FA bypass.</p>
-                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION_STEPS:</strong>
-                        <ol style={{paddingLeft: '15px'}}>
-                            <li>Mint a 'PHONE ALIAS' and copy the +1 number.</li>
-                            <li>Enter this number into the registration field of the app you are verifying.</li>
-                            <li>Watch your 'LIVE SECURITY AUDIT' log; the code will appear in the action stream within 10-60 seconds.</li>
+                            <li>Click 'MINT EMAIL ALIAS'.</li>
+                            <li>Enter the generated @ghost.vault address for any registration.</li>
+                            <li>System scrubs tracking pixels and forwards mail.</li>
+                            <li>If sender becomes malicious, use 'TERMINATE'.</li>
                         </ol>
                     </div>
                 )}
@@ -441,25 +430,13 @@ function App() {
           <div className="price-box" onClick={e => e.stopPropagation()}>
             <h3 className="tiger-text">SUPPORT UPLINK</h3>
             <p className="field-label">ISSUE CATEGORY</p>
-            <select 
-              className="mask-btn" 
-              style={{width: '100%', background: '#000', color: 'white', marginBottom: '15px'}}
-              value={supportData.subject}
-              onChange={(e) => setSupportData({...supportData, subject: e.target.value})}
-            >
+            <select className="mask-btn" style={{width: '100%', background: '#000', color: 'white', marginBottom: '15px'}} value={supportData.subject} onChange={(e) => setSupportData({...supportData, subject: e.target.value})}>
               <option value="PAYMENT_ERR">PAYMENT_ISSUE</option>
               <option value="NODE_ERR">NODE_FAILURE</option>
               <option value="PURGE_ERR">PURGE_TIMEOUT</option>
               <option value="OTHER">OTHER_INQUIRY</option>
             </select>
-            <p className="field-label">REASON_FOR_CONTACT</p>
-            <textarea 
-              className="mask-btn" 
-              style={{width: '100%', height: '100px', color: 'white', textAlign: 'left', paddingTop: '10px'}} 
-              placeholder="Describe the anomaly..."
-              value={supportData.message}
-              onChange={(e) => setSupportData({...supportData, message: e.target.value})}
-            />
+            <textarea className="mask-btn" style={{width: '100%', height: '100px', color: 'white', textAlign: 'left', paddingTop: '10px'}} placeholder="Describe the anomaly..." value={supportData.message} onChange={(e) => setSupportData({...supportData, message: e.target.value})} />
             <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={handleSendTicket}>TRANSMIT_TICKET</button>
             <button className="reset-btn" style={{width: '100%'}} onClick={() => setShowSupportModal(false)}>ABORT</button>
           </div>
@@ -551,11 +528,7 @@ function App() {
                     <div className="progress-bar-fill" style={{ width: `${(credits.used / credits.total) * 100}%`, background: 'var(--tiger-blue)' }}></div>
                 </div>
                 {credits.available === 0 && (
-                  <button 
-                    className="purchase-btn" 
-                    onClick={handlePurchaseSlot} 
-                    disabled={isProcessingPayment}
-                  >
+                  <button className="purchase-btn" onClick={handlePurchaseSlot} disabled={isProcessingPayment}>
                     {isProcessingPayment ? "REDIRECTING TO SECURE NODE..." : "BUY EXTRA SHIELD SLOT ($4.99)"}
                   </button>
                 )}
@@ -609,6 +582,29 @@ function App() {
               <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowMintModal(true)}> + MINT NEW SHIELD </button>
             </div>
 
+            {/* --- SUBSCRIPTION MANAGEMENT NODE --- */}
+            <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #444' }}>
+              <p className="tool-label" style={{ textAlign: 'center' }}>SUBSCRIPTION_MANAGEMENT</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                <div>
+                    <span style={{ fontSize: '0.6rem', color: '#64748b', display: 'block' }}>CURRENT_PLAN</span>
+                    <strong style={{ color: 'var(--tiger-blue)' }}>PREMIUM_{billingCycle.toUpperCase()}</strong>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontSize: '0.6rem', color: '#64748b', display: 'block' }}>STATUS</span>
+                    <span style={{ color: '#00FF00', fontSize: '0.7rem' }}>[ACTIVE]</span>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <button className="reset-btn" onClick={handleManageBilling}>
+                  {billingCycle === 'monthly' ? "SWITCH_TO_ANNUAL" : "SWITCH_TO_MONTHLY"}
+                </button>
+                <button className="reset-btn" style={{ borderColor: '#ff4444', color: '#ff4444' }} onClick={() => { if(window.confirm("CANCEL SUBSCRIPTION? PII shielding will be deactivated at end of cycle.")) handleManageBilling(); }}>
+                  CANCEL_PLAN
+                </button>
+              </div>
+            </div>
+
             {/* --- SYSTEM SUPPORT NODE --- */}
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
               <p className="tool-label" style={{ textAlign: 'center', color: 'var(--tiger-blue)' }}>SYSTEM SUPPORT NODE</p>
@@ -652,7 +648,6 @@ function App() {
                     <button className="login-btn-outline" onClick={() => {triggerToast("CHALLENGE REQUEST SENT..."); setShow2FA(true);}}>CLIENT LOGIN</button>
                   </div>
                   <button className="info-link-btn" onClick={() => setShowLegal('manifesto')}>WHY IS THIS CRITICAL? [MANIFESTO]</button>
-                  
                   <button className="info-link-btn" style={{marginTop: '10px'}} onClick={() => setShowHelp(!showHelp)}>
                     {showHelp ? "[ CLOSE_MANUAL ]" : "[ VIEW_SYSTEM_OPERATIONS ]"}
                   </button>
@@ -665,7 +660,6 @@ function App() {
                 <div className="price-box" style={{ textAlign: 'left', maxWidth: '600px' }}>
                   <h3 className="tiger-text" style={{letterSpacing: '2px'}}>SYSTEM_OPERATIONS_MANUAL v1.2</h3>
                   <p style={{fontSize: '0.6rem', color: '#444', marginBottom: '20px'}}>EASY-READ_USER_GUIDE</p>
-                  
                   <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
                     <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>💳 VIRTUAL PAYMENT CARDS</p>
                     <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
@@ -677,7 +671,6 @@ function App() {
                       </ul>
                     </p>
                   </div>
-
                   <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
                     <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>✉️ EMAIL RELAY NODES</p>
                     <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
@@ -688,7 +681,6 @@ function App() {
                       </ul>
                     </p>
                   </div>
-
                   <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
                     <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>📱 PHONE VERIFICATION NODES</p>
                     <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
@@ -699,7 +691,6 @@ function App() {
                       </ul>
                     </p>
                   </div>
-
                   <div style={{ marginBottom: '20px', borderTop: '1px solid #111', paddingTop: '15px' }}>
                     <p className="field-label" style={{ color: 'var(--tiger-blue)', marginBottom: '10px' }}>ACCOUNT LIMITS</p>
                     <table style={{ width: '100%', fontSize: '0.7rem', borderCollapse: 'collapse', color: '#94A3B8' }}>
@@ -715,7 +706,6 @@ function App() {
                       </tbody>
                     </table>
                   </div>
-
                   <button className="reset-btn" style={{ width: '100%', marginTop: '10px' }} onClick={() => setShowHelp(false)}>I UNDERSTAND</button>
                 </div>
               </div>
