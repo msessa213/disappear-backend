@@ -73,7 +73,7 @@ class DBProfile(Base):
     email = Column(String)
     address = Column(String)
     dob = Column(String)
-    # FIX: Persistent column to track purchased capacity increases
+    # Persistent column to track purchased capacity increases
     bonus_credits = Column(Integer, default=0) 
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -173,6 +173,12 @@ class AliasRequest(BaseModel):
 
 class LoginRequest(BaseModel):
     token: str = None
+
+
+# NEW: Support Request Schema
+class SupportRequest(BaseModel):
+    subject: str
+    message: str
 
 
 # --- CORE SYSTEM ROUTES ---
@@ -451,9 +457,9 @@ async def kill_card(card_id: str, db: Session = Depends(get_db)):
         db.commit()
         return {"status": "global_node_rotated"}
 
-    # Standard database card deletion
     card = db.query(DBCard).filter(DBCard.id == card_id).first()
     if card:
+        # LOG ACTION FOR ADMIN
         log = DBPurgeLog(action_type="CARD_TERMINATED", node_id=card_id)
         db.add(log)
         db.delete(card)
@@ -482,6 +488,21 @@ async def regenerate_alias():
     STABLE_EMAIL = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
     STABLE_PHONE = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
     return {"email_alias": STABLE_EMAIL, "phone_alias": STABLE_PHONE}
+
+
+# NEW: Support Ticket System for Revenue Churn Protection
+@app.post("/support/ticket")
+async def create_support_ticket(request: SupportRequest, db: Session = Depends(get_db)):
+    """Logs support requests for PaaS serviceability and revenue protection"""
+    try:
+        log_entry = f"SUB: {request.subject} | MSG: {request.message}"
+        log = DBPurgeLog(action_type="SUPPORT_REQUEST", node_id=log_entry)
+        db.add(log)
+        db.commit()
+        return {"status": "TRANSMITTED", "id": random.randint(1000, 9999)}
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="UPLINK_FAILURE")
 
 
 if __name__ == "__main__":
