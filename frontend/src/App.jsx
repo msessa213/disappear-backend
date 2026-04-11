@@ -11,8 +11,8 @@ import AdminDashboard from './AdminDashboard';
 import './App.css';
 
 /**
- * DISAPPEAR CORE ENGINE v2.4.0
- * Feature: Subscription Management, Mobile Overflow Fixes, & Full FAQ
+ * DISAPPEAR CORE ENGINE v2.4.2
+ * Feature: Mobile Layout Synchronization & Operational FAQ Database
  */
 
 // --- DYNAMIC API ROUTING ---
@@ -370,13 +370,13 @@ function App() {
                 </div>
                 {activeFaqNode === 'global' && (
                     <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '2px solid #FFD700'}}>
-                        <p><strong>DESCRIPTION:</strong> Your primary digital bridge. Designed for Apple/Google Pay and recurring high-trust transactions.</p>
+                        <p><strong>USAGE:</strong> Best for high-trust merchants and in-person Digital Wallet (Apple/Google Pay) usage.</p>
                         <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION_STEPS:</strong>
                         <ol style={{paddingLeft: '15px'}}>
-                            <li>Retrieve the 16-digit card digits from the 'GLOBAL WALLET NODE' at the top of your dashboard.</li>
-                            <li>Add the card to your smartphone digital wallet (Apple/Google Pay).</li>
-                            <li>Use this node for general high-trust purchases.</li>
-                            <li><strong>To Rotate:</strong> Click <strong>RESET_NODE</strong> if the card digits are logged by a suspicious merchant.</li>
+                            <li>Retrieve digits from the 'GLOBAL WALLET NODE' module at the top of your dashboard.</li>
+                            <li>Add the 16-digit card number, EXP, and CVV to your smartphone wallet.</li>
+                            <li><strong>CORE ARCHITECTURE:</strong> This is a multi-merchant node. Use it for general recurring trust-based purchases.</li>
+                            <li>Click 'RESET_NODE' if you believe merchant processors have logged the card info.</li>
                         </ol>
                     </div>
                 )}
@@ -388,13 +388,13 @@ function App() {
                   {activeFaqNode === 'vcc' ? '[-] VIRTUAL_SHIELD_CARDS' : '[+] VIRTUAL_SHIELD_CARDS'}
                 </div>
                 {activeFaqNode === 'vcc' && (
-                    <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '2px solid #222'}}>
-                        <p><strong>DESCRIPTION:</strong> Merchant-locked isolation nodes. These are strictly one-to-one connections.</p>
+                    <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid var(--tiger-blue)'}}>
+                        <p><strong>USAGE:</strong> Best for individual subscriptions and untrusted merchant endpoints.</p>
                         <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION_STEPS:</strong>
                         <ol style={{paddingLeft: '15px'}}>
-                            <li>Locate tool and click 'MINT NEW SHIELD'. Label it for a merchant (e.g. 'Netflix').</li>
-                            <li>Use these specific digits in the checkout field.</li>
-                            <li><strong>THE DIFFERENCE:</strong> Unlike the Global Wallet, these cards auto-lock to the first merchant they touch. They cannot be used elsewhere, preventing data brokers from profiling cross-merchant spend.</li>
+                            <li>Click 'MINT NEW SHIELD' and label it (e.g., Netflix).</li>
+                            <li>System provides isolated digits for that specific merchant.</li>
+                            <li><strong>THE DIFFERENCE:</strong> Once used, this node "locks" to that merchant. If they are hacked, these digits are worthless anywhere else.</li>
                         </ol>
                     </div>
                 )}
@@ -406,14 +406,13 @@ function App() {
                   {activeFaqNode === 'email' ? '[-] EMAIL_RELAY_NODES' : '[+] EMAIL_RELAY_NODES'}
                 </div>
                 {activeFaqNode === 'email' && (
-                    <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid #222'}}>
-                        <p><strong>DESCRIPTION:</strong> Relays that scrub trackers before forwarding mail.</p>
+                    <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid var(--tiger-blue)'}}>
+                        <p><strong>USAGE:</strong> Cloaks your primary identity from marketing lists and data broker aggregators.</p>
                         <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION_STEPS:</strong>
                         <ol style={{paddingLeft: '15px'}}>
-                            <li>Click 'MINT EMAIL ALIAS'.</li>
-                            <li>Sign up for web services using the @ghost.vault or @shield.mask address.</li>
-                            <li>All mail is scrubbed of PII pixels and forwarded to you.</li>
-                            <li>Click <strong>TERMINATE</strong> to burn the relay if spam becomes excessive.</li>
+                            <li>Assign a label (e.g., 'E-Commerce') and click 'MINT'.</li>
+                            <li>Use the generated address for web registrations.</li>
+                            <li>PII trackers are scrubbed before forwarding to your inbox.</li>
                         </ol>
                     </div>
                 )}
@@ -425,13 +424,13 @@ function App() {
                   {activeFaqNode === 'phone' ? '[-] SMS_VERIFICATION_NODES' : '[+] SMS_VERIFICATION_NODES'}
                 </div>
                 {activeFaqNode === 'phone' && (
-                    <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid #222'}}>
-                        <p><strong>DESCRIPTION:</strong> Burner mobile nodes for bypassing registration prompts.</p>
+                    <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid var(--tiger-blue)'}}>
+                        <p><strong>USAGE:</strong> Best for 2FA bypass and anonymous app verifications.</p>
                         <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION_STEPS:</strong>
                         <ol style={{paddingLeft: '15px'}}>
-                            <li>Mint a 'PHONE ALIAS' and use the provided +1 number.</li>
-                            <li>Input number into the 2FA or verification prompt.</li>
-                            <li>Stay on dashboard; incoming codes stream into 'LIVE SECURITY AUDIT' within 60s.</li>
+                            <li>Mint a 'PHONE ALIAS' node.</li>
+                            <li>Enter the provided +1 number into the verification field.</li>
+                            <li>The incoming code appears instantly in the 'LIVE SECURITY AUDIT' on your dashboard.</li>
                         </ol>
                     </div>
                 )}
@@ -531,9 +530,6 @@ function App() {
                   </div>
                 </div>
               </div>
-              <p style={{ fontSize: '0.65rem', color: '#94A3B8', marginTop: '10px', fontStyle: 'italic' }}>
-                * Add this to Apple/Google Pay. Use RESET_NODE to instantly kill the card if it's compromised.
-              </p>
             </div>
 
             <div className="masking-tool" style={{ border: '1px solid #111', background: '#050505', width: '100%', maxWidth: '600px' }}>
@@ -555,15 +551,12 @@ function App() {
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>EMAIL PROTECTION</p>
               <div className="alias-manager-list">
                 {emails.map((e) => (
-                  <div key={e.id} className="alias-row">
-                    {/* MOBILE FIX: Text Overflow handling */}
-                    <div className="alias-info" style={{ overflow: 'hidden' }}>
-                        <span className="alias-label">{e.label.toUpperCase()}</span>
-                        <span className="alias-content" style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'block' }} onClick={() => {navigator.clipboard.writeText(e.content); triggerToast("COPIED")}}>
-                            {e.content}
-                        </span>
+                  <div key={e.id} className="alias-row" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '15px' }}>
+                    <div className="alias-info" style={{ width: '100%', wordBreak: 'break-all', marginBottom: '10px' }}>
+                        <span className="alias-label" style={{ display: 'block', color: 'var(--tiger-blue)', marginBottom: '5px' }}>{e.label.toUpperCase()}</span>
+                        <span className="alias-content" style={{ fontSize: '0.85rem' }} onClick={() => {navigator.clipboard.writeText(e.content); triggerToast("COPIED")}}>{e.content}</span>
                     </div>
-                    <button className="kill-text-bold" onClick={() => handleKillAlias(e.id)}>TERMINATE</button>
+                    <button className="kill-text-bold" onClick={() => handleKillAlias(e.id)}>TERMINATE_NODE</button>
                   </div>
                 ))}
               </div>
@@ -618,12 +611,11 @@ function App() {
                     <span style={{ color: '#00FF00', fontSize: '0.7rem' }}>[ACTIVE]</span>
                 </div>
               </div>
-              {/* MOBILE FIX: Button text wrapping and alignment */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                <button className="reset-btn" style={{ flex: '1 1 140px', minHeight: '40px', whiteSpace: 'normal', fontSize: '0.65rem' }} onClick={handleManageBilling}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
+                <button className="reset-btn" style={{ fontSize: '0.7rem', padding: '12px 5px', whiteSpace: 'normal', lineHeight: '1.2' }} onClick={handleManageBilling}>
                   {billingCycle === 'monthly' ? "SWITCH_TO_ANNUAL" : "SWITCH_TO_MONTHLY"}
                 </button>
-                <button className="reset-btn" style={{ flex: '1 1 140px', minHeight: '40px', borderColor: '#ff4444', color: '#ff4444', fontSize: '0.65rem' }} onClick={() => { if(window.confirm("CANCEL SUBSCRIPTION? PII shielding will be deactivated at end of cycle.")) handleManageBilling(); }}>
+                <button className="reset-btn" style={{ borderColor: '#ff4444', color: '#ff4444' }} onClick={() => { if(window.confirm("CANCEL SUBSCRIPTION? PII shielding will be deactivated at end of cycle.")) handleManageBilling(); }}>
                   CANCEL_PLAN
                 </button>
               </div>
