@@ -319,6 +319,24 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=f"Webhook Error: {str(e)}")
 
 
+# NEW: Stripe Customer Portal for Subscription Management
+@app.post("/payments/customer-portal")
+async def create_portal_session(db: Session = Depends(get_db)):
+    """Generates a Stripe Customer Portal link for plan management"""
+    try:
+        # We find the first profile to simulate the customer session
+        profile = db.query(DBProfile).first()
+        # In production, you would store and use the stripe_customer_id
+        # For now, we simulate portal access (Note: requires a valid customer ID in Stripe)
+        session = stripe.billing_portal.Session.create(
+            customer=os.getenv("STRIPE_MOCK_CUSTOMER_ID"),
+            return_url="https://disappear-frontend-v2.vercel.app",
+        )
+        return {"url": session.url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PORTAL_ERROR: {str(e)}")
+
+
 # --- PII CONTROL ROUTES ---
 
 @app.get("/aliases/data")
@@ -449,9 +467,8 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
 @app.delete("/financials/kill/{card_id}")
 async def kill_card(card_id: str, db: Session = Depends(get_db)):
     """Permanently deletes a card asset from the database"""
-    # FIX: Special Handler for the hardcoded Global Node ID
+    # FIX: Special Handler for the hardcoded Global Node ID to prevent 404
     if card_id == "global-1":
-        # Log the reset event to the audit trail
         log = DBPurgeLog(action_type="GLOBAL_NODE_ROTATED", node_id="global-1")
         db.add(log)
         db.commit()
