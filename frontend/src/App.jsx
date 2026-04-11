@@ -11,8 +11,8 @@ import AdminDashboard from './AdminDashboard';
 import './App.css';
 
 /**
- * DISAPPEAR CORE ENGINE v2.3.5
- * Feature: Clickable FAQ Node Database & Support Uplink
+ * DISAPPEAR CORE ENGINE v2.3.6
+ * Feature: Clickable FAQ Node Database with Global Wallet Intel
  */
 
 // --- DYNAMIC API ROUTING ---
@@ -347,12 +347,32 @@ function App() {
         ))}
       </div>
 
-      {/* --- FAQ MODAL: INTERACTIVE NODE DATABASE --- */}
+      {/* --- CLICKABLE FAQ MODAL: INTERACTIVE NODE DATABASE --- */}
       {showFaqModal && (
         <div className="modal-overlay" style={{zIndex: 70000}} onClick={() => setShowFaqModal(false)}>
-          <div className="price-box" style={{maxWidth: '600px', textAlign: 'left', overflowY: 'auto', maxHeight: '80vh'}} onClick={e => e.stopPropagation()}>
+          <div className="price-box" style={{maxWidth: '650px', textAlign: 'left', overflowY: 'auto', maxHeight: '85vh'}} onClick={e => e.stopPropagation()}>
             <h3 className="tiger-text">FAQ // OPERATIONAL_MANUAL</h3>
-            <p className="field-label" style={{marginBottom: '20px'}}>SELECT_NODE_FOR_INTEL</p>
+            <p className="field-label" style={{marginBottom: '20px'}}>SELECT_NODE_FOR_STEP_BY_STEP_INTEL</p>
+
+            {/* GLOBAL WALLET NODE FAQ */}
+            <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'global' ? null : 'global')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '10px 0'}}>
+                <div className="faq-trigger" style={{color: '#FFD700', fontWeight: 'bold'}}>
+                  {activeFaqNode === 'global' ? '[-] GLOBAL_WALLET_NODE' : '[+] GLOBAL_WALLET_NODE'}
+                </div>
+                {activeFaqNode === 'global' && (
+                    <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '2px solid #FFD700'}}>
+                        <p>Your primary bridge for high-limit transactions and Digital Wallet (Apple/Google Pay) integration.</p>
+                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION_STEPS:</strong>
+                        <ol style={{paddingLeft: '15px'}}>
+                            <li>Access the 'GLOBAL WALLET NODE' module at the top of your shield dashboard.</li>
+                            <li>Copy the 16-digit card digits, Expiry, and CVV.</li>
+                            <li>Add these details to your Apple Pay or Google Wallet as a new Debit Card.</li>
+                            <li>Use it for any physical or digital purchase where high-trust masking is required.</li>
+                            <li><strong>To Rotate:</strong> If you believe the card was logged by a merchant, click 'RESET_NODE'. The old virtual hardware is burned and a fresh identity node is issued instantly.</li>
+                        </ol>
+                    </div>
+                )}
+            </div>
 
             {/* VIRTUAL CARDS FAQ */}
             <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'vcc' ? null : 'vcc')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '10px 0'}}>
@@ -361,14 +381,14 @@ function App() {
                 </div>
                 {activeFaqNode === 'vcc' && (
                     <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid #222'}}>
-                        <p>Virtual cards mask your primary bank account info from merchants.</p>
-                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>STEP-BY-STEP:</strong>
+                        <p>Merchant-locked cards that isolate specific subscriptions or single purchases.</p>
+                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION_STEPS:</strong>
                         <ol style={{paddingLeft: '15px'}}>
                             <li>Locate 'VIRTUAL SHIELD CARDS' tool in your dashboard.</li>
-                            <li>Click 'MINT NEW SHIELD' and assign a label (e.g. Amazon).</li>
-                            <li>The system generates a single-use or merchant-locked card number.</li>
+                            <li>Click 'MINT NEW SHIELD' and assign a label (e.g. Netflix).</li>
+                            <li>The system generates a unique merchant-locked card number.</li>
                             <li>Copy digits and use them in checkout fields.</li>
-                            <li>To kill the connection, click 'TERMINATE' to burn the node.</li>
+                            <li>Click 'TERMINATE' to kill the connection if you want to cancel a subscription instantly without talking to the merchant.</li>
                         </ol>
                     </div>
                 )}
@@ -381,14 +401,13 @@ function App() {
                 </div>
                 {activeFaqNode === 'email' && (
                     <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid #222'}}>
-                        <p>Relay nodes prevent trackers from linking sign-ups to your identity.</p>
-                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>STEP-BY-STEP:</strong>
+                        <p>Cloaked relays that scrub tracking pixels before forwarding mail to your primary inbox.</p>
+                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION_STEPS:</strong>
                         <ol style={{paddingLeft: '15px'}}>
                             <li>Navigate to 'EMAIL PROTECTION'.</li>
                             <li>Click 'MINT EMAIL ALIAS' and enter a label.</li>
-                            <li>Use the generated @ghost.vault address for any web sign-up.</li>
-                            <li>Incoming mail is scrubbed of PII trackers and forwarded to your real inbox.</li>
-                            <li>Click 'TERMINATE' to stop all future spam from that sender.</li>
+                            <li>Use the generated @ghost.vault or @shield.mask address for web sign-ups.</li>
+                            <li>Incoming mail is scrubbed and forwarded. Click 'TERMINATE' to stop all future spam from that specific sender.</li>
                         </ol>
                     </div>
                 )}
@@ -401,13 +420,12 @@ function App() {
                 </div>
                 {activeFaqNode === 'phone' && (
                     <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid #222'}}>
-                        <p>Temporary phone nodes for account verification and 2FA bypass.</p>
-                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>STEP-BY-STEP:</strong>
+                        <p>Burner mobile nodes for account verification and 2FA bypass.</p>
+                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION_STEPS:</strong>
                         <ol style={{paddingLeft: '15px'}}>
-                            <li>Mint a 'PHONE ALIAS'.</li>
-                            <li>Copy the +1 number and enter it into the target site.</li>
-                            <li>Site sends verification SMS to our secure node.</li>
-                            <li>Watch your 'LIVE SECURITY AUDIT' log; the code will appear in the action stream.</li>
+                            <li>Mint a 'PHONE ALIAS' and copy the +1 number.</li>
+                            <li>Enter this number into the registration field of the app you are verifying.</li>
+                            <li>Watch your 'LIVE SECURITY AUDIT' log; the code will appear in the action stream within 10-60 seconds.</li>
                         </ol>
                     </div>
                 )}
@@ -591,7 +609,7 @@ function App() {
               <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowMintModal(true)}> + MINT NEW SHIELD </button>
             </div>
 
-            {/* --- CLICKABLE SUPPORT NODE UI --- */}
+            {/* --- SYSTEM SUPPORT NODE --- */}
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
               <p className="tool-label" style={{ textAlign: 'center', color: 'var(--tiger-blue)' }}>SYSTEM SUPPORT NODE</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
