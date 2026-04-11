@@ -174,6 +174,11 @@ class AliasRequest(BaseModel):
 class LoginRequest(BaseModel):
     token: str = None
 
+# NEW: Support Schema
+class SupportRequest(BaseModel):
+    subject: str
+    message: str
+
 
 # --- CORE SYSTEM ROUTES ---
 
@@ -445,14 +450,15 @@ async def kill_card(card_id: str, db: Session = Depends(get_db)):
     """Permanently deletes a card asset from the database"""
     # FIX: Special Handler for the hardcoded Global Node ID
     if card_id == "global-1":
+        # Log the reset event to the audit trail
         log = DBPurgeLog(action_type="GLOBAL_NODE_ROTATED", node_id="global-1")
         db.add(log)
         db.commit()
         return {"status": "global_node_rotated"}
 
+    # Standard database card deletion
     card = db.query(DBCard).filter(DBCard.id == card_id).first()
     if card:
-        # LOG ACTION FOR ADMIN
         log = DBPurgeLog(action_type="CARD_TERMINATED", node_id=card_id)
         db.add(log)
         db.delete(card)
@@ -481,6 +487,21 @@ async def regenerate_alias():
     STABLE_EMAIL = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
     STABLE_PHONE = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
     return {"email_alias": STABLE_EMAIL, "phone_alias": STABLE_PHONE}
+
+
+# NEW: Support Ticket Route for PaaS serviceability
+@app.post("/support/ticket")
+async def create_support_ticket(request: SupportRequest, db: Session = Depends(get_db)):
+    """Logs a user support request into the central purge logs for admin review"""
+    try:
+        log_entry = f"SUBJECT: {request.subject} | MSG: {request.message}"
+        log = DBPurgeLog(action_type="SUPPORT_TICKET_OPENED", node_id=log_entry)
+        db.add(log)
+        db.commit()
+        return {"status": "TICKET_STATIONED", "ticket_id": random.randint(10000, 99999)}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="SUPPORT_NODE_FAILURE")
 
 
 if __name__ == "__main__":

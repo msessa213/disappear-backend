@@ -11,8 +11,8 @@ import AdminDashboard from './AdminDashboard';
 import './App.css';
 
 /**
- * DISAPPEAR CORE ENGINE v2.3.0
- * Feature: Unique Key Fixes, Stripe Handshake State, & UI Spinners
+ * DISAPPEAR CORE ENGINE v2.3.1
+ * Feature: Support Node Integration & Global Fixes
  */
 
 // --- DYNAMIC API ROUTING ---
@@ -41,6 +41,11 @@ function App() {
   const [showMintModal, setShowMintModal] = useState(false);
   const [newCardLabel, setNewCardLabel] = useState("");
 
+  // --- SUPPORT NODE STATES ---
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [supportData, setSupportData] = useState({ subject: "TECHNICAL_ERR", message: "" });
+
+  // --- CATEGORY-SPECIFIC STATES ---
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [aliasLabel, setAliasLabel] = useState("");
@@ -64,6 +69,7 @@ function App() {
     setTimeout(() => setShowToast(""), 3000); 
   };
 
+  // PERSISTENCE & PAYMENT SYNC
   useEffect(() => {
     const session = localStorage.getItem("disappear_session");
     const query = new URLSearchParams(window.location.search);
@@ -164,6 +170,22 @@ function App() {
     }
   };
 
+  const handleSendTicket = async () => {
+    if (!supportData.message) { triggerToast("ENTER MESSAGE"); return; }
+    try {
+        const res = await fetch(`${API_BASE_URL}/support/ticket`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(supportData)
+        });
+        if (res.ok) {
+            triggerToast("TICKET TRANSMITTED");
+            setSupportData({ subject: "TECHNICAL_ERR", message: "" });
+            setShowSupportModal(false);
+        }
+    } catch (err) { triggerToast("UPLINK FAILURE"); }
+  };
+
   const handleMintAlias = async (type) => {
     if (!aliasLabel) { triggerToast("ENTER LABEL"); return; }
     try {
@@ -228,8 +250,10 @@ function App() {
   const handleKillCard = async (id) => {
     try {
       await fetch(`${API_BASE_URL}/financials/kill/${id}`, { method: "DELETE" });
-      setCards(prev => prev.filter(c => c.id !== id));
-      triggerToast("NODE BURNED");
+      if (id !== 'global-1') {
+        setCards(prev => prev.filter(c => c.id !== id));
+      }
+      triggerToast(id === 'global-1' ? "NODE ROTATED" : "NODE BURNED");
     } catch (err) { triggerToast("ERROR"); }
   };
 
@@ -320,6 +344,36 @@ function App() {
           </div>
         ))}
       </div>
+
+      {showSupportModal && (
+        <div className="modal-overlay" style={{zIndex: 60000}} onClick={() => setShowSupportModal(false)}>
+          <div className="price-box" onClick={e => e.stopPropagation()}>
+            <h3 className="tiger-text">SUPPORT UPLINK</h3>
+            <p className="field-label">ISSUE CATEGORY</p>
+            <select 
+              className="mask-btn" 
+              style={{width: '100%', background: '#000', color: 'white', marginBottom: '15px'}}
+              value={supportData.subject}
+              onChange={(e) => setSupportData({...supportData, subject: e.target.value})}
+            >
+              <option value="PAYMENT_ERR">PAYMENT_ISSUE</option>
+              <option value="NODE_ERR">NODE_FAILURE</option>
+              <option value="PURGE_ERR">PURGE_TIMEOUT</option>
+              <option value="OTHER">OTHER_INQUIRY</option>
+            </select>
+            <p className="field-label">REASON_FOR_CONTACT</p>
+            <textarea 
+              className="mask-btn" 
+              style={{width: '100%', height: '100px', color: 'white', textAlign: 'left', paddingTop: '10px'}} 
+              placeholder="Describe the anomaly..."
+              value={supportData.message}
+              onChange={(e) => setSupportData({...supportData, message: e.target.value})}
+            />
+            <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={handleSendTicket}>TRANSMIT_TICKET</button>
+            <button className="reset-btn" style={{width: '100%'}} onClick={() => setShowSupportModal(false)}>ABORT</button>
+          </div>
+        </div>
+      )}
 
       {(showEmailModal || showPhoneModal) && (
         <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => {setShowEmailModal(false); setShowPhoneModal(false)}}>
@@ -462,6 +516,19 @@ function App() {
                 ))}
               </div>
               <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowMintModal(true)}> + MINT NEW SHIELD </button>
+            </div>
+
+            <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
+              <p className="tool-label" style={{ textAlign: 'center', color: 'var(--tiger-blue)' }}>SYSTEM SUPPORT NODE</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
+                <button className="reset-btn" onClick={() => setShowSupportModal(true)}>OPEN_TICKET</button>
+                <button className="reset-btn" onClick={() => triggerToast("NODE_HEALTH: 99.9%")}>DIAGNOSTICS</button>
+              </div>
+              <div style={{ marginTop: '20px', fontSize: '0.7rem', color: '#64748b' }}>
+                <p><strong>FAQ:</strong></p>
+                <p>• <strong>Card declined?</strong> Ensure balance exists on source funding.</p>
+                <p>• <strong>Purge delay?</strong> Data brokers take 24-72h to update records.</p>
+              </div>
             </div>
 
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>

@@ -445,14 +445,15 @@ async def kill_card(card_id: str, db: Session = Depends(get_db)):
     """Permanently deletes a card asset from the database"""
     # FIX: Special Handler for the hardcoded Global Node ID
     if card_id == "global-1":
+        # Log the reset event to the audit trail
         log = DBPurgeLog(action_type="GLOBAL_NODE_ROTATED", node_id="global-1")
         db.add(log)
         db.commit()
         return {"status": "global_node_rotated"}
 
+    # Standard database card deletion
     card = db.query(DBCard).filter(DBCard.id == card_id).first()
     if card:
-        # LOG ACTION FOR ADMIN
         log = DBPurgeLog(action_type="CARD_TERMINATED", node_id=card_id)
         db.add(log)
         db.delete(card)
