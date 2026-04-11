@@ -11,7 +11,7 @@ import AdminDashboard from './AdminDashboard';
 import './App.css';
 
 /**
- * DISAPPEAR CORE ENGINE v2.3.8
+ * DISAPPEAR CORE ENGINE v2.3.9
  * Feature: Subscription Management & Full Operational FAQ Database
  */
 
@@ -356,7 +356,7 @@ function App() {
         ))}
       </div>
 
-      {/* --- CLICKABLE FAQ MODAL: INTERACTIVE NODE DATABASE --- */}
+      {/* --- FAQ MODAL: INTERACTIVE NODE DATABASE --- */}
       {showFaqModal && (
         <div className="modal-overlay" style={{zIndex: 70000}} onClick={() => setShowFaqModal(false)}>
           <div className="price-box" style={{maxWidth: '650px', textAlign: 'left', overflowY: 'auto', maxHeight: '85vh'}} onClick={e => e.stopPropagation()}>
@@ -370,51 +370,70 @@ function App() {
                 </div>
                 {activeFaqNode === 'global' && (
                     <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '2px solid #FFD700'}}>
-                        <p>High-limit digital bridge for Apple/Google Pay and trusted merchant masking.</p>
+                        <p><strong>DESCRIPTION:</strong> A primary, high-limit digital bridge designed for integration with Apple/Google Pay and high-trust merchants.</p>
                         <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION_STEPS:</strong>
                         <ol style={{paddingLeft: '15px'}}>
-                            <li>Access 'GLOBAL WALLET NODE' at dashboard origin.</li>
-                            <li>Add the 16-digit digits to your smartphone digital wallet.</li>
-                            <li>Use RESET_NODE instantly if you suspect merchant logging or data leaks.</li>
-                            <li>New identity hardware is provisioned immediately.</li>
+                            <li>Retrieve the 16-digit card digits from the top 'GLOBAL WALLET NODE'.</li>
+                            <li>Add the card to your smartphone digital wallet app.</li>
+                            <li>Unlike Virtual Shield Cards, this node is meant for repeated use across multiple high-trust merchants.</li>
+                            <li>If the card is ever exposed or lost, use <strong>RESET_NODE</strong> to instantly kill the identity and issue a new one.</li>
                         </ol>
                     </div>
                 )}
             </div>
 
             {/* VIRTUAL CARDS FAQ */}
-            <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'vcc' ? null : 'vcc')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '10px 0'}}>
+            <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'vcc' ? null : 'vcc')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
                 <div className="faq-trigger" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>
                   {activeFaqNode === 'vcc' ? '[-] VIRTUAL_SHIELD_CARDS' : '[+] VIRTUAL_SHIELD_CARDS'}
                 </div>
                 {activeFaqNode === 'vcc' && (
                     <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid #222'}}>
-                        <p>Merchant-locked isolation nodes for subscriptions and trials.</p>
+                        <p><strong>DESCRIPTION:</strong> Merchant-locked isolation nodes. These differ from the Global Wallet as they are strictly restricted to the merchant you first use them with.</p>
                         <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION_STEPS:</strong>
                         <ol style={{paddingLeft: '15px'}}>
-                            <li>Locate tool and click 'MINT NEW SHIELD'.</li>
-                            <li>Tag card with merchant name.</li>
-                            <li>Use exclusively for that endpoint.</li>
-                            <li>Click 'TERMINATE' to sever the funding link instantly.</li>
+                            <li>Click 'MINT NEW SHIELD' and label it (e.g. 'Amazon').</li>
+                            <li>System provides unique digits, EXP, and CVV.</li>
+                            <li>Enter these into the merchant's payment field.</li>
+                            <li><strong>THE KEY DIFFERENCE:</strong> Once used, this card cannot be used at another merchant. This prevents "subscription creep" and secondary data mining.</li>
                         </ol>
                     </div>
                 )}
             </div>
 
             {/* EMAIL FAQ */}
-            <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'email' ? null : 'email')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '10px 0'}}>
+            <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'email' ? null : 'email')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
                 <div className="faq-trigger" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>
                   {activeFaqNode === 'email' ? '[-] EMAIL_RELAY_NODES' : '[+] EMAIL_RELAY_NODES'}
                 </div>
                 {activeFaqNode === 'email' && (
                     <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid #222'}}>
-                        <p>PII-scrubbing relays that forward to your master inbox.</p>
+                        <p><strong>DESCRIPTION:</strong> PII-scrubbing relays that forward to your real email without trackers.</p>
                         <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION_STEPS:</strong>
                         <ol style={{paddingLeft: '15px'}}>
                             <li>Click 'MINT EMAIL ALIAS'.</li>
-                            <li>Enter the generated @ghost.vault address for any registration.</li>
-                            <li>System scrubs tracking pixels and forwards mail.</li>
-                            <li>If sender becomes malicious, use 'TERMINATE'.</li>
+                            <li>Register using the generated @ghost.vault address.</li>
+                            <li>Emails reach you, but trackers reach us and are blocked.</li>
+                            <li>If a site starts sending spam, simply click <strong>TERMINATE</strong> to stop it forever.</li>
+                        </ol>
+                    </div>
+                )}
+            </div>
+
+            {/* PHONE FAQ */}
+            <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'phone' ? null : 'phone')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
+                <div className="faq-trigger" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>
+                  {activeFaqNode === 'phone' ? '[-] SMS_VERIFICATION_NODES' : '[+] SMS_VERIFICATION_NODES'}
+                </div>
+                {activeFaqNode === 'phone' && (
+                    <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid #222'}}>
+                        <p><strong>DESCRIPTION:</strong> Burner mobile nodes for bypassing phone verification prompts and 2FA.</p>
+                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION_STEPS:</strong>
+                        <ol style={{paddingLeft: '15px'}}>
+                            <li>Mint a 'PHONE ALIAS' and copy the digits.</li>
+                            <li>Input the number into any site requiring verification.</li>
+                            <li>Watch your 'LIVE SECURITY AUDIT' on this dashboard.</li>
+                            <li>The incoming SMS code will stream into the log in real-time (usually 10-60s).</li>
                         </ol>
                     </div>
                 )}
@@ -595,7 +614,7 @@ function App() {
                     <span style={{ color: '#00FF00', fontSize: '0.7rem' }}>[ACTIVE]</span>
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
                 <button className="reset-btn" onClick={handleManageBilling}>
                   {billingCycle === 'monthly' ? "SWITCH_TO_ANNUAL" : "SWITCH_TO_MONTHLY"}
                 </button>
@@ -608,7 +627,7 @@ function App() {
             {/* --- SYSTEM SUPPORT NODE --- */}
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
               <p className="tool-label" style={{ textAlign: 'center', color: 'var(--tiger-blue)' }}>SYSTEM SUPPORT NODE</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginTop: '10px' }}>
                 <button className="reset-btn" onClick={() => setShowSupportModal(true)}>OPEN_TICKET</button>
                 <button className="reset-btn" onClick={() => setShowFaqModal(true)}>ACCESS_FAQ</button>
               </div>
@@ -643,7 +662,7 @@ function App() {
                 <h1 className="brand-name">DISAPPEAR</h1>
                 <p className="subtitle">Privacy-as-a-Service (P-A-A-S)</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', marginTop: '40px' }}>
-                  <div style={{ display: 'flex', gap: '20px' }}>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
                     <button className="main-button" onClick={() => setShowPricing(true)}>IDENTITY CLEANUP</button>
                     <button className="login-btn-outline" onClick={() => {triggerToast("CHALLENGE REQUEST SENT..."); setShow2FA(true);}}>CLIENT LOGIN</button>
                   </div>
@@ -663,32 +682,13 @@ function App() {
                   <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
                     <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>💳 VIRTUAL PAYMENT CARDS</p>
                     <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
-                      These act like a digital shield for your bank account. Instead of giving a website your real card info, you give them a "fake" one from us.
-                      <ul style={{ paddingLeft: '15px', marginTop: '5px' }}>
-                        <li><strong>Safe Shopping:</strong> Stores never see your actual bank details.</li>
-                        <li><strong>Stop Overcharging:</strong> If a site tries to charge you more than you agreed, the card blocks it.</li>
-                        <li><strong>One-Click Kill:</strong> If a site gets hacked, just delete the card. Your real money stays safe.</li>
-                      </ul>
+                      Digital shield for your bank account. These are "fake" card numbers that merchant processors see instead of your real info.
                     </p>
                   </div>
                   <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
                     <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>✉️ EMAIL RELAY NODES</p>
                     <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
-                      These are "throwaway" email addresses that forward mail to your real inbox without letting companies know who you are.
-                      <ul style={{ paddingLeft: '15px', marginTop: '5px' }}>
-                        <li><strong>No More Spam:</strong> If a company sends too much junk, just delete that specific address.</li>
-                        <li><strong>Stay Private:</strong> Your real email address stays off marketing lists forever.</li>
-                      </ul>
-                    </p>
-                  </div>
-                  <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
-                    <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>📱 PHONE VERIFICATION NODES</p>
-                    <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
-                      Use these for those annoying sites that demand a phone number to "verify" your account.
-                      <ul style={{ paddingLeft: '15px', marginTop: '5px' }}>
-                        <li><strong>Secure Codes:</strong> Receive verification texts safely in your dashboard.</li>
-                        <li><strong>No Harassment:</strong> Keep telemarketers and scammers away from your real phone.</li>
-                      </ul>
+                      Forwarding nodes that scrub trackers from incoming mail before reaching your primary inbox.
                     </p>
                   </div>
                   <div style={{ marginBottom: '20px', borderTop: '1px solid #111', paddingTop: '15px' }}>
@@ -723,9 +723,9 @@ function App() {
             )}
             {showPricing && !showCheckout && !isScanning && (
               <div className="pricing-card fade-in">
-                <div className="billing-toggle">
-                  <button className={billingCycle === 'monthly' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('monthly')}>Monthly</button>
-                  <button className={billingCycle === 'annual' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('annual')}>Annual</button>
+                <div className="billing-toggle" style={{ display: 'flex', gap: '5px' }}>
+                  <button className={billingCycle === 'monthly' ? 'mask-btn active-toggle' : 'mask-btn'} style={{ flex: 1 }} onClick={() => setBillingCycle('monthly')}>Monthly</button>
+                  <button className={billingCycle === 'annual' ? 'mask-btn active-toggle' : 'mask-btn'} style={{ flex: 1 }} onClick={() => setBillingCycle('annual')}>Annual</button>
                 </div>
                 <div className="price-box">
                   <h3 className="tiger-text">PREMIUM P-A-A-S</h3>
@@ -739,13 +739,13 @@ function App() {
               <div className="pricing-card fade-in">
                 <div className="price-box" style={{maxWidth: '450px', width: '100%', margin: '0 auto'}}>
                   <h3 className="tiger-text">TARGET PROFILE DATA</h3>
-                  <div className="checkout-grid">
-                      <input className="mask-btn" placeholder="First Name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
-                      <input className="mask-btn" placeholder="Middle Name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
-                      <input className="mask-btn full-row" placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
-                      <input className="mask-btn full-row" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
-                      <input className="mask-btn full-row" placeholder="Home Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
-                      <input className="mask-btn full-row" type="text" inputMode="numeric" placeholder="MM/DD/YYYY" value={targetProfile.dob} onChange={handleNumericDateInput} />
+                  <div className="checkout-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                      <input className="mask-btn" style={{ flex: '1 1 140px' }} placeholder="First Name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
+                      <input className="mask-btn" style={{ flex: '1 1 140px' }} placeholder="Middle Name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
+                      <input className="mask-btn full-row" style={{ width: '100%' }} placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
+                      <input className="mask-btn full-row" style={{ width: '100%' }} placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
+                      <input className="mask-btn full-row" style={{ width: '100%' }} placeholder="Home Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
+                      <input className="mask-btn full-row" style={{ width: '100%' }} type="text" inputMode="numeric" placeholder="MM/DD/YYYY" value={targetProfile.dob} onChange={handleNumericDateInput} />
                   </div>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '15px' }}>
                     <input type="checkbox" checked={targetProfile.termsAccepted} onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})} />
