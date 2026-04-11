@@ -11,8 +11,8 @@ import AdminDashboard from './AdminDashboard';
 import './App.css';
 
 /**
- * DISAPPEAR CORE ENGINE v2.3.2
- * Feature: Clickable FAQ Intel & Support Node Synchronization
+ * DISAPPEAR CORE ENGINE v2.3.5
+ * Feature: Clickable FAQ Node Database & Support Uplink
  */
 
 // --- DYNAMIC API ROUTING ---
@@ -41,10 +41,11 @@ function App() {
   const [showMintModal, setShowMintModal] = useState(false);
   const [newCardLabel, setNewCardLabel] = useState("");
 
-  // --- SUPPORT NODE STATES ---
+  // --- SUPPORT & FAQ STATES ---
   const [showSupportModal, setShowSupportModal] = useState(false);
-  const [supportData, setSupportData] = useState({ subject: "TECHNICAL_ERR", message: "" });
+  const [showFaqModal, setShowFaqModal] = useState(false); 
   const [activeFaqNode, setActiveFaqNode] = useState(null);
+  const [supportData, setSupportData] = useState({ subject: "TECHNICAL_ERR", message: "" });
 
   // --- CATEGORY-SPECIFIC STATES ---
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -346,6 +347,77 @@ function App() {
         ))}
       </div>
 
+      {/* --- FAQ MODAL: INTERACTIVE NODE DATABASE --- */}
+      {showFaqModal && (
+        <div className="modal-overlay" style={{zIndex: 70000}} onClick={() => setShowFaqModal(false)}>
+          <div className="price-box" style={{maxWidth: '600px', textAlign: 'left', overflowY: 'auto', maxHeight: '80vh'}} onClick={e => e.stopPropagation()}>
+            <h3 className="tiger-text">FAQ // OPERATIONAL_MANUAL</h3>
+            <p className="field-label" style={{marginBottom: '20px'}}>SELECT_NODE_FOR_INTEL</p>
+
+            {/* VIRTUAL CARDS FAQ */}
+            <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'vcc' ? null : 'vcc')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '10px 0'}}>
+                <div className="faq-trigger" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>
+                  {activeFaqNode === 'vcc' ? '[-] VIRTUAL_SHIELD_CARDS' : '[+] VIRTUAL_SHIELD_CARDS'}
+                </div>
+                {activeFaqNode === 'vcc' && (
+                    <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid #222'}}>
+                        <p>Virtual cards mask your primary bank account info from merchants.</p>
+                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>STEP-BY-STEP:</strong>
+                        <ol style={{paddingLeft: '15px'}}>
+                            <li>Locate 'VIRTUAL SHIELD CARDS' tool in your dashboard.</li>
+                            <li>Click 'MINT NEW SHIELD' and assign a label (e.g. Amazon).</li>
+                            <li>The system generates a single-use or merchant-locked card number.</li>
+                            <li>Copy digits and use them in checkout fields.</li>
+                            <li>To kill the connection, click 'TERMINATE' to burn the node.</li>
+                        </ol>
+                    </div>
+                )}
+            </div>
+
+            {/* EMAIL FAQ */}
+            <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'email' ? null : 'email')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '10px 0'}}>
+                <div className="faq-trigger" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>
+                  {activeFaqNode === 'email' ? '[-] EMAIL_RELAY_NODES' : '[+] EMAIL_RELAY_NODES'}
+                </div>
+                {activeFaqNode === 'email' && (
+                    <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid #222'}}>
+                        <p>Relay nodes prevent trackers from linking sign-ups to your identity.</p>
+                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>STEP-BY-STEP:</strong>
+                        <ol style={{paddingLeft: '15px'}}>
+                            <li>Navigate to 'EMAIL PROTECTION'.</li>
+                            <li>Click 'MINT EMAIL ALIAS' and enter a label.</li>
+                            <li>Use the generated @ghost.vault address for any web sign-up.</li>
+                            <li>Incoming mail is scrubbed of PII trackers and forwarded to your real inbox.</li>
+                            <li>Click 'TERMINATE' to stop all future spam from that sender.</li>
+                        </ol>
+                    </div>
+                )}
+            </div>
+
+            {/* PHONE FAQ */}
+            <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'phone' ? null : 'phone')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '10px 0'}}>
+                <div className="faq-trigger" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>
+                  {activeFaqNode === 'phone' ? '[-] SMS_VERIFICATION_NODES' : '[+] SMS_VERIFICATION_NODES'}
+                </div>
+                {activeFaqNode === 'phone' && (
+                    <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid #222'}}>
+                        <p>Temporary phone nodes for account verification and 2FA bypass.</p>
+                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>STEP-BY-STEP:</strong>
+                        <ol style={{paddingLeft: '15px'}}>
+                            <li>Mint a 'PHONE ALIAS'.</li>
+                            <li>Copy the +1 number and enter it into the target site.</li>
+                            <li>Site sends verification SMS to our secure node.</li>
+                            <li>Watch your 'LIVE SECURITY AUDIT' log; the code will appear in the action stream.</li>
+                        </ol>
+                    </div>
+                )}
+            </div>
+
+            <button className="main-button" style={{width: '100%', marginTop: '30px'}} onClick={() => setShowFaqModal(false)}>EXIT_MANUAL</button>
+          </div>
+        </div>
+      )}
+
       {showSupportModal && (
         <div className="modal-overlay" style={{zIndex: 60000}} onClick={() => setShowSupportModal(false)}>
           <div className="price-box" onClick={e => e.stopPropagation()}>
@@ -519,16 +591,17 @@ function App() {
               <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowMintModal(true)}> + MINT NEW SHIELD </button>
             </div>
 
+            {/* --- CLICKABLE SUPPORT NODE UI --- */}
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
               <p className="tool-label" style={{ textAlign: 'center', color: 'var(--tiger-blue)' }}>SYSTEM SUPPORT NODE</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
                 <button className="reset-btn" onClick={() => setShowSupportModal(true)}>OPEN_TICKET</button>
-                <button className="reset-btn" onClick={() => triggerToast("NODE_HEALTH: 99.9%")}>DIAGNOSTICS</button>
+                <button className="reset-btn" onClick={() => setShowFaqModal(true)}>ACCESS_FAQ</button>
               </div>
-              <div style={{ marginTop: '20px', fontSize: '0.7rem', color: '#64748b' }}>
-                <p><strong>QUICK_HELP:</strong></p>
-                <p>• Transmit a ticket for payment anomalies or node failures.</p>
-                <p>• Data purge verification may take up to 72 hours for broker synchronization.</p>
+              <div style={{ marginTop: '20px', fontSize: '0.7rem', color: '#64748b', textAlign: 'center' }}>
+                <p className="faq-link" onClick={() => setShowFaqModal(true)} style={{cursor: 'pointer', textDecoration: 'underline'}}>
+                    [ VIEW_OPERATIONAL_STEP_BY_STEP_MANUAL ]
+                </p>
               </div>
             </div>
 
@@ -569,94 +642,60 @@ function App() {
               </div>
             )}
 
-            {/* --- INTERACTIVE SYSTEM OPERATIONS MANUAL --- */}
             {showHelp && !showShield && !showCheckout && !show2FA && (
               <div className="pricing-card fade-in" style={{ marginBottom: '40px', border: '1px solid #0047AB', background: '#020202' }}>
                 <div className="price-box" style={{ textAlign: 'left', maxWidth: '600px' }}>
                   <h3 className="tiger-text" style={{letterSpacing: '2px'}}>SYSTEM_OPERATIONS_MANUAL v1.2</h3>
-                  <p style={{fontSize: '0.6rem', color: '#444', marginBottom: '20px'}}>CLICK_CATEGORY_TO_EXPAND_INTEL</p>
+                  <p style={{fontSize: '0.6rem', color: '#444', marginBottom: '20px'}}>EASY-READ_USER_GUIDE</p>
                   
-                  {/* VIRTUAL CARDS FAQ */}
-                  <div 
-                    className="faq-node" 
-                    onClick={() => setActiveFaqNode(activeFaqNode === 'cards' ? null : 'cards')}
-                    style={{ cursor: 'pointer', marginBottom: '15px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}
-                  >
-                    <p className="field-label" style={{ color: activeFaqNode === 'cards' ? 'var(--tiger-blue)' : 'white' }}>
-                      {activeFaqNode === 'cards' ? '[-] VIRTUAL PAYMENT CARDS' : '[+] VIRTUAL PAYMENT CARDS'}
+                  <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                    <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>💳 VIRTUAL PAYMENT CARDS</p>
+                    <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
+                      These act like a digital shield for your bank account. Instead of giving a website your real card info, you give them a "fake" one from us.
+                      <ul style={{ paddingLeft: '15px', marginTop: '5px' }}>
+                        <li><strong>Safe Shopping:</strong> Stores never see your actual bank details.</li>
+                        <li><strong>Stop Overcharging:</strong> If a site tries to charge you more than you agreed, the card blocks it.</li>
+                        <li><strong>One-Click Kill:</strong> If a site gets hacked, just delete the card. Your real money stays safe.</li>
+                      </ul>
                     </p>
-                    {activeFaqNode === 'cards' && (
-                      <div className="fade-in" style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '10px' }}>
-                        <p><strong>USAGE PROTOCOL:</strong></p>
-                        <ol style={{ paddingLeft: '15px' }}>
-                            <li>Navigate to 'VIRTUAL SHIELD CARDS' in your dashboard.</li>
-                            <li>Click 'MINT NEW SHIELD' and label it for a specific store.</li>
-                            <li>Use these digits instead of your real bank information.</li>
-                        </ol>
-                        <p style={{marginTop: '5px'}}><em>Benefit:</em> Prevents merchant data breaches from exposing your primary funding source. Use 'TERMINATE' to instantly kill the card.</p>
-                      </div>
-                    )}
                   </div>
 
-                  {/* EMAIL RELAY FAQ */}
-                  <div 
-                    className="faq-node" 
-                    onClick={() => setActiveFaqNode(activeFaqNode === 'email' ? null : 'email')}
-                    style={{ cursor: 'pointer', marginBottom: '15px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}
-                  >
-                    <p className="field-label" style={{ color: activeFaqNode === 'email' ? 'var(--tiger-blue)' : 'white' }}>
-                      {activeFaqNode === 'email' ? '[-] EMAIL RELAY NODES' : '[+] EMAIL RELAY NODES'}
+                  <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                    <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>✉️ EMAIL RELAY NODES</p>
+                    <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
+                      These are "throwaway" email addresses that forward mail to your real inbox without letting companies know who you are.
+                      <ul style={{ paddingLeft: '15px', marginTop: '5px' }}>
+                        <li><strong>No More Spam:</strong> If a company sends too much junk, just delete that specific address.</li>
+                        <li><strong>Stay Private:</strong> Your real email address stays off marketing lists forever.</li>
+                      </ul>
                     </p>
-                    {activeFaqNode === 'email' && (
-                      <div className="fade-in" style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '10px' }}>
-                        <p><strong>USAGE PROTOCOL:</strong> Use a relay address whenever an app requires sign-up. All mail is scrubbed of marketing trackers and forwarded to you.</p>
-                        <p style={{marginTop: '5px'}}><em>Benefit:</em> If a site starts sending spam, terminate the alias. Your real email remains unlisted.</p>
-                      </div>
-                    )}
                   </div>
 
-                  {/* PHONE FAQ */}
-                  <div 
-                    className="faq-node" 
-                    onClick={() => setActiveFaqNode(activeFaqNode === 'phone' ? null : 'phone')}
-                    style={{ cursor: 'pointer', marginBottom: '15px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}
-                  >
-                    <p className="field-label" style={{ color: activeFaqNode === 'phone' ? 'var(--tiger-blue)' : 'white' }}>
-                      {activeFaqNode === 'phone' ? '[-] PHONE VERIFICATION NODES' : '[+] PHONE VERIFICATION NODES'}
+                  <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                    <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>📱 PHONE VERIFICATION NODES</p>
+                    <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
+                      Use these for those annoying sites that demand a phone number to "verify" your account.
+                      <ul style={{ paddingLeft: '15px', marginTop: '5px' }}>
+                        <li><strong>Secure Codes:</strong> Receive verification texts safely in your dashboard.</li>
+                        <li><strong>No Harassment:</strong> Keep telemarketers and scammers away from your real phone.</li>
+                      </ul>
                     </p>
-                    {activeFaqNode === 'phone' && (
-                      <div className="fade-in" style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '10px' }}>
-                        <p><strong>USAGE PROTOCOL:</strong> Enter your alias number into 2FA or registration prompts. View incoming SMS codes directly in your dash.</p>
-                        <p style={{marginTop: '5px'}}><em>Benefit:</em> Stops telemarketers from obtaining your primary mobile number.</p>
-                      </div>
-                    )}
                   </div>
 
-                  {/* LIMITS FAQ */}
-                  <div 
-                    className="faq-node" 
-                    onClick={() => setActiveFaqNode(activeFaqNode === 'limits' ? null : 'limits')}
-                    style={{ cursor: 'pointer', marginBottom: '15px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}
-                  >
-                    <p className="field-label" style={{ color: activeFaqNode === 'limits' ? 'var(--tiger-blue)' : 'white' }}>
-                      {activeFaqNode === 'limits' ? '[-] ACCOUNT LIMITS' : '[+] ACCOUNT LIMITS'}
-                    </p>
-                    {activeFaqNode === 'limits' && (
-                      <div className="fade-in" style={{ marginTop: '10px' }}>
-                        <table style={{ width: '100%', fontSize: '0.7rem', borderCollapse: 'collapse', color: '#94A3B8' }}>
-                          <tbody>
-                            <tr style={{ borderBottom: '1px solid #111' }}>
-                              <td style={{ padding: '8px 0' }}>FREE_SLOTS</td>
-                              <td style={{ textAlign: 'right', color: 'white' }}>6 Concurrent Slots</td>
-                            </tr>
-                            <tr>
-                              <td style={{ padding: '8px 0' }}>ADD_MORE</td>
-                              <td style={{ textAlign: 'right', color: 'white' }}>$4.99 per Permanent Slot</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
+                  <div style={{ marginBottom: '20px', borderTop: '1px solid #111', paddingTop: '15px' }}>
+                    <p className="field-label" style={{ color: 'var(--tiger-blue)', marginBottom: '10px' }}>ACCOUNT LIMITS</p>
+                    <table style={{ width: '100%', fontSize: '0.7rem', borderCollapse: 'collapse', color: '#94A3B8' }}>
+                      <tbody>
+                        <tr style={{ borderBottom: '1px solid #111' }}>
+                          <td style={{ padding: '8px 0' }}>FREE_SLOTS</td>
+                          <td style={{ textAlign: 'right', color: 'white' }}>6 Concurrent Slots</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '8px 0' }}>ADD_MORE</td>
+                          <td style={{ textAlign: 'right', color: 'white' }}>$4.99 per Permanent Slot</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
 
                   <button className="reset-btn" style={{ width: '100%', marginTop: '10px' }} onClick={() => setShowHelp(false)}>I UNDERSTAND</button>
