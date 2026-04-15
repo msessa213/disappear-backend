@@ -401,7 +401,7 @@ function App() {
             </div>
 
             {/* EMAIL FAQ */}
-            <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'email' ? null : 'email')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
+            <div className="faq-item" onClick={() => {setActiveFaqNode(activeFaqNode === 'email' ? null : 'email')}} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
                 <div className="faq-trigger" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>
                   {activeFaqNode === 'email' ? '[-] EMAIL RELAY NODES' : '[+] EMAIL RELAY NODES'}
                 </div>
@@ -676,18 +676,35 @@ function App() {
                 <div className="price-box" style={{ textAlign: 'left', maxWidth: '600px' }}>
                   <h3 className="tiger-text" style={{letterSpacing: '2px'}}>Operation Manual v1.2</h3>
                   <p style={{fontSize: '0.6rem', color: '#444', marginBottom: '20px'}}>USER GUIDE</p>
-                  <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                  
+                  <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
                     <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>💳 CREDIT CARD PROTECTION</p>
                     <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
-                      Digital shield for your bank account. These are protected card numbers that merchant processors see instead of your real info.
+                      Generate merchant-locked virtual digits. These prevent your real banking data from being logged by retailers or leaked in breaches.
                     </p>
                   </div>
-                  <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+
+                  <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
                     <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>✉️ EMAIL RELAY NODES</p>
                     <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
-                      Forwarding nodes that scrub trackers from incoming mail before reaching your primary inbox.
+                      Deploy forwarding addresses that scrub hidden PII trackers from incoming mail before they reach your primary inbox.
                     </p>
                   </div>
+
+                  <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                    <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>📱 PHONE ALIAS NODES</p>
+                    <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
+                      Generate secondary numbers for 2FA bypass and app verifications. Incoming SMS codes appear directly in your Live Security Audit.
+                    </p>
+                  </div>
+
+                  <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                    <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>🔥 DATA REMOVAL PROTOCOL</p>
+                    <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
+                      Automated legal requests are dispatched to major data brokers. Use the 'Emergency Burn' to instantly wipe all vault assets and profile data.
+                    </p>
+                  </div>
+
                   <div style={{ marginBottom: '20px', borderTop: '1px solid #111', paddingTop: '15px' }}>
                     <p className="field-label" style={{ color: 'var(--tiger-blue)', marginBottom: '10px' }}>ACCOUNT LIMITS</p>
                     <table style={{ width: '100%', fontSize: '0.7rem', borderCollapse: 'collapse', color: '#94A3B8' }}>
