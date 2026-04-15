@@ -360,23 +360,23 @@ function App() {
       {showFaqModal && (
         <div className="modal-overlay" style={{zIndex: 70000}} onClick={() => setShowFaqModal(false)}>
           <div className="price-box" style={{maxWidth: '650px', textAlign: 'left', overflowY: 'auto', maxHeight: '85vh'}} onClick={e => e.stopPropagation()}>
-            <h3 className="tiger-text">FAQ // OPERATIONAL_MANUAL</h3>
-            <p className="field-label" style={{marginBottom: '20px'}}>SELECT_NODE_FOR_STEP_BY_STEP_INTEL</p>
+            <h3 className="tiger-text">FAQ</h3>
+            <p className="field-label" style={{marginBottom: '20px'}}>SELECT NODE FOR INTELLIGENCE</p>
 
             {/* GLOBAL WALLET FAQ */}
             <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'global' ? null : 'global')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
                 <div className="faq-trigger" style={{color: '#FFD700', fontWeight: 'bold'}}>
-                  {activeFaqNode === 'global' ? '[-] GLOBAL_WALLET_NODE' : '[+] GLOBAL_WALLET_NODE'}
+                  {activeFaqNode === 'global' ? '[-] GLOBAL WALLET NODE' : '[+] GLOBAL WALLET NODE'}
                 </div>
                 {activeFaqNode === 'global' && (
                     <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '2px solid #FFD700'}}>
                         <p><strong>USAGE:</strong> Best for high-trust merchants and in-person Digital Wallet (Apple/Google Pay) usage.</p>
-                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION_STEPS:</strong>
+                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION STEPS:</strong>
                         <ol style={{paddingLeft: '15px'}}>
                             <li>Retrieve digits from the 'GLOBAL WALLET NODE' module at the top of your dashboard.</li>
                             <li>Add the 16-digit card number, EXP, and CVV to your smartphone wallet.</li>
                             <li><strong>CORE ARCHITECTURE:</strong> This is a multi-merchant node. Use it for general recurring trust-based purchases.</li>
-                            <li>Click 'RESET_NODE' if you believe merchant processors have logged the card info.</li>
+                            <li>Click 'RESET NODE' if you believe merchant processors have logged the card info.</li>
                         </ol>
                     </div>
                 )}
@@ -385,14 +385,14 @@ function App() {
             {/* VIRTUAL CARDS FAQ */}
             <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'vcc' ? null : 'vcc')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
                 <div className="faq-trigger" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>
-                  {activeFaqNode === 'vcc' ? '[-] VIRTUAL_SHIELD_CARDS' : '[+] VIRTUAL_SHIELD_CARDS'}
+                  {activeFaqNode === 'vcc' ? '[-] CREDIT CARD PROTECTION' : '[+] CREDIT CARD PROTECTION'}
                 </div>
                 {activeFaqNode === 'vcc' && (
                     <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid var(--tiger-blue)'}}>
                         <p><strong>USAGE:</strong> Best for individual subscriptions and untrusted merchant endpoints.</p>
-                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION_STEPS:</strong>
+                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION STEPS:</strong>
                         <ol style={{paddingLeft: '15px'}}>
-                            <li>Click 'MINT NEW SHIELD' and label it (e.g., Netflix).</li>
+                            <li>Click 'GENERATE CARD PROTECTION' and label it (e.g., Netflix).</li>
                             <li>System provides isolated digits for that specific merchant.</li>
                             <li><strong>THE DIFFERENCE:</strong> Once used, this node "locks" to that merchant. If they are hacked, these digits are worthless anywhere else.</li>
                         </ol>
@@ -403,14 +403,14 @@ function App() {
             {/* EMAIL FAQ */}
             <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'email' ? null : 'email')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
                 <div className="faq-trigger" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>
-                  {activeFaqNode === 'email' ? '[-] EMAIL_RELAY_NODES' : '[+] EMAIL_RELAY_NODES'}
+                  {activeFaqNode === 'email' ? '[-] EMAIL RELAY NODES' : '[+] EMAIL RELAY NODES'}
                 </div>
                 {activeFaqNode === 'email' && (
                     <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid var(--tiger-blue)'}}>
-                        <p><strong>USAGE:</strong> Cloaks your primary identity from marketing lists and data broker aggregators.</p>
-                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION_STEPS:</strong>
+                        <p><strong>USAGE:</strong> Protects your primary identity from marketing lists and data broker aggregators.</p>
+                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION STEPS:</strong>
                         <ol style={{paddingLeft: '15px'}}>
-                            <li>Assign a label (e.g., 'E-Commerce') and click 'MINT'.</li>
+                            <li>Assign a label (e.g., 'E-Commerce') and click 'GENERATE'.</li>
                             <li>Use the generated address for web registrations.</li>
                             <li>PII trackers are scrubbed before forwarding to your inbox.</li>
                         </ol>
@@ -421,14 +421,14 @@ function App() {
             {/* PHONE FAQ */}
             <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'phone' ? null : 'phone')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
                 <div className="faq-trigger" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>
-                  {activeFaqNode === 'phone' ? '[-] SMS_VERIFICATION_NODES' : '[+] SMS_VERIFICATION_NODES'}
+                  {activeFaqNode === 'phone' ? '[-] SMS VERIFICATION NODES' : '[+] SMS VERIFICATION NODES'}
                 </div>
                 {activeFaqNode === 'phone' && (
                     <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid var(--tiger-blue)'}}>
                         <p><strong>USAGE:</strong> Best for 2FA bypass and anonymous app verifications.</p>
-                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION_STEPS:</strong>
+                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION STEPS:</strong>
                         <ol style={{paddingLeft: '15px'}}>
-                            <li>Mint a 'PHONE ALIAS' node.</li>
+                            <li>Generate a 'PHONE ALIAS' node.</li>
                             <li>Enter the provided +1 number into the verification field.</li>
                             <li>The incoming code appears instantly in the 'LIVE SECURITY AUDIT' on your dashboard.</li>
                         </ol>
@@ -436,7 +436,7 @@ function App() {
                 )}
             </div>
 
-            <button className="main-button" style={{width: '100%', marginTop: '30px'}} onClick={() => setShowFaqModal(false)}>EXIT_MANUAL</button>
+            <button className="main-button" style={{width: '100%', marginTop: '30px'}} onClick={() => setShowFaqModal(false)}>EXIT FAQ</button>
           </div>
         </div>
       )}
@@ -462,7 +462,7 @@ function App() {
       {(showEmailModal || showPhoneModal) && (
         <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => {setShowEmailModal(false); setShowPhoneModal(false)}}>
           <div className="price-box" onClick={e => e.stopPropagation()}>
-            <h3 className="tiger-text">MINT {showEmailModal ? 'EMAIL' : 'PHONE'} ALIAS</h3>
+            <h3 className="tiger-text">GENERATE {showEmailModal ? 'EMAIL' : 'PHONE'} ALIAS</h3>
             <p className="field-label">ASSOCIATE LABEL</p>
             <input className="mask-btn" style={{color: 'white', textAlign: 'center'}} placeholder="e.g. Shopping, Personal" value={aliasLabel} onChange={(e) => setAliasLabel(e.target.value)} />
             <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={() => handleMintAlias(showEmailModal ? 'email' : 'phone')}>AUTHORIZE</button>
@@ -474,7 +474,7 @@ function App() {
       {showMintModal && (
         <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => setShowMintModal(false)}>
           <div className="price-box" onClick={e => e.stopPropagation()}>
-            <h3 className="tiger-text">MINT NEW SHIELD</h3>
+            <h3 className="tiger-text">GENERATE CARD PROTECTION</h3>
             <p className="field-label">ASSOCIATE MERCHANT</p>
             <input className="mask-btn" style={{width: '100%', color: 'white', textAlign: 'center'}} placeholder="e.g. Amazon, Netflix" value={newCardLabel} onChange={(e) => setNewCardLabel(e.target.value)} />
             <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={handleMintCard}>AUTHORIZE NODE</button>
@@ -517,7 +517,7 @@ function App() {
                 <div className="card-row-info">
                   <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
                      <span className="card-nickname" style={{color: '#FFD700', fontWeight: 'bold'}}>PRIMARY_PAY_NODE</span>
-                     <button className="kill-text-bold" onClick={() => { if(window.confirm("RESET NODE? Old card will be burned and a new one issued.")) handleKillCard('global-1'); }}>RESET_NODE</button>
+                     <button className="kill-text-bold" onClick={() => { if(window.confirm("RESET NODE? Old card will be burned and a new one issued.")) handleKillCard('global-1'); }}>RESET NODE</button>
                   </div>
                   <code className="card-digits" style={{ fontSize: '1.2rem', letterSpacing: '3px' }}> 4242 8888 9999 0001 </code>
                   <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #222', paddingTop: '10px', marginTop: '10px'}}>
@@ -560,7 +560,7 @@ function App() {
                   </div>
                 ))}
               </div>
-              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowEmailModal(true)}> + MINT EMAIL ALIAS </button>
+              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowEmailModal(true)}> + GENERATE EMAIL ALIAS </button>
             </div>
 
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
@@ -573,11 +573,11 @@ function App() {
                   </div>
                 ))}
               </div>
-              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowPhoneModal(true)}> + MINT PHONE ALIAS </button>
+              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowPhoneModal(true)}> + GENERATE PHONE ALIAS </button>
             </div>
 
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
-              <p className="tool-label" style={{ textAlign: 'center', marginBottom: '20px' }}>VIRTUAL SHIELD CARDS</p>
+              <p className="tool-label" style={{ textAlign: 'center', marginBottom: '20px' }}>CREDIT CARD PROTECTION</p>
               <div className="card-manager-list">
                 {cards.map((c) => (
                   <div key={c.id} className="managed-card-row enhanced-card">
@@ -595,7 +595,7 @@ function App() {
                   </div>
                 ))}
               </div>
-              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowMintModal(true)}> + MINT NEW SHIELD </button>
+              <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowMintModal(true)}> + GENERATE CARD PROTECTION </button>
             </div>
 
             {/* --- SUBSCRIPTION MANAGEMENT NODE --- */}
@@ -626,11 +626,11 @@ function App() {
               <p className="tool-label" style={{ textAlign: 'center', color: 'var(--tiger-blue)' }}>SYSTEM SUPPORT NODE</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
                 <button className="reset-btn" onClick={() => setShowSupportModal(true)}>OPEN_TICKET</button>
-                <button className="reset-btn" onClick={() => setShowFaqModal(true)}>ACCESS_FAQ</button>
+                <button className="reset-btn" onClick={() => setShowFaqModal(true)}>ACCESS FAQ</button>
               </div>
               <div style={{ marginTop: '20px', fontSize: '0.7rem', color: '#64748b', textAlign: 'center' }}>
                 <p className="faq-link" onClick={() => setShowFaqModal(true)} style={{cursor: 'pointer', textDecoration: 'underline'}}>
-                    [ VIEW_OPERATIONAL_STEP_BY_STEP_MANUAL ]
+                    Operation Manual
                 </p>
               </div>
             </div>
@@ -665,7 +665,7 @@ function App() {
                   </div>
                   <button className="info-link-btn" onClick={() => setShowLegal('manifesto')}>WHY IS THIS CRITICAL? [MANIFESTO]</button>
                   <button className="info-link-btn" style={{marginTop: '10px'}} onClick={() => setShowHelp(!showHelp)}>
-                    {showHelp ? "[ CLOSE_MANUAL ]" : "[ VIEW_SYSTEM_OPERATIONS ]"}
+                    {showHelp ? "CLOSE MANUAL" : "Operation Manual"}
                   </button>
                 </div>
               </div>
@@ -674,12 +674,12 @@ function App() {
             {showHelp && !showShield && !showCheckout && !show2FA && (
               <div className="pricing-card fade-in" style={{ marginBottom: '40px', border: '1px solid #0047AB', background: '#020202' }}>
                 <div className="price-box" style={{ textAlign: 'left', maxWidth: '600px' }}>
-                  <h3 className="tiger-text" style={{letterSpacing: '2px'}}>SYSTEM_OPERATIONS_MANUAL v1.2</h3>
-                  <p style={{fontSize: '0.6rem', color: '#444', marginBottom: '20px'}}>EASY-READ_USER_GUIDE</p>
+                  <h3 className="tiger-text" style={{letterSpacing: '2px'}}>Operation Manual v1.2</h3>
+                  <p style={{fontSize: '0.6rem', color: '#444', marginBottom: '20px'}}>USER GUIDE</p>
                   <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
-                    <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>💳 VIRTUAL PAYMENT CARDS</p>
+                    <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>💳 CREDIT CARD PROTECTION</p>
                     <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
-                      Digital shield for your bank account. These are "fake" card numbers that merchant processors see instead of your real info.
+                      Digital shield for your bank account. These are protected card numbers that merchant processors see instead of your real info.
                     </p>
                   </div>
                   <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>

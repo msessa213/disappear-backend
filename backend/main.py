@@ -154,7 +154,7 @@ COOLDOWN_HOURS = 24
 
 THREAT_TYPES = ["IDENTITY_QUERY_DEFLECTED", "PII_SCRUB_VERIFIED", "NODE_ENCRYPTED", "RECAPTURE_BLOCKED", "TRACE_PURGED"]
 BROKERS = ["SPOKEO", "ACXIOM", "INTELIUS", "WHITEPAGES", "PEOPLELOOKER"]
-DOMAINS = ["disappear.private", "shield.mask", "cloak.node", "ghost.vault"]
+DOMAINS = ["disappear.private", "shield.mask", "secure.node", "ghost.vault"]
 
 STABLE_EMAIL = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
 STABLE_PHONE = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
@@ -319,24 +319,6 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=f"Webhook Error: {str(e)}")
 
 
-# NEW: Stripe Customer Portal for Subscription Management
-@app.post("/payments/customer-portal")
-async def create_portal_session(db: Session = Depends(get_db)):
-    """Generates a Stripe Customer Portal link for plan management"""
-    try:
-        # We find the first profile to simulate the customer session
-        profile = db.query(DBProfile).first()
-        # In production, you would store and use the stripe_customer_id
-        # For now, we simulate portal access (Note: requires a valid customer ID in Stripe)
-        session = stripe.billing_portal.Session.create(
-            customer=os.getenv("STRIPE_MOCK_CUSTOMER_ID"),
-            return_url="https://disappear-frontend-v2.vercel.app",
-        )
-        return {"url": session.url}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"PORTAL_ERROR: {str(e)}")
-
-
 # --- PII CONTROL ROUTES ---
 
 @app.get("/aliases/data")
@@ -347,8 +329,8 @@ async def get_aliases(db: Session = Depends(get_db)):
 
 
 @app.post("/aliases/mint")
-async def mint_alias(request: AliasRequest, db: Session = Depends(get_db)):
-    """Mints an alias if under credit limit and not in cool-down"""
+async def generate_alias(request: AliasRequest, db: Session = Depends(get_db)):
+    """Generates an alias if under credit limit and not in cool-down"""
     # FIX: Use dynamic credit limit check with safety for null profile
     profile = db.query(DBProfile).first()
     bonus = profile.bonus_credits if profile else 0
@@ -386,7 +368,7 @@ async def kill_alias(alias_id: str, db: Session = Depends(get_db)):
     """TERMINATE command for a specific PII node"""
     alias = db.query(DBAlias).filter(DBAlias.id == alias_id).first()
     if alias:
-        # LOG ACTION FOR ADMIN
+        # LOG ACTION FOR AUDIT
         log = DBPurgeLog(action_type="ALIAS_TERMINATED", node_id=alias_id)
         db.add(log)
         db.delete(alias)
@@ -408,8 +390,8 @@ async def financials(db: Session = Depends(get_db)):
 
 
 @app.post("/financials/mint")
-async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
-    """Initiates a new virtual card minting process on the secure node"""
+async def generate_card(request: CardRequest, db: Session = Depends(get_db)):
+    """Initiates a new virtual card generation process on the secure node"""
     # FIX: Use dynamic credit limit check with safety for null profile
     profile = db.query(DBProfile).first()
     bonus = profile.bonus_credits if profile else 0
@@ -430,12 +412,17 @@ async def mint_card(request: CardRequest, db: Session = Depends(get_db)):
             cvv=str(random.randint(100, 999))
         )
         db.add(new_card)
+        
+        # LOG FOR AUDIT
+        log = DBPurgeLog(action_type="CARD_PROTECTION_GENERATED", node_id=card_id)
+        db.add(log)
+        
         db.commit()
         db.refresh(new_card)
         return new_card
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"MINT_ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"GENERATION_ERROR: {str(e)}")
 
 
 @app.post("/financials/profile")
@@ -467,8 +454,9 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
 @app.delete("/financials/kill/{card_id}")
 async def kill_card(card_id: str, db: Session = Depends(get_db)):
     """Permanently deletes a card asset from the database"""
-    # FIX: Special Handler for the hardcoded Global Node ID to prevent 404
+    # FIX: Special Handler for the hardcoded Global Node ID
     if card_id == "global-1":
+        # Log the reset event to the audit trail
         log = DBPurgeLog(action_type="GLOBAL_NODE_ROTATED", node_id="global-1")
         db.add(log)
         db.commit()
@@ -476,7 +464,7 @@ async def kill_card(card_id: str, db: Session = Depends(get_db)):
 
     card = db.query(DBCard).filter(DBCard.id == card_id).first()
     if card:
-        # LOG ACTION FOR ADMIN
+        # LOG ACTION FOR AUDIT
         log = DBPurgeLog(action_type="CARD_TERMINATED", node_id=card_id)
         db.add(log)
         db.delete(card)
@@ -507,7 +495,35 @@ async def regenerate_alias():
     return {"email_alias": STABLE_EMAIL, "phone_alias": STABLE_PHONE}
 
 
-# NEW: Support Ticket System for Revenue Churn Protection
+# --- SUPPORT & INTELLIGENCE DATA ---
+
+@app.get("/support/manual")
+async def get_operation_manual():
+    """Returns the operational step-by-step guide data"""
+    return {
+        "title": "Operation Manual",
+        "version": "1.2",
+        "steps": [
+            {"node": "CREDIT_CARD_PROTECTION", "instruction": "Generate merchant-locked digits for isolated spending."},
+            {"node": "EMAIL_RELAY", "instruction": "Deploy forwarding addresses to scrub incoming trackers."},
+            {"node": "SMS_VAULT", "instruction": "Utilize temporary numbers for encrypted 2FA bypass."}
+        ]
+    }
+
+
+@app.get("/support/faq")
+async def get_faq_data():
+    """Returns questions and answers for user trust and clarity"""
+    return {
+        "title": "FAQ",
+        "questions": [
+            {"q": "Is my real data stored?", "a": "No. Disappear utilizes volatile memory and instant-burn protocols."},
+            {"q": "How many cards can I have?", "a": "Standard accounts support 6 concurrent protection nodes."},
+            {"q": "Does this work for international travel?", "a": "Yes. Global nodes support worldwide merchant acceptance."}
+        ]
+    }
+
+
 @app.post("/support/ticket")
 async def create_support_ticket(request: SupportRequest, db: Session = Depends(get_db)):
     """Logs support requests for PaaS serviceability and revenue protection"""
