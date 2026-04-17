@@ -108,35 +108,33 @@ body, html, #root {
   color: #475569;
 }
 
-/* 3. UPDATED: TAMED SHAKE & ENCRYPTION OVERLAY */
+/* 3. FIXED: GLOBAL ENCRYPTION OVERLAY & ULTRA-TAMED SHAKE */
 .encrypting-overlay {
-  position: absolute;
+  position: fixed; /* FIXED: Hijacks full screen regardless of scroll */
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.9); /* Darkened for better readability */
-  backdrop-filter: blur(12px);
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.95); 
+  backdrop-filter: blur(15px);
   display: flex;
-  flex-direction: column; /* Stacked text */
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: 200000; 
   color: var(--tiger-blue);
   font-family: 'Courier New', monospace;
-  font-size: 0.9rem;
-  letter-spacing: 2px;
+  font-size: 1.1rem;
+  letter-spacing: 3px;
   font-weight: bold;
   animation: pulseOpacity 1.5s infinite ease-in-out;
-  border: 1px solid var(--tiger-blue);
-  border-radius: inherit;
   text-align: center;
   padding: 20px;
 }
 
 .status-subtext {
   font-size: 0.6rem;
-  margin-top: 10px;
+  margin-top: 15px;
   color: var(--text-dim);
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -148,15 +146,15 @@ body, html, #root {
   100% { opacity: 0.8; }
 }
 
-/* Tamed Vibration: Reduced from 3px to 1px for surgical intensity */
+/* Surgical Vibration: Reduced to 0.5px for ultra-fine clinical hum */
 .wipe-shake {
   animation: surgicalVibration 0.1s infinite;
 }
 
 @keyframes surgicalVibration {
-  0% { transform: translate(1px, 1px) rotate(0deg); }
-  50% { transform: translate(-1px, -1px) rotate(0.5deg); }
-  100% { transform: translate(1px, 1px) rotate(0deg); }
+  0% { transform: translate(0.5px, 0.5px) rotate(0deg); }
+  50% { transform: translate(-0.5px, -0.5px) rotate(0.2deg); }
+  100% { transform: translate(0.5px, 0.5px) rotate(0deg); }
 }
 
 /* 4. COMPLIANCE & CHECKBOX */
@@ -472,7 +470,7 @@ input[type="checkbox"] {
 }
 
 .admin-trigger {
-  opacity: 0.05;
+  opacity: 0.01; /* Missing line 1: Ensures Admin access is invisible */
   cursor: default;
 }
 
@@ -576,5 +574,5 @@ input[type="checkbox"] {
 }
 
 .full-row { 
-  grid-column: span 2; 
+  grid-column: span 2; /* Missing line 2: Forces layout consistency */
 }
