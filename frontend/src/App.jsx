@@ -31,6 +31,7 @@ function App() {
   const [showHelp, setShowHelp] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isEncrypting, setIsEncrypting] = useState(false); // NEW: High-end UI feedback state
   const [isProcessingPayment, setIsProcessingPayment] = useState(false); 
   const [notifications, setNotifications] = useState([]); 
   
@@ -190,6 +191,7 @@ function App() {
 
   const handleMintAlias = async (type) => {
     if (!aliasLabel) { triggerToast("ENTER LABEL"); return; }
+    setIsEncrypting(true); // START SPINNER
     try {
       const res = await fetch(`${API_BASE_URL}/aliases/mint`, {
         method: "POST",
@@ -206,6 +208,7 @@ function App() {
         triggerToast(`${type.toUpperCase()} SECURED`);
       }
     } catch (err) { triggerToast("CONNECTION ERROR"); }
+    finally { setIsEncrypting(false); } // STOP SPINNER
   };
 
   const handleKillAlias = async (id) => {
@@ -218,21 +221,32 @@ function App() {
 
   const handleEmergencyBurn = async () => {
     setIsEmergencyWipe(true);
+    setIsEncrypting(true);
     triggerToast("INITIATING TOTAL PURGE...");
+    
+    // Simulate deliberate security process
     setTimeout(async () => {
       try {
+        // AWS S3 Receipt Hardening
+        await fetch(`${API_BASE_URL}/financials/receipt`, { method: "POST" });
         await fetch(`${API_BASE_URL}/financials/burn-all`, { method: "POST" });
-        localStorage.clear();
-        window.location.reload();
+        
+        triggerToast("PURGE SUCCESSFUL: RECEIPT STORED");
+        setTimeout(() => {
+            localStorage.clear();
+            window.location.reload();
+        }, 2000);
       } catch (err) { 
         triggerToast("PURGE ERROR"); 
         setIsEmergencyWipe(false); 
+        setIsEncrypting(false);
       }
-    }, 2000);
+    }, 2500);
   };
 
   const handleMintCard = async () => {
     if (!newCardLabel) { triggerToast("ENTER MERCHANT NAME"); return; }
+    setIsEncrypting(true); // START SPINNER
     try {
       const response = await fetch(`${API_BASE_URL}/financials/mint`, {
         method: "POST",
@@ -247,6 +261,7 @@ function App() {
         triggerToast("NODE SECURED");
       }
     } catch (err) { triggerToast("CONNECTION ERROR"); }
+    finally { setIsEncrypting(false); } // STOP SPINNER
   };
 
   const handleKillCard = async (id) => {
@@ -444,6 +459,7 @@ function App() {
       {showSupportModal && (
         <div className="modal-overlay" style={{zIndex: 60000}} onClick={() => setShowSupportModal(false)}>
           <div className="price-box" onClick={e => e.stopPropagation()}>
+            {isEncrypting && <div className="encrypting-overlay">UPLINKING...</div>}
             <h3 className="tiger-text">SUPPORT UPLINK</h3>
             <p className="field-label">ISSUE CATEGORY</p>
             <select className="mask-btn" style={{width: '100%', background: '#000', color: 'white', marginBottom: '15px'}} value={supportData.subject} onChange={(e) => setSupportData({...supportData, subject: e.target.value})}>
@@ -462,6 +478,7 @@ function App() {
       {(showEmailModal || showPhoneModal) && (
         <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => {setShowEmailModal(false); setShowPhoneModal(false)}}>
           <div className="price-box" onClick={e => e.stopPropagation()}>
+            {isEncrypting && <div className="encrypting-overlay">ENCRYPTING ALIAS...</div>}
             <h3 className="tiger-text">GENERATE {showEmailModal ? 'EMAIL' : 'PHONE'} ALIAS</h3>
             <p className="field-label">ASSOCIATE LABEL</p>
             <input className="mask-btn" style={{color: 'white', textAlign: 'center'}} placeholder="e.g. Shopping, Personal" value={aliasLabel} onChange={(e) => setAliasLabel(e.target.value)} />
@@ -474,6 +491,7 @@ function App() {
       {showMintModal && (
         <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => setShowMintModal(false)}>
           <div className="price-box" onClick={e => e.stopPropagation()}>
+            {isEncrypting && <div className="encrypting-overlay">GENERATING PROTECTED DIGITS...</div>}
             <h3 className="tiger-text">GENERATE CARD PROTECTION</h3>
             <p className="field-label">ASSOCIATE MERCHANT</p>
             <input className="mask-btn" style={{width: '100%', color: 'white', textAlign: 'center'}} placeholder="e.g. Amazon, Netflix" value={newCardLabel} onChange={(e) => setNewCardLabel(e.target.value)} />
@@ -508,7 +526,8 @@ function App() {
           <div className="shield-container fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
             <h2 className="shield-text">🛡️ SHIELD ACTIVE</h2>
             
-            <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #FFD700', background: '#050505' }}>
+            <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #FFD700', background: '#050505', position: 'relative' }}>
+              {isEncrypting && <div className="encrypting-overlay">ROTATING GLOBAL NODE...</div>}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                 <p className="tool-label" style={{ margin: 0, color: '#FFD700' }}>GLOBAL WALLET NODE</p>
                 <span style={{ fontSize: '0.6rem', color: '#444' }}>WALLETS_ENABLED: [TRUE]</span>
@@ -547,7 +566,8 @@ function App() {
                 )}
             </div>
             
-            <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
+            <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
+              {isEncrypting && <div className="encrypting-overlay">SCRUBBING EMAIL METADATA...</div>}
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>EMAIL PROTECTION</p>
               <div className="alias-manager-list">
                 {emails.map((e) => (
@@ -563,7 +583,8 @@ function App() {
               <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowEmailModal(true)}> + GENERATE EMAIL ALIAS </button>
             </div>
 
-            <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
+            <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
+              {isEncrypting && <div className="encrypting-overlay">TUNNELING SMS NODE...</div>}
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>PHONE PROTECTION</p>
               <div className="alias-manager-list">
                 {phones.map((p) => (
@@ -576,7 +597,8 @@ function App() {
               <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowPhoneModal(true)}> + GENERATE PHONE ALIAS </button>
             </div>
 
-            <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
+            <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
+              {isEncrypting && <div className="encrypting-overlay">VAULT_LOCK_ACTIVE...</div>}
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '20px' }}>CREDIT CARD PROTECTION</p>
               <div className="card-manager-list">
                 {cards.map((c) => (
@@ -649,7 +671,7 @@ function App() {
 
             <div style={{display: 'flex', flexDirection: 'column', gap: '15px', width: '100%', maxWidth: '400px', marginTop: '40px'}}>
               <button className="reset-btn" onClick={() => {localStorage.clear(); window.location.reload();}}>LOGOUT SECURELY</button>
-              <button className="burn-all-btn" onClick={() => { if(window.confirm("CONFIRM TOTAL PURGE?")) handleEmergencyBurn(); }}>EMERGENCY BURN</button>
+              <button className="burn-all-btn" onClick={() => { if(window.confirm("CONFIRM TOTAL PURGE? (S3 RECEIPT WILL BE ISSUED)")) handleEmergencyBurn(); }}>EMERGENCY BURN</button>
             </div>
           </div>
         ) : (

@@ -34,12 +34,13 @@ body, html, #root {
 .app-container {
   width: 100%;
   max-width: 1000px;
-  padding: 100px 20px 140px 20px; /* Increased bottom padding for footer clearance */
+  padding: 100px 20px 140px 20px;
   margin: 0 auto;
   text-align: center;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  position: relative;
 }
 
 /* 2. THE ALIGNMENT FIX (Centered & Structured) */
@@ -56,6 +57,8 @@ body, html, #root {
   flex-direction: column;
   align-items: center; 
   gap: 15px;
+  position: relative;
+  overflow: hidden;
 }
 
 .accessible-field {
@@ -75,12 +78,13 @@ body, html, #root {
   margin-left: 5px;
 }
 
-/* Standardized Inputs for Dashboard & Onboarding */
+/* Standardized Inputs */
 .price-box .mask-btn, 
 .price-box .main-button, 
 .price-box .reset-btn,
 .price-box input:not([type="checkbox"]),
-.price-box .profile-input {
+.price-box .profile-input,
+.price-box select {
   width: 100% !important;
   display: block;
   margin: 0 !important;
@@ -104,7 +108,50 @@ body, html, #root {
   color: #475569;
 }
 
-/* 3. COMPLIANCE & CHECKBOX */
+/* 3. NEW: ENCRYPTION OVERLAY & SHAKE */
+.encrypting-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  color: var(--tiger-blue);
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  letter-spacing: 2px;
+  font-weight: bold;
+  animation: pulseOpacity 1.5s infinite ease-in-out;
+  border: 1px solid var(--tiger-blue);
+  border-radius: inherit;
+  text-align: center;
+  padding: 20px;
+}
+
+@keyframes pulseOpacity {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
+.wipe-shake {
+  animation: extremeShake 0.1s infinite;
+}
+
+@keyframes extremeShake {
+  0% { transform: translate(1px, 1px) rotate(0deg); }
+  25% { transform: translate(-1px, -2px) rotate(-1deg); }
+  50% { transform: translate(-3px, 0px) rotate(1deg); }
+  75% { transform: translate(3px, 2px) rotate(0deg); }
+  100% { transform: translate(1px, -1px) rotate(-1deg); }
+}
+
+/* 4. COMPLIANCE & CHECKBOX */
 .legal-link {
   color: var(--tiger-blue);
   text-decoration: underline;
@@ -123,7 +170,7 @@ input[type="checkbox"] {
   cursor: pointer;
 }
 
-/* 4. DASHBOARD STABILITY */
+/* 5. DASHBOARD STABILITY */
 .tools-grid {
   display: flex; 
   flex-direction: column; 
@@ -145,6 +192,7 @@ input[type="checkbox"] {
   justify-content: center;
   transition: border 0.3s ease, box-shadow 0.3s ease;
   margin-bottom: 25px;
+  position: relative;
 }
 
 .masking-tool:hover {
@@ -200,7 +248,7 @@ input[type="checkbox"] {
   margin-bottom: 5px;
 }
 
-/* 5. ASSET MANAGERS */
+/* 6. ASSET MANAGERS */
 .alias-manager-list, .card-manager-list {
   display: flex;
   flex-direction: column;
@@ -244,7 +292,7 @@ input[type="checkbox"] {
   text-decoration: underline;
 }
 
-/* 6. GUARANTEED FOOTER (The "Vercel Fix") */
+/* 7. GUARANTEED FOOTER (The "Vercel Fix") */
 .home-footer {
   position: fixed !important;
   bottom: 0 !important;
@@ -274,7 +322,7 @@ input[type="checkbox"] {
   color: white !important;
 }
 
-/* 7. BRANDING & UI */
+/* 8. BRANDING & UI */
 .brand-name {
   color: var(--tiger-blue);
   font-size: clamp(2.5rem, 8vw, 4rem); 
@@ -326,7 +374,26 @@ input[type="checkbox"] {
   color: white;
 }
 
-/* 8. STATUS MESSAGES & TOASTS */
+.burn-all-btn {
+  background: transparent;
+  border: 1px solid var(--alert-red);
+  color: var(--alert-red);
+  padding: 15px;
+  border-radius: 50px;
+  font-weight: bold;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  transition: 0.3s;
+}
+
+.burn-all-btn:hover {
+  background: var(--alert-red);
+  color: white;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+}
+
+/* 9. STATUS MESSAGES & TOASTS */
 .status-message.toast-fixed {
   position: fixed;
   top: 20px;
@@ -347,7 +414,7 @@ input[type="checkbox"] {
   to { transform: translateX(0); opacity: 1; }
 }
 
-/* 9. MODALS & FAQ STYLING */
+/* 10. MODALS & FAQ STYLING */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -375,7 +442,6 @@ input[type="checkbox"] {
   text-align: left;
 }
 
-/* Distinct styling for the FAQ section */
 .faq-item {
   transition: background 0.2s ease;
 }
@@ -397,7 +463,12 @@ input[type="checkbox"] {
   color: white !important;
 }
 
-/* 10. MOBILE RESPONSIVE OVERRIDES */
+.admin-trigger {
+  opacity: 0.05;
+  cursor: default;
+}
+
+/* 11. MOBILE RESPONSIVE OVERRIDES */
 @media (max-width: 768px) {
   .app-container {
     padding: 60px 15px 120px 15px;
@@ -421,6 +492,14 @@ input[type="checkbox"] {
     width: 100% !important;
   }
 
+  .checkout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .full-row {
+    grid-column: span 1;
+  }
+
   .home-footer {
     height: 80px !important;
     flex-direction: column;
@@ -433,12 +512,16 @@ input[type="checkbox"] {
 }
 
 .secure-connection-text {
-  font-size: 0.6rem;
+  position: fixed;
+  top: 10px;
+  width: 100%;
+  text-align: center;
+  font-size: 0.55rem;
   color: var(--tiger-blue);
   text-transform: uppercase;
   letter-spacing: 2px;
-  margin-top: 10px;
-  display: block;
+  z-index: 10001;
+  pointer-events: none;
 }
 
 .progress-bar-container {
@@ -458,9 +541,32 @@ input[type="checkbox"] {
   transition: width 0.5s ease;
 }
 
-/* CAPACITY BAR & PURCHASE BUTTONS */
-.capacity-progress { height: 8px; background: #111; border-radius: 10px; overflow: hidden; margin-top: 5px; }
-.capacity-fill { height: 100%; background: var(--tiger-blue); box-shadow: 0 0 10px var(--tiger-blue); transition: width 0.5s; }
-.purchase-btn { width: 100%; margin-top: 15px; padding: 10px; border: 1px dashed var(--tiger-blue); color: var(--tiger-blue); font-size: 0.6rem; background: transparent; cursor: pointer; }
-.checkout-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
-.full-row { grid-column: span 2; }
+.purchase-btn {
+  width: 100%;
+  margin-top: 15px;
+  padding: 12px;
+  border: 1px dashed var(--tiger-blue);
+  color: var(--tiger-blue);
+  font-size: 0.65rem;
+  background: transparent;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+.purchase-btn:hover {
+  background: rgba(0, 71, 171, 0.1);
+  border-style: solid;
+}
+
+.checkout-grid { 
+  display: grid; 
+  grid-template-columns: 1fr 1fr; 
+  gap: 10px; 
+  width: 100%; 
+}
+
+.full-row { 
+  grid-column: span 2; 
+}
