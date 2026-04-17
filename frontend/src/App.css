@@ -108,22 +108,23 @@ body, html, #root {
   color: #475569;
 }
 
-/* 3. NEW: ENCRYPTION OVERLAY & SHAKE */
+/* 3. UPDATED: TAMED SHAKE & ENCRYPTION OVERLAY */
 .encrypting-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.9); /* Darkened for better readability */
+  backdrop-filter: blur(12px);
   display: flex;
+  flex-direction: column; /* Stacked text */
   align-items: center;
   justify-content: center;
   z-index: 100;
   color: var(--tiger-blue);
   font-family: 'Courier New', monospace;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   letter-spacing: 2px;
   font-weight: bold;
   animation: pulseOpacity 1.5s infinite ease-in-out;
@@ -133,22 +134,29 @@ body, html, #root {
   padding: 20px;
 }
 
+.status-subtext {
+  font-size: 0.6rem;
+  margin-top: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
 @keyframes pulseOpacity {
-  0% { opacity: 0.7; }
+  0% { opacity: 0.8; }
   50% { opacity: 1; }
-  100% { opacity: 0.7; }
+  100% { opacity: 0.8; }
 }
 
+/* Tamed Vibration: Reduced from 3px to 1px for surgical intensity */
 .wipe-shake {
-  animation: extremeShake 0.1s infinite;
+  animation: surgicalVibration 0.1s infinite;
 }
 
-@keyframes extremeShake {
+@keyframes surgicalVibration {
   0% { transform: translate(1px, 1px) rotate(0deg); }
-  25% { transform: translate(-1px, -2px) rotate(-1deg); }
-  50% { transform: translate(-3px, 0px) rotate(1deg); }
-  75% { transform: translate(3px, 2px) rotate(0deg); }
-  100% { transform: translate(1px, -1px) rotate(-1deg); }
+  50% { transform: translate(-1px, -1px) rotate(0.5deg); }
+  100% { transform: translate(1px, 1px) rotate(0deg); }
 }
 
 /* 4. COMPLIANCE & CHECKBOX */
