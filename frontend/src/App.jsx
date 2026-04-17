@@ -11,8 +11,8 @@ import AdminDashboard from './AdminDashboard';
 import './App.css';
 
 /**
- * DISAPPEAR CORE ENGINE v2.4.2
- * Feature: Mobile Layout Synchronization & Operational FAQ Database
+ * DISAPPEAR CORE ENGINE v2.5.0
+ * Feature: Elite Pricing ($24.99), Phone Node Capping, & Tiered Expansion
  */
 
 // --- DYNAMIC API ROUTING ---
@@ -32,7 +32,7 @@ function App() {
   const [isScanning, setIsScanning] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEncrypting, setIsEncrypting] = useState(false); 
-  const [purgeStatus, setPurgeStatus] = useState(""); // State for status sequence
+  const [purgeStatus, setPurgeStatus] = useState(""); 
   const [isProcessingPayment, setIsProcessingPayment] = useState(false); 
   const [notifications, setNotifications] = useState([]); 
   
@@ -101,10 +101,10 @@ function App() {
     }
   }, [showCheckout]);
 
-  const pushNotification = useCallback((broker) => {
-    if (!broker) return;
+  const pushNotification = useCallback((msg) => {
+    if (!msg) return;
     const id = `notif-${Date.now()}-${Math.random()}`; 
-    setNotifications(prev => [{ id, msg: `THREAT DEFLECTED: [${broker}]` }, ...prev].slice(0, 3));
+    setNotifications(prev => [{ id, msg: msg.includes(':') ? msg : `SYSTEM_EVENT: [${msg}]` }, ...prev].slice(0, 3));
     setTimeout(() => {
       setNotifications(prev => prev.filter(n => n.id !== id));
     }, 4000);
@@ -126,7 +126,7 @@ function App() {
             const latest = data.recent_audit[0];
             const oldLatest = prevLog.length > 0 ? prevLog[0] : null;
             if (!oldLatest || latest.time !== oldLatest.time) {
-                pushNotification(latest.broker);
+                pushNotification(`THREAT DEFLECTED: [${latest.broker}]`);
             }
         }
         return data.recent_audit || [];
@@ -141,7 +141,7 @@ function App() {
       setEmails(allAliases.filter(a => a.type === 'email'));
       setPhones(allAliases.filter(a => a.type === 'phone'));
     } catch (err) { 
-        console.error("Connection Error: API Unreachable at " + API_BASE_URL);
+        console.error("Connection Error: API Unreachable");
     }
   }, [pushNotification]);
 
@@ -156,12 +156,17 @@ function App() {
     return () => clearInterval(interval);
   }, [showShield, syncDefenseData]);
 
-  const handlePurchaseSlot = async () => {
+  const handlePurchaseExpansion = async (type) => {
     if (isProcessingPayment) return;
     setIsProcessingPayment(true);
-    triggerToast("CONTACTING SECURE GATEWAY...");
+    const msg = type === 'phone' ? "REQUESTING SECURE LINE..." : "EXPANDING VAULT CAPACITY...";
+    triggerToast(msg);
     try {
-      const res = await fetch(`${API_BASE_URL}/payments/create-session`, { method: "POST" });
+      const res = await fetch(`${API_BASE_URL}/payments/create-session`, { 
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expansion_type: type })
+      });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
@@ -192,6 +197,13 @@ function App() {
 
   const handleMintAlias = async (type) => {
     if (!aliasLabel) { triggerToast("ENTER LABEL"); return; }
+    
+    // PRODUCTION CAP: Protect Twilio margins
+    if (type === 'phone' && phones.length >= 2) {
+      triggerToast("PHONE CAPACITY REACHED [MAX 2]");
+      return;
+    }
+
     setPurgeStatus(`ENCRYPTING ${type.toUpperCase()}...`);
     setIsEncrypting(true); 
     try {
@@ -228,18 +240,15 @@ function App() {
     pushNotification("GLOBAL_NODE_SHUTDOWN");
 
     try {
-      // Step 1: Generate S3 Audit Receipt
       await fetch(`${API_BASE_URL}/financials/receipt`, { method: "POST" });
       pushNotification("S3_AUDIT_STORED");
 
       setTimeout(async () => {
-        // Step 2: Wiping Backend Data
         setPurgeStatus("TERMINATING ALL ACTIVE NODES...");
         await fetch(`${API_BASE_URL}/financials/burn-all`, { method: "POST" });
         pushNotification("DATABASE_SCRUB_COMPLETE");
 
         setTimeout(() => {
-          // Step 3: Cleanup and 3-second Verification Pause
           setPurgeStatus("PURGE COMPLETED. VAULT IS CLEAN.");
           pushNotification("SESSION_TERMINATING");
           setIsEmergencyWipe(false); 
@@ -372,7 +381,7 @@ function App() {
       <div className="progress-bar-container">
         <div className="progress-bar-fill" style={{ width: `${progress}%` }}></div>
         <span className="secure-connection-text">
-          {showShield ? `SHIELD ACTIVE | ${credits.available} SLOTS AVAILABLE` : `INITIALIZING SHIELD: ${progress}%`}
+          {showShield ? `SHIELD ACTIVE | ELITE OPERATIVE` : `INITIALIZING SHIELD: ${progress}%`}
         </span>
       </div>
 
@@ -386,33 +395,30 @@ function App() {
         ))}
       </div>
 
-      {/* --- CLICKABLE FAQ MODAL: INTERACTIVE NODE DATABASE --- */}
+      {/* --- INTERACTIVE FAQ MODAL --- */}
       {showFaqModal && (
         <div className="modal-overlay" style={{zIndex: 70000}} onClick={() => setShowFaqModal(false)}>
           <div className="price-box" style={{maxWidth: '650px', textAlign: 'left', overflowY: 'auto', maxHeight: '85vh'}} onClick={e => e.stopPropagation()}>
             <h3 className="tiger-text">FAQ</h3>
             <p className="field-label" style={{marginBottom: '20px'}}>SELECT NODE FOR INTELLIGENCE</p>
 
-            {/* GLOBAL WALLET FAQ */}
             <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'global' ? null : 'global')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
                 <div className="faq-trigger" style={{color: '#FFD700', fontWeight: 'bold'}}>
                   {activeFaqNode === 'global' ? '[-] GLOBAL WALLET NODE' : '[+] GLOBAL WALLET NODE'}
                 </div>
                 {activeFaqNode === 'global' && (
                     <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '2px solid #FFD700'}}>
-                        <p><strong>USAGE:</strong> Best for high-trust merchants and in-person Digital Wallet (Apple/Google Pay) usage.</p>
+                        <p><strong>USAGE:</strong> Best for high-trust merchants and in-person Digital Wallet usage.</p>
                         <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION STEPS:</strong>
                         <ol style={{paddingLeft: '15px'}}>
-                            <li>Retrieve digits from the 'GLOBAL WALLET NODE' module at the top of your dashboard.</li>
-                            <li>Add the 16-digit card number, EXP, and CVV to your smartphone wallet.</li>
-                            <li><strong>CORE ARCHITECTURE:</strong> This is a multi-merchant node. Use it for general recurring trust-based purchases.</li>
-                            <li>Click 'RESET NODE' if you believe merchant processors have logged the card info.</li>
+                            <li>Retrieve digits from the 'GLOBAL WALLET NODE' module.</li>
+                            <li>Add the card number, EXP, and CVV to your smartphone wallet.</li>
+                            <li>Click 'RESET NODE' if you believe merchant processors have logged the info.</li>
                         </ol>
                     </div>
                 )}
             </div>
 
-            {/* VIRTUAL CARDS FAQ */}
             <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'vcc' ? null : 'vcc')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
                 <div className="faq-trigger" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>
                   {activeFaqNode === 'vcc' ? '[-] CREDIT CARD PROTECTION' : '[+] CREDIT CARD PROTECTION'}
@@ -420,48 +426,29 @@ function App() {
                 {activeFaqNode === 'vcc' && (
                     <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid var(--tiger-blue)'}}>
                         <p><strong>USAGE:</strong> Best for individual subscriptions and untrusted merchant endpoints.</p>
-                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION STEPS:</strong>
-                        <ol style={{paddingLeft: '15px'}}>
-                            <li>Click 'GENERATE CARD PROTECTION' and label it (e.g., Netflix).</li>
-                            <li>System provides isolated digits for that specific merchant.</li>
-                            <li><strong>THE DIFFERENCE:</strong> Once used, this node "locks" to that merchant. If they are hacked, these digits are worthless anywhere else.</li>
-                        </ol>
+                        <p>Once used, this node "locks" to that specific merchant.</p>
                     </div>
                 )}
             </div>
 
-            {/* EMAIL FAQ */}
             <div className="faq-item" onClick={() => {setActiveFaqNode(activeFaqNode === 'email' ? null : 'email')}} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
                 <div className="faq-trigger" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>
                   {activeFaqNode === 'email' ? '[-] EMAIL RELAY NODES' : '[+] EMAIL RELAY NODES'}
                 </div>
                 {activeFaqNode === 'email' && (
                     <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid var(--tiger-blue)'}}>
-                        <p><strong>USAGE:</strong> Protects your primary identity from marketing lists and data broker aggregators.</p>
-                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION STEPS:</strong>
-                        <ol style={{paddingLeft: '15px'}}>
-                            <li>Assign a label (e.g., 'E-Commerce') and click 'GENERATE'.</li>
-                            <li>Use the generated address for web registrations.</li>
-                            <li>PII trackers are scrubbed before forwarding to your inbox.</li>
-                        </ol>
+                        <p>Deploy forwarding addresses that scrub PII trackers before reaching your inbox.</p>
                     </div>
                 )}
             </div>
 
-            {/* PHONE FAQ */}
             <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'phone' ? null : 'phone')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
                 <div className="faq-trigger" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>
                   {activeFaqNode === 'phone' ? '[-] SMS VERIFICATION NODES' : '[+] SMS VERIFICATION NODES'}
                 </div>
                 {activeFaqNode === 'phone' && (
                     <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid var(--tiger-blue)'}}>
-                        <p><strong>USAGE:</strong> Best for 2FA bypass and anonymous app verifications.</p>
-                        <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION STEPS:</strong>
-                        <ol style={{paddingLeft: '15px'}}>
-                            <li>Generate a 'PHONE ALIAS' node.</li>
-                            <li>Enter the provided +1 number into the verification field.</li>
-                            <li>The incoming code appears instantly in the 'LIVE SECURITY AUDIT' on your dashboard.</li>
-                        </ol>
+                        <p>Generate secondary numbers for 2FA bypass. Incoming codes appear in your Live Audit.</p>
                     </div>
                 )}
             </div>
@@ -471,6 +458,7 @@ function App() {
         </div>
       )}
 
+      {/* --- SUPPORT MODAL --- */}
       {showSupportModal && (
         <div className="modal-overlay" style={{zIndex: 60000}} onClick={() => setShowSupportModal(false)}>
           <div className="price-box" onClick={e => e.stopPropagation()}>
@@ -489,9 +477,11 @@ function App() {
         </div>
       )}
 
+      {/* --- ALIAS MINTING MODALS --- */}
       {(showEmailModal || showPhoneModal) && (
         <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => {setShowEmailModal(false); setShowPhoneModal(false)}}>
           <div className="price-box" onClick={e => e.stopPropagation()}>
+            {isEncrypting && <div className="encrypting-overlay">ENCRYPTING ALIAS...</div>}
             <h3 className="tiger-text">GENERATE {showEmailModal ? 'EMAIL' : 'PHONE'} ALIAS</h3>
             <p className="field-label">ASSOCIATE LABEL</p>
             <input className="mask-btn" style={{color: 'white', textAlign: 'center'}} placeholder="e.g. Shopping, Personal" value={aliasLabel} onChange={(e) => setAliasLabel(e.target.value)} />
@@ -504,6 +494,7 @@ function App() {
       {showMintModal && (
         <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => setShowMintModal(false)}>
           <div className="price-box" onClick={e => e.stopPropagation()}>
+            {isEncrypting && <div className="encrypting-overlay">GENERATING PROTECTED DIGITS...</div>}
             <h3 className="tiger-text">GENERATE CARD PROTECTION</h3>
             <p className="field-label">ASSOCIATE MERCHANT</p>
             <input className="mask-btn" style={{width: '100%', color: 'white', textAlign: 'center'}} placeholder="e.g. Amazon, Netflix" value={newCardLabel} onChange={(e) => setNewCardLabel(e.target.value)} />
@@ -513,6 +504,7 @@ function App() {
         </div>
       )}
 
+      {/* --- LEGAL MODALS --- */}
       {showLegal && (
         <div className="modal-overlay" onClick={() => setShowLegal(null)}>
           <div className="info-modal-content" onClick={e => e.stopPropagation()}>
@@ -538,6 +530,7 @@ function App() {
           <div className="shield-container fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
             <h2 className="shield-text">🛡️ SHIELD ACTIVE</h2>
             
+            {/* --- GLOBAL CARD NODE --- */}
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #FFD700', background: '#050505', position: 'relative' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                 <p className="tool-label" style={{ margin: 0, color: '#FFD700' }}>GLOBAL WALLET NODE</p>
@@ -547,36 +540,39 @@ function App() {
                 <div className="card-row-info">
                   <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
                      <span className="card-nickname" style={{color: '#FFD700', fontWeight: 'bold'}}>PRIMARY_PAY_NODE</span>
-                     <button className="kill-text-bold" onClick={() => { if(window.confirm("RESET NODE? Old card will be burned and a new one issued.")) handleKillCard('global-1'); }}>RESET NODE</button>
+                     <button className="kill-text-bold" onClick={() => { if(window.confirm("RESET NODE?")) handleKillCard('global-1'); }}>RESET NODE</button>
                   </div>
                   <code className="card-digits" style={{ fontSize: '1.2rem', letterSpacing: '3px' }}> 4242 8888 9999 0001 </code>
                   <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #222', paddingTop: '10px', marginTop: '10px'}}>
                      <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>EXP</span><strong>12/29</strong></div>
                      <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>CVV</span><strong>***</strong></div>
-                     <div style={{ marginLeft: 'auto' }}>
-                        <span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>TYPE</span>
-                        <span style={{ fontSize: '0.7rem' }}>VISA_DEBIT</span>
-                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* --- TIERED CAPACITY NODE --- */}
             <div className="masking-tool" style={{ border: '1px solid #111', background: '#050505', width: '100%', maxWidth: '600px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <span className="field-label">IDENTITY CAPACITY</span>
-                    <span className="tiger-text">{credits.used} / {credits.total} USED</span>
+                    <span className="field-label">VAULT CAPACITY (EMAIL/VCC)</span>
+                    <span className="tiger-text">{credits.used} / {credits.total}</span>
                 </div>
-                <div className="progress-bar-container" style={{ height: '8px', background: '#111', position: 'relative' }}>
-                    <div className="progress-bar-fill" style={{ width: `${(credits.used / credits.total) * 100}%`, background: 'var(--tiger-blue)' }}></div>
+                <button className="purchase-btn" onClick={() => handlePurchaseExpansion('data')}>
+                  + ADD PERMANENT VAULT SLOT ($4.99)
+                </button>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '25px', marginBottom: '10px' }}>
+                    <span className="field-label">ACTIVE PHONE LINES</span>
+                    <span className="tiger-text">{phones.length} / 2</span>
                 </div>
-                {credits.available === 0 && (
-                  <button className="purchase-btn" onClick={handlePurchaseSlot} disabled={isProcessingPayment}>
-                    {isProcessingPayment ? "REDIRECTING TO SECURE NODE..." : "BUY EXTRA SHIELD SLOT ($4.99)"}
+                {phones.length >= 2 && (
+                  <button className="purchase-btn" style={{borderColor: 'var(--tiger-blue)'}} onClick={() => handlePurchaseExpansion('phone')}>
+                    + PROVISION EXTRA MOBILE LINE ($9.99/mo)
                   </button>
                 )}
             </div>
             
+            {/* --- EMAIL ALIAS LIST --- */}
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>EMAIL PROTECTION</p>
               <div className="alias-manager-list">
@@ -593,6 +589,7 @@ function App() {
               <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowEmailModal(true)}> + GENERATE EMAIL ALIAS </button>
             </div>
 
+            {/* --- PHONE ALIAS LIST --- */}
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>PHONE PROTECTION</p>
               <div className="alias-manager-list">
@@ -606,6 +603,7 @@ function App() {
               <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowPhoneModal(true)}> + GENERATE PHONE ALIAS </button>
             </div>
 
+            {/* --- VCC LIST --- */}
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '20px' }}>CREDIT CARD PROTECTION</p>
               <div className="card-manager-list">
@@ -628,13 +626,13 @@ function App() {
               <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowMintModal(true)}> + GENERATE CARD PROTECTION </button>
             </div>
 
-            {/* --- SUBSCRIPTION MANAGEMENT NODE --- */}
+            {/* --- SUBSCRIPTION MANAGEMENT --- */}
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #444' }}>
               <p className="tool-label" style={{ textAlign: 'center' }}>SUBSCRIPTION_MANAGEMENT</p>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                 <div>
                     <span style={{ fontSize: '0.6rem', color: '#64748b', display: 'block' }}>CURRENT_PLAN</span>
-                    <strong style={{ color: 'var(--tiger-blue)' }}>PREMIUM_{billingCycle.toUpperCase()}</strong>
+                    <strong style={{ color: 'var(--tiger-blue)' }}>ELITE_OPERATIVE_{billingCycle.toUpperCase()}</strong>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                     <span style={{ fontSize: '0.6rem', color: '#64748b', display: 'block' }}>STATUS</span>
@@ -642,26 +640,21 @@ function App() {
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
-                <button className="reset-btn" style={{ fontSize: '0.7rem', padding: '12px 5px', whiteSpace: 'normal', lineHeight: '1.2' }} onClick={handleManageBilling}>
-                  {billingCycle === 'monthly' ? "SWITCH_TO_ANNUAL" : "SWITCH_TO_MONTHLY"}
+                <button className="reset-btn" style={{ fontSize: '0.7rem', padding: '12px 5px' }} onClick={handleManageBilling}>
+                  {billingCycle === 'monthly' ? "UPGRADE_TO_ANNUAL" : "SWITCH_TO_MONTHLY"}
                 </button>
-                <button className="reset-btn" style={{ borderColor: '#ff4444', color: '#ff4444' }} onClick={() => { if(window.confirm("CANCEL SUBSCRIPTION? PII shielding will be deactivated at end of cycle.")) handleManageBilling(); }}>
+                <button className="reset-btn" style={{ borderColor: '#ff4444', color: '#ff4444' }} onClick={() => handleManageBilling()}>
                   CANCEL_PLAN
                 </button>
               </div>
             </div>
 
-            {/* --- SYSTEM SUPPORT NODE --- */}
+            {/* --- SYSTEM SUPPORT --- */}
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
               <p className="tool-label" style={{ textAlign: 'center', color: 'var(--tiger-blue)' }}>SYSTEM SUPPORT NODE</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
                 <button className="reset-btn" onClick={() => setShowSupportModal(true)}>OPEN_TICKET</button>
                 <button className="reset-btn" onClick={() => setShowFaqModal(true)}>ACCESS FAQ</button>
-              </div>
-              <div style={{ marginTop: '20px', fontSize: '0.7rem', color: '#64748b', textAlign: 'center' }}>
-                <p className="faq-link" onClick={() => setShowFaqModal(true)} style={{cursor: 'pointer', textDecoration: 'underline'}}>
-                    Operation Manual
-                </p>
               </div>
             </div>
 
@@ -679,7 +672,7 @@ function App() {
 
             <div style={{display: 'flex', flexDirection: 'column', gap: '15px', width: '100%', maxWidth: '400px', marginTop: '40px'}}>
               <button className="reset-btn" onClick={() => {localStorage.clear(); window.location.reload();}}>LOGOUT SECURELY</button>
-              <button className="burn-all-btn" onClick={() => { if(window.confirm("CONFIRM TOTAL PURGE? (S3 RECEIPT WILL BE ISSUED)")) handleEmergencyBurn(); }}>EMERGENCY BURN</button>
+              <button className="burn-all-btn" onClick={() => { if(window.confirm("CONFIRM TOTAL PURGE?")) handleEmergencyBurn(); }}>EMERGENCY BURN</button>
             </div>
           </div>
         ) : (
@@ -735,21 +728,6 @@ function App() {
                     </p>
                   </div>
 
-                  <div style={{ marginBottom: '20px', borderTop: '1px solid #111', paddingTop: '15px' }}>
-                    <p className="field-label" style={{ color: 'var(--tiger-blue)', marginBottom: '10px' }}>ACCOUNT LIMITS</p>
-                    <table style={{ width: '100%', fontSize: '0.7rem', borderCollapse: 'collapse', color: '#94A3B8' }}>
-                      <tbody>
-                        <tr style={{ borderBottom: '1px solid #111' }}>
-                          <td style={{ padding: '8px 0' }}>FREE_SLOTS</td>
-                          <td style={{ textAlign: 'right', color: 'white' }}>6 Concurrent Slots</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '8px 0' }}>ADD_MORE</td>
-                          <td style={{ textAlign: 'right', color: 'white' }}>$4.99 per Permanent Slot</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
                   <button className="reset-btn" style={{ width: '100%', marginTop: '10px' }} onClick={() => setShowHelp(false)}>I UNDERSTAND</button>
                 </div>
               </div>
@@ -765,6 +743,7 @@ function App() {
                 </div>
               </div>
             )}
+
             {showPricing && !showCheckout && !isScanning && (
               <div className="pricing-card fade-in">
                 <div className="billing-toggle" style={{ display: 'flex', gap: '5px' }}>
@@ -772,13 +751,15 @@ function App() {
                   <button className={billingCycle === 'annual' ? 'mask-btn active-toggle' : 'mask-btn'} style={{ flex: 1 }} onClick={() => setBillingCycle('annual')}>Annual</button>
                 </div>
                 <div className="price-box">
-                  <h3 className="tiger-text">PREMIUM P-A-A-S</h3>
-                  <div className="price-amount">${billingCycle === 'monthly' ? '19.99' : '15.99'}</div>
+                  <h3 className="tiger-text">ELITE PRIVACY P-A-A-S</h3>
+                  <div className="price-amount">${billingCycle === 'monthly' ? '24.99' : '19.99'}</div>
+                  <p style={{fontSize: '0.6rem', color: 'var(--text-dim)', marginBottom: '20px'}}>Includes 6 Global Slots + Total Purge Access</p>
                   <button className="main-button" style={{width: '100%'}} onClick={() => setShowCheckout(true)}>PROCEED</button>
                   <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowPricing(false)}>CANCEL</button>
                 </div>
               </div>
             )}
+
             {showCheckout && !isScanning && (
               <div className="pricing-card fade-in">
                 <div className="price-box" style={{maxWidth: '450px', width: '100%', margin: '0 auto'}}>
@@ -800,6 +781,7 @@ function App() {
                 </div>
               </div>
             )}
+
             {isScanning && (
               <div className="shield-container">
                 <div className="recon-terminal" style={{maxWidth: '500px', margin: '0 auto'}}>
@@ -815,6 +797,7 @@ function App() {
           </div>
         )}
       </main>
+
       <footer className="home-footer">
           <span onClick={() => setShowLegal('privacy')}>PRIVACY POLICY</span>
           <span className="footer-divider">|</span>
