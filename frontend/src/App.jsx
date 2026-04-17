@@ -31,7 +31,8 @@ function App() {
   const [showHelp, setShowHelp] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isEncrypting, setIsEncrypting] = useState(false); // NEW: High-end UI feedback state
+  const [isEncrypting, setIsEncrypting] = useState(false); 
+  const [purgeStatus, setPurgeStatus] = useState(""); // State for status sequence
   const [isProcessingPayment, setIsProcessingPayment] = useState(false); 
   const [notifications, setNotifications] = useState([]); 
   
@@ -191,7 +192,8 @@ function App() {
 
   const handleMintAlias = async (type) => {
     if (!aliasLabel) { triggerToast("ENTER LABEL"); return; }
-    setIsEncrypting(true); // START SPINNER
+    setPurgeStatus(`ENCRYPTING ${type.toUpperCase()}...`);
+    setIsEncrypting(true); 
     try {
       const res = await fetch(`${API_BASE_URL}/aliases/mint`, {
         method: "POST",
@@ -208,7 +210,7 @@ function App() {
         triggerToast(`${type.toUpperCase()} SECURED`);
       }
     } catch (err) { triggerToast("CONNECTION ERROR"); }
-    finally { setIsEncrypting(false); } // STOP SPINNER
+    finally { setIsEncrypting(false); setPurgeStatus(""); } 
   };
 
   const handleKillAlias = async (id) => {
@@ -222,31 +224,44 @@ function App() {
   const handleEmergencyBurn = async () => {
     setIsEmergencyWipe(true);
     setIsEncrypting(true);
-    triggerToast("INITIATING TOTAL PURGE...");
-    
-    // Simulate deliberate security process
-    setTimeout(async () => {
-      try {
-        // AWS S3 Receipt Hardening
-        await fetch(`${API_BASE_URL}/financials/receipt`, { method: "POST" });
+    setPurgeStatus("TOTAL PURGE IN EFFECT...");
+    pushNotification("GLOBAL_NODE_SHUTDOWN");
+
+    try {
+      // Step 1: Generate S3 Audit Receipt
+      await fetch(`${API_BASE_URL}/financials/receipt`, { method: "POST" });
+      pushNotification("S3_AUDIT_STORED");
+
+      setTimeout(async () => {
+        // Step 2: Wiping Backend Data
+        setPurgeStatus("TERMINATING ALL ACTIVE NODES...");
         await fetch(`${API_BASE_URL}/financials/burn-all`, { method: "POST" });
-        
-        triggerToast("PURGE SUCCESSFUL: RECEIPT STORED");
+        pushNotification("DATABASE_SCRUB_COMPLETE");
+
         setTimeout(() => {
+          // Step 3: Cleanup and 3-second Verification Pause
+          setPurgeStatus("PURGE COMPLETED. VAULT IS CLEAN.");
+          pushNotification("SESSION_TERMINATING");
+          setIsEmergencyWipe(false); 
+
+          setTimeout(() => {
             localStorage.clear();
             window.location.reload();
-        }, 2000);
-      } catch (err) { 
-        triggerToast("PURGE ERROR"); 
-        setIsEmergencyWipe(false); 
-        setIsEncrypting(false);
-      }
-    }, 2500);
+          }, 3000); 
+        }, 1500);
+      }, 1500);
+
+    } catch (err) { 
+      triggerToast("PURGE ERROR"); 
+      setIsEmergencyWipe(false); 
+      setIsEncrypting(false);
+    }
   };
 
   const handleMintCard = async () => {
     if (!newCardLabel) { triggerToast("ENTER MERCHANT NAME"); return; }
-    setIsEncrypting(true); // START SPINNER
+    setPurgeStatus("GENERATING PROTECTED DIGITS...");
+    setIsEncrypting(true); 
     try {
       const response = await fetch(`${API_BASE_URL}/financials/mint`, {
         method: "POST",
@@ -261,7 +276,7 @@ function App() {
         triggerToast("NODE SECURED");
       }
     } catch (err) { triggerToast("CONNECTION ERROR"); }
-    finally { setIsEncrypting(false); } // STOP SPINNER
+    finally { setIsEncrypting(false); setPurgeStatus(""); } 
   };
 
   const handleKillCard = async (id) => {
@@ -459,7 +474,6 @@ function App() {
       {showSupportModal && (
         <div className="modal-overlay" style={{zIndex: 60000}} onClick={() => setShowSupportModal(false)}>
           <div className="price-box" onClick={e => e.stopPropagation()}>
-            {isEncrypting && <div className="encrypting-overlay">UPLINKING...</div>}
             <h3 className="tiger-text">SUPPORT UPLINK</h3>
             <p className="field-label">ISSUE CATEGORY</p>
             <select className="mask-btn" style={{width: '100%', background: '#000', color: 'white', marginBottom: '15px'}} value={supportData.subject} onChange={(e) => setSupportData({...supportData, subject: e.target.value})}>
@@ -478,7 +492,6 @@ function App() {
       {(showEmailModal || showPhoneModal) && (
         <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => {setShowEmailModal(false); setShowPhoneModal(false)}}>
           <div className="price-box" onClick={e => e.stopPropagation()}>
-            {isEncrypting && <div className="encrypting-overlay">ENCRYPTING ALIAS...</div>}
             <h3 className="tiger-text">GENERATE {showEmailModal ? 'EMAIL' : 'PHONE'} ALIAS</h3>
             <p className="field-label">ASSOCIATE LABEL</p>
             <input className="mask-btn" style={{color: 'white', textAlign: 'center'}} placeholder="e.g. Shopping, Personal" value={aliasLabel} onChange={(e) => setAliasLabel(e.target.value)} />
@@ -491,7 +504,6 @@ function App() {
       {showMintModal && (
         <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => setShowMintModal(false)}>
           <div className="price-box" onClick={e => e.stopPropagation()}>
-            {isEncrypting && <div className="encrypting-overlay">GENERATING PROTECTED DIGITS...</div>}
             <h3 className="tiger-text">GENERATE CARD PROTECTION</h3>
             <p className="field-label">ASSOCIATE MERCHANT</p>
             <input className="mask-btn" style={{width: '100%', color: 'white', textAlign: 'center'}} placeholder="e.g. Amazon, Netflix" value={newCardLabel} onChange={(e) => setNewCardLabel(e.target.value)} />
@@ -527,7 +539,6 @@ function App() {
             <h2 className="shield-text">🛡️ SHIELD ACTIVE</h2>
             
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #FFD700', background: '#050505', position: 'relative' }}>
-              {isEncrypting && <div className="encrypting-overlay">ROTATING GLOBAL NODE...</div>}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                 <p className="tool-label" style={{ margin: 0, color: '#FFD700' }}>GLOBAL WALLET NODE</p>
                 <span style={{ fontSize: '0.6rem', color: '#444' }}>WALLETS_ENABLED: [TRUE]</span>
@@ -567,7 +578,6 @@ function App() {
             </div>
             
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
-              {isEncrypting && <div className="encrypting-overlay">SCRUBBING EMAIL METADATA...</div>}
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>EMAIL PROTECTION</p>
               <div className="alias-manager-list">
                 {emails.map((e) => (
@@ -584,7 +594,6 @@ function App() {
             </div>
 
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
-              {isEncrypting && <div className="encrypting-overlay">TUNNELING SMS NODE...</div>}
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>PHONE PROTECTION</p>
               <div className="alias-manager-list">
                 {phones.map((p) => (
@@ -598,7 +607,6 @@ function App() {
             </div>
 
             <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
-              {isEncrypting && <div className="encrypting-overlay">VAULT_LOCK_ACTIVE...</div>}
               <p className="tool-label" style={{ textAlign: 'center', marginBottom: '20px' }}>CREDIT CARD PROTECTION</p>
               <div className="card-manager-list">
                 {cards.map((c) => (
@@ -813,6 +821,16 @@ function App() {
           <span onClick={() => setShowLegal('terms')}>TERMS OF SERVICE</span>
           <span className="admin-trigger" onClick={() => setShowAdmin(true)}>.</span>
       </footer>
+
+      {/* --- GLOBAL ENCRYPTION & PURGE OVERLAY --- */}
+      {isEncrypting && (
+        <div className="encrypting-overlay">
+          <div className="fade-in">{purgeStatus || "ENCRYPTING NODE..."}</div>
+          <div className="status-subtext" style={{marginTop: '15px'}}>
+            SECURE LINK ACTIVE | DO NOT INTERRUPT
+          </div>
+        </div>
+      )}
     </div>
   );
 }

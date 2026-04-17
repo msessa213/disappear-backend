@@ -110,7 +110,7 @@ body, html, #root {
 
 /* 3. FIXED: GLOBAL ENCRYPTION OVERLAY & ULTRA-TAMED SHAKE */
 .encrypting-overlay {
-  position: fixed; /* FIXED: Hijacks full screen regardless of scroll */
+  position: fixed; /* FIXED: Now ignores scroll position */
   top: 0;
   left: 0;
   width: 100vw;
@@ -146,7 +146,6 @@ body, html, #root {
   100% { opacity: 0.8; }
 }
 
-/* Surgical Vibration: Reduced to 0.5px for ultra-fine clinical hum */
 .wipe-shake {
   animation: surgicalVibration 0.1s infinite;
 }
@@ -470,7 +469,7 @@ input[type="checkbox"] {
 }
 
 .admin-trigger {
-  opacity: 0.01; /* Missing line 1: Ensures Admin access is invisible */
+  opacity: 0.01; 
   cursor: default;
 }
 
@@ -574,5 +573,5 @@ input[type="checkbox"] {
 }
 
 .full-row { 
-  grid-column: span 2; /* Missing line 2: Forces layout consistency */
+  grid-column: span 2; 
 }
