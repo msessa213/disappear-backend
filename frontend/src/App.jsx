@@ -7,14 +7,14 @@ import { Manifesto } from './Manifesto';
 import { Privacy } from './Privacy';
 import { Terms } from './Terms';
 import AdminDashboard from './AdminDashboard'; 
-import LandingPage from './LandingPage'; 
+import LandingPage from './LandingPage'; // Integration: Authority Website Layer
 
 import './App.css';
 
 /**
- * DISAPPEAR CORE ENGINE v2.5.2
- * Feature: Elite Pricing ($24.99), Phone Node Capping, & Tiered Expansion
- * Integration: Public Bento Landing Page Switcher
+ * DISAPPEAR CORE ENGINE v2.6.5
+ * Refactor: Separated Marketing Intelligence + Secure Vault Gateway
+ * Feature: Full Doctrine Integration & Instruction Authority
  */
 
 // --- DYNAMIC API ROUTING ---
@@ -26,6 +26,7 @@ const API_BASE_URL = window.location.hostname === "localhost" || window.location
   : PROD_API;
 
 function App() {
+  // --- CORE VIEW NAVIGATION (UPDATED) ---
   const [showLanding, setShowLanding] = useState(true); 
   const [showShield, setShowShield] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
@@ -88,7 +89,7 @@ function App() {
     }
 
     if (session === "active") {
-        setShowLanding(false);
+        setShowLanding(false); // Bypass website for active agents
         setShowShield(true);
         setProgress(100);
     } else {
@@ -299,6 +300,7 @@ function App() {
     setTimeout(() => {
       localStorage.setItem("disappear_session", "active");
       setShow2FA(false); 
+      setShowLanding(false); // Switch to app
       setShowShield(true); 
       setProgress(100);
       triggerToast("WELCOME BACK, AGENT");
@@ -336,6 +338,7 @@ function App() {
         if (response.ok) {
             setShowCheckout(false); 
             setShowPricing(false);
+            setShowLanding(false);
             setIsScanning(false);
             setShowShield(true); 
             setProgress(100);
@@ -375,10 +378,15 @@ function App() {
   return (
     <div className={`app-container ${isEmergencyWipe ? 'wipe-shake' : ''}`}>
       
+      {/* 1. SEPARATE MARKETING WEBSITE (Intelligence Hub) */}
       {showLanding ? (
-        <LandingPage onEnterVault={() => setShowLanding(false)} />
+        <LandingPage 
+          onEnterVault={() => setShowLanding(false)} 
+          onLoginRequest={() => { setShowLanding(false); setShow2FA(true); }}
+        />
       ) : (
         <>
+          {/* 2. CORE APP HEADER */}
           <div className="progress-bar-container">
             <div className="progress-bar-fill" style={{ width: `${progress}%` }}></div>
             <span className="secure-connection-text">
@@ -396,6 +404,7 @@ function App() {
             ))}
           </div>
 
+          {/* --- INTERACTIVE FAQ MODAL --- */}
           {showFaqModal && (
             <div className="modal-overlay" style={{zIndex: 70000}} onClick={() => setShowFaqModal(false)}>
               <div className="price-box" style={{maxWidth: '650px', textAlign: 'left', overflowY: 'auto', maxHeight: '85vh'}} onClick={e => e.stopPropagation()}>
@@ -476,6 +485,7 @@ function App() {
             </div>
           )}
 
+          {/* --- SUPPORT MODAL --- */}
           {showSupportModal && (
             <div className="modal-overlay" style={{zIndex: 60000}} onClick={() => setShowSupportModal(false)}>
               <div className="price-box" onClick={e => e.stopPropagation()}>
@@ -494,6 +504,7 @@ function App() {
             </div>
           )}
 
+          {/* --- ALIAS MINTING MODALS --- */}
           {(showEmailModal || showPhoneModal) && (
             <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => {setShowEmailModal(false); setShowPhoneModal(false)}}>
               <div className="price-box" onClick={e => e.stopPropagation()}>
@@ -518,6 +529,7 @@ function App() {
             </div>
           )}
 
+          {/* --- LEGAL & ADMIN MODALS --- */}
           {showLegal && (
             <div className="modal-overlay" onClick={() => setShowLegal(null)}>
               <div className="info-modal-content" onClick={e => e.stopPropagation()}>
@@ -540,6 +552,7 @@ function App() {
 
           <main>
             {showShield ? (
+              /* 3. SECURE APPLICATION ENGINE (Restored) */
               <div className="shield-container fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
                 <h2 className="shield-text">🛡️ SHIELD ACTIVE</h2>
                 
@@ -689,6 +702,7 @@ function App() {
                 </div>
               </div>
             ) : (
+              /* 4. ONBOARDING & LOGIN FLOW (Restored) */
               <div className="onboarding-flow">
                 {!showPricing && !showCheckout && !isScanning && !show2FA && (
                   <div className="fade-in" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '60vh', justifyContent: 'center'}}>
@@ -835,6 +849,7 @@ function App() {
           <span className="admin-trigger" onClick={() => setShowAdmin(true)}>.</span>
       </footer>
 
+      {/* --- GLOBAL ENCRYPTION & PURGE OVERLAY --- */}
       {isEncrypting && (
         <div className="encrypting-overlay">
           <div className="fade-in">{purgeStatus || "ENCRYPTING NODE..."}</div>

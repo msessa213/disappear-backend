@@ -101,16 +101,21 @@ except Exception as e:
 
 app = FastAPI(title="Disappear P-A-A-S Engine")
 
-# FIXED: Production Origins for Landing Page & Custom Domain
+# FIXED: Production Origins for your specific Domain Fleet
 origins = [
     "http://localhost:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:3001",
     "https://disappear-frontend-v2.vercel.app",
-    "https://disappear.io",
-    "https://www.disappear.io",
-    "https://vault.disappear.io"
+    "https://disappear-online.com",
+    "https://www.disappear-online.com",
+    "https://mydisappear.com",
+    "https://www.mydisappear.com",
+    "https://disappearco.com",
+    "https://www.disappearco.com",
+    "https://disappearonline.net",
+    "https://onlinedisappear.com"
 ]
 
 app.add_middleware(
@@ -129,6 +134,7 @@ async def add_cors_header(request: Request, call_next):
     if request.method == "OPTIONS":
         response = Response(status_code=200)
     else:
+        # Check if the path needs a trailing slash for Supabase/REST compatibility
         response = await call_next(request)
     
     origin = request.headers.get("origin")
@@ -303,9 +309,9 @@ async def create_checkout_session(request: ExpansionRequest):
             }],
             mode=mode,
             metadata={"expansion_type": request.expansion_type},
-            # Success/Cancel URLs updated to support root domain
-            success_url="https://disappear.io?payment=success",
-            cancel_url="https://disappear.io?payment=cancel",
+            # Primary Domain Success/Cancel Redirects (Updated for disappearco.com)
+            success_url="https://disappearco.com?payment=success",
+            cancel_url="https://disappearco.com?payment=cancel",
         )
         return {"url": session.url}
     except Exception as e:

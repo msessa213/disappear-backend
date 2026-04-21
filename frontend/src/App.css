@@ -575,3 +575,72 @@ input[type="checkbox"] {
 .full-row { 
   grid-column: span 2; 
 }
+
+/* 12. ELITE PUBLIC INTELLIGENCE WEBSITE (Marketing Layer) */
+.landing-navbar {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+  position: fixed;
+  top: 0;
+  z-index: 50000;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-dim);
+}
+
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 20px;
+  margin-top: 60px;
+  width: 100%;
+}
+
+.bento-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-dim);
+  padding: 30px;
+  border-radius: 15px;
+  text-align: left;
+  transition: 0.4s;
+}
+
+.bento-card:hover {
+  border-color: var(--tiger-blue);
+}
+
+.card-title {
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.card-text {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* Secure Login Navigation Button */
+.login-btn-nav {
+  border: 1px solid var(--tiger-blue);
+  color: var(--tiger-blue);
+  background: transparent;
+  padding: 10px 25px;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.login-btn-nav:hover {
+  background: var(--tiger-blue);
+  color: white;
+  box-shadow: 0 0 15px var(--tiger-blue);
+}
