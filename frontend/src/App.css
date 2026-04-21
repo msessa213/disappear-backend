@@ -577,64 +577,51 @@ input[type="checkbox"] {
 }
 
 /* 12. ELITE PUBLIC INTELLIGENCE WEBSITE (Marketing Layer) */
+.landing-wrapper {
+  width: 100%;
+  background: var(--bg-dark);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .landing-navbar {
   width: 100%;
   max-width: 1200px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 40px;
+  padding: 25px 40px;
   position: fixed;
   top: 0;
   z-index: 50000;
-  background: rgba(0,0,0,0.8);
-  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(15px);
   border-bottom: 1px solid var(--border-dim);
 }
 
-.bento-grid {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 20px;
-  margin-top: 60px;
-  width: 100%;
+.logo-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
-.bento-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border-dim);
-  padding: 30px;
-  border-radius: 15px;
-  text-align: left;
-  transition: 0.4s;
-}
-
-.bento-card:hover {
-  border-color: var(--tiger-blue);
-}
-
-.card-title {
-  font-family: 'Inter', sans-serif;
-  font-weight: 800;
-  color: white;
-  margin-bottom: 10px;
-  text-transform: uppercase;
-}
-
-.card-text {
-  font-size: 0.85rem;
+.version-tag {
+  font-size: 0.5rem;
   color: var(--text-dim);
-  line-height: 1.5;
+  letter-spacing: 2px;
+  margin-top: 2px;
 }
 
-/* Secure Login Navigation Button */
 .login-btn-nav {
   border: 1px solid var(--tiger-blue);
   color: var(--tiger-blue);
   background: transparent;
-  padding: 10px 25px;
-  border-radius: 5px;
-  font-weight: bold;
+  padding: 8px 20px;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 1px;
   cursor: pointer;
   transition: 0.3s;
 }
@@ -642,5 +629,206 @@ input[type="checkbox"] {
 .login-btn-nav:hover {
   background: var(--tiger-blue);
   color: white;
-  box-shadow: 0 0 15px var(--tiger-blue);
+  box-shadow: 0 0 20px rgba(0, 71, 171, 0.5);
+}
+
+/* 13. BENTO SYSTEM */
+.bento-container {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 20px;
+  width: 100%;
+  max-width: 1200px;
+  padding: 0 20px;
+}
+
+.bento-item {
+  background: var(--card-bg);
+  border: 1px solid var(--border-dim);
+  padding: 40px;
+  position: relative;
+  transition: 0.3s;
+}
+
+.bento-hero {
+  grid-column: span 8;
+  text-align: left;
+  border-left: 4px solid var(--tiger-blue);
+}
+
+.bento-sidebar {
+  grid-column: span 4;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  justify-content: center;
+}
+
+.elite-header {
+  font-size: clamp(3rem, 10vw, 6rem);
+  font-weight: 900;
+  line-height: 0.85;
+  letter-spacing: -4px;
+  margin: 20px 0;
+  text-transform: uppercase;
+}
+
+.mono-label {
+  font-family: 'Courier New', monospace;
+  font-size: 0.65rem;
+  color: var(--tiger-blue);
+  letter-spacing: 3px;
+  font-weight: bold;
+}
+
+.hero-description {
+  font-size: 1rem;
+  color: var(--text-dim);
+  max-width: 500px;
+  line-height: 1.6;
+  margin-bottom: 30px;
+}
+
+.intel-stat {
+  border-bottom: 1px solid #111;
+  padding-bottom: 15px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 2rem;
+  font-weight: 900;
+  color: white;
+}
+
+.stat-label {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.intel-warning {
+  font-family: 'Courier New', monospace;
+  font-size: 0.7rem;
+  color: var(--alert-red);
+  font-weight: bold;
+}
+
+/* 14. DIRECTIVE GRID */
+.directive-section {
+  width: 100%;
+  max-width: 1200px;
+  padding: 100px 20px;
+  text-align: left;
+}
+
+.bento-grid-directives {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-top: 40px;
+}
+
+.bento-card-small {
+  background: #050505;
+  border: 1px solid var(--border-dim);
+  padding: 30px;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+}
+
+.step-num {
+  font-size: 0.7rem;
+  font-weight: 900;
+  color: var(--tiger-blue);
+  margin-bottom: 15px;
+}
+
+.directive-title {
+  font-size: 0.9rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.directive-text {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.alert-card {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.alert-card .step-num {
+  color: var(--alert-red);
+}
+
+/* 15. MANIFESTO & LOGIN GATEWAY */
+.manifesto-teaser {
+  width: 100%;
+  max-width: 800px;
+  padding: 100px 20px;
+}
+
+.manifesto-box {
+  background: linear-gradient(180deg, #050505 0%, #000 100%);
+  border: 1px solid var(--tiger-blue);
+  padding: 60px;
+  text-align: center;
+}
+
+.manifesto-text {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: white;
+  margin: 30px 0;
+}
+
+.login-gateway {
+  padding: 80px 20px;
+  border-top: 1px solid #111;
+  width: 100%;
+  text-align: center;
+  margin-bottom: 150px;
+}
+
+.login-prompt {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  letter-spacing: 4px;
+  margin-bottom: 20px;
+}
+
+/* 16. MISC REFINEMENTS */
+.pulse-dot {
+  height: 6px;
+  width: 6px;
+  background-color: var(--tiger-blue);
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 10px;
+  box-shadow: 0 0 10px var(--tiger-blue);
+  animation: pulseIndicator 2s infinite;
+}
+
+@keyframes pulseIndicator {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.7; }
+}
+
+@media (max-width: 1024px) {
+  .bento-hero { grid-column: span 12; }
+  .bento-sidebar { grid-column: span 12; flex-direction: row; flex-wrap: wrap; }
+  .bento-grid-directives { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 600px) {
+  .bento-grid-directives { grid-template-columns: 1fr; }
+  .elite-header { font-size: 3.5rem; }
+  .manifesto-box { padding: 30px; }
 }

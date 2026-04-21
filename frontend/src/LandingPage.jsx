@@ -1,86 +1,127 @@
 import React from 'react';
-import './App.css'; 
 
-const LandingPage = ({ onEnterVault }) => {
+/**
+ * DISAPPEAR LANDING ENGINE v2.6.8
+ * ARCHITECTURE: Bento-Grid Intelligence Hub
+ * THEME: Tiger Blue / High-Contrast Security
+ */
+
+function LandingPage({ onEnterVault, onLoginRequest }) {
   return (
     <div className="landing-wrapper fade-in">
-      <section className="hero-section">
-        <h1 className="brand-name" style={{ fontSize: 'clamp(3.5rem, 12vw, 7rem)' }}>DISAPPEAR</h1>
-        <p className="subtitle" style={{ letterSpacing: '8px', color: 'var(--tiger-blue)' }}>
-          PRIVACY-AS-A-SERVICE [P-A-A-S]
-        </p>
-        <p className="hero-manifesto">
-          The ultimate security doctrine for the digital age. Scramble your footprint. 
-          Isolate your assets. Vanish at will.
-        </p>
-        
-        <div className="cta-group">
-          <button className="main-button" style={{ padding: '20px 50px', fontSize: '1rem' }} onClick={onEnterVault}>
-            ACCESS WEB VAULT
-          </button>
-          <div className="download-badges" style={{ marginTop: '20px', display: 'flex', gap: '15px' }}>
-            <span className="reset-btn" style={{ fontSize: '0.6rem', padding: '8px 15px', cursor: 'default' }}>APP STORE</span>
-            <span className="reset-btn" style={{ fontSize: '0.6rem', padding: '8px 15px', cursor: 'default' }}>GOOGLE PLAY</span>
+      {/* --- GLOBAL NAVIGATION --- */}
+      <nav className="landing-navbar">
+        <div className="logo-group">
+          <span className="tiger-text" style={{ fontWeight: '900', letterSpacing: '2px' }}>DISAPPEAR</span>
+          <span className="version-tag">v2.6 // PAAS</span>
+        </div>
+        <div className="nav-actions">
+          <button className="login-btn-nav" onClick={onLoginRequest}>ACCESS VAULT</button>
+        </div>
+      </nav>
+
+      {/* --- SECTION 01: THE DOCTRINE (Hero) --- */}
+      <section className="bento-container" style={{ marginTop: '120px' }}>
+        <div className="bento-item bento-hero">
+          <div className="status-indicator">
+            <span className="pulse-dot"></span>
+            <span className="mono-label">SYSTEM_STATUS: DEFENSIVE_POSTURE_ACTIVE</span>
+          </div>
+          <h1 className="elite-header">STAY<br />VIGILANT.</h1>
+          <p className="hero-description">
+            Your identity is a target. In 2026, data brokers weaponize your PII for profit. 
+            <strong> Disappear</strong> is the tactical counter-measure: A Privacy-as-a-Service engine 
+            built to scorch your digital trail and replace exposure with synthetic security.
+          </p>
+          <div className="hero-cta-group">
+            <button className="main-button" onClick={onEnterVault}>INITIATE IDENTITY SCRUB</button>
+            <p className="cta-subtext">Secure Uplink via Stripe // 256-bit AES Encryption</p>
+          </div>
+        </div>
+
+        <div className="bento-item bento-sidebar">
+          <h3 className="card-title">INTELLIGENCE BRIEF</h3>
+          <div className="intel-stat">
+            <span className="stat-value">4.7B</span>
+            <span className="stat-label">PROFILES INDEXED BY BROKERS</span>
+          </div>
+          <div className="intel-stat">
+            <span className="stat-value">82%</span>
+            <span className="stat-label">OF USERS HAVE EXPOSED PII</span>
+          </div>
+          <p className="intel-warning">
+            » TRACE DETECTED: Your digital footprint is permanent until scrubbed.
+          </p>
+        </div>
+      </section>
+
+      {/* --- SECTION 02: SYSTEM DIRECTIVES (Manual) --- */}
+      <section className="directive-section">
+        <div className="section-header">
+          <span className="mono-label">OPERATION MANUAL // DIRECTIVES</span>
+          <h2 className="section-title">SYSTEM PROTOCOLS</h2>
+        </div>
+
+        <div className="bento-grid-directives">
+          <div className="bento-card-small">
+            <div className="step-num">01</div>
+            <h4 className="directive-title">BIND PRIMARY NODE</h4>
+            <p className="directive-text">
+              Target your existing PII. Our Scrubber Node initiates legal removal requests 
+              across 150+ major data aggregators simultaneously.
+            </p>
+          </div>
+
+          <div className="bento-card-small">
+            <div className="step-num">02</div>
+            <h4 className="directive-title">DEPLOY ALIAS ASSETS</h4>
+            <p className="directive-text">
+              Provision encrypted phone and email nodes. Route all 2FA and registrations 
+              through secure proxies. Never reveal your real data again.
+            </p>
+          </div>
+
+          <div className="bento-card-small">
+            <div className="step-num">03</div>
+            <h4 className="directive-title">VIRTUAL FINANCIAL SHIELD</h4>
+            <p className="directive-text">
+              Generate merchant-locked digits. If a vendor is breached, your real 
+              banking identity remains invisible and untouched.
+            </p>
+          </div>
+
+          <div className="bento-card-small alert-card">
+            <div className="step-num">04</div>
+            <h4 className="directive-title">EMERGENCY BURN</h4>
+            <p className="directive-text">
+              One-click total purge. Instantly terminate all aliases, cards, and 
+              profile data. Leave zero traces behind.
+            </p>
           </div>
         </div>
       </section>
 
-      <section className="bento-grid">
-        <div className="bento-item tall doctrine-block">
-          <span className="field-label">01 // THE DOCTRINE</span>
-          <h3>DATA SCARCITY</h3>
-          <p>
-            Privacy isn't a setting; it's an action. We believe the only data that cannot 
-            be stolen is data that was never given. Our architecture replaces your 
-            Personally Identifiable Information (PII) with clinical, encrypted proxies.
+      {/* --- SECTION 03: THE MISSION (Vigilance) --- */}
+      <section className="manifesto-teaser">
+        <div className="manifesto-box">
+          <h3 className="card-title" style={{ color: 'var(--tiger-blue)' }}>THE DOCTRINE OF SCARCITY</h3>
+          <p className="manifesto-text">
+            Privacy isn't about hiding secrets; it's about maintaining sovereignty. 
+            In the age of automated surveillance, <strong>Scarcity is Security.</strong> 
+            If the data doesn't exist, it cannot be weaponized. 
+            We don't just protect data—we eliminate the need for it.
           </p>
-          <div className="doctrine-seal" style={{ marginTop: '20px', fontSize: '0.55rem', color: 'var(--tiger-blue)', border: '1px solid var(--tiger-blue)', padding: '5px', textAlign: 'center' }}>SEALED_ENCRYPTION_ACTIVE</div>
-        </div>
-
-        <div className="bento-item phone-block">
-          <span className="field-label">02 // COMMS</span>
-          <h3>PHONE NODES</h3>
-          <p>Burner lines for 2FA bypass and anonymous comms. Stop universal key tracking.</p>
-        </div>
-
-        <div className="bento-item vcc-block">
-          <span className="field-label">03 // FINANCE</span>
-          <h3>VCC NODES</h3>
-          <p>Merchant-locked digits. Isolate spending habits from data aggregators.</p>
-        </div>
-
-        <div className="bento-item wide threat-block">
-          <span className="field-label" style={{color: 'var(--alert-red)'}}>WARNING // THE INVISIBLE AUCTION</span>
-          <p style={{ marginTop: '10px' }}>
-            Data brokers possess a digital ghost of you. They sell your "Golden Record" 
-            for pennies. <strong>Re-identification</strong> is permanent. You cannot 
-            un-leak your life. Disappear provides the firewall.
-          </p>
-        </div>
-
-        <div className="bento-item purge-block">
-          <span className="field-label">04 // FAIL-SAFE</span>
-          <h3>TOTAL PURGE</h3>
-          <p>One command. Total scrub. S3-backed audit receipt. Vanish in 3 seconds.</p>
+          <button className="info-link-btn" onClick={onEnterVault}>JOIN THE PURGE</button>
         </div>
       </section>
 
-      <div className="landing-stats">
-        <div className="stat-node">
-          <span className="tiger-text" style={{ fontSize: '1.5rem' }}>1.2M+</span>
-          <span className="field-label">PII_SCRUBBED</span>
-        </div>
-        <div className="stat-node">
-          <span className="tiger-text" style={{ fontSize: '1.5rem' }}>0.0ms</span>
-          <span className="field-label">DATA_RETENTION</span>
-        </div>
-        <div className="stat-node">
-          <span className="tiger-text" style={{ fontSize: '1.5rem' }}>AES-256</span>
-          <span className="field-label">VAULT_STANDARD</span>
-        </div>
-      </div>
+      {/* --- LOGIN GATEWAY --- */}
+      <section className="login-gateway">
+        <p className="login-prompt">EXISTING OPERATIVE?</p>
+        <button className="login-btn-nav" onClick={onLoginRequest}>DECRYPT VAULT ACCESS</button>
+      </section>
     </div>
   );
-};
+}
 
 export default LandingPage;
