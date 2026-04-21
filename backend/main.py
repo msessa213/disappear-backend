@@ -75,6 +75,8 @@ class DBProfile(Base):
     dob = Column(String)
     # Persistent column to track purchased capacity increases
     bonus_credits = Column(Integer, default=0) 
+    # NEW: Specific tracking for purchased premium phone lines
+    phone_line_bonus = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -147,6 +149,7 @@ def get_db():
 # --- PROFIT PROTECTION CONSTANTS ---
 
 MAX_IDENTITY_CREDITS = 6
+BASE_PHONE_LIMIT = 2
 COOLDOWN_HOURS = 24
 
 
@@ -179,6 +182,10 @@ class LoginRequest(BaseModel):
 class SupportRequest(BaseModel):
     subject: str
     message: str
+
+# NEW: Expansion Request Schema
+class ExpansionRequest(BaseModel):
+    expansion_type: str # "data" or "phone"
 
 
 # --- CORE SYSTEM ROUTES ---
@@ -262,25 +269,37 @@ async def sync(db: Session = Depends(get_db)):
 # --- PAYMENTS & WEBHOOKS ---
 
 @app.post("/payments/create-session")
-async def create_checkout_session():
-    """Generates a secure Stripe Checkout URL for extra credits"""
+async def create_checkout_session(request: ExpansionRequest):
+    """Generates a secure Stripe Checkout URL for tiered expansions"""
     try:
-        # Check if API Key exists
         if not stripe.api_key:
-            print("STRIPE ERROR: Secret Key Missing from .env")
             raise HTTPException(status_code=500, detail="Stripe API Key configuration error")
+
+        # TIERED LOGIC: $4.99 One-time vs $9.99 Monthly Line
+        if request.expansion_type == "phone":
+            # This would be your Stripe Recurring Price ID
+            # price_id = "price_H1..." 
+            item_name = "Elite Secure Mobile Line (Monthly Add-on)"
+            unit_amount = 999
+            mode = "subscription"
+        else:
+            item_name = "Additional Identity Shield Slot (Permanent)"
+            unit_amount = 499
+            mode = "payment"
 
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=[{
                 'price_data': {
                     'currency': 'usd',
-                    'product_data': {'name': 'Additional Identity Shield Slot'},
-                    'unit_amount': 499,
+                    'product_data': {'name': item_name},
+                    'unit_amount': unit_amount,
+                    'recurring': {"interval": "month"} if mode == "subscription" else None
                 },
                 'quantity': 1,
             }],
-            mode='payment',
+            mode=mode,
+            metadata={"expansion_type": request.expansion_type},
             success_url="https://disappear-frontend-v2.vercel.app?payment=success",
             cancel_url="https://disappear-frontend-v2.vercel.app?payment=cancel",
         )
@@ -292,34 +311,33 @@ async def create_checkout_session():
 
 @app.post("/payments/webhook")
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
-    """Asynchronous listener for Stripe payment success events with Revenue Hardening"""
+    """Listener for Stripe events with Expansion Metadata logic"""
     payload = await request.body()
     sig_header = request.headers.get('stripe-signature')
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
         
-        # Hardened logic: Persistent credit increase & Revenue Logging
-        if event['type'] == 'checkout.session.completed':
+        if event['type'] in ['checkout.session.completed', 'invoice.paid']:
             session = event['data']['object']
+            ext_type = session.get("metadata", {}).get("expansion_type", "data")
             
-            # Check for specific payment mode to prevent logic loops
-            if session.get("mode") == "payment":
-                user_profile = db.query(DBProfile).first()
-                if user_profile:
-                    # Update the audit log for admin tracking
-                    log = DBPurgeLog(action_type="REVENUE_VERIFIED", node_id=f"STRIPE_{session.id}")
-                    db.add(log)
-                    
-                    # Increment bonus_credits for the profile
+            user_profile = db.query(DBProfile).first()
+            if user_profile:
+                if ext_type == "phone":
+                    user_profile.phone_line_bonus += 1
+                    action = "PHONE_LINE_PROVISIONED"
+                else:
                     user_profile.bonus_credits += 1
-                    
-                    db.commit()
-                    print(f"REVENUE HARDENING: 1 Slot added to profile {user_profile.id}.")
+                    action = "VAULT_SLOT_EXPANDED"
+                
+                log = DBPurgeLog(action_type=action, node_id=f"STRIPE_{session.id}")
+                db.add(log)
+                db.commit()
             
         return {"status": "success"}
     except Exception as e:
         db.rollback()
-        print(f"WEBHOOK PROCESSING ERROR: {str(e)}")
+        print(f"WEBHOOK ERROR: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Webhook Error: {str(e)}")
 
 
@@ -334,16 +352,26 @@ async def get_aliases(db: Session = Depends(get_db)):
 
 @app.post("/aliases/mint")
 async def generate_alias(request: AliasRequest, db: Session = Depends(get_db)):
-    """Generates an alias if under credit limit and not in cool-down"""
-    # FIX: Use dynamic credit limit check with safety for null profile
+    """Generates an alias with server-side Phone capping"""
     profile = db.query(DBProfile).first()
     bonus = profile.bonus_credits if profile else 0
-    max_credits = MAX_IDENTITY_CREDITS + bonus
+    phone_bonus = profile.phone_line_bonus if profile else 0
     
+    max_credits = MAX_IDENTITY_CREDITS + bonus
+    max_phones = BASE_PHONE_LIMIT + phone_bonus
+    
+    # 1. Check Global Capacity
     total_active = db.query(DBAlias).count() + db.query(DBCard).count()
     if total_active >= max_credits:
         raise HTTPException(status_code=403, detail="IDENTITY_LIMIT_REACHED")
 
+    # 2. Check Specific Phone Cap (Twilio Protection)
+    if request.type.lower() == "phone":
+        current_phones = db.query(DBAlias).filter(DBAlias.type == "phone").count()
+        if current_phones >= max_phones:
+            raise HTTPException(status_code=403, detail="PHONE_CAPACITY_REACHED")
+
+    # Cooldown Logic
     last_burn = db.query(DBPurgeLog).filter(DBPurgeLog.action_type == "ALIAS_TERMINATED").order_by(DBPurgeLog.timestamp.desc()).first()
     if last_burn and (datetime.utcnow() - last_burn.timestamp) < timedelta(hours=COOLDOWN_HOURS):
         raise HTTPException(status_code=429, detail="COOL_DOWN_ACTIVE")
@@ -372,7 +400,6 @@ async def kill_alias(alias_id: str, db: Session = Depends(get_db)):
     """TERMINATE command for a specific PII node"""
     alias = db.query(DBAlias).filter(DBAlias.id == alias_id).first()
     if alias:
-        # LOG ACTION FOR AUDIT
         log = DBPurgeLog(action_type="ALIAS_TERMINATED", node_id=alias_id)
         db.add(log)
         db.delete(alias)
@@ -396,7 +423,6 @@ async def financials(db: Session = Depends(get_db)):
 @app.post("/financials/mint")
 async def generate_card(request: CardRequest, db: Session = Depends(get_db)):
     """Initiates a new virtual card generation process on the secure node"""
-    # FIX: Use dynamic credit limit check with safety for null profile
     profile = db.query(DBProfile).first()
     bonus = profile.bonus_credits if profile else 0
     max_credits = MAX_IDENTITY_CREDITS + bonus
@@ -407,7 +433,6 @@ async def generate_card(request: CardRequest, db: Session = Depends(get_db)):
         
     try:
         card_id = f"vcc_{int(time.time())}_{random.randint(100, 999)}"
-        
         new_card = DBCard(
             id=card_id,
             label=request.label,
@@ -416,11 +441,8 @@ async def generate_card(request: CardRequest, db: Session = Depends(get_db)):
             cvv=str(random.randint(100, 999))
         )
         db.add(new_card)
-        
-        # LOG FOR AUDIT
         log = DBPurgeLog(action_type="CARD_PROTECTION_GENERATED", node_id=card_id)
         db.add(log)
-        
         db.commit()
         db.refresh(new_card)
         return new_card
@@ -436,7 +458,6 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
     try:
         data = await request.json()
         profile_id = f"user_{random.randint(1000, 9999)}"
-        
         new_profile = DBProfile(
             id=profile_id,
             first_name=data.get("firstName", "Unknown"),
@@ -449,7 +470,6 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         db.add(new_profile)
         db.commit()
         return {"status": "success", "profile_id": profile_id}
-        
     except Exception as e:
         db.rollback()
         return {"status": "error", "message": str(e)}
@@ -458,9 +478,7 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
 @app.delete("/financials/kill/{card_id}")
 async def kill_card(card_id: str, db: Session = Depends(get_db)):
     """Permanently deletes a card asset from the database"""
-    # FIX: Special Handler for the hardcoded Global Node ID
     if card_id == "global-1":
-        # Log the reset event to the audit trail
         log = DBPurgeLog(action_type="GLOBAL_NODE_ROTATED", node_id="global-1")
         db.add(log)
         db.commit()
@@ -468,7 +486,6 @@ async def kill_card(card_id: str, db: Session = Depends(get_db)):
 
     card = db.query(DBCard).filter(DBCard.id == card_id).first()
     if card:
-        # LOG ACTION FOR AUDIT
         log = DBPurgeLog(action_type="CARD_TERMINATED", node_id=card_id)
         db.add(log)
         db.delete(card)
@@ -483,7 +500,6 @@ async def burn_all_assets(db: Session = Depends(get_db)):
     db.query(DBCard).delete()
     db.query(DBAlias).delete()
     db.query(DBProfile).delete()
-    # LOG GLOBAL PURGE
     log = DBPurgeLog(action_type="TOTAL_SYSTEM_PURGE", node_id="GLOBAL_NODE")
     db.add(log)
     db.commit()
@@ -499,22 +515,17 @@ async def regenerate_alias():
     return {"email_alias": STABLE_EMAIL, "phone_alias": STABLE_PHONE}
 
 
-# --- NEW: S3 PURGE RECEIPT ARCHITECTURE ---
+# --- S3 PURGE RECEIPT ARCHITECTURE ---
 
 @app.post("/financials/receipt")
 async def generate_purge_receipt(db: Session = Depends(get_db)):
     """Generates an audit receipt of the identity purge for S3 storage"""
     try:
-        profile = db.query(DBProfile).first()
         receipt_id = f"PRG-{random.randint(100000, 999999)}"
-        
-        # Placeholder for AWS Boto3 S3 upload logic
-        # s3.put_object(Bucket='disappear-audit-vault', Key=f'{receipt_id}.json'...)
-        
+        # AWS Boto3 logic would go here
         log = DBPurgeLog(action_type="PURGE_RECEIPT_STORED", node_id=receipt_id)
         db.add(log)
         db.commit()
-        
         return {
             "receipt_id": receipt_id,
             "status": "ENCRYPTED_AND_STORED",
@@ -556,7 +567,7 @@ async def get_faq_data():
 
 @app.post("/support/ticket")
 async def create_support_ticket(request: SupportRequest, db: Session = Depends(get_db)):
-    """Logs support requests for PaaS serviceability and revenue protection"""
+    """Logs support requests for PaaS serviceability"""
     try:
         log_entry = f"SUB: {request.subject} | MSG: {request.message}"
         log = DBPurgeLog(action_type="SUPPORT_REQUEST", node_id=log_entry)
@@ -570,7 +581,5 @@ async def create_support_ticket(request: SupportRequest, db: Session = Depends(g
 
 if __name__ == "__main__":
     import uvicorn
-    # Dynamic port detection for Cloud vs Local
     port = int(os.environ.get("PORT", 8000))
-    # 0.0.0.0 is required for Docker port mapping to work
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
