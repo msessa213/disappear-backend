@@ -101,13 +101,16 @@ except Exception as e:
 
 app = FastAPI(title="Disappear P-A-A-S Engine")
 
-# FIXED: Explicit Origins for Vercel Handshake (Added localhost:3001)
+# FIXED: Production Origins for Landing Page & Custom Domain
 origins = [
     "http://localhost:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:3001",
     "https://disappear-frontend-v2.vercel.app",
+    "https://disappear.io",
+    "https://www.disappear.io",
+    "https://vault.disappear.io"
 ]
 
 app.add_middleware(
@@ -275,17 +278,17 @@ async def create_checkout_session(request: ExpansionRequest):
         if not stripe.api_key:
             raise HTTPException(status_code=500, detail="Stripe API Key configuration error")
 
-        # TIERED LOGIC: $4.99 One-time vs $9.99 Monthly Line
+        # TIERED LOGIC: $4.99 One-time vs $9.99 Monthly Line Add-on
         if request.expansion_type == "phone":
-            # This would be your Stripe Recurring Price ID
-            # price_id = "price_H1..." 
             item_name = "Elite Secure Mobile Line (Monthly Add-on)"
             unit_amount = 999
             mode = "subscription"
+            recurring = {"interval": "month"}
         else:
             item_name = "Additional Identity Shield Slot (Permanent)"
             unit_amount = 499
             mode = "payment"
+            recurring = None
 
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
@@ -294,14 +297,15 @@ async def create_checkout_session(request: ExpansionRequest):
                     'currency': 'usd',
                     'product_data': {'name': item_name},
                     'unit_amount': unit_amount,
-                    'recurring': {"interval": "month"} if mode == "subscription" else None
+                    'recurring': recurring
                 },
                 'quantity': 1,
             }],
             mode=mode,
             metadata={"expansion_type": request.expansion_type},
-            success_url="https://disappear-frontend-v2.vercel.app?payment=success",
-            cancel_url="https://disappear-frontend-v2.vercel.app?payment=cancel",
+            # Success/Cancel URLs updated to support root domain
+            success_url="https://disappear.io?payment=success",
+            cancel_url="https://disappear.io?payment=cancel",
         )
         return {"url": session.url}
     except Exception as e:
@@ -324,11 +328,13 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
             user_profile = db.query(DBProfile).first()
             if user_profile:
                 if ext_type == "phone":
-                    user_profile.phone_line_bonus += 1
-                    action = "PHONE_LINE_PROVISIONED"
+                    # Logic for Subscription success
+                    user_profile.phone_line_bonus = (user_profile.phone_line_bonus or 0) + 1
+                    action = "PHONE_LINE_NODE_PROVISIONED"
                 else:
+                    # Logic for One-time slot success
                     user_profile.bonus_credits += 1
-                    action = "VAULT_SLOT_EXPANDED"
+                    action = "VAULT_CAPACITY_EXPANDED"
                 
                 log = DBPurgeLog(action_type=action, node_id=f"STRIPE_{session.id}")
                 db.add(log)
