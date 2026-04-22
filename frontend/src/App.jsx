@@ -747,7 +747,7 @@ function App() {
 
                          <div style={{borderTop: '1px solid #111', paddingTop: '20px'}}>
                             <p style={{fontSize: '0.75rem', color: '#94A3B8', lineHeight: '1.4'}}>
-                              <span style={{color: 'var(--tiger-blue)'}}>» CLOAK_STATUS:</span> Ongoing monitoring prevents re-indexing by third-party aggregators.
+                              <span style={{color: 'var(--tiger-blue)'}}>» DISAPPEAR_STATUS:</span> Ongoing monitoring prevents re-indexing by third-party aggregators.
                             </p>
                          </div>
                       </div>
