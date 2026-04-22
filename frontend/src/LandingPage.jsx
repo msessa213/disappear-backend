@@ -4,7 +4,7 @@ import React from 'react';
  * DISAPPEAR LANDING ENGINE
  * ARCHITECTURE: Bento-Grid Intelligence Hub
  * THEME: Tiger Blue / High-Contrast Security
- * UPDATE: Removed versioning/status filler. Enhanced sales value props.
+ * UPDATE: Removed versioning/status filler. Corrected terminology.
  */
 
 function LandingPage({ onEnterVault, onLoginRequest }) {
@@ -57,7 +57,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
       <section className="directive-section">
         <div className="section-header">
           <span className="mono-label">CAPABILITIES // WHY DISAPPEAR</span>
-          <h2 className="section-title">TOTAL CLOAKING PROTOCOLS</h2>
+          <h2 className="section-title">IDENTITY NEUTRALIZATION PROTOCOLS</h2>
         </div>
 
         <div className="bento-grid-directives">
@@ -99,7 +99,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
         </div>
       </section>
 
-      {/* --- SECTION 03: THE MISSION (Expanded Sales Argument) --- */}
+      {/* --- SECTION 03: THE MISSION --- */}
       <section className="manifesto-teaser">
         <div className="manifesto-box" style={{ borderLeft: '4px solid var(--tiger-blue)' }}>
           <h3 className="card-title" style={{ color: 'var(--tiger-blue)' }}>WHY SOVEREIGNTY MATTERS</h3>
@@ -109,7 +109,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             <br /><br />
             <strong>Disappear returns control to you.</strong> By automating the removal of your 
             Personal Identifiable Information (PII), we don't just hide your data—we 
-            effectively <strong>make you invisible</strong> to the surveillance economy. 
+            effectively <strong>neutralize your digital presence</strong> within the surveillance economy. 
             If the data doesn't exist, it cannot be leaked, stolen, or sold.
           </p>
           <button className="main-button" style={{ marginTop: '20px' }} onClick={onEnterVault}>INITIATE FULL PURGE</button>
