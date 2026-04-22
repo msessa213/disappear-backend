@@ -110,7 +110,7 @@ body, html, #root {
 
 /* 3. FIXED: GLOBAL ENCRYPTION OVERLAY & ULTRA-TAMED SHAKE */
 .encrypting-overlay {
-  position: fixed; /* FIXED: Now ignores scroll position */
+  position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
@@ -608,10 +608,7 @@ input[type="checkbox"] {
 }
 
 .version-tag {
-  font-size: 0.5rem;
-  color: var(--text-dim);
-  letter-spacing: 2px;
-  margin-top: 2px;
+  display: none; /* REMOVED v2.6 // PAAS */
 }
 
 .login-btn-nav {
@@ -632,7 +629,7 @@ input[type="checkbox"] {
   box-shadow: 0 0 20px rgba(0, 71, 171, 0.5);
 }
 
-/* 13. BENTO SYSTEM */
+/* 13. BENTO SYSTEM - FIXED ALIGNMENT */
 .bento-container {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -640,6 +637,7 @@ input[type="checkbox"] {
   width: 100%;
   max-width: 1200px;
   padding: 0 20px;
+  align-items: flex-start; /* FIX: Locks boxes to the top */
 }
 
 .bento-item {
@@ -661,7 +659,7 @@ input[type="checkbox"] {
   display: flex;
   flex-direction: column;
   gap: 25px;
-  justify-content: center;
+  justify-content: flex-start; /* FIX: Locks content to top of box */
 }
 
 .elite-header {
@@ -674,11 +672,7 @@ input[type="checkbox"] {
 }
 
 .mono-label {
-  font-family: 'Courier New', monospace;
-  font-size: 0.65rem;
-  color: var(--tiger-blue);
-  letter-spacing: 3px;
-  font-weight: bold;
+  display: none; /* REMOVED SYSTEM_STATUS */
 }
 
 .hero-description {
@@ -709,10 +703,7 @@ input[type="checkbox"] {
 }
 
 .intel-warning {
-  font-family: 'Courier New', monospace;
-  font-size: 0.7rem;
-  color: var(--alert-red);
-  font-weight: bold;
+  display: none; /* REMOVED TRACE_DETECTED */
 }
 
 /* 14. DIRECTIVE GRID */
