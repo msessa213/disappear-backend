@@ -726,7 +726,7 @@ function App() {
                         </div>
 
                         <p style={{fontSize: '0.75rem', color: '#444', letterSpacing: '1px'}}>
-                          AUTOMATED PII REMOVAL // 256-BIT AES VAULT ARCHITECTURE
+                          AUTOMATED PII REMOVAL // ENCRYPTED VAULT ARCHITECTURE
                         </p>
                       </div>
 
