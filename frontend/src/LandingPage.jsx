@@ -1,9 +1,10 @@
 import React from 'react';
 
 /**
- * DISAPPEAR LANDING ENGINE v2.6.8
+ * DISAPPEAR LANDING ENGINE
  * ARCHITECTURE: Bento-Grid Intelligence Hub
  * THEME: Tiger Blue / High-Contrast Security
+ * UPDATE: Removed versioning/status filler. Enhanced sales value props.
  */
 
 function LandingPage({ onEnterVault, onLoginRequest }) {
@@ -13,7 +14,6 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
       <nav className="landing-navbar">
         <div className="logo-group">
           <span className="tiger-text" style={{ fontWeight: '900', letterSpacing: '2px' }}>DISAPPEAR</span>
-          <span className="version-tag">v2.6 // PAAS</span>
         </div>
         <div className="nav-actions">
           <button className="login-btn-nav" onClick={onLoginRequest}>ACCESS VAULT</button>
@@ -23,10 +23,6 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
       {/* --- SECTION 01: THE DOCTRINE (Hero) --- */}
       <section className="bento-container" style={{ marginTop: '120px' }}>
         <div className="bento-item bento-hero">
-          <div className="status-indicator">
-            <span className="pulse-dot"></span>
-            <span className="mono-label">SYSTEM_STATUS: DEFENSIVE_POSTURE_ACTIVE</span>
-          </div>
           <h1 className="elite-header">STAY<br />VIGILANT.</h1>
           <p className="hero-description">
             Your identity is a target. In 2026, data brokers weaponize your PII for profit. 
@@ -35,7 +31,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
           </p>
           <div className="hero-cta-group">
             <button className="main-button" onClick={onEnterVault}>INITIATE IDENTITY SCRUB</button>
-            <p className="cta-subtext">Secure Uplink via Stripe // 256-bit AES Encryption</p>
+            <p className="cta-subtext">Proprietary PII Scrubbing Engine // Global Data Broker Coverage</p>
           </div>
         </div>
 
@@ -49,76 +45,81 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             <span className="stat-value">82%</span>
             <span className="stat-label">OF USERS HAVE EXPOSED PII</span>
           </div>
-          <p className="intel-warning">
-            » TRACE DETECTED: Your digital footprint is permanent until scrubbed.
-          </p>
+          <div className="intel-update">
+            <p style={{ fontSize: '0.8rem', color: '#94A3B8', lineHeight: '1.4', margin: '0' }}>
+              <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>» SYSTEM_LOG:</span> Your digital footprint is harvested daily. Disappear automates the removal of your data from lead-gen lists.
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* --- SECTION 02: SYSTEM DIRECTIVES (Manual) --- */}
+      {/* --- SECTION 02: SYSTEM DIRECTIVES (Manual / Sales Expansion) --- */}
       <section className="directive-section">
         <div className="section-header">
-          <span className="mono-label">OPERATION MANUAL // DIRECTIVES</span>
-          <h2 className="section-title">SYSTEM PROTOCOLS</h2>
+          <span className="mono-label">CAPABILITIES // WHY DISAPPEAR</span>
+          <h2 className="section-title">TOTAL CLOAKING PROTOCOLS</h2>
         </div>
 
         <div className="bento-grid-directives">
           <div className="bento-card-small">
             <div className="step-num">01</div>
-            <h4 className="directive-title">BIND PRIMARY NODE</h4>
+            <h4 className="directive-title">TERMINATE SPAM CALLS</h4>
             <p className="directive-text">
-              Target your existing PII. Our Scrubber Node initiates legal removal requests 
-              across 150+ major data aggregators simultaneously.
+              Data brokers sell your phone number to lead-lists. We scrub your contact info from 
+              broker databases to neutralize robocalls and SMS phishing at the source.
             </p>
           </div>
 
           <div className="bento-card-small">
             <div className="step-num">02</div>
-            <h4 className="directive-title">DEPLOY ALIAS ASSETS</h4>
+            <h4 className="directive-title">INBOX SANITIZATION</h4>
             <p className="directive-text">
-              Provision encrypted phone and email nodes. Route all 2FA and registrations 
-              through secure proxies. Never reveal your real data again.
+              Deploy encrypted Email Relay nodes. Our system strips hidden trackers from incoming 
+              mail, preventing companies from knowing when or where you open your messages.
             </p>
           </div>
 
           <div className="bento-card-small">
             <div className="step-num">03</div>
-            <h4 className="directive-title">VIRTUAL FINANCIAL SHIELD</h4>
+            <h4 className="directive-title">FINANCIAL SHIELDING</h4>
             <p className="directive-text">
-              Generate merchant-locked digits. If a vendor is breached, your real 
-              banking identity remains invisible and untouched.
+              Merchant-locked virtual cards hide your real banking identity. Even if a retailer is 
+              breached, your primary accounts remain invisible and untouched.
             </p>
           </div>
 
           <div className="bento-card-small alert-card">
             <div className="step-num">04</div>
-            <h4 className="directive-title">EMERGENCY BURN</h4>
+            <h4 className="directive-title">CONTINUOUS MONITORING</h4>
             <p className="directive-text">
-              One-click total purge. Instantly terminate all aliases, cards, and 
-              profile data. Leave zero traces behind.
+              Identity removal isn't a one-time event. We monitor broker sites 24/7 to ensure 
+              your data isn't re-indexed or sold to new aggregators.
             </p>
           </div>
         </div>
       </section>
 
-      {/* --- SECTION 03: THE MISSION (Vigilance) --- */}
+      {/* --- SECTION 03: THE MISSION (Expanded Sales Argument) --- */}
       <section className="manifesto-teaser">
-        <div className="manifesto-box">
-          <h3 className="card-title" style={{ color: 'var(--tiger-blue)' }}>THE DOCTRINE OF SCARCITY</h3>
+        <div className="manifesto-box" style={{ borderLeft: '4px solid var(--tiger-blue)' }}>
+          <h3 className="card-title" style={{ color: 'var(--tiger-blue)' }}>WHY SOVEREIGNTY MATTERS</h3>
           <p className="manifesto-text">
-            Privacy isn't about hiding secrets; it's about maintaining sovereignty. 
-            In the age of automated surveillance, <strong>Scarcity is Security.</strong> 
-            If the data doesn't exist, it cannot be weaponized. 
-            We don't just protect data—we eliminate the need for it.
+            In the modern web, you aren't the customer—you are the product. Every purchase, 
+            phone call, and email is a data point being auctioned to the highest bidder. 
+            <br /><br />
+            <strong>Disappear returns control to you.</strong> By automating the removal of your 
+            Personal Identifiable Information (PII), we don't just hide your data—we 
+            effectively <strong>make you invisible</strong> to the surveillance economy. 
+            If the data doesn't exist, it cannot be leaked, stolen, or sold.
           </p>
-          <button className="info-link-btn" onClick={onEnterVault}>JOIN THE PURGE</button>
+          <button className="main-button" style={{ marginTop: '20px' }} onClick={onEnterVault}>INITIATE FULL PURGE</button>
         </div>
       </section>
 
       {/* --- LOGIN GATEWAY --- */}
-      <section className="login-gateway">
-        <p className="login-prompt">EXISTING OPERATIVE?</p>
-        <button className="login-btn-nav" onClick={onLoginRequest}>DECRYPT VAULT ACCESS</button>
+      <section className="login-gateway" style={{ padding: '80px 20px', borderTop: '1px solid #111' }}>
+        <p className="login-prompt" style={{ color: '#444', marginBottom: '10px' }}>EXISTING OPERATIVE?</p>
+        <button className="login-btn-nav" style={{ padding: '15px 30px' }} onClick={onLoginRequest}>DECRYPT VAULT ACCESS</button>
       </section>
     </div>
   );
