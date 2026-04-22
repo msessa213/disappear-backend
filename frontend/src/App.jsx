@@ -702,72 +702,73 @@ function App() {
                 </div>
               </div>
             ) : (
-              /* 4. ONBOARDING & LOGIN FLOW (UPDATED SALES LAYER) */
+              /* 4. ONBOARDING & LOGIN FLOW (MOBILE OPTIMIZED) */
               <div className="onboarding-flow">
                 {!showPricing && !showCheckout && !isScanning && !show2FA && (
-                  <div className="fade-in" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '60vh', justifyContent: 'center', padding: '0 20px'}}>
+                  <div className="fade-in" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '80vh', justifyContent: 'center', padding: '40px 20px'}}>
                     
-                    <div style={{display: 'flex', width: '100%', maxWidth: '1100px', gap: '40px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center'}}>
+                    {/* Main Content Container */}
+                    <div style={{display: 'flex', width: '100%', maxWidth: '1100px', gap: '40px', alignItems: 'flex-start', flexWrap: 'wrap', justifyContent: 'center'}}>
                       
                       {/* Left Side: Hero Brand */}
-                      <div style={{flex: '1 1 400px', textAlign: 'left'}}>
-                        <h1 className="brand-name" style={{fontSize: '4rem', margin: '0'}}>DISAPPEAR</h1>
-                        <h2 style={{color: 'white', fontSize: '2.5rem', fontWeight: '900', letterSpacing: '-1px', marginBottom: '20px'}}>STAY VIGILANT.</h2>
+                      <div style={{flex: '1 1 300px', textAlign: 'left', minWidth: '280px'}}>
+                        <h1 className="brand-name" style={{fontSize: 'clamp(2.5rem, 8vw, 4rem)', margin: '0'}}>DISAPPEAR</h1>
+                        <h2 style={{color: 'white', fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', fontWeight: '900', letterSpacing: '-1px', marginBottom: '20px'}}>STAY VIGILANT.</h2>
                         
-                        <p style={{color: '#94A3B8', lineHeight: '1.6', fontSize: '1.1rem', marginBottom: '30px'}}>
+                        <p style={{color: '#94A3B8', lineHeight: '1.6', fontSize: '1rem', marginBottom: '30px'}}>
                           Your identity is a target. In 2026, data brokers weaponize your PII for profit. 
                           <strong> Disappear</strong> is the tactical counter-measure: A Privacy-as-a-Service engine 
                           built to scorch your digital trail and replace exposure with synthetic security.
                         </p>
 
-                        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginBottom: '25px' }}>
-                          <button className="main-button" style={{padding: '15px 40px', fontSize: '1rem'}} onClick={() => setShowPricing(true)}>INITIATE IDENTITY SCRUB</button>
-                          <button className="login-btn-outline" style={{padding: '15px 30px'}} onClick={() => {triggerToast("CHALLENGE REQUEST SENT..."); setShow2FA(true);}}>CLIENT LOGIN</button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '25px', width: '100%' }}>
+                          <button className="main-button" style={{padding: '18px 20px', fontSize: '1rem', width: '100%'}} onClick={() => setShowPricing(true)}>INITIATE IDENTITY SCRUB</button>
+                          <button className="login-btn-outline" style={{padding: '18px 20px', width: '100%'}} onClick={() => {triggerToast("CHALLENGE REQUEST SENT..."); setShow2FA(true);}}>CLIENT LOGIN</button>
                         </div>
 
-                        <p style={{fontSize: '0.75rem', color: '#444', letterSpacing: '1px'}}>
+                        <p style={{fontSize: '0.65rem', color: '#444', letterSpacing: '1px', marginBottom: '40px'}}>
                           AUTOMATED PII REMOVAL // ENCRYPTED VAULT ARCHITECTURE
                         </p>
                       </div>
 
-                      {/* Right Side: Intelligence Brief (Updated) */}
-                      <div className="masking-tool" style={{flex: '0 1 350px', background: '#050505', border: '1px solid #111', padding: '30px'}}>
+                      {/* Right Side: Intelligence Brief */}
+                      <div className="masking-tool" style={{flex: '1 1 300px', background: '#050505', border: '1px solid #111', padding: '25px', width: '100%', boxSizing: 'border-box'}}>
                          <p className="field-label" style={{color: 'white', marginBottom: '25px', borderBottom: '1px solid #111', paddingBottom: '10px'}}>INTELLIGENCE BRIEF</p>
                          
-                         <div style={{marginBottom: '30px'}}>
-                            <h3 style={{fontSize: '2.5rem', color: 'white', margin: '0'}}>4.7B</h3>
-                            <p style={{fontSize: '0.7rem', color: '#64748B', margin: '5px 0'}}>PROFILES INDEXED BY BROKERS</p>
+                         <div style={{marginBottom: '25px'}}>
+                            <h3 style={{fontSize: '2rem', color: 'white', margin: '0'}}>4.7B</h3>
+                            <p style={{fontSize: '0.65rem', color: '#64748B', margin: '5px 0'}}>PROFILES INDEXED BY BROKERS</p>
                          </div>
 
-                         <div style={{marginBottom: '30px'}}>
-                            <h3 style={{fontSize: '2.5rem', color: 'white', margin: '0'}}>82%</h3>
-                            <p style={{fontSize: '0.7rem', color: '#64748B', margin: '5px 0'}}>OF USERS HAVE EXPOSED PII</p>
+                         <div style={{marginBottom: '25px'}}>
+                            <h3 style={{fontSize: '2rem', color: 'white', margin: '0'}}>82%</h3>
+                            <p style={{fontSize: '0.65rem', color: '#64748B', margin: '5px 0'}}>OF USERS HAVE EXPOSED PII</p>
                          </div>
 
                          <div style={{borderTop: '1px solid #111', paddingTop: '20px'}}>
-                            <p style={{fontSize: '0.8rem', color: '#94A3B8', lineHeight: '1.4'}}>
-                              <span style={{color: 'var(--tiger-blue)'}}>» DISAPPEAR_STATUS:</span> Ongoing monitoring prevents re-indexing by third-party aggregators.
+                            <p style={{fontSize: '0.75rem', color: '#94A3B8', lineHeight: '1.4'}}>
+                              <span style={{color: 'var(--tiger-blue)'}}>» CLOAK_STATUS:</span> Ongoing monitoring prevents re-indexing by third-party aggregators.
                             </p>
                          </div>
                       </div>
                     </div>
 
-                    {/* New Value Section: Why Disappear? */}
-                    <div style={{width: '100%', maxWidth: '1100px', marginTop: '80px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px'}}>
-                        <div className="masking-tool" style={{border: '1px solid #111', padding: '25px'}}>
+                    {/* Value Section: Why Disappear? */}
+                    <div style={{width: '100%', maxWidth: '1100px', marginTop: '60px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px'}}>
+                        <div className="masking-tool" style={{border: '1px solid #111', padding: '20px'}}>
                           <span style={{fontSize: '1.5rem', marginBottom: '10px', display: 'block'}}>📞</span>
                           <h4 style={{color: 'white', margin: '10px 0'}}>TERMINATE SPAM</h4>
-                          <p style={{fontSize: '0.85rem', color: '#64748B'}}>Intercept lead lists at the source. Neutralize robocalls and SMS phishing before they reach your hardware.</p>
+                          <p style={{fontSize: '0.8rem', color: '#64748B'}}>Intercept lead lists at the source. Neutralize robocalls and SMS phishing before they reach your hardware.</p>
                         </div>
-                        <div className="masking-tool" style={{border: '1px solid #111', padding: '25px'}}>
+                        <div className="masking-tool" style={{border: '1px solid #111', padding: '20px'}}>
                           <span style={{fontSize: '1.5rem', marginBottom: '10px', display: 'block'}}>✉️</span>
                           <h4 style={{color: 'white', margin: '10px 0'}}>INBOX SANITIZATION</h4>
-                          <p style={{fontSize: '0.85rem', color: '#64748B'}}>Scrub your primary email from 250+ marketing databases to collapse the volume of targeted tracking emails.</p>
+                          <p style={{fontSize: '0.8rem', color: '#64748B'}}>Scrub your primary email from 250+ marketing databases to collapse the volume of targeted tracking emails.</p>
                         </div>
-                        <div className="masking-tool" style={{border: '1px solid #111', padding: '25px'}}>
+                        <div className="masking-tool" style={{border: '1px solid #111', padding: '20px'}}>
                           <span style={{fontSize: '1.5rem', marginBottom: '10px', display: 'block'}}>💳</span>
                           <h4 style={{color: 'white', margin: '10px 0'}}>FINANCIAL SHIELD</h4>
-                          <p style={{fontSize: '0.85rem', color: '#64748B'}}>Replace real card data with merchant-locked nodes to prevent synthetic identity creation and unauthorized inquiries.</p>
+                          <p style={{fontSize: '0.8rem', color: '#64748B'}}>Replace real card data with merchant-locked nodes to prevent synthetic identity creation and unauthorized inquiries.</p>
                         </div>
                     </div>
 
