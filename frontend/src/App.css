@@ -632,15 +632,14 @@ input[type="checkbox"] {
   box-shadow: 0 0 20px rgba(0, 71, 171, 0.5);
 }
 
-/* 13. BENTO SYSTEM - ALIGNMENT FIX */
+/* 13. BENTO SYSTEM */
 .bento-container {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  gap: 60px; /* INCREASED GAP: Stops the sidebar from touching the 'R' */
+  gap: 20px;
   width: 100%;
   max-width: 1200px;
   padding: 0 20px;
-  align-items: start; /* TOP ALIGN: Lines up the tops of both boxes */
 }
 
 .bento-item {
@@ -832,4 +831,4 @@ input[type="checkbox"] {
   .bento-grid-directives { grid-template-columns: 1fr; }
   .elite-header { font-size: 3.5rem; }
   .manifesto-box { padding: 30px; }
-}
+  
