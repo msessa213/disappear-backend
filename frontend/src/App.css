@@ -110,7 +110,7 @@ body, html, #root {
 
 /* 3. FIXED: GLOBAL ENCRYPTION OVERLAY & ULTRA-TAMED SHAKE */
 .encrypting-overlay {
-  position: fixed;
+  position: fixed; /* FIXED: Now ignores scroll position */
   top: 0;
   left: 0;
   width: 100vw;
@@ -608,7 +608,10 @@ input[type="checkbox"] {
 }
 
 .version-tag {
-  display: none; /* REMOVED v2.6 // PAAS */
+  font-size: 0.5rem;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  margin-top: 2px;
 }
 
 .login-btn-nav {
@@ -629,15 +632,15 @@ input[type="checkbox"] {
   box-shadow: 0 0 20px rgba(0, 71, 171, 0.5);
 }
 
-/* 13. BENTO SYSTEM - FIXED ALIGNMENT */
+/* 13. BENTO SYSTEM - FIXED ALIGNMENT & PADDING */
 .bento-container {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  gap: 20px;
+  gap: 40px; /* INCREASED GAP TO PREVENT TOUCHING */
   width: 100%;
   max-width: 1200px;
   padding: 0 20px;
-  align-items: start !important; /* FIXED: Snaps boxes to the top */
+  align-items: start; /* SNAPS TO TOP */
 }
 
 .bento-item {
@@ -646,21 +649,21 @@ input[type="checkbox"] {
   padding: 40px;
   position: relative;
   transition: 0.3s;
-  height: fit-content; /* FIXED: Prevents stretching */
+  height: fit-content; /* PREVENTS VERTICAL STRETCHING */
 }
 
 .bento-hero {
-  grid-column: span 8;
+  grid-column: span 7; /* REDUCED FROM 8 TO PREVENT TOUCHING THE R */
   text-align: left;
   border-left: 4px solid var(--tiger-blue);
 }
 
 .bento-sidebar {
-  grid-column: span 4;
+  grid-column: span 5; /* INCREASED FROM 4 TO BALANCE THE REDUCTION ABOVE */
   display: flex;
   flex-direction: column;
   gap: 25px;
-  justify-content: flex-start !important; /* FIXED: Content stays at top */
+  justify-content: start; /* ENSURES INTERNAL CONTENT STARTS AT TOP */
 }
 
 .elite-header {
@@ -673,7 +676,11 @@ input[type="checkbox"] {
 }
 
 .mono-label {
-  display: none; /* REMOVED SYSTEM_STATUS */
+  font-family: 'Courier New', monospace;
+  font-size: 0.65rem;
+  color: var(--tiger-blue);
+  letter-spacing: 3px;
+  font-weight: bold;
 }
 
 .hero-description {
@@ -704,7 +711,10 @@ input[type="checkbox"] {
 }
 
 .intel-warning {
-  display: none; /* REMOVED TRACE_DETECTED */
+  font-family: 'Courier New', monospace;
+  font-size: 0.7rem;
+  color: var(--alert-red);
+  font-weight: bold;
 }
 
 /* 14. DIRECTIVE GRID */
