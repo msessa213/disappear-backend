@@ -637,7 +637,7 @@ input[type="checkbox"] {
   width: 100%;
   max-width: 1200px;
   padding: 0 20px;
-  align-items: flex-start; /* FIX: Locks boxes to the top */
+  align-items: start !important; /* FIXED: Snaps boxes to the top */
 }
 
 .bento-item {
@@ -646,6 +646,7 @@ input[type="checkbox"] {
   padding: 40px;
   position: relative;
   transition: 0.3s;
+  height: fit-content; /* FIXED: Prevents stretching */
 }
 
 .bento-hero {
@@ -659,7 +660,7 @@ input[type="checkbox"] {
   display: flex;
   flex-direction: column;
   gap: 25px;
-  justify-content: flex-start; /* FIX: Locks content to top of box */
+  justify-content: flex-start !important; /* FIXED: Content stays at top */
 }
 
 .elite-header {
