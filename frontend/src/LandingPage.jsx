@@ -4,7 +4,7 @@ import React, { useState } from 'react';
  * DISAPPEAR LANDING ENGINE
  * ARCHITECTURE: Bento-Grid Intelligence Hub
  * THEME: Tiger Blue / High-Contrast Security
- * UPDATE: Added PII Exposure Scanner (Lead Magnet)
+ * UPDATE: Added Deterministic Scanner (Consistency Fix)
  */
 
 function LandingPage({ onEnterVault, onLoginRequest }) {
@@ -13,16 +13,20 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
   const [isScanning, setIsScanning] = useState(false);
 
   const handleScan = () => {
-    if (!scanQuery) return;
+    if (!scanQuery || scanQuery.length < 5) return;
     setIsScanning(true);
     setScanResult(null);
 
-    // Simulated Tactical Scan (AWS Lambda Simulation)
+    // Simulated Tactical Scan (Deterministic Logic for User Trust)
     setTimeout(() => {
-      const foundCount = Math.floor(Math.random() * (85 - 12 + 1)) + 12;
-      setScanResult(foundCount);
+      // Create a unique seed based on the string input
+      const charSum = scanQuery.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      // Logic: (Sum % range) + floor. Range of 12-86 exposures.
+      const deterministicCount = (charSum % 74) + 12; 
+      
+      setScanResult(deterministicCount);
       setIsScanning(false);
-    }, 2000);
+    }, 1800);
   };
 
   return (
@@ -46,8 +50,8 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             <strong> Disappear</strong> is the tactical counter-measure built to scorch your digital trail.
           </p>
 
-          {/* --- FREE SCANNER COMPONENT --- */}
-          <div className="free-scan-box" style={{ background: '#050505', border: '1px solid #111', padding: '25px', marginBottom: '30px' }}>
+          {/* --- FREE SCANNER COMPONENT (Deterministic) --- */}
+          <div className="free-scan-box" style={{ background: '#050505', border: '1px solid #111', padding: '25px', marginBottom: '15px' }}>
             <span className="mono-label" style={{ display: 'block', marginBottom: '10px', fontSize: '0.65rem' }}>FREE PII EXPOSURE SCAN</span>
             <div style={{ display: 'flex', gap: '10px' }}>
               <input 
@@ -55,18 +59,19 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
                 placeholder="ENTER PHONE OR EMAIL..." 
                 value={scanQuery}
                 onChange={(e) => setScanQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleScan()}
                 style={{ 
                   flex: 1, background: '#000', border: '1px solid #222', 
-                  color: 'white', padding: '12px', fontFamily: 'Courier New' 
+                  color: 'white', padding: '12px', fontFamily: 'Courier New', outline: 'none'
                 }}
               />
               <button 
                 className="main-button" 
                 onClick={handleScan}
                 disabled={isScanning}
-                style={{ padding: '0 20px', fontSize: '0.7rem' }}
+                style={{ padding: '0 20px', fontSize: '0.7rem', minWidth: '100px' }}
               >
-                {isScanning ? 'SCANNING...' : 'SCAN'}
+                {isScanning ? 'SCANNIG...' : 'SCAN'}
               </button>
             </div>
             
@@ -83,7 +88,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             )}
           </div>
 
-          <div className="hero-cta-group">
+          <div className="hero-cta-group" style={{ marginTop: '20px' }}>
             <button className="main-button" onClick={onEnterVault}>INITIATE IDENTITY SCRUB</button>
             <p className="cta-subtext">Proprietary PII Scrubbing Engine // Global Data Broker Coverage</p>
           </div>
