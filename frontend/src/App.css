@@ -1,6 +1,6 @@
 /* 1. CORE THEME & GLOBAL RESET */
 :root {
-  --tiger-blue: #0047AB; 
+  --tiger-blue: #0047AB; /* Jesuit High School Blue */
   --bg-dark: #000000;
   --card-bg: #0A0A0A;
   --text-dim: #94A3B8;
@@ -297,7 +297,7 @@ input[type="checkbox"] {
   text-decoration: underline;
 }
 
-/* 7. GUARANTEED FOOTER */
+/* 7. GUARANTEED FOOTER (The "Vercel Fix") */
 .home-footer {
   position: fixed !important;
   bottom: 0 !important;
@@ -643,7 +643,7 @@ input[type="checkbox"] {
   box-shadow: 0 0 20px rgba(0, 71, 171, 0.5);
 }
 
-/* 14. BENTO SYSTEM (Original Grid) */
+/* 14. BENTO SYSTEM - FIXED UNIFIED GRID */
 .bento-container {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -676,44 +676,11 @@ input[type="checkbox"] {
   justify-content: flex-start;
 }
 
-/* FIXED: FULL WIDTH SCANNER INSIDE UNIFIED GRID */
+/* FIX: Forces Scanner box to span full width UNDER Box 1 & 2 */
 .bento-scanner-full {
   grid-column: span 12;
   border-left: 4px solid var(--tiger-blue);
   margin-top: 10px;
-}
-
-.scanner-input-hub {
-  display: flex;
-  gap: 15px;
-  margin-top: 20px;
-}
-
-.scanner-input-hub input {
-  flex: 1;
-  background: #000;
-  border: 1px solid var(--border-dim);
-  color: white;
-  padding: 15px;
-  font-family: 'Courier New', monospace;
-  outline: none;
-}
-
-.scan-alert-node {
-  margin-top: 20px;
-  padding: 20px;
-  background: rgba(0, 71, 171, 0.05);
-  border: 1px dashed var(--tiger-blue);
-}
-
-.text-link-btn {
-  background: none;
-  border: none;
-  color: white;
-  text-decoration: underline;
-  cursor: pointer;
-  margin-left: 10px;
-  font-weight: bold;
 }
 
 .elite-header {
@@ -725,20 +692,25 @@ input[type="checkbox"] {
   text-transform: uppercase;
 }
 
-.card-title {
-  font-size: 0.7rem;
-  letter-spacing: 2px;
-  text-transform: uppercase;
+.mono-label {
+  font-family: 'Courier New', monospace;
+  font-size: 0.65rem;
   color: var(--tiger-blue);
-  border-bottom: 1px solid #111;
-  padding-bottom: 10px;
-  margin-bottom: 20px;
+  letter-spacing: 3px;
+  font-weight: bold;
+}
+
+.hero-description {
+  font-size: 1rem;
+  color: var(--text-dim);
+  max-width: 500px;
+  line-height: 1.6;
+  margin-bottom: 30px;
 }
 
 .intel-stat {
   border-bottom: 1px solid #111;
   padding-bottom: 15px;
-  margin-bottom: 15px;
 }
 
 .stat-value {
@@ -753,6 +725,13 @@ input[type="checkbox"] {
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
+}
+
+.intel-warning {
+  font-family: 'Courier New', monospace;
+  font-size: 0.7rem;
+  color: var(--alert-red);
+  font-weight: bold;
 }
 
 /* 15. DIRECTIVE GRID */
@@ -836,6 +815,13 @@ input[type="checkbox"] {
   margin-bottom: 150px;
 }
 
+.login-prompt {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  letter-spacing: 4px;
+  margin-bottom: 20px;
+}
+
 /* 17. MISC REFINEMENTS */
 .pulse-dot {
   height: 6px;
@@ -854,10 +840,26 @@ input[type="checkbox"] {
   100% { transform: scale(0.9); opacity: 0.7; }
 }
 
+/* 20. SCANNER INPUT STYLING (NEW SECTION) */
+.scanner-input {
+  background: #000 !important;
+  border: 1px solid var(--border-dim) !important;
+  color: white !important;
+  padding: 15px !important;
+  font-family: 'Courier New', monospace !important;
+  outline: none !important;
+  width: 100% !important;
+  font-size: 0.8rem !important;
+  transition: border-color 0.3s ease !important;
+}
+
+.scanner-input:focus {
+  border-color: var(--tiger-blue) !important;
+}
+
 @media (max-width: 1024px) {
   .bento-hero, .bento-sidebar { grid-column: span 12; }
   .bento-grid-directives { grid-template-columns: 1fr 1fr; }
-  .scanner-input-hub { flex-direction: column; }
 }
 
 @media (max-width: 600px) {

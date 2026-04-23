@@ -4,23 +4,36 @@ import React, { useState } from 'react';
  * DISAPPEAR LANDING ENGINE
  * ARCHITECTURE: Unified Bento Grid
  * THEME: Tiger Blue / High-Contrast Security
- * UPDATE: Search integrated into unified grid to lock top-row alignment.
+ * UPDATE: Added granular PII search fields & fixed grid alignment.
  */
 
 function LandingPage({ onEnterVault, onLoginRequest }) {
-  const [scanQuery, setScanQuery] = useState('');
+  const [scanData, setScanData] = useState({
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    phone: '',
+    email: ''
+  });
   const [scanResult, setScanResult] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setScanData(prev => ({ ...prev, [name]: value }));
+  };
+
   const handleScan = () => {
-    if (!scanQuery || scanQuery.length < 5) return;
+    if (!scanData.email && !scanData.phone) return;
     setIsScanning(true);
     setScanResult(null);
 
-    // Deterministic Logic: Ensures same number for same input
+    // Deterministic Logic: Ensures same input always yields same result for trust
     setTimeout(() => {
-      const charSum = scanQuery.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const seedString = `${scanData.firstName}${scanData.lastName}${scanData.email}${scanData.phone}`;
+      const charSum = seedString.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
       const deterministicCount = (charSum % 74) + 12; 
+      
       setScanResult(deterministicCount);
       setIsScanning(false);
     }, 1800);
@@ -38,7 +51,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
         </div>
       </nav>
 
-      {/* --- UNIFIED BENTO HUB --- */}
+      {/* --- SECTION 01: THE UNIFIED BENTO HUB --- */}
       <section className="bento-container" style={{ marginTop: '120px' }}>
         
         {/* BOX 01: THE DOCTRINE */}
@@ -73,35 +86,37 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
           </div>
         </div>
 
-        {/* BOX 03: LIVE RECONNAISSANCE (Now locked to the unified grid) */}
-        <div className="bento-item bento-scanner-full">
+        {/* BOX 03: LIVE RECONNAISSANCE (Locked under Box 1 & 2) */}
+        <div className="bento-item bento-scanner-full" style={{ gridColumn: 'span 12', marginTop: '10px' }}>
           <h3 className="card-title">LIVE RECONNAISSANCE</h3>
           <p className="hero-description" style={{ fontSize: '0.9rem', marginBottom: '20px', maxWidth: '100%' }}>
-            Enter your contact data to perform a real-time deterministic scan of the global broker index.
+            Enter your PII to perform a real-time deterministic scan of the global broker index.
           </p>
-          <div className="scanner-input-hub">
-            <input 
-              type="text" 
-              placeholder="ENTER PHONE OR EMAIL..." 
-              value={scanQuery}
-              onChange={(e) => setScanQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleScan()}
-            />
-            <button 
-              className="main-button" 
-              onClick={handleScan}
-              disabled={isScanning}
-            >
-              {isScanning ? 'SCANNING...' : 'SCAN DATABASE'}
-            </button>
+          
+          <div className="checkout-grid">
+            <input type="text" name="firstName" placeholder="FIRST NAME" className="scanner-input" onChange={handleInputChange} />
+            <input type="text" name="middleName" placeholder="MIDDLE NAME" className="scanner-input" onChange={handleInputChange} />
+            <input type="text" name="lastName" placeholder="LAST NAME" className="scanner-input" onChange={handleInputChange} />
+            <input type="text" name="phone" placeholder="PHONE NUMBER" className="scanner-input" onChange={handleInputChange} />
+            <input type="text" name="email" placeholder="EMAIL ADDRESS" className="scanner-input full-row" onChange={handleInputChange} />
           </div>
+
+          <button 
+            className="main-button" 
+            onClick={handleScan}
+            disabled={isScanning}
+            style={{ width: '100%', marginTop: '20px' }}
+          >
+            {isScanning ? 'SCANNING BROKER DATABASES...' : 'GENERATE EXPOSURE REPORT'}
+          </button>
           
           {scanResult && (
-            <div className="fade-in scan-alert-node">
+            <div className="fade-in scan-alert-node" style={{ marginTop: '20px', padding: '20px', background: 'rgba(0, 71, 171, 0.05)', border: '1px dashed var(--tiger-blue)' }}>
               <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>[!] ALERT:</span> IDENTITY EXPOSED ON {scanResult} BROKER SITES.
               <button 
                 onClick={onEnterVault}
                 className="text-link-btn"
+                style={{ marginLeft: '15px', background: 'none', border: 'none', color: 'white', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold' }}
               >
                 INITIATE FULL NEUTRALIZATION
               </button>
