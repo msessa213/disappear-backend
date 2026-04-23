@@ -643,7 +643,7 @@ input[type="checkbox"] {
   box-shadow: 0 0 20px rgba(0, 71, 171, 0.5);
 }
 
-/* 14. BENTO SYSTEM - EQUAL HEIGHT ALIGNMENT */
+/* 14. BENTO SYSTEM - EQUAL HEIGHT ALIGNMENT FIX */
 .bento-container {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -651,7 +651,7 @@ input[type="checkbox"] {
   width: 100%;
   max-width: 1200px;
   padding: 0 20px;
-  align-items: stretch; /* CRITICAL: Forces all boxes in a row to be same height */
+  align-items: stretch; /* FORCES BOXES TO BE SAME HEIGHT */
 }
 
 .bento-item {
@@ -661,13 +661,13 @@ input[type="checkbox"] {
   position: relative;
   transition: 0.3s;
   display: flex;
-  flex-direction: column; /* Allows contents to grow */
+  flex-direction: column; /* ALLOWS INTERNAL CONTENT FLEX */
 }
 
 .bento-inner-content {
   display: flex;
   flex-direction: column;
-  flex: 1; /* Forces the box contents to take up all available space */
+  flex: 1; /* FORCES CONTENT TO FILL FULL BOX HEIGHT */
 }
 
 .bento-hero {
@@ -684,7 +684,7 @@ input[type="checkbox"] {
   justify-content: flex-start;
 }
 
-/* FIX: FORCES SCANNER BOX TO SPAN FULL WIDTH UNDER BOX 1 & 2 */
+/* SCANNER BOX SPANS FULL WIDTH UNDERNEATH */
 .bento-scanner-full {
   grid-column: span 12;
   border-left: 4px solid var(--tiger-blue);

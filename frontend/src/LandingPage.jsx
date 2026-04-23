@@ -4,7 +4,7 @@ import React, { useState } from 'react';
  * DISAPPEAR LANDING ENGINE
  * ARCHITECTURE: Unified Bento Grid
  * THEME: Tiger Blue / High-Contrast Security
- * UPDATE: Fixed vertical box alignment and integrated DOB field.
+ * UPDATE: Precision vertical alignment fix + DOB integration.
  */
 
 function LandingPage({ onEnterVault, onLoginRequest }) {
@@ -29,7 +29,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
     setIsScanning(true);
     setScanResult(null);
 
-    // Deterministic Logic: Ensures same input always yields same result for trust
+    // Deterministic Logic: Consistent results for Brand Trust
     setTimeout(() => {
       const seedString = `${scanData.firstName}${scanData.lastName}${scanData.email}${scanData.phone}${scanData.dob}`;
       const charSum = seedString.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -64,7 +64,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
               <strong> Disappear</strong> is the tactical counter-measure: A Privacy-as-a-Service engine 
               built to scorch your digital trail and replace exposure with synthetic security.
             </p>
-            <div className="hero-cta-group">
+            <div className="hero-cta-group" style={{ marginTop: 'auto' }}>
               <button className="main-button" onClick={onEnterVault}>INITIATE IDENTITY SCRUB</button>
               <p className="cta-subtext">Proprietary PII Scrubbing Engine // Global Data Broker Coverage</p>
             </div>
@@ -83,7 +83,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
               <span className="stat-value">82%</span>
               <span className="stat-label">OF USERS HAVE EXPOSED PII</span>
             </div>
-            <div className="intel-update">
+            <div className="intel-update" style={{ marginTop: 'auto' }}>
               <p style={{ fontSize: '0.8rem', color: '#94A3B8', lineHeight: '1.4', margin: '0' }}>
                 <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>» SYSTEM_LOG:</span> Your digital footprint is harvested daily. Disappear automates the removal of your data from lead-gen lists.
               </p>
