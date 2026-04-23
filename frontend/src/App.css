@@ -687,7 +687,7 @@ input[type="checkbox"] {
 
 /* PRECISION SITE HEADER FONT SIZE (FIXES MISALIGNMENT) */
 .elite-header.site-hero-text {
-  font-size: clamp(2rem, 6vw, 4.2rem) !important;
+  font-size: clamp(2rem, 5vw, 3.2rem) !important;
   font-weight: 900;
   line-height: 0.85;
   letter-spacing: -3px;
