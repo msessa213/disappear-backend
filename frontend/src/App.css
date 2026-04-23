@@ -487,9 +487,11 @@ input[type="checkbox"] {
     padding: 25px 20px;
   }
 
+  /* SIGNUP/LOGIN SCREEN FIXES (MOBILE) */
   .onboarding-flow div[style*="display: flex"] {
     flex-direction: column !important;
-    gap: 15px !important;
+    gap: 20px !important;
+    align-items: center !important;
     width: 100%;
   }
 
@@ -514,6 +516,17 @@ input[type="checkbox"] {
   .footer-divider {
     display: none !important;
   }
+}
+
+/* 12. SIGNUP / LOGIN SCREEN - PRECISION ALIGNMENT FIX */
+/* This targets the flex container in App.jsx when showLanding is false */
+.onboarding-flow div[style*="display: flex"] {
+  align-items: flex-start !important; /* LOCK TO TOP */
+  gap: 60px !important; /* PUSH BOX AWAY FROM 'R' */
+}
+
+.onboarding-flow .masking-tool {
+  margin-top: 0 !important; /* Ensure it stays aligned with header top */
 }
 
 .secure-connection-text {
@@ -576,7 +589,7 @@ input[type="checkbox"] {
   grid-column: span 2; 
 }
 
-/* 12. ELITE PUBLIC INTELLIGENCE WEBSITE (Marketing Layer) */
+/* 13. ELITE PUBLIC INTELLIGENCE WEBSITE (Marketing Layer) */
 .landing-wrapper {
   width: 100%;
   background: var(--bg-dark);
@@ -632,7 +645,7 @@ input[type="checkbox"] {
   box-shadow: 0 0 20px rgba(0, 71, 171, 0.5);
 }
 
-/* 13. BENTO SYSTEM */
+/* 14. BENTO SYSTEM */
 .bento-container {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -715,7 +728,7 @@ input[type="checkbox"] {
   font-weight: bold;
 }
 
-/* 14. DIRECTIVE GRID */
+/* 15. DIRECTIVE GRID */
 .directive-section {
   width: 100%;
   max-width: 1200px;
@@ -767,7 +780,7 @@ input[type="checkbox"] {
   color: var(--alert-red);
 }
 
-/* 15. MANIFESTO & LOGIN GATEWAY */
+/* 16. MANIFESTO & LOGIN GATEWAY */
 .manifesto-teaser {
   width: 100%;
   max-width: 800px;
@@ -803,7 +816,7 @@ input[type="checkbox"] {
   margin-bottom: 20px;
 }
 
-/* 16. MISC REFINEMENTS */
+/* 17. MISC REFINEMENTS */
 .pulse-dot {
   height: 6px;
   width: 6px;
@@ -831,4 +844,4 @@ input[type="checkbox"] {
   .bento-grid-directives { grid-template-columns: 1fr; }
   .elite-header { font-size: 3.5rem; }
   .manifesto-box { padding: 30px; }
-  
+}
