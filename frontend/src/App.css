@@ -643,11 +643,11 @@ input[type="checkbox"] {
   box-shadow: 0 0 20px rgba(0, 71, 171, 0.5);
 }
 
-/* 14. BENTO SYSTEM (Original Alignment Preserved) */
+/* 14. BENTO SYSTEM - UNIFIED GRID FIX */
 .bento-container {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  gap: 30px; 
+  gap: 40px; 
   width: 100%;
   max-width: 1200px;
   padding: 0 20px;
@@ -676,46 +676,7 @@ input[type="checkbox"] {
   justify-content: flex-start;
 }
 
-.elite-header {
-  font-size: clamp(3rem, 10vw, 6rem);
-  font-weight: 900;
-  line-height: 0.85;
-  letter-spacing: -4px;
-  margin: 20px 0;
-  text-transform: uppercase;
-}
-
-.card-title {
-  font-size: 0.7rem;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--tiger-blue);
-  border-bottom: 1px solid #111;
-  padding-bottom: 10px;
-  margin-bottom: 20px;
-}
-
-.intel-stat {
-  border-bottom: 1px solid #111;
-  padding-bottom: 15px;
-  margin-bottom: 15px;
-}
-
-.stat-value {
-  display: block;
-  font-size: 2.5rem;
-  font-weight: 900;
-  color: white;
-}
-
-.stat-label {
-  font-size: 0.6rem;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-/* 15. NEW: BENTO SCANNER BOX (Span 12 Underneath) */
+/* CORRECTED: FULL WIDTH SCANNER INSIDE UNIFIED GRID */
 .bento-scanner-full {
   grid-column: span 12;
   border-left: 4px solid var(--tiger-blue);
@@ -725,6 +686,7 @@ input[type="checkbox"] {
 .scanner-input-hub {
   display: flex;
   gap: 15px;
+  margin-top: 20px;
 }
 
 .scanner-input-hub input {
@@ -754,7 +716,58 @@ input[type="checkbox"] {
   font-weight: bold;
 }
 
-/* 16. DIRECTIVE GRID */
+.elite-header {
+  font-size: clamp(3rem, 10vw, 6rem);
+  font-weight: 900;
+  line-height: 0.85;
+  letter-spacing: -4px;
+  margin: 20px 0;
+  text-transform: uppercase;
+}
+
+.mono-label {
+  font-family: 'Courier New', monospace;
+  font-size: 0.65rem;
+  color: var(--tiger-blue);
+  letter-spacing: 3px;
+  font-weight: bold;
+}
+
+.hero-description {
+  font-size: 1rem;
+  color: var(--text-dim);
+  max-width: 500px;
+  line-height: 1.6;
+  margin-bottom: 30px;
+}
+
+.intel-stat {
+  border-bottom: 1px solid #111;
+  padding-bottom: 15px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: white;
+}
+
+.stat-label {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.intel-warning {
+  font-family: 'Courier New', monospace;
+  font-size: 0.7rem;
+  color: var(--alert-red);
+  font-weight: bold;
+}
+
+/* 15. DIRECTIVE GRID */
 .directive-section {
   width: 100%;
   max-width: 1200px;
@@ -806,7 +819,7 @@ input[type="checkbox"] {
   color: var(--alert-red);
 }
 
-/* 17. MANIFESTO & LOGIN GATEWAY */
+/* 16. MANIFESTO & LOGIN GATEWAY */
 .manifesto-teaser {
   width: 100%;
   max-width: 800px;
@@ -842,7 +855,7 @@ input[type="checkbox"] {
   margin-bottom: 20px;
 }
 
-/* 18. MISC REFINEMENTS */
+/* 17. MISC REFINEMENTS */
 .pulse-dot {
   height: 6px;
   width: 6px;

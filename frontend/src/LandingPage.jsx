@@ -4,7 +4,7 @@ import React, { useState } from 'react';
  * DISAPPEAR LANDING ENGINE
  * ARCHITECTURE: Bento-Grid Intelligence Hub
  * THEME: Tiger Blue / High-Contrast Security
- * UPDATE: Deterministic Search Node added as a full-width Bento Item.
+ * UPDATE: Unified grid logic to prevent box misalignment.
  */
 
 function LandingPage({ onEnterVault, onLoginRequest }) {
@@ -17,7 +17,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
     setIsScanning(true);
     setScanResult(null);
 
-    // Deterministic Logic: Ensures the same number for the same input
+    // Deterministic Logic: Ensures same number for same input for trust
     setTimeout(() => {
       const charSum = scanQuery.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
       const deterministicCount = (charSum % 74) + 12; 
@@ -41,7 +41,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
       {/* --- SECTION 01: THE UNIFIED BENTO HUB --- */}
       <section className="bento-container" style={{ marginTop: '120px' }}>
         
-        {/* BOX 01: THE DOCTRINE */}
+        {/* BOX 01: THE DOCTRINE (Stay Vigilant) */}
         <div className="bento-item bento-hero">
           <h1 className="elite-header">STAY<br />VIGILANT.</h1>
           <p className="hero-description">
@@ -55,7 +55,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
           </div>
         </div>
 
-        {/* BOX 02: INTELLIGENCE BRIEF */}
+        {/* BOX 02: INTELLIGENCE BRIEF (Right Side) */}
         <div className="bento-item bento-sidebar">
           <h3 className="card-title">INTELLIGENCE BRIEF</h3>
           <div className="intel-stat">
@@ -73,10 +73,10 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
           </div>
         </div>
 
-        {/* BOX 03: LIVE RECONNAISSANCE (Dedicated Box Underneath) */}
+        {/* BOX 03: LIVE RECONNAISSANCE (Full Width Underneath) */}
         <div className="bento-item bento-scanner-full">
           <h3 className="card-title">LIVE RECONNAISSANCE</h3>
-          <p className="hero-description" style={{ fontSize: '0.9rem', marginBottom: '20px', maxWidth: '100%' }}>
+          <p className="hero-description" style={{ fontSize: '0.85rem', marginBottom: '20px', maxWidth: '100%' }}>
             Enter your contact data to perform a real-time deterministic scan of the global broker index.
           </p>
           <div className="scanner-input-hub">
