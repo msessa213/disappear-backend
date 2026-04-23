@@ -78,7 +78,6 @@ body, html, #root {
   margin-left: 5px;
 }
 
-/* Standardized Inputs */
 .price-box .mask-btn, 
 .price-box .main-button, 
 .price-box .reset-btn,
@@ -297,7 +296,7 @@ input[type="checkbox"] {
   text-decoration: underline;
 }
 
-/* 7. GUARANTEED FOOTER (The "Vercel Fix") */
+/* 7. GUARANTEED FOOTER */
 .home-footer {
   position: fixed !important;
   bottom: 0 !important;
@@ -651,7 +650,7 @@ input[type="checkbox"] {
   width: 100%;
   max-width: 1200px;
   padding: 0 20px;
-  align-items: stretch; /* FORCES BOXES TO BE SAME HEIGHT */
+  align-items: stretch; /* Forces equal row heights */
 }
 
 .bento-item {
@@ -661,13 +660,14 @@ input[type="checkbox"] {
   position: relative;
   transition: 0.3s;
   display: flex;
-  flex-direction: column; /* ALLOWS INTERNAL CONTENT FLEX */
+  flex-direction: column;
+  height: 100%;
 }
 
 .bento-inner-content {
   display: flex;
   flex-direction: column;
-  flex: 1; /* FORCES CONTENT TO FILL FULL BOX HEIGHT */
+  flex: 1; /* Ensures internal content fills the equalized height */
 }
 
 .bento-hero {
@@ -682,9 +682,10 @@ input[type="checkbox"] {
   flex-direction: column;
   gap: 25px;
   justify-content: flex-start;
+  text-align: left;
 }
 
-/* SCANNER BOX SPANS FULL WIDTH UNDERNEATH */
+/* Full Width Scanner underneath top row */
 .bento-scanner-full {
   grid-column: span 12;
   border-left: 4px solid var(--tiger-blue);
@@ -716,9 +717,20 @@ input[type="checkbox"] {
   margin-bottom: 30px;
 }
 
+.card-title {
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--tiger-blue);
+  border-bottom: 1px solid #111;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
 .intel-stat {
   border-bottom: 1px solid #111;
   padding-bottom: 15px;
+  margin-bottom: 15px;
 }
 
 .stat-value {
