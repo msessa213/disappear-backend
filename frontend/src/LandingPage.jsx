@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 
 /**
  * DISAPPEAR LANDING ENGINE
- * ARCHITECTURE: Bento-Grid Intelligence Hub
+ * ARCHITECTURE: Unified Bento Grid
  * THEME: Tiger Blue / High-Contrast Security
- * UPDATE: Unified grid logic to prevent box misalignment + added DOB field.
+ * UPDATE: Unified grid logic with equal-height row alignment + DOB field.
  */
 
 function LandingPage({ onEnterVault, onLoginRequest }) {
@@ -57,15 +57,17 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
         
         {/* BOX 01: THE DOCTRINE */}
         <div className="bento-item bento-hero">
-          <h1 className="elite-header">STAY<br />VIGILANT.</h1>
-          <p className="hero-description">
-            Your identity is a target. In 2026, data brokers weaponize your PII for profit. 
-            <strong> Disappear</strong> is the tactical counter-measure: A Privacy-as-a-Service engine 
-            built to scorch your digital trail and replace exposure with synthetic security.
-          </p>
-          <div className="hero-cta-group">
-            <button className="main-button" onClick={onEnterVault}>INITIATE IDENTITY SCRUB</button>
-            <p className="cta-subtext">Proprietary PII Scrubbing Engine // Global Data Broker Coverage</p>
+          <div className="bento-content-wrapper">
+            <h1 className="elite-header">STAY<br />VIGILANT.</h1>
+            <p className="hero-description">
+              Your identity is a target. In 2026, data brokers weaponize your PII for profit. 
+              <strong> Disappear</strong> is the tactical counter-measure: A Privacy-as-a-Service engine 
+              built to scorch your digital trail and replace exposure with synthetic security.
+            </p>
+            <div className="hero-cta-group" style={{ marginTop: 'auto' }}>
+              <button className="main-button" onClick={onEnterVault}>INITIATE IDENTITY SCRUB</button>
+              <p className="cta-subtext">Proprietary PII Scrubbing Engine // Global Data Broker Coverage</p>
+            </div>
           </div>
         </div>
 
@@ -80,7 +82,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             <span className="stat-value">82%</span>
             <span className="stat-label">OF USERS HAVE EXPOSED PII</span>
           </div>
-          <div className="intel-update">
+          <div className="intel-update" style={{ marginTop: 'auto' }}>
             <p style={{ fontSize: '0.8rem', color: '#94A3B8', lineHeight: '1.4', margin: '0' }}>
               <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>» SYSTEM_LOG:</span> Your digital footprint is harvested daily. Disappear automates the removal of your data from lead-gen lists.
             </p>
@@ -99,8 +101,8 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             <input type="text" name="middleName" placeholder="MIDDLE NAME" className="scanner-input" onChange={handleInputChange} />
             <input type="text" name="lastName" placeholder="LAST NAME" className="scanner-input" onChange={handleInputChange} />
             <input type="text" name="phone" placeholder="PHONE NUMBER" className="scanner-input" onChange={handleInputChange} />
-            <input type="text" name="email" placeholder="EMAIL ADDRESS" className="scanner-input" style={{ gridColumn: 'span 1' }} onChange={handleInputChange} />
-            <input type="text" name="dob" placeholder="DATE OF BIRTH (MM/DD/YYYY)" className="scanner-input" style={{ gridColumn: 'span 1' }} onChange={handleInputChange} />
+            <input type="text" name="email" placeholder="EMAIL ADDRESS" className="scanner-input" onChange={handleInputChange} />
+            <input type="text" name="dob" placeholder="DATE OF BIRTH (MM/DD/YYYY)" className="scanner-input" onChange={handleInputChange} />
           </div>
 
           <button 
@@ -178,8 +180,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
           <h3 className="card-title" style={{ color: 'var(--tiger-blue)' }}>WHY SOVEREIGNTY MATTERS</h3>
           <p className="manifesto-text">
             <strong>Disappear returns control to you.</strong> By automating the removal of your 
-            Personal Identifiable Information (PII), we don't just hide your data—we 
-            effectively <strong>neutralize your digital presence</strong> within the surveillance economy. 
+            Personal Identifiable Information (PII), we effectively <strong>neutralize your digital presence</strong> within the surveillance economy. 
           </p>
           <button className="main-button" style={{ marginTop: '20px' }} onClick={onEnterVault}>INITIATE FULL PURGE</button>
         </div>
