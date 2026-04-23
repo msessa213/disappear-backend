@@ -643,7 +643,7 @@ input[type="checkbox"] {
   box-shadow: 0 0 20px rgba(0, 71, 171, 0.5);
 }
 
-/* 14. BENTO SYSTEM - FIXED UNIFIED GRID */
+/* 14. BENTO SYSTEM - UNIFIED GRID FIX */
 .bento-container {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -676,7 +676,7 @@ input[type="checkbox"] {
   justify-content: flex-start;
 }
 
-/* FIX: Forces Scanner box to span full width UNDER Box 1 & 2 */
+/* FIX: FORCES SCANNER BOX TO SPAN FULL WIDTH UNDER BOX 1 & 2 */
 .bento-scanner-full {
   grid-column: span 12;
   border-left: 4px solid var(--tiger-blue);
@@ -840,7 +840,7 @@ input[type="checkbox"] {
   100% { transform: scale(0.9); opacity: 0.7; }
 }
 
-/* 20. SCANNER INPUT STYLING (NEW SECTION) */
+/* 20. SCANNER INPUT STYLING */
 .scanner-input {
   background: #000 !important;
   border: 1px solid var(--border-dim) !important;
@@ -855,6 +855,25 @@ input[type="checkbox"] {
 
 .scanner-input:focus {
   border-color: var(--tiger-blue) !important;
+}
+
+.scan-alert-node {
+  margin-top: 20px;
+  padding: 20px;
+  background: rgba(0, 71, 171, 0.05);
+  border: 1px dashed var(--tiger-blue);
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.text-link-btn {
+  background: none;
+  border: none;
+  color: white;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-left: 15px;
+  font-weight: bold;
 }
 
 @media (max-width: 1024px) {

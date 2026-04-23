@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 
 /**
  * DISAPPEAR LANDING ENGINE
- * ARCHITECTURE: Unified Bento Grid
+ * ARCHITECTURE: Bento-Grid Intelligence Hub
  * THEME: Tiger Blue / High-Contrast Security
- * UPDATE: Added granular PII search fields & fixed grid alignment.
+ * UPDATE: Unified grid logic to prevent box misalignment + added DOB field.
  */
 
 function LandingPage({ onEnterVault, onLoginRequest }) {
@@ -13,7 +13,8 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
     middleName: '',
     lastName: '',
     phone: '',
-    email: ''
+    email: '',
+    dob: ''
   });
   const [scanResult, setScanResult] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -30,7 +31,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
 
     // Deterministic Logic: Ensures same input always yields same result for trust
     setTimeout(() => {
-      const seedString = `${scanData.firstName}${scanData.lastName}${scanData.email}${scanData.phone}`;
+      const seedString = `${scanData.firstName}${scanData.lastName}${scanData.email}${scanData.phone}${scanData.dob}`;
       const charSum = seedString.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
       const deterministicCount = (charSum % 74) + 12; 
       
@@ -86,10 +87,10 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
           </div>
         </div>
 
-        {/* BOX 03: LIVE RECONNAISSANCE (Locked under Box 1 & 2) */}
-        <div className="bento-item bento-scanner-full" style={{ gridColumn: 'span 12', marginTop: '10px' }}>
-          <h3 className="card-title">LIVE RECONNAISSANCE</h3>
-          <p className="hero-description" style={{ fontSize: '0.9rem', marginBottom: '20px', maxWidth: '100%' }}>
+        {/* BOX 03: LIVE RECONNAISSANCE (Locked Underneath) */}
+        <div className="bento-item bento-scanner-full">
+          <h3 className="card-title" style={{ textAlign: 'center', border: 'none' }}>LIVE RECONNAISSANCE</h3>
+          <p className="hero-description" style={{ fontSize: '0.9rem', marginBottom: '20px', maxWidth: '100%', textAlign: 'center' }}>
             Enter your PII to perform a real-time deterministic scan of the global broker index.
           </p>
           
@@ -98,7 +99,8 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             <input type="text" name="middleName" placeholder="MIDDLE NAME" className="scanner-input" onChange={handleInputChange} />
             <input type="text" name="lastName" placeholder="LAST NAME" className="scanner-input" onChange={handleInputChange} />
             <input type="text" name="phone" placeholder="PHONE NUMBER" className="scanner-input" onChange={handleInputChange} />
-            <input type="text" name="email" placeholder="EMAIL ADDRESS" className="scanner-input full-row" onChange={handleInputChange} />
+            <input type="text" name="email" placeholder="EMAIL ADDRESS" className="scanner-input" style={{ gridColumn: 'span 1' }} onChange={handleInputChange} />
+            <input type="text" name="dob" placeholder="DATE OF BIRTH (MM/DD/YYYY)" className="scanner-input" style={{ gridColumn: 'span 1' }} onChange={handleInputChange} />
           </div>
 
           <button 
@@ -111,12 +113,11 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
           </button>
           
           {scanResult && (
-            <div className="fade-in scan-alert-node" style={{ marginTop: '20px', padding: '20px', background: 'rgba(0, 71, 171, 0.05)', border: '1px dashed var(--tiger-blue)' }}>
+            <div className="fade-in scan-alert-node">
               <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>[!] ALERT:</span> IDENTITY EXPOSED ON {scanResult} BROKER SITES.
               <button 
                 onClick={onEnterVault}
                 className="text-link-btn"
-                style={{ marginLeft: '15px', background: 'none', border: 'none', color: 'white', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold' }}
               >
                 INITIATE FULL NEUTRALIZATION
               </button>
@@ -177,7 +178,8 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
           <h3 className="card-title" style={{ color: 'var(--tiger-blue)' }}>WHY SOVEREIGNTY MATTERS</h3>
           <p className="manifesto-text">
             <strong>Disappear returns control to you.</strong> By automating the removal of your 
-            Personal Identifiable Information (PII), we effectively <strong>neutralize your digital presence</strong>.
+            Personal Identifiable Information (PII), we don't just hide your data—we 
+            effectively <strong>neutralize your digital presence</strong> within the surveillance economy. 
           </p>
           <button className="main-button" style={{ marginTop: '20px' }} onClick={onEnterVault}>INITIATE FULL PURGE</button>
         </div>
