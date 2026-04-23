@@ -110,7 +110,7 @@ body, html, #root {
 
 /* 3. FIXED: GLOBAL ENCRYPTION OVERLAY & ULTRA-TAMED SHAKE */
 .encrypting-overlay {
-  position: fixed; /* FIXED: Now ignores scroll position */
+  position: fixed; 
   top: 0;
   left: 0;
   width: 100vw;
@@ -643,11 +643,11 @@ input[type="checkbox"] {
   box-shadow: 0 0 20px rgba(0, 71, 171, 0.5);
 }
 
-/* 14. BENTO SYSTEM */
+/* 14. BENTO SYSTEM (Original Alignment Preserved) */
 .bento-container {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  gap: 80px; 
+  gap: 30px; 
   width: 100%;
   max-width: 1200px;
   padding: 0 20px;
@@ -715,14 +715,46 @@ input[type="checkbox"] {
   letter-spacing: 1px;
 }
 
-.intel-warning {
+/* 15. NEW: BENTO SCANNER BOX (Span 12 Underneath) */
+.bento-scanner-full {
+  grid-column: span 12;
+  border-left: 4px solid var(--tiger-blue);
+  margin-top: 10px;
+}
+
+.scanner-input-hub {
+  display: flex;
+  gap: 15px;
+}
+
+.scanner-input-hub input {
+  flex: 1;
+  background: #000;
+  border: 1px solid var(--border-dim);
+  color: white;
+  padding: 15px;
   font-family: 'Courier New', monospace;
-  font-size: 0.7rem;
-  color: var(--alert-red);
+  outline: none;
+}
+
+.scan-alert-node {
+  margin-top: 20px;
+  padding: 20px;
+  background: rgba(0, 71, 171, 0.05);
+  border: 1px dashed var(--tiger-blue);
+}
+
+.text-link-btn {
+  background: none;
+  border: none;
+  color: white;
+  text-decoration: underline;
+  cursor: pointer;
+  margin-left: 10px;
   font-weight: bold;
 }
 
-/* 15. DIRECTIVE GRID */
+/* 16. DIRECTIVE GRID */
 .directive-section {
   width: 100%;
   max-width: 1200px;
@@ -774,7 +806,7 @@ input[type="checkbox"] {
   color: var(--alert-red);
 }
 
-/* 16. MANIFESTO & LOGIN GATEWAY */
+/* 17. MANIFESTO & LOGIN GATEWAY */
 .manifesto-teaser {
   width: 100%;
   max-width: 800px;
@@ -810,7 +842,7 @@ input[type="checkbox"] {
   margin-bottom: 20px;
 }
 
-/* 17. MISC REFINEMENTS */
+/* 18. MISC REFINEMENTS */
 .pulse-dot {
   height: 6px;
   width: 6px;
@@ -831,6 +863,7 @@ input[type="checkbox"] {
 @media (max-width: 1024px) {
   .bento-hero, .bento-sidebar { grid-column: span 12; }
   .bento-grid-directives { grid-template-columns: 1fr 1fr; }
+  .scanner-input-hub { flex-direction: column; }
 }
 
 @media (max-width: 600px) {

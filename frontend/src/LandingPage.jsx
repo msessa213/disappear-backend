@@ -38,8 +38,10 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
         </div>
       </nav>
 
-      {/* --- SECTION 01: THE DOCTRINE (Top Row) --- */}
+      {/* --- SECTION 01: THE UNIFIED BENTO HUB --- */}
       <section className="bento-container" style={{ marginTop: '120px' }}>
+        
+        {/* BOX 01: THE DOCTRINE */}
         <div className="bento-item bento-hero">
           <h1 className="elite-header">STAY<br />VIGILANT.</h1>
           <p className="hero-description">
@@ -53,6 +55,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
           </div>
         </div>
 
+        {/* BOX 02: INTELLIGENCE BRIEF */}
         <div className="bento-item bento-sidebar">
           <h3 className="card-title">INTELLIGENCE BRIEF</h3>
           <div className="intel-stat">
@@ -69,43 +72,36 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             </p>
           </div>
         </div>
-      </section>
 
-      {/* --- SECTION 02: LIVE RECONNAISSANCE (The New Third Box) --- */}
-      <section className="bento-container" style={{ marginTop: '20px' }}>
-        <div className="bento-item" style={{ gridColumn: 'span 12', borderLeft: '4px solid var(--tiger-blue)' }}>
+        {/* BOX 03: LIVE RECONNAISSANCE (Dedicated Box Underneath) */}
+        <div className="bento-item bento-scanner-full">
           <h3 className="card-title">LIVE RECONNAISSANCE</h3>
-          <p className="hero-description" style={{ fontSize: '0.9rem', marginBottom: '20px' }}>
-            Enter your contact data to perform a real-time scan of the global broker index.
+          <p className="hero-description" style={{ fontSize: '0.9rem', marginBottom: '20px', maxWidth: '100%' }}>
+            Enter your contact data to perform a real-time deterministic scan of the global broker index.
           </p>
-          <div style={{ display: 'flex', gap: '15px' }}>
+          <div className="scanner-input-hub">
             <input 
               type="text" 
               placeholder="ENTER PHONE OR EMAIL..." 
               value={scanQuery}
               onChange={(e) => setScanQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleScan()}
-              style={{ 
-                flex: 1, background: '#000', border: '1px solid var(--border-dim)', 
-                color: 'white', padding: '15px', fontFamily: 'Courier New', outline: 'none'
-              }}
             />
             <button 
               className="main-button" 
               onClick={handleScan}
               disabled={isScanning}
-              style={{ minWidth: '200px' }}
             >
-              {isScanning ? 'SCANNIG...' : 'SCAN DATABASE'}
+              {isScanning ? 'SCANNING...' : 'SCAN DATABASE'}
             </button>
           </div>
           
           {scanResult && (
-            <div className="fade-in" style={{ marginTop: '20px', padding: '20px', background: 'rgba(0, 71, 171, 0.05)', border: '1px dashed var(--tiger-blue)' }}>
+            <div className="fade-in scan-alert-node">
               <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>[!] ALERT:</span> IDENTITY EXPOSED ON {scanResult} BROKER SITES.
               <button 
                 onClick={onEnterVault}
-                style={{ marginLeft: '15px', background: 'none', border: 'none', color: 'white', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold' }}
+                className="text-link-btn"
               >
                 INITIATE FULL NEUTRALIZATION
               </button>
@@ -114,7 +110,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
         </div>
       </section>
 
-      {/* --- SECTION 03: SYSTEM DIRECTIVES --- */}
+      {/* --- SECTION 02: SYSTEM DIRECTIVES --- */}
       <section className="directive-section">
         <div className="section-header">
           <span className="mono-label">CAPABILITIES // WHY DISAPPEAR</span>
@@ -160,7 +156,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
         </div>
       </section>
 
-      {/* --- SECTION 04: THE MISSION --- */}
+      {/* --- SECTION 03: THE MISSION --- */}
       <section className="manifesto-teaser">
         <div className="manifesto-box" style={{ borderLeft: '4px solid var(--tiger-blue)' }}>
           <h3 className="card-title" style={{ color: 'var(--tiger-blue)' }}>WHY SOVEREIGNTY MATTERS</h3>
