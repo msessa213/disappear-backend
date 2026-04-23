@@ -487,11 +487,9 @@ input[type="checkbox"] {
     padding: 25px 20px;
   }
 
-  /* SIGNUP/LOGIN SCREEN FIXES (MOBILE) */
   .onboarding-flow div[style*="display: flex"] {
     flex-direction: column !important;
-    gap: 20px !important;
-    align-items: center !important;
+    gap: 15px !important;
     width: 100%;
   }
 
@@ -516,17 +514,6 @@ input[type="checkbox"] {
   .footer-divider {
     display: none !important;
   }
-}
-
-/* 12. SIGNUP / LOGIN SCREEN - PRECISION ALIGNMENT FIX */
-/* This targets the flex container in App.jsx when showLanding is false */
-.onboarding-flow div[style*="display: flex"] {
-  align-items: flex-start !important; /* LOCK TO TOP */
-  gap: 60px !important; /* PUSH BOX AWAY FROM 'R' */
-}
-
-.onboarding-flow .masking-tool {
-  margin-top: 0 !important; /* Ensure it stays aligned with header top */
 }
 
 .secure-connection-text {
@@ -587,6 +574,21 @@ input[type="checkbox"] {
 
 .full-row { 
   grid-column: span 2; 
+}
+
+/* 12. SIGNUP/LOGIN VIEW - THE PRECISION ALIGNMENT FIX */
+/* Forces top alignment and adds horizontal clearance from the logo letter R */
+.onboarding-flow div[style*="display: flex"] {
+  align-items: flex-start !important; 
+  gap: 120px !important; /* Pushes Intelligence Brief box further right */
+}
+
+/* Ensure buttons and main content remain centered on themselves */
+.onboarding-flow .main-button, 
+.onboarding-flow .login-btn-outline {
+  display: inline-block;
+  width: auto;
+  margin: 0 auto;
 }
 
 /* 13. ELITE PUBLIC INTELLIGENCE WEBSITE (Marketing Layer) */
