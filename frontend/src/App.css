@@ -643,15 +643,15 @@ input[type="checkbox"] {
   box-shadow: 0 0 20px rgba(0, 71, 171, 0.5);
 }
 
-/* 14. BENTO SYSTEM */
+/* 14. BENTO SYSTEM - 3 COLUMN ADAPTATION */
 .bento-container {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  gap: 80px; 
+  gap: 30px; 
   width: 100%;
-  max-width: 1200px;
+  max-width: 1300px; /* Expanded for 3 boxes */
   padding: 0 20px;
-  align-items: start;
+  align-items: start; /* CRITICAL: Snaps all box tops together */
 }
 
 .bento-item {
@@ -663,13 +663,18 @@ input[type="checkbox"] {
 }
 
 .bento-hero {
-  grid-column: span 8;
+  grid-column: span 5; /* Reduced from 8 */
   text-align: left;
   border-left: 4px solid var(--tiger-blue);
 }
 
-.bento-sidebar {
+.bento-scanner {
   grid-column: span 4;
+  border-left: 1px solid var(--border-dim);
+}
+
+.bento-sidebar {
+  grid-column: span 3; /* Tightened sidebar */
   display: flex;
   flex-direction: column;
   gap: 25px;
@@ -677,7 +682,7 @@ input[type="checkbox"] {
 }
 
 .elite-header {
-  font-size: clamp(3rem, 10vw, 6rem);
+  font-size: clamp(2.5rem, 8vw, 4.5rem);
   font-weight: 900;
   line-height: 0.85;
   letter-spacing: -4px;
@@ -694,9 +699,9 @@ input[type="checkbox"] {
 }
 
 .hero-description {
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: var(--text-dim);
-  max-width: 500px;
+  max-width: 400px;
   line-height: 1.6;
   margin-bottom: 30px;
 }
@@ -839,7 +844,6 @@ input[type="checkbox"] {
   border-radius: 4px;
   transition: border-color 0.3s ease;
   width: 100%;
-  max-width: 550px;
 }
 
 .free-scan-box:focus-within {
@@ -852,17 +856,13 @@ input[type="checkbox"] {
 }
 
 /* 19. REFINED SCANNER SPACING */
-.onboarding-flow .free-scan-box {
-  margin-top: 20px;
-  margin-bottom: 10px;
-}
-
 .hero-cta-group {
-  margin-top: 20px; /* Snaps buttons back toward the scanner */
+  margin-top: 20px; 
 }
 
 @media (max-width: 1024px) {
   .bento-hero { grid-column: span 12; }
+  .bento-scanner { grid-column: span 12; border-left: 4px solid var(--tiger-blue); }
   .bento-sidebar { grid-column: span 12; flex-direction: row; flex-wrap: wrap; }
   .bento-grid-directives { grid-template-columns: 1fr 1fr; }
 }

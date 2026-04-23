@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 
 /**
  * DISAPPEAR LANDING ENGINE
- * ARCHITECTURE: Bento-Grid Intelligence Hub
+ * ARCHITECTURE: Multi-Node Bento Grid
  * THEME: Tiger Blue / High-Contrast Security
- * UPDATE: Added Deterministic Scanner (Consistency Fix)
+ * UPDATE: Moved Scanner to dedicated box for perfect alignment.
  */
 
 function LandingPage({ onEnterVault, onLoginRequest }) {
@@ -17,13 +17,10 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
     setIsScanning(true);
     setScanResult(null);
 
-    // Simulated Tactical Scan (Deterministic Logic for User Trust)
+    // Deterministic Logic: Same input always equals same result for Brand Trust
     setTimeout(() => {
-      // Create a unique seed based on the string input
       const charSum = scanQuery.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      // Logic: (Sum % range) + floor. Range of 12-86 exposures.
       const deterministicCount = (charSum % 74) + 12; 
-      
       setScanResult(deterministicCount);
       setIsScanning(false);
     }, 1800);
@@ -41,59 +38,66 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
         </div>
       </nav>
 
-      {/* --- SECTION 01: THE DOCTRINE (Hero) --- */}
+      {/* --- SECTION 01: THE DOCTRINE (Bento Hub) --- */}
       <section className="bento-container" style={{ marginTop: '120px' }}>
+        
+        {/* NODE A: THE DOCTRINE */}
         <div className="bento-item bento-hero">
           <h1 className="elite-header">STAY<br />VIGILANT.</h1>
           <p className="hero-description">
             Your identity is a target. In 2026, data brokers weaponize your PII for profit. 
             <strong> Disappear</strong> is the tactical counter-measure built to scorch your digital trail.
           </p>
-
-          {/* --- FREE SCANNER COMPONENT (Deterministic) --- */}
-          <div className="free-scan-box" style={{ background: '#050505', border: '1px solid #111', padding: '25px', marginBottom: '15px' }}>
-            <span className="mono-label" style={{ display: 'block', marginBottom: '10px', fontSize: '0.65rem' }}>FREE PII EXPOSURE SCAN</span>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <input 
-                type="text" 
-                placeholder="ENTER PHONE OR EMAIL..." 
-                value={scanQuery}
-                onChange={(e) => setScanQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleScan()}
-                style={{ 
-                  flex: 1, background: '#000', border: '1px solid #222', 
-                  color: 'white', padding: '12px', fontFamily: 'Courier New', outline: 'none'
-                }}
-              />
-              <button 
-                className="main-button" 
-                onClick={handleScan}
-                disabled={isScanning}
-                style={{ padding: '0 20px', fontSize: '0.7rem', minWidth: '100px' }}
-              >
-                {isScanning ? 'SCANNIG...' : 'SCAN'}
-              </button>
-            </div>
-            
-            {scanResult && (
-              <div className="fade-in" style={{ marginTop: '15px', color: 'var(--tiger-blue)', fontWeight: 'bold', fontSize: '0.8rem' }}>
-                [!] WARNING: IDENTITY EXPOSED ON {scanResult} BROKER SITES.
-                <button 
-                  onClick={onEnterVault}
-                  style={{ display: 'block', background: 'none', border: 'none', color: 'white', textDecoration: 'underline', cursor: 'pointer', marginTop: '5px', padding: 0 }}
-                >
-                  INITIATE FULL PURGE NOW
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="hero-cta-group" style={{ marginTop: '20px' }}>
+          <div className="hero-cta-group">
             <button className="main-button" onClick={onEnterVault}>INITIATE IDENTITY SCRUB</button>
-            <p className="cta-subtext">Proprietary PII Scrubbing Engine // Global Data Broker Coverage</p>
+            <p className="cta-subtext" style={{ marginTop: '10px' }}>Proprietary PII Scrubbing Engine // Global Coverage</p>
           </div>
         </div>
 
+        {/* NODE B: LIVE RECONNAISSANCE (Dedicated Scanner Box) */}
+        <div className="bento-item bento-scanner" style={{ borderLeft: '1px solid #111' }}>
+          <h3 className="card-title">LIVE RECONNAISSANCE</h3>
+          <p style={{ fontSize: '0.75rem', color: '#94A3B8', marginBottom: '20px' }}>
+            Scan the global broker index for PII exposure nodes linked to your contact data.
+          </p>
+          
+          <div className="free-scan-box" style={{ background: '#000', border: '1px solid #111', padding: '15px' }}>
+            <span className="mono-label" style={{ display: 'block', marginBottom: '10px', fontSize: '0.6rem' }}>PII EXPOSURE SCAN</span>
+            <input 
+              type="text" 
+              placeholder="PHONE OR EMAIL..." 
+              value={scanQuery}
+              onChange={(e) => setScanQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleScan()}
+              style={{ 
+                width: '100%', background: '#050505', border: '1px solid #222', 
+                color: 'white', padding: '12px', fontFamily: 'Courier New', outline: 'none', marginBottom: '10px'
+              }}
+            />
+            <button 
+              className="main-button" 
+              onClick={handleScan}
+              disabled={isScanning}
+              style={{ width: '100%', fontSize: '0.7rem' }}
+            >
+              {isScanning ? 'SCANNING...' : 'SCAN DATABASE'}
+            </button>
+          </div>
+
+          {scanResult && (
+            <div className="fade-in" style={{ marginTop: '20px', color: 'var(--tiger-blue)', fontWeight: 'bold', fontSize: '0.75rem' }}>
+              [!] ALERT: {scanResult} EXPOSURE POINTS DETECTED.
+              <button 
+                onClick={onEnterVault}
+                style={{ display: 'block', background: 'none', border: 'none', color: 'white', textDecoration: 'underline', cursor: 'pointer', marginTop: '5px', padding: 0 }}
+              >
+                INITIATE FULL NEUTRALIZATION
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* NODE C: INTELLIGENCE BRIEF */}
         <div className="bento-item bento-sidebar">
           <h3 className="card-title">INTELLIGENCE BRIEF</h3>
           <div className="intel-stat">
@@ -105,8 +109,8 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             <span className="stat-label">OF USERS HAVE EXPOSED PII</span>
           </div>
           <div className="intel-update">
-            <p style={{ fontSize: '0.8rem', color: '#94A3B8', lineHeight: '1.4', margin: '0' }}>
-              <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>» SYSTEM_LOG:</span> Your digital footprint is harvested daily. Disappear automates the removal of your data from lead-gen lists.
+            <p style={{ fontSize: '0.75rem', color: '#94A3B8', lineHeight: '1.4', margin: '0' }}>
+              <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>» SYSTEM_LOG:</span> Disappear automates the removal of your data from lead-gen lists.
             </p>
           </div>
         </div>
