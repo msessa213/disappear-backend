@@ -1,6 +1,6 @@
 /* 1. CORE THEME & GLOBAL RESET */
 :root {
-  --tiger-blue: #0047AB; /* Jesuit High School Blue */
+  --tiger-blue: #0047AB; 
   --bg-dark: #000000;
   --card-bg: #0A0A0A;
   --text-dim: #94A3B8;
@@ -297,7 +297,7 @@ input[type="checkbox"] {
   text-decoration: underline;
 }
 
-/* 7. GUARANTEED FOOTER (The "Vercel Fix") */
+/* 7. GUARANTEED FOOTER */
 .home-footer {
   position: fixed !important;
   bottom: 0 !important;
@@ -643,11 +643,11 @@ input[type="checkbox"] {
   box-shadow: 0 0 20px rgba(0, 71, 171, 0.5);
 }
 
-/* 14. BENTO SYSTEM - UNIFIED GRID FIX */
+/* 14. BENTO SYSTEM (Original Grid) */
 .bento-container {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  gap: 40px; 
+  gap: 30px; 
   width: 100%;
   max-width: 1200px;
   padding: 0 20px;
@@ -676,7 +676,7 @@ input[type="checkbox"] {
   justify-content: flex-start;
 }
 
-/* CORRECTED: FULL WIDTH SCANNER INSIDE UNIFIED GRID */
+/* FIXED: FULL WIDTH SCANNER INSIDE UNIFIED GRID */
 .bento-scanner-full {
   grid-column: span 12;
   border-left: 4px solid var(--tiger-blue);
@@ -725,25 +725,20 @@ input[type="checkbox"] {
   text-transform: uppercase;
 }
 
-.mono-label {
-  font-family: 'Courier New', monospace;
-  font-size: 0.65rem;
+.card-title {
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
   color: var(--tiger-blue);
-  letter-spacing: 3px;
-  font-weight: bold;
-}
-
-.hero-description {
-  font-size: 1rem;
-  color: var(--text-dim);
-  max-width: 500px;
-  line-height: 1.6;
-  margin-bottom: 30px;
+  border-bottom: 1px solid #111;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
 }
 
 .intel-stat {
   border-bottom: 1px solid #111;
   padding-bottom: 15px;
+  margin-bottom: 15px;
 }
 
 .stat-value {
@@ -758,13 +753,6 @@ input[type="checkbox"] {
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
-}
-
-.intel-warning {
-  font-family: 'Courier New', monospace;
-  font-size: 0.7rem;
-  color: var(--alert-red);
-  font-weight: bold;
 }
 
 /* 15. DIRECTIVE GRID */
@@ -846,13 +834,6 @@ input[type="checkbox"] {
   width: 100%;
   text-align: center;
   margin-bottom: 150px;
-}
-
-.login-prompt {
-  font-size: 0.6rem;
-  color: var(--text-dim);
-  letter-spacing: 4px;
-  margin-bottom: 20px;
 }
 
 /* 17. MISC REFINEMENTS */

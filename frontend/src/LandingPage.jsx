@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 
 /**
  * DISAPPEAR LANDING ENGINE
- * ARCHITECTURE: Bento-Grid Intelligence Hub
+ * ARCHITECTURE: Unified Bento Grid
  * THEME: Tiger Blue / High-Contrast Security
- * UPDATE: Unified grid logic to prevent box misalignment.
+ * UPDATE: Search integrated into unified grid to lock top-row alignment.
  */
 
 function LandingPage({ onEnterVault, onLoginRequest }) {
@@ -17,7 +17,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
     setIsScanning(true);
     setScanResult(null);
 
-    // Deterministic Logic: Ensures same number for same input for trust
+    // Deterministic Logic: Ensures same number for same input
     setTimeout(() => {
       const charSum = scanQuery.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
       const deterministicCount = (charSum % 74) + 12; 
@@ -38,10 +38,10 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
         </div>
       </nav>
 
-      {/* --- SECTION 01: THE UNIFIED BENTO HUB --- */}
+      {/* --- UNIFIED BENTO HUB --- */}
       <section className="bento-container" style={{ marginTop: '120px' }}>
         
-        {/* BOX 01: THE DOCTRINE (Stay Vigilant) */}
+        {/* BOX 01: THE DOCTRINE */}
         <div className="bento-item bento-hero">
           <h1 className="elite-header">STAY<br />VIGILANT.</h1>
           <p className="hero-description">
@@ -55,7 +55,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
           </div>
         </div>
 
-        {/* BOX 02: INTELLIGENCE BRIEF (Right Side) */}
+        {/* BOX 02: INTELLIGENCE BRIEF */}
         <div className="bento-item bento-sidebar">
           <h3 className="card-title">INTELLIGENCE BRIEF</h3>
           <div className="intel-stat">
@@ -73,10 +73,10 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
           </div>
         </div>
 
-        {/* BOX 03: LIVE RECONNAISSANCE (Full Width Underneath) */}
+        {/* BOX 03: LIVE RECONNAISSANCE (Now locked to the unified grid) */}
         <div className="bento-item bento-scanner-full">
           <h3 className="card-title">LIVE RECONNAISSANCE</h3>
-          <p className="hero-description" style={{ fontSize: '0.85rem', marginBottom: '20px', maxWidth: '100%' }}>
+          <p className="hero-description" style={{ fontSize: '0.9rem', marginBottom: '20px', maxWidth: '100%' }}>
             Enter your contact data to perform a real-time deterministic scan of the global broker index.
           </p>
           <div className="scanner-input-hub">
@@ -161,12 +161,8 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
         <div className="manifesto-box" style={{ borderLeft: '4px solid var(--tiger-blue)' }}>
           <h3 className="card-title" style={{ color: 'var(--tiger-blue)' }}>WHY SOVEREIGNTY MATTERS</h3>
           <p className="manifesto-text">
-            In the modern web, you aren't the customer—you are the product. Every purchase, 
-            phone call, and email is a data point being auctioned to the highest bidder. 
-            <br /><br />
             <strong>Disappear returns control to you.</strong> By automating the removal of your 
-            Personal Identifiable Information (PII), we don't just hide your data—we 
-            effectively <strong>neutralize your digital presence</strong> within the surveillance economy. 
+            Personal Identifiable Information (PII), we effectively <strong>neutralize your digital presence</strong>.
           </p>
           <button className="main-button" style={{ marginTop: '20px' }} onClick={onEnterVault}>INITIATE FULL PURGE</button>
         </div>
