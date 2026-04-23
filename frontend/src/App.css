@@ -517,16 +517,14 @@ input[type="checkbox"] {
 }
 
 /* 12. SIGNUP/LOGIN SCREEN - BUTTON & BOX ALIGNMENT FIX */
-/* Forces vertical top-alignment and creates space specifically between text and box */
 .onboarding-flow div[style*="display: flex"] {
   align-items: flex-start !important; 
-  gap: 100px !important; /* This pushes the box away from the R logo */
+  gap: 100px !important; 
 }
 
-/* Forces the button container back to narrow spacing */
 .onboarding-flow div[style*="display: flex"] div[style*="display: flex"] {
-  gap: 10px !important; /* Restores tight spacing between Identity Scrub and Client Login */
-  flex-direction: column !important; /* Stacked position */
+  gap: 10px !important; 
+  flex-direction: column !important; 
 }
 
 .secure-connection-text {
@@ -649,10 +647,11 @@ input[type="checkbox"] {
 .bento-container {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  gap: 20px;
+  gap: 80px; 
   width: 100%;
   max-width: 1200px;
   padding: 0 20px;
+  align-items: start;
 }
 
 .bento-item {
@@ -674,7 +673,7 @@ input[type="checkbox"] {
   display: flex;
   flex-direction: column;
   gap: 25px;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .elite-header {
@@ -834,6 +833,24 @@ input[type="checkbox"] {
   100% { transform: scale(0.9); opacity: 0.7; }
 }
 
+/* 18. PII EXPOSURE SCANNER STYLING */
+.free-scan-box {
+  background: var(--card-bg) !important;
+  border-radius: 4px;
+  transition: border-color 0.3s ease;
+  width: 100%;
+  max-width: 550px;
+}
+
+.free-scan-box:focus-within {
+  border-color: var(--tiger-blue) !important;
+}
+
+.free-scan-box input::placeholder {
+  color: #334155;
+  font-size: 0.75rem;
+}
+
 @media (max-width: 1024px) {
   .bento-hero { grid-column: span 12; }
   .bento-sidebar { grid-column: span 12; flex-direction: row; flex-wrap: wrap; }
@@ -844,4 +861,13 @@ input[type="checkbox"] {
   .bento-grid-directives { grid-template-columns: 1fr; }
   .elite-header { font-size: 3.5rem; }
   .manifesto-box { padding: 30px; }
+  
+  .free-scan-box div {
+    flex-direction: column !important;
+  }
+  
+  .free-scan-box button {
+    width: 100%;
+    height: 45px;
+  }
 }

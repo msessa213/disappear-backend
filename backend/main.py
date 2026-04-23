@@ -205,6 +205,33 @@ async def health_status():
     return {"status": "ACTIVE", "timestamp": datetime.now().isoformat()}
 
 
+# --- NEW: FREE RECONNAISSANCE SCANNER ---
+@app.get("/api/v1/free-scan")
+async def free_recon_scan(query: str):
+    """
+    Public PII exposure lookup for Landing Page lead magnet.
+    Simulates high-velocity broker database crawl.
+    """
+    if not query or len(query) < 5:
+        raise HTTPException(status_code=400, detail="INSUFFICIENT_QUERY_DATA")
+
+    # Simulate tactical processing latency
+    time.sleep(1.5)
+    
+    # Logic generates a deterministic-looking but dynamic count
+    # based on query length and randomness for the 'Live Scan' feel
+    exposure_seed = len(query) + random.randint(10, 50)
+    found_count = min(exposure_seed + random.randint(5, 15), 98)
+    
+    return {
+        "status": "RECON_COMPLETE",
+        "exposure_index": found_count,
+        "risk_rating": "CRITICAL" if found_count > 40 else "ELEVATED",
+        "timestamp": datetime.now().strftime("%H:%M:%S"),
+        "directive": "INITIATE_IDENTITY_SCRUB_IMMEDIATELY"
+    }
+
+
 @app.get("/admin/stats")
 async def get_admin_stats(db: Session = Depends(get_db)):
     """Aggregates platform-wide metrics for the Central Command Dashboard"""

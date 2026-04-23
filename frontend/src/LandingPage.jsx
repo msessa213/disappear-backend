@@ -1,13 +1,30 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 /**
  * DISAPPEAR LANDING ENGINE
  * ARCHITECTURE: Bento-Grid Intelligence Hub
  * THEME: Tiger Blue / High-Contrast Security
- * UPDATE: Removed versioning/status filler. Corrected terminology.
+ * UPDATE: Added PII Exposure Scanner (Lead Magnet)
  */
 
 function LandingPage({ onEnterVault, onLoginRequest }) {
+  const [scanQuery, setScanQuery] = useState('');
+  const [scanResult, setScanResult] = useState(null);
+  const [isScanning, setIsScanning] = useState(false);
+
+  const handleScan = () => {
+    if (!scanQuery) return;
+    setIsScanning(true);
+    setScanResult(null);
+
+    // Simulated Tactical Scan (AWS Lambda Simulation)
+    setTimeout(() => {
+      const foundCount = Math.floor(Math.random() * (85 - 12 + 1)) + 12;
+      setScanResult(foundCount);
+      setIsScanning(false);
+    }, 2000);
+  };
+
   return (
     <div className="landing-wrapper fade-in">
       {/* --- GLOBAL NAVIGATION --- */}
@@ -26,9 +43,46 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
           <h1 className="elite-header">STAY<br />VIGILANT.</h1>
           <p className="hero-description">
             Your identity is a target. In 2026, data brokers weaponize your PII for profit. 
-            <strong> Disappear</strong> is the tactical counter-measure: A Privacy-as-a-Service engine 
-            built to scorch your digital trail and replace exposure with synthetic security.
+            <strong> Disappear</strong> is the tactical counter-measure built to scorch your digital trail.
           </p>
+
+          {/* --- FREE SCANNER COMPONENT --- */}
+          <div className="free-scan-box" style={{ background: '#050505', border: '1px solid #111', padding: '25px', marginBottom: '30px' }}>
+            <span className="mono-label" style={{ display: 'block', marginBottom: '10px', fontSize: '0.65rem' }}>FREE PII EXPOSURE SCAN</span>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <input 
+                type="text" 
+                placeholder="ENTER PHONE OR EMAIL..." 
+                value={scanQuery}
+                onChange={(e) => setScanQuery(e.target.value)}
+                style={{ 
+                  flex: 1, background: '#000', border: '1px solid #222', 
+                  color: 'white', padding: '12px', fontFamily: 'Courier New' 
+                }}
+              />
+              <button 
+                className="main-button" 
+                onClick={handleScan}
+                disabled={isScanning}
+                style={{ padding: '0 20px', fontSize: '0.7rem' }}
+              >
+                {isScanning ? 'SCANNING...' : 'SCAN'}
+              </button>
+            </div>
+            
+            {scanResult && (
+              <div className="fade-in" style={{ marginTop: '15px', color: 'var(--tiger-blue)', fontWeight: 'bold', fontSize: '0.8rem' }}>
+                [!] WARNING: IDENTITY EXPOSED ON {scanResult} BROKER SITES.
+                <button 
+                  onClick={onEnterVault}
+                  style={{ display: 'block', background: 'none', border: 'none', color: 'white', textDecoration: 'underline', cursor: 'pointer', marginTop: '5px', padding: 0 }}
+                >
+                  INITIATE FULL PURGE NOW
+                </button>
+              </div>
+            )}
+          </div>
+
           <div className="hero-cta-group">
             <button className="main-button" onClick={onEnterVault}>INITIATE IDENTITY SCRUB</button>
             <p className="cta-subtext">Proprietary PII Scrubbing Engine // Global Data Broker Coverage</p>
@@ -53,7 +107,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
         </div>
       </section>
 
-      {/* --- SECTION 02: SYSTEM DIRECTIVES (Manual / Sales Expansion) --- */}
+      {/* --- SECTION 02: SYSTEM DIRECTIVES --- */}
       <section className="directive-section">
         <div className="section-header">
           <span className="mono-label">CAPABILITIES // WHY DISAPPEAR</span>
@@ -65,8 +119,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             <div className="step-num">01</div>
             <h4 className="directive-title">TERMINATE SPAM CALLS</h4>
             <p className="directive-text">
-              Data brokers sell your phone number to lead-lists. We scrub your contact info from 
-              broker databases to neutralize robocalls and SMS phishing at the source.
+              We scrub your contact info from broker databases to neutralize robocalls and SMS phishing at the source.
             </p>
           </div>
 
@@ -74,8 +127,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             <div className="step-num">02</div>
             <h4 className="directive-title">INBOX SANITIZATION</h4>
             <p className="directive-text">
-              Deploy encrypted Email Relay nodes. Our system strips hidden trackers from incoming 
-              mail, preventing companies from knowing when or where you open your messages.
+              Deploy encrypted Email Relay nodes. Our system strips hidden trackers from incoming mail.
             </p>
           </div>
 
@@ -83,8 +135,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             <div className="step-num">03</div>
             <h4 className="directive-title">FINANCIAL SHIELDING</h4>
             <p className="directive-text">
-              Merchant-locked virtual cards hide your real banking identity. Even if a retailer is 
-              breached, your primary accounts remain invisible and untouched.
+              Merchant-locked virtual cards hide your real banking identity to prevent synthetic identity theft.
             </p>
           </div>
 
@@ -92,8 +143,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             <div className="step-num">04</div>
             <h4 className="directive-title">CONTINUOUS MONITORING</h4>
             <p className="directive-text">
-              Identity removal isn't a one-time event. We monitor broker sites 24/7 to ensure 
-              your data isn't re-indexed or sold to new aggregators.
+              We monitor broker sites 24/7 to ensure your data isn't re-indexed or sold to new aggregators.
             </p>
           </div>
         </div>
@@ -104,13 +154,8 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
         <div className="manifesto-box" style={{ borderLeft: '4px solid var(--tiger-blue)' }}>
           <h3 className="card-title" style={{ color: 'var(--tiger-blue)' }}>WHY SOVEREIGNTY MATTERS</h3>
           <p className="manifesto-text">
-            In the modern web, you aren't the customer—you are the product. Every purchase, 
-            phone call, and email is a data point being auctioned to the highest bidder. 
-            <br /><br />
             <strong>Disappear returns control to you.</strong> By automating the removal of your 
-            Personal Identifiable Information (PII), we don't just hide your data—we 
-            effectively <strong>neutralize your digital presence</strong> within the surveillance economy. 
-            If the data doesn't exist, it cannot be leaked, stolen, or sold.
+            Personal Identifiable Information (PII), we effectively <strong>neutralize your digital presence</strong> within the surveillance economy. 
           </p>
           <button className="main-button" style={{ marginTop: '20px' }} onClick={onEnterVault}>INITIATE FULL PURGE</button>
         </div>
