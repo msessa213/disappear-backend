@@ -4,7 +4,7 @@ import React, { useState } from 'react';
  * DISAPPEAR LANDING ENGINE
  * ARCHITECTURE: Multi-Node Bento Grid
  * THEME: Tiger Blue / High-Contrast Security
- * UPDATE: Moved Scanner to dedicated box for perfect alignment.
+ * UPDATE: Moved Scanner underneath original boxes for layout stability.
  */
 
 function LandingPage({ onEnterVault, onLoginRequest }) {
@@ -38,10 +38,8 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
         </div>
       </nav>
 
-      {/* --- SECTION 01: THE DOCTRINE (Bento Hub) --- */}
+      {/* --- SECTION 01: THE DOCTRINE (Original Bento Hub) --- */}
       <section className="bento-container" style={{ marginTop: '120px' }}>
-        
-        {/* NODE A: THE DOCTRINE */}
         <div className="bento-item bento-hero">
           <h1 className="elite-header">STAY<br />VIGILANT.</h1>
           <p className="hero-description">
@@ -54,50 +52,6 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
           </div>
         </div>
 
-        {/* NODE B: LIVE RECONNAISSANCE (Dedicated Scanner Box) */}
-        <div className="bento-item bento-scanner" style={{ borderLeft: '1px solid #111' }}>
-          <h3 className="card-title">LIVE RECONNAISSANCE</h3>
-          <p style={{ fontSize: '0.75rem', color: '#94A3B8', marginBottom: '20px' }}>
-            Scan the global broker index for PII exposure nodes linked to your contact data.
-          </p>
-          
-          <div className="free-scan-box" style={{ background: '#000', border: '1px solid #111', padding: '15px' }}>
-            <span className="mono-label" style={{ display: 'block', marginBottom: '10px', fontSize: '0.6rem' }}>PII EXPOSURE SCAN</span>
-            <input 
-              type="text" 
-              placeholder="PHONE OR EMAIL..." 
-              value={scanQuery}
-              onChange={(e) => setScanQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleScan()}
-              style={{ 
-                width: '100%', background: '#050505', border: '1px solid #222', 
-                color: 'white', padding: '12px', fontFamily: 'Courier New', outline: 'none', marginBottom: '10px'
-              }}
-            />
-            <button 
-              className="main-button" 
-              onClick={handleScan}
-              disabled={isScanning}
-              style={{ width: '100%', fontSize: '0.7rem' }}
-            >
-              {isScanning ? 'SCANNING...' : 'SCAN DATABASE'}
-            </button>
-          </div>
-
-          {scanResult && (
-            <div className="fade-in" style={{ marginTop: '20px', color: 'var(--tiger-blue)', fontWeight: 'bold', fontSize: '0.75rem' }}>
-              [!] ALERT: {scanResult} EXPOSURE POINTS DETECTED.
-              <button 
-                onClick={onEnterVault}
-                style={{ display: 'block', background: 'none', border: 'none', color: 'white', textDecoration: 'underline', cursor: 'pointer', marginTop: '5px', padding: 0 }}
-              >
-                INITIATE FULL NEUTRALIZATION
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* NODE C: INTELLIGENCE BRIEF */}
         <div className="bento-item bento-sidebar">
           <h3 className="card-title">INTELLIGENCE BRIEF</h3>
           <div className="intel-stat">
@@ -116,7 +70,44 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
         </div>
       </section>
 
-      {/* --- SECTION 02: SYSTEM DIRECTIVES --- */}
+      {/* --- SECTION 02: FREE RECONNAISSANCE (Now placed UNDER the boxes) --- */}
+      <section className="scanner-section">
+        <div className="bento-item scanner-container-full">
+          <div className="scanner-header-group">
+            <span className="mono-label">LIVE RECONNAISSANCE</span>
+            <h3 className="card-title" style={{ border: 'none', marginBottom: '5px' }}>PII EXPOSURE SCANNER</h3>
+          </div>
+          
+          <div className="free-scan-input-hub">
+            <input 
+              type="text" 
+              placeholder="ENTER PHONE OR EMAIL TO SCAN BROKER DATABASES..." 
+              value={scanQuery}
+              onChange={(e) => setScanQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleScan()}
+              className="scanner-input"
+            />
+            <button 
+              className="main-button scanner-btn" 
+              onClick={handleScan}
+              disabled={isScanning}
+            >
+              {isScanning ? 'SCANNING...' : 'SCAN DATABASE'}
+            </button>
+          </div>
+
+          {scanResult && (
+            <div className="fade-in scan-result-node">
+              <span className="tiger-text">[!] ALERT:</span> {scanResult} EXPOSURE POINTS DETECTED ON GLOBAL BROKER INDEX.
+              <button className="neutralize-link" onClick={onEnterVault}>
+                INITIATE FULL NEUTRALIZATION
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* --- SECTION 03: SYSTEM DIRECTIVES --- */}
       <section className="directive-section">
         <div className="section-header">
           <span className="mono-label">CAPABILITIES // WHY DISAPPEAR</span>
@@ -158,13 +149,13 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
         </div>
       </section>
 
-      {/* --- SECTION 03: THE MISSION --- */}
+      {/* --- SECTION 04: THE MISSION --- */}
       <section className="manifesto-teaser">
         <div className="manifesto-box" style={{ borderLeft: '4px solid var(--tiger-blue)' }}>
           <h3 className="card-title" style={{ color: 'var(--tiger-blue)' }}>WHY SOVEREIGNTY MATTERS</h3>
           <p className="manifesto-text">
             <strong>Disappear returns control to you.</strong> By automating the removal of your 
-            Personal Identifiable Information (PII), we effectively <strong>neutralize your digital presence</strong> within the surveillance economy. 
+            Personal Identifiable Information (PII), we effectively <strong>neutralize your digital presence</strong>. 
           </p>
           <button className="main-button" style={{ marginTop: '20px' }} onClick={onEnterVault}>INITIATE FULL PURGE</button>
         </div>
