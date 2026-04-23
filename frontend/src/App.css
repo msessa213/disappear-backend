@@ -643,7 +643,7 @@ input[type="checkbox"] {
   box-shadow: 0 0 20px rgba(0, 71, 171, 0.5);
 }
 
-/* 14. BENTO SYSTEM - UNIFIED EQUAL HEIGHT FIX */
+/* 14. BENTO SYSTEM - EQUAL HEIGHT FIX */
 .bento-container {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -651,7 +651,7 @@ input[type="checkbox"] {
   width: 100%;
   max-width: 1200px;
   padding: 0 20px;
-  align-items: stretch; /* CRITICAL: Forces boxes in a row to be same height */
+  align-items: stretch; /* Forces equal height alignment */
 }
 
 .bento-item {
@@ -661,13 +661,14 @@ input[type="checkbox"] {
   position: relative;
   transition: 0.3s;
   display: flex;
-  flex-direction: column; /* Allows contents to stretch internally */
+  flex-direction: column;
+  height: 100%;
 }
 
 .bento-inner-content {
   display: flex;
   flex-direction: column;
-  flex: 1; /* Forces the box contents to take up all available space */
+  flex: 1; /* Ensures internal content fills stretched height */
 }
 
 .bento-hero {
@@ -685,9 +686,9 @@ input[type="checkbox"] {
   text-align: left;
 }
 
-/* PRECISION SITE HEADER FONT SIZE (FIXES MISALIGNMENT) */
+/* SITE HEADER FONT SIZE (FIXES BOTTOM BORDER MISALIGNMENT) */
 .elite-header.site-hero-text {
-  font-size: clamp(2rem, 5vw, 3.2rem) !important;
+  font-size: clamp(2rem, 5.5vw, 4.1rem) !important;
   font-weight: 900;
   line-height: 0.85;
   letter-spacing: -3px;
@@ -695,7 +696,7 @@ input[type="checkbox"] {
   text-transform: uppercase;
 }
 
-/* Full Width Scanner underneath top row */
+/* Scanner Full Width Item */
 .bento-scanner-full {
   grid-column: span 12;
   border-left: 4px solid var(--tiger-blue);

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
  * DISAPPEAR LANDING ENGINE
  * ARCHITECTURE: Unified Bento Grid
  * THEME: Tiger Blue / High-Contrast Security
- * UPDATE: Smaller font for Site Hero + DOB in Search Box + Precision Alignment.
+ * UPDATE: Precision structural alignment + full PII search fields (First, Middle, Last, Phone, Email, DOB).
  */
 
 function LandingPage({ onEnterVault, onLoginRequest }) {
@@ -29,7 +29,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
     setIsScanning(true);
     setScanResult(null);
 
-    // Deterministic Logic: Consistent results for Brand Trust
+    // Deterministic Logic: Ensures same input always yields same result for trust
     setTimeout(() => {
       const seedString = `${scanData.firstName}${scanData.lastName}${scanData.email}${scanData.phone}${scanData.dob}`;
       const charSum = seedString.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -55,9 +55,9 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
       {/* --- SECTION 01: THE UNIFIED BENTO HUB --- */}
       <section className="bento-container" style={{ marginTop: '120px' }}>
         
-        {/* BOX 01: SITE HERO */}
+        {/* BOX 01: THE DOCTRINE (Hero) */}
         <div className="bento-item bento-hero">
-          <div className="bento-inner-content">
+          <div className="bento-inner-content" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             <h1 className="elite-header site-hero-text">STAY<br />VIGILANT.</h1>
             <p className="hero-description">
               Your identity is a target. In 2026, data brokers weaponize your PII for profit. 
@@ -70,9 +70,9 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
           </div>
         </div>
 
-        {/* BOX 02: INTELLIGENCE BRIEF */}
+        {/* BOX 02: INTELLIGENCE BRIEF (Sidebar) */}
         <div className="bento-item bento-sidebar">
-          <div className="bento-inner-content">
+          <div className="bento-inner-content" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             <h3 className="card-title">INTELLIGENCE BRIEF</h3>
             <div className="intel-stat">
               <span className="stat-value">4.7B</span>
@@ -84,47 +84,49 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             </div>
             <div className="intel-update" style={{ marginTop: 'auto' }}>
               <p style={{ fontSize: '0.8rem', color: '#94A3B8', lineHeight: '1.4', margin: '0' }}>
-                <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>» SYSTEM_LOG:</span> Disappear automates the removal of your data from lead-gen lists.
+                <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>» SYSTEM_LOG:</span> Your digital footprint is harvested daily. Disappear automates the removal of your data from lead-gen lists.
               </p>
             </div>
           </div>
         </div>
 
-        {/* BOX 03: LIVE RECONNAISSANCE */}
+        {/* BOX 03: LIVE RECONNAISSANCE (Scanner) */}
         <div className="bento-item bento-scanner-full">
-          <div className="bento-inner-content">
-            <h3 className="card-title" style={{ textAlign: 'center', border: 'none' }}>LIVE RECONNAISSANCE</h3>
-            <p className="hero-description" style={{ fontSize: '0.9rem', marginBottom: '20px', maxWidth: '100%', textAlign: 'center' }}>
-              Enter your PII to perform a real-time deterministic scan of the global broker index.
-            </p>
-            
-            <div className="checkout-grid">
-              <input type="text" name="firstName" placeholder="FIRST NAME" className="scanner-input" onChange={handleInputChange} />
-              <input type="text" name="middleName" placeholder="MIDDLE NAME" className="scanner-input" onChange={handleInputChange} />
-              <input type="text" name="lastName" placeholder="LAST NAME" className="scanner-input" onChange={handleInputChange} />
-              <input type="text" name="phone" placeholder="PHONE NUMBER" className="scanner-input" onChange={handleInputChange} />
-              <input type="text" name="email" placeholder="EMAIL ADDRESS" className="scanner-input" onChange={handleInputChange} />
-              <input type="text" name="dob" placeholder="DATE OF BIRTH (MM/DD/YYYY)" className="scanner-input" onChange={handleInputChange} />
-            </div>
-
-            <button 
-              className="main-button" 
-              onClick={handleScan}
-              disabled={isScanning}
-              style={{ width: '100%', marginTop: '20px' }}
-            >
-              {isScanning ? 'SCANNING BROKER DATABASES...' : 'GENERATE EXPOSURE REPORT'}
-            </button>
-            
-            {scanResult && (
-              <div className="fade-in scan-alert-node">
-                <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>[!] ALERT:</span> IDENTITY EXPOSED ON {scanResult} BROKER SITES.
-                <button onClick={onEnterVault} className="text-link-btn">
-                  INITIATE FULL NEUTRALIZATION
-                </button>
-              </div>
-            )}
+          <h3 className="card-title" style={{ textAlign: 'center', border: 'none' }}>LIVE RECONNAISSANCE</h3>
+          <p className="hero-description" style={{ fontSize: '0.9rem', marginBottom: '20px', maxWidth: '100%', textAlign: 'center' }}>
+            Enter your PII to perform a real-time deterministic scan of the global broker index.
+          </p>
+          
+          <div className="checkout-grid">
+            <input type="text" name="firstName" placeholder="FIRST NAME" className="scanner-input" onChange={handleInputChange} />
+            <input type="text" name="middleName" placeholder="MIDDLE NAME" className="scanner-input" onChange={handleInputChange} />
+            <input type="text" name="lastName" placeholder="LAST NAME" className="scanner-input" onChange={handleInputChange} />
+            <input type="text" name="phone" placeholder="PHONE NUMBER" className="scanner-input" onChange={handleInputChange} />
+            <input type="text" name="email" placeholder="EMAIL ADDRESS" className="scanner-input" onChange={handleInputChange} />
+            <input type="text" name="dob" placeholder="DATE OF BIRTH (MM/DD/YYYY)" className="scanner-input" onChange={handleInputChange} />
           </div>
+
+          <button 
+            className="main-button" 
+            onClick={handleScan}
+            disabled={isScanning}
+            style={{ width: '100%', marginTop: '20px' }}
+          >
+            {isScanning ? 'SCANNING BROKER DATABASES...' : 'GENERATE EXPOSURE REPORT'}
+          </button>
+          
+          {scanResult && (
+            <div className="fade-in scan-alert-node" style={{ marginTop: '20px', padding: '20px', background: 'rgba(0, 71, 171, 0.05)', border: '1px dashed var(--tiger-blue)' }}>
+              <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>[!] ALERT:</span> IDENTITY EXPOSED ON {scanResult} BROKER SITES.
+              <button 
+                onClick={onEnterVault}
+                className="text-link-btn"
+                style={{ marginLeft: '15px', background: 'none', border: 'none', color: 'white', textDecoration: 'underline', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                INITIATE FULL NEUTRALIZATION
+              </button>
+            </div>
+          )}
         </div>
       </section>
 
@@ -140,7 +142,8 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             <div className="step-num">01</div>
             <h4 className="directive-title">TERMINATE SPAM CALLS</h4>
             <p className="directive-text">
-              We scrub your contact info from broker databases to neutralize robocalls and SMS phishing at the source.
+              Data brokers sell your phone number to lead-lists. We scrub your contact info from 
+              broker databases to neutralize robocalls and SMS phishing at the source.
             </p>
           </div>
 
@@ -148,7 +151,8 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             <div className="step-num">02</div>
             <h4 className="directive-title">INBOX SANITIZATION</h4>
             <p className="directive-text">
-              Deploy encrypted Email Relay nodes. Our system strips hidden trackers from incoming mail.
+              Deploy encrypted Email Relay nodes. Our system strips hidden trackers from incoming 
+              mail, preventing companies from knowing when or where you open your messages.
             </p>
           </div>
 
@@ -156,7 +160,8 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             <div className="step-num">03</div>
             <h4 className="directive-title">FINANCIAL SHIELDING</h4>
             <p className="directive-text">
-              Merchant-locked virtual cards hide your real banking identity to prevent synthetic identity theft.
+              Merchant-locked virtual cards hide your real banking identity. Even if a retailer is 
+              breached, your primary accounts remain invisible and untouched.
             </p>
           </div>
 
@@ -164,7 +169,8 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             <div className="step-num">04</div>
             <h4 className="directive-title">CONTINUOUS MONITORING</h4>
             <p className="directive-text">
-              We monitor broker sites 24/7 to ensure your data isn't re-indexed or sold to new aggregators.
+              Identity removal isn't a one-time event. We monitor broker sites 24/7 to ensure 
+              your data isn't re-indexed or sold to new aggregators.
             </p>
           </div>
         </div>
@@ -175,7 +181,8 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
         <div className="manifesto-box" style={{ borderLeft: '4px solid var(--tiger-blue)' }}>
           <h3 className="card-title" style={{ color: 'var(--tiger-blue)' }}>WHY SOVEREIGNTY MATTERS</h3>
           <p className="manifesto-text">
-            <strong>Disappear returns control to you.</strong> By automating the removal of your Personal Identifiable Information (PII), we effectively <strong>neutralize your digital presence</strong>.
+            <strong>Disappear returns control to you.</strong> By automating the removal of your 
+            Personal Identifiable Information (PII), we effectively <strong>neutralize your digital presence</strong>.
           </p>
           <button className="main-button" style={{ marginTop: '20px' }} onClick={onEnterVault}>INITIATE FULL PURGE</button>
         </div>
