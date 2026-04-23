@@ -20,7 +20,7 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 # --- DATABASE CONFIGURATION ---
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql://postgres.chymgteinnczqfjqknan:%40Chase246642@aws-1-us-east-1.pooler.supabase.com:6543/postgres"
+    "postgresql://postgres:%40Chase246@db.chymgteinnczqfjqknan.supabase.co:6543/postgres"
 )
 
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
@@ -107,12 +107,14 @@ origins = [
     "http://localhost:3001",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:3001",
+    "http://localhost:5173",
     "https://disappear-frontend-v2.vercel.app",
     "https://disappear-online.com",
     "https://www.disappear-online.com",
     "https://mydisappear.com",
     "https://www.mydisappear.com",
     "https://disappearco.com",
+    "https://www.disappearco.com",
     "https://disappearonline.net",
     "https://onlinedisappear.com"
 ]
@@ -202,6 +204,33 @@ class ExpansionRequest(BaseModel):
 async def health_status():
     """Health check endpoint"""
     return {"status": "ACTIVE", "timestamp": datetime.now().isoformat()}
+
+
+# --- NEW: FREE RECONNAISSANCE SCANNER ---
+@app.get("/api/v1/free-scan")
+async def free_recon_scan(query: str):
+    """
+    Public PII exposure lookup for Landing Page lead magnet.
+    Simulates high-velocity broker database crawl.
+    """
+    if not query or len(query) < 5:
+        raise HTTPException(status_code=400, detail="INSUFFICIENT_QUERY_DATA")
+
+    # Simulate tactical processing latency
+    time.sleep(1.5)
+    
+    # Logic generates a deterministic-looking but dynamic count
+    # based on query length and randomness for the 'Live Scan' feel
+    exposure_seed = len(query) + random.randint(10, 50)
+    found_count = min(exposure_seed + random.randint(5, 15), 98)
+    
+    return {
+        "status": "RECON_COMPLETE",
+        "exposure_index": found_count,
+        "risk_rating": "CRITICAL" if found_count > 40 else "ELEVATED",
+        "timestamp": datetime.now().strftime("%H:%M:%S"),
+        "directive": "INITIATE_IDENTITY_SCRUB_IMMEDIATELY"
+    }
 
 
 @app.get("/admin/stats")
@@ -309,8 +338,8 @@ async def create_checkout_session(request: ExpansionRequest):
             mode=mode,
             metadata={"expansion_type": request.expansion_type},
             # Primary Domain Success/Cancel Redirects
-            success_url="https://disappear-online.com?payment=success",
-            cancel_url="https://disappear-online.com?payment=cancel",
+            success_url="https://disappearco.com?payment=success",
+            cancel_url="https://disappearco.com?payment=cancel",
         )
         return {"url": session.url}
     except Exception as e:
@@ -338,7 +367,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
                     action = "PHONE_LINE_NODE_PROVISIONED"
                 else:
                     # Logic for One-time slot success
-                    user_profile.bonus_credits += 1
+                    user_profile.bonus_credits = (user_profile.bonus_credits or 0) + 1
                     action = "VAULT_CAPACITY_EXPANDED"
                 
                 log = DBPurgeLog(action_type=action, node_id=f"STRIPE_{session.id}")

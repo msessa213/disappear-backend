@@ -19,7 +19,8 @@ import './App.css';
 
 // --- DYNAMIC API ROUTING ---
 const LOCAL_API = "http://127.0.0.1:8000";
-const PROD_API = "https://disappear-backend.onrender.com"; 
+// FIXED: Updated from Render to Production AWS/Domain Gateway
+const PROD_API = "https://disappearco.com"; 
 
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
   ? LOCAL_API
