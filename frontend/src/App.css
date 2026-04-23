@@ -650,7 +650,7 @@ input[type="checkbox"] {
   width: 100%;
   max-width: 1200px;
   padding: 0 20px;
-  align-items: stretch; /* Forces equal row heights */
+  align-items: stretch; /* Forces all items in a row to be same height */
 }
 
 .bento-item {
@@ -661,13 +661,12 @@ input[type="checkbox"] {
   transition: 0.3s;
   display: flex;
   flex-direction: column;
-  height: 100%;
 }
 
 .bento-inner-content {
   display: flex;
   flex-direction: column;
-  flex: 1; /* Ensures internal content fills the equalized height */
+  flex: 1; /* Forces content to push footer contents to the bottom */
 }
 
 .bento-hero {
@@ -685,7 +684,7 @@ input[type="checkbox"] {
   text-align: left;
 }
 
-/* Full Width Scanner underneath top row */
+/* SCANNER BOX SPANS FULL WIDTH UNDERNEATH */
 .bento-scanner-full {
   grid-column: span 12;
   border-left: 4px solid var(--tiger-blue);
@@ -693,10 +692,10 @@ input[type="checkbox"] {
 }
 
 .elite-header {
-  font-size: clamp(3rem, 10vw, 6rem);
+  font-size: clamp(2rem, 6vw, 4.2rem); /* Size reduced so Hero height matches Sidebar content */
   font-weight: 900;
   line-height: 0.85;
-  letter-spacing: -4px;
+  letter-spacing: -3px;
   margin: 20px 0;
   text-transform: uppercase;
 }
@@ -903,6 +902,6 @@ input[type="checkbox"] {
 
 @media (max-width: 600px) {
   .bento-grid-directives { grid-template-columns: 1fr; }
-  .elite-header { font-size: 3.5rem; }
+  .elite-header { font-size: 3rem; }
   .manifesto-box { padding: 30px; }
 }
