@@ -78,6 +78,7 @@ body, html, #root {
   margin-left: 5px;
 }
 
+/* Standardized Inputs */
 .price-box .mask-btn, 
 .price-box .main-button, 
 .price-box .reset-btn,
@@ -642,7 +643,7 @@ input[type="checkbox"] {
   box-shadow: 0 0 20px rgba(0, 71, 171, 0.5);
 }
 
-/* 14. BENTO SYSTEM - EQUAL HEIGHT ALIGNMENT FIX */
+/* 14. BENTO SYSTEM - UNIFIED EQUAL HEIGHT FIX */
 .bento-container {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -650,7 +651,7 @@ input[type="checkbox"] {
   width: 100%;
   max-width: 1200px;
   padding: 0 20px;
-  align-items: stretch; /* Forces all items in a row to be same height */
+  align-items: stretch; /* CRITICAL: Forces boxes in a row to be same height */
 }
 
 .bento-item {
@@ -660,13 +661,13 @@ input[type="checkbox"] {
   position: relative;
   transition: 0.3s;
   display: flex;
-  flex-direction: column;
+  flex-direction: column; /* Allows contents to stretch internally */
 }
 
 .bento-inner-content {
   display: flex;
   flex-direction: column;
-  flex: 1; /* Forces content to push footer contents to the bottom */
+  flex: 1; /* Forces the box contents to take up all available space */
 }
 
 .bento-hero {
@@ -684,7 +685,17 @@ input[type="checkbox"] {
   text-align: left;
 }
 
-/* SCANNER BOX SPANS FULL WIDTH UNDERNEATH */
+/* PRECISION SITE HEADER FONT SIZE (FIXES MISALIGNMENT) */
+.elite-header.site-hero-text {
+  font-size: clamp(2rem, 6vw, 4.2rem) !important;
+  font-weight: 900;
+  line-height: 0.85;
+  letter-spacing: -3px;
+  margin: 20px 0;
+  text-transform: uppercase;
+}
+
+/* Full Width Scanner underneath top row */
 .bento-scanner-full {
   grid-column: span 12;
   border-left: 4px solid var(--tiger-blue);
@@ -692,10 +703,10 @@ input[type="checkbox"] {
 }
 
 .elite-header {
-  font-size: clamp(2rem, 6vw, 4.2rem); /* Size reduced so Hero height matches Sidebar content */
+  font-size: clamp(3rem, 10vw, 6rem);
   font-weight: 900;
   line-height: 0.85;
-  letter-spacing: -3px;
+  letter-spacing: -4px;
   margin: 20px 0;
   text-transform: uppercase;
 }
@@ -902,6 +913,6 @@ input[type="checkbox"] {
 
 @media (max-width: 600px) {
   .bento-grid-directives { grid-template-columns: 1fr; }
-  .elite-header { font-size: 3rem; }
+  .elite-header { font-size: 3.5rem; }
   .manifesto-box { padding: 30px; }
 }

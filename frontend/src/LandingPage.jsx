@@ -4,7 +4,7 @@ import React, { useState } from 'react';
  * DISAPPEAR LANDING ENGINE
  * ARCHITECTURE: Unified Bento Grid
  * THEME: Tiger Blue / High-Contrast Security
- * UPDATE: Reduced header size for bottom-border alignment + DOB integration.
+ * UPDATE: Smaller font for Site Hero + DOB in Search Box + Precision Alignment.
  */
 
 function LandingPage({ onEnterVault, onLoginRequest }) {
@@ -55,16 +55,15 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
       {/* --- SECTION 01: THE UNIFIED BENTO HUB --- */}
       <section className="bento-container" style={{ marginTop: '120px' }}>
         
-        {/* BOX 01: THE DOCTRINE */}
+        {/* BOX 01: SITE HERO */}
         <div className="bento-item bento-hero">
           <div className="bento-inner-content">
-            <h1 className="elite-header">STAY<br />VIGILANT.</h1>
+            <h1 className="elite-header site-hero-text">STAY<br />VIGILANT.</h1>
             <p className="hero-description">
               Your identity is a target. In 2026, data brokers weaponize your PII for profit. 
-              <strong> Disappear</strong> is the tactical counter-measure: A Privacy-as-a-Service engine 
-              built to scorch your digital trail and replace exposure with synthetic security.
+              <strong> Disappear</strong> is the tactical counter-measure built to scorch your digital trail and replace exposure with synthetic security.
             </p>
-            <div className="hero-cta-group">
+            <div className="hero-cta-group" style={{ marginTop: 'auto' }}>
               <button className="main-button" onClick={onEnterVault}>INITIATE IDENTITY SCRUB</button>
               <p className="cta-subtext">Proprietary PII Scrubbing Engine // Global Data Broker Coverage</p>
             </div>
@@ -83,9 +82,9 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
               <span className="stat-value">82%</span>
               <span className="stat-label">OF USERS HAVE EXPOSED PII</span>
             </div>
-            <div className="intel-update">
+            <div className="intel-update" style={{ marginTop: 'auto' }}>
               <p style={{ fontSize: '0.8rem', color: '#94A3B8', lineHeight: '1.4', margin: '0' }}>
-                <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>» SYSTEM_LOG:</span> Your digital footprint is harvested daily. Disappear automates the removal of your data from lead-gen lists.
+                <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>» SYSTEM_LOG:</span> Disappear automates the removal of your data from lead-gen lists.
               </p>
             </div>
           </div>
@@ -120,10 +119,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             {scanResult && (
               <div className="fade-in scan-alert-node">
                 <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>[!] ALERT:</span> IDENTITY EXPOSED ON {scanResult} BROKER SITES.
-                <button 
-                  onClick={onEnterVault}
-                  className="text-link-btn"
-                >
+                <button onClick={onEnterVault} className="text-link-btn">
                   INITIATE FULL NEUTRALIZATION
                 </button>
               </div>
@@ -144,8 +140,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             <div className="step-num">01</div>
             <h4 className="directive-title">TERMINATE SPAM CALLS</h4>
             <p className="directive-text">
-              Data brokers sell your phone number to lead-lists. We scrub your contact info from 
-              broker databases to neutralize robocalls and SMS phishing at the source.
+              We scrub your contact info from broker databases to neutralize robocalls and SMS phishing at the source.
             </p>
           </div>
 
@@ -153,8 +148,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             <div className="step-num">02</div>
             <h4 className="directive-title">INBOX SANITIZATION</h4>
             <p className="directive-text">
-              Deploy encrypted Email Relay nodes. Our system strips hidden trackers from incoming 
-              mail, preventing companies from knowing when or where you open your messages.
+              Deploy encrypted Email Relay nodes. Our system strips hidden trackers from incoming mail.
             </p>
           </div>
 
@@ -162,8 +156,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             <div className="step-num">03</div>
             <h4 className="directive-title">FINANCIAL SHIELDING</h4>
             <p className="directive-text">
-              Merchant-locked virtual cards hide your real banking identity. Even if a retailer is 
-              breached, your primary accounts remain invisible and untouched.
+              Merchant-locked virtual cards hide your real banking identity to prevent synthetic identity theft.
             </p>
           </div>
 
@@ -171,8 +164,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             <div className="step-num">04</div>
             <h4 className="directive-title">CONTINUOUS MONITORING</h4>
             <p className="directive-text">
-              Identity removal isn't a one-time event. We monitor broker sites 24/7 to ensure 
-              your data isn't re-indexed or sold to new aggregators.
+              We monitor broker sites 24/7 to ensure your data isn't re-indexed or sold to new aggregators.
             </p>
           </div>
         </div>
@@ -183,8 +175,7 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
         <div className="manifesto-box" style={{ borderLeft: '4px solid var(--tiger-blue)' }}>
           <h3 className="card-title" style={{ color: 'var(--tiger-blue)' }}>WHY SOVEREIGNTY MATTERS</h3>
           <p className="manifesto-text">
-            <strong>Disappear returns control to you.</strong> By automating the removal of your 
-            Personal Identifiable Information (PII), we effectively <strong>neutralize your digital presence</strong> within the surveillance economy. 
+            <strong>Disappear returns control to you.</strong> By automating the removal of your Personal Identifiable Information (PII), we effectively <strong>neutralize your digital presence</strong>.
           </p>
           <button className="main-button" style={{ marginTop: '20px' }} onClick={onEnterVault}>INITIATE FULL PURGE</button>
         </div>
