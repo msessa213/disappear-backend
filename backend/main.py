@@ -135,7 +135,6 @@ async def add_cors_header(request: Request, call_next):
     if request.method == "OPTIONS":
         response = Response(status_code=200)
     else:
-        # Check if the path needs a trailing slash for Supabase/REST compatibility
         response = await call_next(request)
     
     origin = request.headers.get("origin")
