@@ -18,10 +18,11 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 # --- DATABASE CONFIGURATION ---
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "postgresql://postgres.chymgteinnczqfjqknan:%40Chase246@aws-1-us-east-1.pooler.supabase.com:5432/postgres" 
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    # This prevents the app from even starting with a "guess" password
+    raise RuntimeError("DATABASE_URL not found in environment!")
 
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
