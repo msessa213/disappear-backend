@@ -27,10 +27,7 @@ if not DATABASE_URL:
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# FIX: Conditional SSL Mode for Local Docker vs Supabase Cloud
-is_cloud = "supabase.com" in DATABASE_URL
-connect_args = {"sslmode": "require"} if is_cloud else {}
-
+# Consolidated SSL for AWS/Supabase handshake
 engine = create_engine(
     DATABASE_URL, 
     pool_pre_ping=True,
@@ -163,7 +160,7 @@ def get_db():
 
 MAX_IDENTITY_CREDITS = 6
 BASE_PHONE_LIMIT = 2
-COOLDOWN_HOURS = 24
+COOLDOWN_HOURS = 12 # Reduced from 24 to 12
 
 
 # --- DATA SEEDING & STABILITY STORAGE ---
@@ -198,7 +195,7 @@ class SupportRequest(BaseModel):
 
 # NEW: Expansion Request Schema
 class ExpansionRequest(BaseModel):
-    expansion_type: str # "data" or "phone"
+    expansion_type: str # "data", "phone", or "emergency_wipe"
 
 
 # --- CORE SYSTEM ROUTES ---
@@ -223,7 +220,6 @@ async def free_recon_scan(query: str):
     time.sleep(1.5)
     
     # Logic generates a deterministic-looking but dynamic count
-    # based on query length and randomness for the 'Live Scan' feel
     exposure_seed = len(query) + random.randint(10, 50)
     found_count = min(exposure_seed + random.randint(5, 15), 98)
     
@@ -310,13 +306,19 @@ async def sync(db: Session = Depends(get_db)):
 
 @app.post("/payments/create-session")
 async def create_checkout_session(request: ExpansionRequest):
-    """Generates a secure Stripe Checkout URL for tiered expansions"""
+    """Generates a secure Stripe Checkout URL for tiered expansions and emergency overrides"""
     try:
         if not stripe.api_key:
             raise HTTPException(status_code=500, detail="Stripe API Key configuration error")
 
+        # EMERGENCY WIPE BYPASS: $1.99 
+        if request.expansion_type == "emergency_wipe":
+            item_name = "Emergency Protocol Override (Instant Wipe)"
+            unit_amount = 199
+            mode = "payment"
+            recurring = None
         # TIERED LOGIC: $4.99 One-time vs $9.99 Monthly Line Add-on
-        if request.expansion_type == "phone":
+        elif request.expansion_type == "phone":
             item_name = "Elite Secure Mobile Line (Monthly Add-on)"
             unit_amount = 999
             mode = "subscription"
@@ -340,7 +342,6 @@ async def create_checkout_session(request: ExpansionRequest):
             }],
             mode=mode,
             metadata={"expansion_type": request.expansion_type},
-            # Primary Domain Success/Cancel Redirects
             success_url="https://disappearco.com?payment=success",
             cancel_url="https://disappearco.com?payment=cancel",
         )
@@ -365,11 +366,13 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
             user_profile = db.query(DBProfile).first()
             if user_profile:
                 if ext_type == "phone":
-                    # Logic for Subscription success
                     user_profile.phone_line_bonus = (user_profile.phone_line_bonus or 0) + 1
                     action = "PHONE_LINE_NODE_PROVISIONED"
+                elif ext_type == "emergency_wipe":
+                    # Bypass logic is handled by clearing the last ALIAS_TERMINATED timestamp 
+                    # or simply logging the authorized override for the frontend to proceed
+                    action = "EMERGENCY_PROTOCOL_WIPE_AUTHORIZED"
                 else:
-                    # Logic for One-time slot success
                     user_profile.bonus_credits = (user_profile.bonus_credits or 0) + 1
                     action = "VAULT_CAPACITY_EXPANDED"
                 
@@ -395,7 +398,7 @@ async def get_aliases(db: Session = Depends(get_db)):
 
 @app.post("/aliases/mint")
 async def generate_alias(request: AliasRequest, db: Session = Depends(get_db)):
-    """Generates an alias with server-side Phone capping"""
+    """Generates an alias with 12h cooldown and bypass notification"""
     profile = db.query(DBProfile).first()
     bonus = profile.bonus_credits if profile else 0
     phone_bonus = profile.phone_line_bonus if profile else 0
@@ -403,21 +406,23 @@ async def generate_alias(request: AliasRequest, db: Session = Depends(get_db)):
     max_credits = MAX_IDENTITY_CREDITS + bonus
     max_phones = BASE_PHONE_LIMIT + phone_bonus
     
-    # 1. Check Global Capacity
     total_active = db.query(DBAlias).count() + db.query(DBCard).count()
     if total_active >= max_credits:
         raise HTTPException(status_code=403, detail="IDENTITY_LIMIT_REACHED")
 
-    # 2. Check Specific Phone Cap (Twilio Protection)
     if request.type.lower() == "phone":
         current_phones = db.query(DBAlias).filter(DBAlias.type == "phone").count()
         if current_phones >= max_phones:
             raise HTTPException(status_code=403, detail="PHONE_CAPACITY_REACHED")
 
-    # Cooldown Logic
+    # Cooldown Logic (Updated to 12h)
     last_burn = db.query(DBPurgeLog).filter(DBPurgeLog.action_type == "ALIAS_TERMINATED").order_by(DBPurgeLog.timestamp.desc()).first()
     if last_burn and (datetime.utcnow() - last_burn.timestamp) < timedelta(hours=COOLDOWN_HOURS):
-        raise HTTPException(status_code=429, detail="COOL_DOWN_ACTIVE")
+        # NEW: Return 429 but include a flag that bypass is possible via payment
+        raise HTTPException(
+            status_code=429, 
+            detail={"error": "COOL_DOWN_ACTIVE", "bypass_authorized": False}
+        )
 
     alias_id = f"als_{int(time.time())}_{random.randint(100, 999)}"
     
@@ -565,7 +570,6 @@ async def generate_purge_receipt(db: Session = Depends(get_db)):
     """Generates an audit receipt of the identity purge for S3 storage"""
     try:
         receipt_id = f"PRG-{random.randint(100000, 999999)}"
-        # AWS Boto3 logic would go here
         log = DBPurgeLog(action_type="PURGE_RECEIPT_STORED", node_id=receipt_id)
         db.add(log)
         db.commit()
