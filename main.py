@@ -305,24 +305,29 @@ async def sync(db: Session = Depends(get_db)):
 # --- PAYMENTS & WEBHOOKS ---
 
 @app.post("/payments/create-session")
-async def create_checkout_session(request: ExpansionRequest):
-    """Generates a secure Stripe Checkout URL for tiered expansions and emergency overrides"""
+async def create_checkout_session(request: ExpansionRequest, raw_req: Request):
+    """Generates a secure Stripe Checkout URL with robust bypass detection"""
     try:
         if not stripe.api_key:
             raise HTTPException(status_code=500, detail="Stripe API Key configuration error")
 
+        # MANUAL OVERRIDE: Double check raw JSON to prevent payload mismatch
+        body = await raw_req.json()
+        ext_type = body.get("expansion_type", request.expansion_type)
+
         # EMERGENCY WIPE BYPASS: $1.99 
-        if request.expansion_type == "emergency_wipe":
+        if ext_type == "emergency_wipe":
             item_name = "Emergency Protocol Override (Instant Wipe)"
             unit_amount = 199
             mode = "payment"
             recurring = None
-        # TIERED LOGIC: $4.99 One-time vs $9.99 Monthly Line Add-on
-        elif request.expansion_type == "phone":
+        # TIERED LOGIC: $9.99 Monthly Line Add-on
+        elif ext_type == "phone":
             item_name = "Elite Secure Mobile Line (Monthly Add-on)"
             unit_amount = 999
             mode = "subscription"
             recurring = {"interval": "month"}
+        # DEFAULT: $4.99 Permanent Slot
         else:
             item_name = "Additional Identity Shield Slot (Permanent)"
             unit_amount = 499
@@ -341,7 +346,7 @@ async def create_checkout_session(request: ExpansionRequest):
                 'quantity': 1,
             }],
             mode=mode,
-            metadata={"expansion_type": request.expansion_type},
+            metadata={"expansion_type": ext_type},
             success_url="https://disappearco.com?payment=success",
             cancel_url="https://disappearco.com?payment=cancel",
         )
