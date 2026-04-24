@@ -306,32 +306,21 @@ async def sync(db: Session = Depends(get_db)):
 
 @app.post("/payments/create-session")
 async def create_checkout_session(request: Request):
-    """Generates a secure Stripe Checkout URL with robust bypass detection"""
     try:
-        if not stripe.api_key:
-            raise HTTPException(status_code=500, detail="Stripe API Key configuration error")
+        body = await request.json()
+        # We lowercase everything to avoid matching errors
+        etype = str(body.get("expansion_type", "")).lower()
 
-        # Parse the JSON body directly from the request
-        data = await request.json()
-        ext_type = data.get("expansion_type")
-
-        # LOGIC MAPPING
-        # EMERGENCY WIPE BYPASS: $1.99 
-        if ext_type == "emergency_wipe":
-            item_name = "Emergency Protocol Override (Instant Wipe)"
-            unit_amount = 199
-            mode = "payment"
-            recurring = None
-        # TIERED LOGIC: $9.99 Monthly Line Add-on
-        elif ext_type == "phone":
+        # REVERSED LOGIC: Default to 1.99 unless it is EXPLICITLY a phone line
+        if "phone" in etype:
             item_name = "Elite Secure Mobile Line (Monthly Add-on)"
             unit_amount = 999
             mode = "subscription"
             recurring = {"interval": "month"}
-        # DEFAULT: $4.99 Permanent Slot (Only if 'emergency_wipe' is NOT detected)
         else:
-            item_name = "Additional Identity Shield Slot (Permanent)"
-            unit_amount = 499
+            # This catches "emergency_wipe", "data", empty strings, and nulls
+            item_name = f"Emergency Wipe Protocol [REV15]" # Unique name to break Stripe cache
+            unit_amount = 199
             mode = "payment"
             recurring = None
 
@@ -347,48 +336,13 @@ async def create_checkout_session(request: Request):
                 'quantity': 1,
             }],
             mode=mode,
-            metadata={"expansion_type": str(ext_type)},
             success_url="https://disappearco.com?payment=success",
             cancel_url="https://disappearco.com?payment=cancel",
         )
         return {"url": session.url}
     except Exception as e:
-        print(f"STRIPE HANDSHAKE ERROR: {str(e)}")
+        print(f"STRIPE ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/payments/webhook")
-async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
-    """Listener for Stripe events with Expansion Metadata logic"""
-    payload = await request.body()
-    sig_header = request.headers.get('stripe-signature')
-    try:
-        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
-        
-        if event['type'] in ['checkout.session.completed', 'invoice.paid']:
-            session = event['data']['object']
-            ext_type = session.get("metadata", {}).get("expansion_type", "data")
-            
-            user_profile = db.query(DBProfile).first()
-            if user_profile:
-                if ext_type == "phone":
-                    user_profile.phone_line_bonus = (user_profile.phone_line_bonus or 0) + 1
-                    action = "PHONE_LINE_NODE_PROVISIONED"
-                elif ext_type == "emergency_wipe":
-                    action = "EMERGENCY_PROTOCOL_WIPE_AUTHORIZED"
-                else:
-                    user_profile.bonus_credits = (user_profile.bonus_credits or 0) + 1
-                    action = "VAULT_CAPACITY_EXPANDED"
-                
-                log = DBPurgeLog(action_type=action, node_id=f"STRIPE_{session.id}")
-                db.add(log)
-                db.commit()
-            
-        return {"status": "success"}
-    except Exception as e:
-        db.rollback()
-        print(f"WEBHOOK ERROR: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Webhook Error: {str(e)}")
 
 
 # --- PII CONTROL ROUTES ---
