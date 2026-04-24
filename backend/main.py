@@ -305,15 +305,15 @@ async def sync(db: Session = Depends(get_db)):
 # --- PAYMENTS & WEBHOOKS ---
 
 @app.post("/payments/create-session")
-async def create_checkout_session(request: ExpansionRequest, raw_req: Request):
-    """Generates a secure Stripe Checkout URL with robust bypass detection"""
+async def create_checkout_session(raw_req: Request):
+    """Generates a secure Stripe Checkout URL with strict override detection"""
     try:
         if not stripe.api_key:
             raise HTTPException(status_code=500, detail="Stripe API Key configuration error")
 
-        # MANUAL OVERRIDE: Double check raw JSON to prevent payload mismatch
-        body = await raw_req.json()
-        ext_type = body.get("expansion_type", request.expansion_type)
+        # MANUAL OVERRIDE: Directly parsing the raw JSON to force exact price match
+        data = await raw_req.json()
+        ext_type = data.get("expansion_type")
 
         # EMERGENCY WIPE BYPASS: $1.99 
         if ext_type == "emergency_wipe":
@@ -346,7 +346,7 @@ async def create_checkout_session(request: ExpansionRequest, raw_req: Request):
                 'quantity': 1,
             }],
             mode=mode,
-            metadata={"expansion_type": ext_type},
+            metadata={"expansion_type": str(ext_type)},
             success_url="https://disappearco.com?payment=success",
             cancel_url="https://disappearco.com?payment=cancel",
         )
@@ -374,8 +374,6 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
                     user_profile.phone_line_bonus = (user_profile.phone_line_bonus or 0) + 1
                     action = "PHONE_LINE_NODE_PROVISIONED"
                 elif ext_type == "emergency_wipe":
-                    # Bypass logic is handled by clearing the last ALIAS_TERMINATED timestamp 
-                    # or simply logging the authorized override for the frontend to proceed
                     action = "EMERGENCY_PROTOCOL_WIPE_AUTHORIZED"
                 else:
                     user_profile.bonus_credits = (user_profile.bonus_credits or 0) + 1
@@ -423,7 +421,6 @@ async def generate_alias(request: AliasRequest, db: Session = Depends(get_db)):
     # Cooldown Logic (Updated to 12h)
     last_burn = db.query(DBPurgeLog).filter(DBPurgeLog.action_type == "ALIAS_TERMINATED").order_by(DBPurgeLog.timestamp.desc()).first()
     if last_burn and (datetime.utcnow() - last_burn.timestamp) < timedelta(hours=COOLDOWN_HOURS):
-        # NEW: Return 429 but include a flag that bypass is possible via payment
         raise HTTPException(
             status_code=429, 
             detail={"error": "COOL_DOWN_ACTIVE", "bypass_authorized": False}
