@@ -20,7 +20,7 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 # --- DATABASE CONFIGURATION ---
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql://postgres:%40Chase246@db.chymgteinnczqfjqknan.supabase.co:6543/postgres"
+    "postgresql://postgres:%40Chase246@db.chymgteinnczqfjqknan.supabase.co:5432/postgres" 
 )
 
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
@@ -34,7 +34,10 @@ engine = create_engine(
     DATABASE_URL, 
     pool_pre_ping=True,
     pool_recycle=300,
-    connect_args=connect_args
+    connect_args={
+        "sslmode": "require",
+        "connect_timeout": 10
+    }
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
