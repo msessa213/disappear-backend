@@ -62,8 +62,8 @@ function App() {
   const [phones, setPhones] = useState([]);
 
   const [targetProfile, setTargetProfile] = useState({
-    firstName: "", middleName: "", lastName: "", 
-    email: "", dob: "", address: "", termsAccepted: false
+      firstName: "", middleName: "", lastName: "", 
+      email: "", dob: "", address: "", termsAccepted: false
   });
 
   const [billingCycle, setBillingCycle] = useState("monthly");
@@ -215,8 +215,20 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type, label: aliasLabel })
       });
+
       if (res.status === 403) { triggerToast("IDENTITY CAPACITY FULL"); return; }
-      if (res.status === 429) { triggerToast("COOL-DOWN ACTIVE: 24H"); return; }
+      
+      // EMERGENCY BYPASS LOGIC: Detect 12h Cooldown and offer fee override
+      if (res.status === 429) { 
+        const confirmBypass = window.confirm(
+          "EMERGENCY PROTOCOL: Node is currently cooling down (12h window). \n\nInitiate Emergency Protocol Wipe for $1.99?"
+        );
+        if (confirmBypass) {
+            handlePurchaseExpansion("emergency_wipe");
+        }
+        return; 
+      }
+
       if (res.ok) {
         syncDefenseData();
         setAliasLabel("");
