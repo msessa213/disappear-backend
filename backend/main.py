@@ -20,7 +20,7 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 # --- DATABASE CONFIGURATION ---
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql://postgres:%40Chase246@db.chymgteinnczqfjqknan.supabase.co:5432/postgres" 
+    "postgresql://postgres.chymgteinnczqfjqknan:%40Chase246@aws-1-us-east-1.pooler.supabase.com:5432/postgres" 
 )
 
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
