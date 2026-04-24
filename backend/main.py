@@ -27,10 +27,7 @@ if not DATABASE_URL:
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# FIX: Conditional SSL Mode for Local Docker vs Supabase Cloud
-is_cloud = "supabase.com" in DATABASE_URL
-connect_args = {"sslmode": "require"} if is_cloud else {}
-
+# Consolidated SSL for AWS/Supabase handshake
 engine = create_engine(
     DATABASE_URL, 
     pool_pre_ping=True,
