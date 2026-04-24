@@ -305,16 +305,17 @@ async def sync(db: Session = Depends(get_db)):
 # --- PAYMENTS & WEBHOOKS ---
 
 @app.post("/payments/create-session")
-async def create_checkout_session(raw_req: Request):
-    """Generates a secure Stripe Checkout URL with strict override detection"""
+async def create_checkout_session(request: Request):
+    """Generates a secure Stripe Checkout URL with robust bypass detection"""
     try:
         if not stripe.api_key:
             raise HTTPException(status_code=500, detail="Stripe API Key configuration error")
 
-        # MANUAL OVERRIDE: Directly parsing the raw JSON to force exact price match
-        data = await raw_req.json()
+        # Parse the JSON body directly from the request
+        data = await request.json()
         ext_type = data.get("expansion_type")
 
+        # LOGIC MAPPING
         # EMERGENCY WIPE BYPASS: $1.99 
         if ext_type == "emergency_wipe":
             item_name = "Emergency Protocol Override (Instant Wipe)"
@@ -327,7 +328,7 @@ async def create_checkout_session(raw_req: Request):
             unit_amount = 999
             mode = "subscription"
             recurring = {"interval": "month"}
-        # DEFAULT: $4.99 Permanent Slot
+        # DEFAULT: $4.99 Permanent Slot (Only if 'emergency_wipe' is NOT detected)
         else:
             item_name = "Additional Identity Shield Slot (Permanent)"
             unit_amount = 499
