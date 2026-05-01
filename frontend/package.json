@@ -12,7 +12,6 @@
     "@capacitor/android": "^8.3.1",
     "@capacitor/cli": "^8.3.1",
     "@capacitor/core": "^8.3.1",
-    "@capacitor/http": "^0.0.2",
     "@capacitor/ios": "^8.3.1",
     "jspdf": "^4.2.0",
     "jspdf-autotable": "^5.0.7",

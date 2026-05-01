@@ -23,11 +23,30 @@ const LOCAL_API = "http://127.0.0.1:8000";
 // FIXED: Pointed to the newly established AWS API Gateway
 const PROD_API = "https://api.disappearco.com"; 
 
-const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-  ? LOCAL_API
-  : PROD_API;
+const API_BASE_URL = Capacitor.isNativePlatform() 
+  ? PROD_API 
+  : (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? LOCAL_API : PROD_API);
 
 function App() {
+  // --- SECURE BRIDGE LOGIC ---
+  // This bridges the gap between the app and the server on native hardware
+  const secureRequest = async (url, options = {}) => {
+    if (Capacitor.isNativePlatform()) {
+      const response = await CapacitorHttp.request({
+        url,
+        method: options.method || 'GET',
+        data: (options.body && typeof options.body === 'string') ? JSON.parse(options.body) : options.body,
+        headers: { 'Content-Type': 'application/json', ...options.headers }
+      });
+      return { 
+        ok: response.status >= 200 && response.status < 300, 
+        status: response.status,
+        json: () => Promise.resolve(response.data) 
+      };
+    }
+    return fetch(url, options);
+  };
+
   // --- CORE VIEW NAVIGATION (UPDATED) ---
   const [showLanding, setShowLanding] = useState(true); 
   const [showShield, setShowShield] = useState(false);
@@ -110,7 +129,7 @@ function App() {
 
   useEffect(() => {
     if (showCheckout) {
-      fetch(`${API_BASE_URL}/`).catch(() => {});
+      secureRequest(`${API_BASE_URL}/`).catch(() => {});
     }
   }, [showCheckout]);
 
@@ -125,7 +144,7 @@ function App() {
 
   const syncDefenseData = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/dashboard/sync`);
+      const res = await secureRequest(`${API_BASE_URL}/dashboard/sync`);
       const data = await res.json();
       if (data.profile) {
           setCredits({
@@ -144,10 +163,10 @@ function App() {
         }
         return data.recent_audit || [];
       });
-      const finRes = await fetch(`${API_BASE_URL}/financials/data`);
+      const finRes = await secureRequest(`${API_BASE_URL}/financials/data`);
       const finData = await finRes.json();
       setCards(finData.cards || []);
-      const aliasRes = await fetch(`${API_BASE_URL}/aliases/data`);
+      const aliasRes = await secureRequest(`${API_BASE_URL}/aliases/data`);
       const aliasData = await aliasRes.json();
       const allAliases = aliasData.aliases || [];
       
@@ -175,7 +194,7 @@ function App() {
     const msg = type === 'phone' ? "REQUESTING SECURE LINE..." : "EXPANDING VAULT CAPACITY...";
     triggerToast(msg);
     try {
-      const res = await fetch(`${API_BASE_URL}/payments/create-session`, { 
+      const res = await secureRequest(`${API_BASE_URL}/payments/create-session`, { 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ expansion_type: type })
@@ -195,7 +214,7 @@ function App() {
   const handleSendTicket = async () => {
     if (!supportData.message) { triggerToast("ENTER MESSAGE"); return; }
     try {
-        const res = await fetch(`${API_BASE_URL}/support/ticket`, {
+        const res = await secureRequest(`${API_BASE_URL}/support/ticket`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(supportData)
@@ -217,7 +236,7 @@ function App() {
     setPurgeStatus(`ENCRYPTING ${type.toUpperCase()}...`);
     setIsEncrypting(true); 
     try {
-      const res = await fetch(`${API_BASE_URL}/aliases/mint`, {
+      const res = await secureRequest(`${API_BASE_URL}/aliases/mint`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type, label: aliasLabel })
@@ -249,7 +268,7 @@ function App() {
 
   const handleKillAlias = async (id) => {
     try {
-      await fetch(`${API_BASE_URL}/aliases/kill/${id}`, { method: "DELETE" });
+      await secureRequest(`${API_BASE_URL}/aliases/kill/${id}`, { method: "DELETE" });
       syncDefenseData();
       triggerToast("DATA TERMINATED");
     } catch (err) { triggerToast("ERROR"); }
@@ -261,11 +280,11 @@ function App() {
     setPurgeStatus("TOTAL PURGE IN EFFECT...");
     pushNotification("GLOBAL_NODE_SHUTDOWN");
     try {
-      await fetch(`${API_BASE_URL}/financials/receipt`, { method: "POST" });
+      await secureRequest(`${API_BASE_URL}/financials/receipt`, { method: "POST" });
       pushNotification("S3_AUDIT_STORED");
       setTimeout(async () => {
         setPurgeStatus("TERMINATING ALL ACTIVE NODES...");
-        await fetch(`${API_BASE_URL}/financials/burn-all`, { method: "POST" });
+        await secureRequest(`${API_BASE_URL}/financials/burn-all`, { method: "POST" });
         pushNotification("DATABASE_SCRUB_COMPLETE");
         setTimeout(() => {
           setPurgeStatus("PURGE COMPLETED. VAULT IS CLEAN.");
@@ -289,7 +308,7 @@ function App() {
     setPurgeStatus("GENERATING PROTECTED DIGITS...");
     setIsEncrypting(true); 
     try {
-      const response = await fetch(`${API_BASE_URL}/financials/mint`, {
+      const response = await secureRequest(`${API_BASE_URL}/financials/mint`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ label: newCardLabel })
@@ -307,7 +326,7 @@ function App() {
 
   const handleKillCard = async (id) => {
     try {
-      await fetch(`${API_BASE_URL}/financials/kill/${id}`, { method: "DELETE" });
+      await secureRequest(`${API_BASE_URL}/financials/kill/${id}`, { method: "DELETE" });
       if (id !== 'global-1') {
         setCards(prev => prev.filter(c => c.id !== id));
       }
@@ -350,7 +369,7 @@ function App() {
     }
     setIsScanning(true);
     try {
-        const response = await fetch(`${API_BASE_URL}/financials/profile`, {
+        const response = await secureRequest(`${API_BASE_URL}/financials/profile`, {
             method: "POST", 
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(targetProfile)
@@ -389,7 +408,7 @@ function App() {
   const handleManageBilling = async () => {
     triggerToast("UPLINKING TO STRIPE PORTAL...");
     try {
-        const res = await fetch(`${API_BASE_URL}/payments/customer-portal`, { method: "POST" });
+        const res = await secureRequest(`${API_BASE_URL}/payments/customer-portal`, { method: "POST" });
         const data = await res.json();
         if (data.url) window.location.href = data.url;
     } catch (err) { triggerToast("PORTAL OFFLINE"); }
