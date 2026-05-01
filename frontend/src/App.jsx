@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+import { Capacitor } from '@capacitor/core'; // Hardware detection
 
 // --- FIXED IMPORTS ---
 import { Manifesto } from './Manifesto';
@@ -82,6 +83,12 @@ function App() {
   useEffect(() => {
     const session = localStorage.getItem("disappear_session");
     const query = new URLSearchParams(window.location.search);
+    const isNative = Capacitor.isNativePlatform();
+
+    // UPDATE: Skip landing page on Native App to show Login/Signup flow
+    if (isNative) {
+        setShowLanding(false);
+    }
     
     if (query.get("payment") === "success") {
         triggerToast("CREDIT AUTHORIZED: NODE EXPANDED");
@@ -93,7 +100,7 @@ function App() {
         setShowLanding(false); // Bypass website for active agents
         setShowShield(true);
         setProgress(100);
-    } else {
+    } else if (!isNative) {
         setTargetProfile({
             firstName: "", middleName: "", lastName: "", 
             email: "", dob: "", address: "", termsAccepted: false
@@ -114,7 +121,7 @@ function App() {
     setTimeout(() => {
       setNotifications(prev => prev.filter(n => n.id !== id));
     }, 4000);
-  }, []);
+  }, [setNotifications]);
 
   const syncDefenseData = useCallback(async () => {
     try {
@@ -910,9 +917,9 @@ function App() {
       )}
 
       <footer className="home-footer">
-          <span onClick={() => setShowLegal('privacy')}>PRIVACY POLICY</span>
+          <span onClick={() => setShowLegal('privacy')}>PRIVACY</span>
           <span className="footer-divider">|</span>
-          <span onClick={() => setShowLegal('terms')}>TERMS OF SERVICE</span>
+          <span onClick={() => setShowLegal('terms')}>TERMS</span>
           <span className="admin-trigger" onClick={() => setShowAdmin(true)}>.</span>
       </footer>
 
