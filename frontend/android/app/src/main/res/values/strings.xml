@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Disappear</string>
+    <string name="title_activity_main">Disappear</string>
+    <string name="package_name">com.disappear.app</string>
+    <string name="custom_url_scheme">com.disappear.app</string>
+</resources>

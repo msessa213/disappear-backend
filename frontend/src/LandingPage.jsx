@@ -4,7 +4,7 @@ import React, { useState } from 'react';
  * DISAPPEAR LANDING ENGINE
  * ARCHITECTURE: Unified Bento Grid
  * THEME: Tiger Blue / High-Contrast Security
- * UPDATE: Precision structural alignment + full PII search fields (First, Middle, Last, Phone, Email, DOB).
+ * UPDATE: Precision structural alignment + Mobile Binary Uplink Integration
  */
 
 function LandingPage({ onEnterVault, onLoginRequest }) {
@@ -29,7 +29,6 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
     setIsScanning(true);
     setScanResult(null);
 
-    // Deterministic Logic: Ensures same input always yields same result for trust
     setTimeout(() => {
       const seedString = `${scanData.firstName}${scanData.lastName}${scanData.email}${scanData.phone}${scanData.dob}`;
       const charSum = seedString.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -186,6 +185,30 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
           </p>
           <button className="main-button" style={{ marginTop: '20px' }} onClick={onEnterVault}>INITIATE FULL PURGE</button>
         </div>
+      </section>
+
+      {/* --- MOBILE UPLINK SECTION --- */}
+      <section className="mobile-uplink" style={{ padding: '60px 20px', textAlign: 'center', borderTop: '1px solid #111', background: 'rgba(0, 71, 171, 0.03)' }}>
+        <span className="mono-label" style={{ color: 'var(--tiger-blue)', display: 'block', marginBottom: '10px', fontSize: '0.75rem', letterSpacing: '3px' }}>[!] NATIVE CLIENT UPLINK</span>
+        <p className="hero-description" style={{ fontSize: '0.85rem', marginBottom: '25px', maxWidth: '500px', margin: '0 auto 25px' }}>
+          Download the standalone Disappear Android client for direct-to-device identity management.
+        </p>
+        <a 
+          href="/Disappear.apk" 
+          download="Disappear_v1.apk"
+          className="main-button" 
+          style={{ 
+            textDecoration: 'none', 
+            display: 'inline-block', 
+            padding: '15px 40px',
+            background: 'transparent',
+            border: '1px solid var(--tiger-blue)',
+            color: 'var(--tiger-blue)',
+            fontSize: '0.75rem'
+          }}
+        >
+          DOWNLOAD_MOBILE_ENGINE.APK
+        </a>
       </section>
 
       {/* --- LOGIN GATEWAY --- */}
