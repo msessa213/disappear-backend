@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
-import { Capacitor } from '@capacitor/core'; // Hardware detection
+import { Capacitor, CapacitorHttp } from '@capacitor/core'; // UPDATED: Added CapacitorHttp
 
 // --- FIXED IMPORTS ---
 import { Manifesto } from './Manifesto';
