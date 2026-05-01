@@ -50,7 +50,7 @@ class DBCard(Base):
     label = Column(String)
     number = Column(String)
     expiry = Column(String) 
-    cvv = Column(String)    
+    cvv = Column(String)     
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -102,13 +102,15 @@ except Exception as e:
 
 app = FastAPI(title="Disappear P-A-A-S Engine")
 
-# FIXED: Production Origins for your specific Domain Fleet
+# FIXED: Production Origins + Mobile App Capacitor Support
 origins = [
+    "http://localhost",
     "http://localhost:3000",
     "http://localhost:3001",
+    "http://localhost:5173",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:3001",
-    "http://localhost:5173",
+    "capacitor://localhost",
     "https://disappear-frontend-v2.vercel.app",
     "https://disappear-online.com",
     "https://www.disappear-online.com",
