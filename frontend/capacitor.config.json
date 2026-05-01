@@ -1,5 +1,15 @@
 {
   "appId": "com.disappear.app",
   "appName": "Disappear",
-  "webDir": "dist"
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true,
+    "allowNavigation": [
+      "api.disappearco.com"
+    ]
+  },
+  "android": {
+    "allowMixedContent": true
+  }
 }
