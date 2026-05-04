@@ -419,15 +419,36 @@ function App() {
       
       {/* 1. SEPARATE MARKETING WEBSITE (Intelligence Hub) */}
       {showLanding ? (
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', width: '100%', minHeight: '100vh' }}>
           <LandingPage 
             onEnterVault={() => setShowLanding(false)} 
             onLoginRequest={() => { setShowLanding(false); setShow2FA(true); }}
           />
-          {/* MOBILE DOWNLOAD BRIDGE: Overlaying a download button on the landing page */}
+          {/* MOBILE DOWNLOAD BRIDGE: Fixed Positioning Fix */}
           {!Capacitor.isNativePlatform() && (
-            <div style={{ position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)', zIndex: 9999 }}>
-              <a href="/Disappear.apk" download="Disappear_Shield.apk" className="main-button" style={{ textDecoration: 'none', boxShadow: '0 0 15px var(--tiger-blue)' }}>
+            <div style={{ 
+              position: 'fixed', 
+              bottom: '100px', 
+              left: '0', 
+              width: '100%', 
+              display: 'flex', 
+              justifyContent: 'center', 
+              zIndex: 9999,
+              padding: '0 20px'
+            }}>
+              <a 
+                href="/Disappear.apk" 
+                download="Disappear_Shield.apk" 
+                className="main-button" 
+                style={{ 
+                  textDecoration: 'none', 
+                  boxShadow: '0 0 20px rgba(0, 71, 171, 0.6)',
+                  width: '100%',
+                  maxWidth: '300px',
+                  textAlign: 'center',
+                  display: 'block'
+                }}
+              >
                 GET ANDROID APP
               </a>
             </div>
