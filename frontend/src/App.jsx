@@ -195,7 +195,7 @@ function App() {
     // AUTHENTICATION_BRIDGE: Capture local user ID to bind payment event
     const activeUserId = localStorage.getItem("disappear_user_id") || "anonymous_agent";
 
-    const msg = type === 'phone' ? "REQUESTING SECURE LINE..." : "EXPANDING VAULT CAPACITY...";
+    const msg = (type === 'permanent_slot' || type === 'data' || type === 'phone') ? "EXPANDING VAULT CAPACITY..." : "REQUESTING BYPASS TUNNEL...";
     triggerToast(msg);
     try {
       const res = await secureRequest(`${API_BASE_URL}/payments/create-session`, { 
@@ -214,7 +214,10 @@ function App() {
       }
     } catch (err) { 
       triggerToast("PAYMENT NODE OFFLINE"); 
-      setIsProcessingPayment(false);
+      setIsProcessingPayment(false); // FIXED: RESET BUTTON ON ERROR
+    } finally {
+      // Small timeout to allow browser to start redirect before enabling
+      setTimeout(() => setIsProcessingPayment(false), 8000); 
     }
   };
 
@@ -236,10 +239,7 @@ function App() {
 
   const handleMintAlias = async (type) => {
     if (!aliasLabel) { triggerToast("ENTER LABEL"); return; }
-    if (type === 'phone' && phones.length >= 2) {
-      triggerToast("PHONE CAPACITY REACHED [MAX 2]");
-      return;
-    }
+    
     setPurgeStatus(`ENCRYPTING ${type.toUpperCase()}...`);
     setIsEncrypting(true); 
     try {
@@ -249,10 +249,21 @@ function App() {
         body: JSON.stringify({ type, label: aliasLabel })
       });
 
-      if (res.status === 403) { triggerToast("IDENTITY CAPACITY FULL"); return; }
+      // NEW: CAPACITY FULL POPUP LOGIC
+      if (res.status === 403) { 
+        setIsEncrypting(false);
+        const confirmPurchase = window.confirm(
+          "IDENTITY CAPACITY FULL: You have reached your concurrent slot limit. \n\nPurchase a Permanent Additional Slot for $5.95?"
+        );
+        if (confirmPurchase) {
+          handlePurchaseExpansion("permanent_slot");
+        }
+        return; 
+      }
       
       // EMERGENCY BYPASS LOGIC: Detect 12h Cooldown and offer fee override
       if (res.status === 429) { 
+        setIsEncrypting(false);
         const confirmBypass = window.confirm(
           "EMERGENCY PROTOCOL: Node is currently cooling down (12h window). \n\nInitiate Emergency Protocol Wipe for $1.99?"
         );
@@ -320,7 +331,19 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ label: newCardLabel })
       });
-      if (response.status === 403) { triggerToast("IDENTITY CAPACITY FULL"); return; }
+      
+      // NEW: CAPACITY FULL POPUP LOGIC
+      if (response.status === 403) { 
+        setIsEncrypting(false);
+        const confirmPurchase = window.confirm(
+          "IDENTITY CAPACITY FULL: You have reached your concurrent slot limit. \n\nPurchase a Permanent Additional Slot for $5.95?"
+        );
+        if (confirmPurchase) {
+          handlePurchaseExpansion("permanent_slot");
+        }
+        return; 
+      }
+
       if (response.ok) {
         syncDefenseData();
         setNewCardLabel("");
@@ -659,22 +682,17 @@ function App() {
 
                 <div className="masking-tool" style={{ border: '1px solid #111', background: '#050505', width: '100%', maxWidth: '600px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                        <span className="field-label">VAULT CAPACITY (EMAIL/VCC)</span>
+                        <span className="field-label">VAULT CAPACITY (EMAIL/VCC/PHONE)</span>
                         <span className="tiger-text">{credits.used} / {credits.total}</span>
                     </div>
-                    <button className="purchase-btn" onClick={() => handlePurchaseExpansion('data')}>
-                      + ADD PERMANENT VAULT SLOT ($4.99)
+                    <button className="purchase-btn" disabled={isProcessingPayment} onClick={() => handlePurchaseExpansion('permanent_slot')}>
+                      {isProcessingPayment ? "UPLINKING..." : "+ ADD PERMANENT VAULT SLOT ($5.95)"}
                     </button>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '25px', marginBottom: '10px' }}>
                         <span className="field-label">ACTIVE PHONE LINES</span>
-                        <span className="tiger-text">{phones.length} / 2</span>
+                        <span className="tiger-text">{phones.length} / {Math.max(2, credits.total - 4)}</span>
                     </div>
-                    {phones.length >= 2 && (
-                      <button className="purchase-btn" style={{borderColor: 'var(--tiger-blue)'}} onClick={() => handlePurchaseExpansion('phone')}>
-                        + PROVISION EXTRA MOBILE LINE ($9.99/mo)
-                      </button>
-                    )}
                 </div>
                 
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
@@ -719,7 +737,7 @@ function App() {
                           <code className="card-digits" onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("COPIED")}}> {c.number} </code>
                           <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #111', paddingTop: '10px', marginTop: '10px'}}>
                              <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>EXP</span><strong>{c.expiry || '08/28'}</strong></div>
-                             <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>CVV</span><strong>{c.cvv || '442'}</strong></div>
+                             <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>CVV</span><strong>{c.cvv || '***'}</strong></div>
                           </div>
                         </div>
                       </div>
@@ -896,7 +914,7 @@ function App() {
                             </tr>
                             <tr>
                               <td style={{ padding: '8px 0' }}>ADD_MORE</td>
-                              <td style={{ textAlign: 'right', color: 'white' }}>$4.99 per Permanent Slot</td>
+                              <td style={{ textAlign: 'right', color: 'white' }}>$5.95 per Permanent Slot</td>
                             </tr>
                           </tbody>
                         </table>
