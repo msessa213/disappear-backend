@@ -304,7 +304,7 @@ async def sync(db: Session = Depends(get_db)):
     }
 
 
-# --- PAYMENTS & WEBHOOKS (FIXED PRICING: $5.95 / $1.99) ---
+# --- PAYMENTS & WEBHOOKS (FIXED PRICING LOGIC) ---
 
 @app.post("/payments/create-session")
 async def create_checkout_session(request: Request):
@@ -312,15 +312,16 @@ async def create_checkout_session(request: Request):
         body = await request.json()
         etype = str(body.get("expansion_type", "")).lower()
 
-        # LOGIC: $5.95 for ANY Permanent Slot Expansion (Phone or Email/VCC)
-        # LOGIC: $1.99 for ANY Cooldown Bypass (Emergency Wipe/Instant Mint)
+        # FIXED LOGIC: Strict check for expansion vs bypass
         if "permanent" in etype or "data" in etype or "phone" in etype:
+            # All Slot/Phone expansions are $5.95 one-time
             item_name = "Permanent Shield Slot Expansion (+1 Capacity)"
-            unit_amount = 595 # $5.95
+            unit_amount = 595 
             metadata = {"purchase_type": "permanent_slot"}
         else:
+            # Everything else (emergency_wipe, cooldown bypass) is $1.99
             item_name = "Emergency Wipe Protocol (Instant Cooldown Bypass)"
-            unit_amount = 199 # $1.99
+            unit_amount = 199 
             metadata = {"purchase_type": "cooldown_bypass"}
 
         session = stripe.checkout.Session.create(
@@ -333,7 +334,7 @@ async def create_checkout_session(request: Request):
                 },
                 'quantity': 1,
             }],
-            mode="payment", # FORCE ONE-TIME PAYMENT ONLY
+            mode="payment", # ONE-TIME PAYMENT
             metadata=metadata,
             success_url="https://disappearco.com?payment=success",
             cancel_url="https://disappearco.com?payment=cancel",
@@ -360,11 +361,9 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         profile = db.query(DBProfile).first()
         if profile:
             if purchase_type == "permanent_slot":
-                # Increment total capacity
                 profile.bonus_credits += 1
-                action = "PERMANENT_SLOT_ACTIVATED"
+                action = "PERMANENT_CAPACITY_EXPANDED"
             else:
-                # Log bypass for minting route to see
                 action = "COOLDOWN_BYPASS_PURCHASED"
             
             db.add(DBPurgeLog(action_type=action, node_id=f"STRIPE_{session['id'][-6:]}"))
@@ -383,7 +382,7 @@ async def get_aliases(db: Session = Depends(get_db)):
 
 @app.post("/aliases/mint")
 async def generate_alias(request: AliasRequest, db: Session = Depends(get_db)):
-    """Generates an alias with 12h cooldown, bypassed if $1.99 was paid"""
+    """Generates an alias with 12h cooldown and bypass check"""
     profile = db.query(DBProfile).first()
     bonus = profile.bonus_credits if profile else 0
     phone_bonus = profile.phone_line_bonus if profile else 0
@@ -400,10 +399,10 @@ async def generate_alias(request: AliasRequest, db: Session = Depends(get_db)):
         if current_phones >= max_phones:
             raise HTTPException(status_code=403, detail="PHONE_CAPACITY_REACHED")
 
-    # Cooldown Logic check
+    # Cooldown Logic (Check for Paid Bypass)
     last_burn = db.query(DBPurgeLog).filter(DBPurgeLog.action_type == "ALIAS_TERMINATED").order_by(DBPurgeLog.timestamp.desc()).first()
     
-    # Check for recent $1.99 bypass payment (last 15 mins)
+    # Check if a bypass was paid for in the last 15 mins
     has_bypass = db.query(DBPurgeLog).filter(
         DBPurgeLog.action_type == "COOLDOWN_BYPASS_PURCHASED",
         DBPurgeLog.timestamp > datetime.utcnow() - timedelta(minutes=15)

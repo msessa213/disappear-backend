@@ -304,27 +304,24 @@ async def sync(db: Session = Depends(get_db)):
     }
 
 
-# --- PAYMENTS & WEBHOOKS ---
+# --- PAYMENTS & WEBHOOKS (FIXED PRICING: $5.95 / $1.99) ---
 
 @app.post("/payments/create-session")
 async def create_checkout_session(request: Request):
     try:
         body = await request.json()
-        # We lowercase everything to avoid matching errors
         etype = str(body.get("expansion_type", "")).lower()
 
-        # REVERSED LOGIC: Default to 1.99 unless it is EXPLICITLY a phone line
-        if "phone" in etype:
-            item_name = "Elite Secure Mobile Line (Monthly Add-on)"
-            unit_amount = 999
-            mode = "subscription"
-            recurring = {"interval": "month"}
+        # LOGIC: $5.95 for ANY Permanent Slot Expansion (Phone or Email/VCC)
+        # LOGIC: $1.99 for ANY Cooldown Bypass (Emergency Wipe/Instant Mint)
+        if "permanent" in etype or "data" in etype or "phone" in etype:
+            item_name = "Permanent Shield Slot Expansion (+1 Capacity)"
+            unit_amount = 595 # $5.95
+            metadata = {"purchase_type": "permanent_slot"}
         else:
-            # This catches "emergency_wipe", "data", empty strings, and nulls
-            item_name = f"Emergency Wipe Protocol [REV15]" # Unique name to break Stripe cache
-            unit_amount = 199
-            mode = "payment"
-            recurring = None
+            item_name = "Emergency Wipe Protocol (Instant Cooldown Bypass)"
+            unit_amount = 199 # $1.99
+            metadata = {"purchase_type": "cooldown_bypass"}
 
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
@@ -333,11 +330,11 @@ async def create_checkout_session(request: Request):
                     'currency': 'usd',
                     'product_data': {'name': item_name},
                     'unit_amount': unit_amount,
-                    'recurring': recurring
                 },
                 'quantity': 1,
             }],
-            mode=mode,
+            mode="payment", # FORCE ONE-TIME PAYMENT ONLY
+            metadata=metadata,
             success_url="https://disappearco.com?payment=success",
             cancel_url="https://disappearco.com?payment=cancel",
         )
@@ -345,6 +342,34 @@ async def create_checkout_session(request: Request):
     except Exception as e:
         print(f"STRIPE ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/payments/webhook")
+async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
+    """Verifies Stripe signature and updates DBProfile capacity or authorized bypass"""
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+    except Exception as e:
+        return Response(content=str(e), status_code=400)
+
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        purchase_type = session.get("metadata", {}).get("purchase_type")
+        profile = db.query(DBProfile).first()
+        if profile:
+            if purchase_type == "permanent_slot":
+                # Increment total capacity
+                profile.bonus_credits += 1
+                action = "PERMANENT_SLOT_ACTIVATED"
+            else:
+                # Log bypass for minting route to see
+                action = "COOLDOWN_BYPASS_PURCHASED"
+            
+            db.add(DBPurgeLog(action_type=action, node_id=f"STRIPE_{session['id'][-6:]}"))
+            db.commit()
+    return {"status": "success"}
 
 
 # --- PII CONTROL ROUTES ---
@@ -358,7 +383,7 @@ async def get_aliases(db: Session = Depends(get_db)):
 
 @app.post("/aliases/mint")
 async def generate_alias(request: AliasRequest, db: Session = Depends(get_db)):
-    """Generates an alias with 12h cooldown and bypass notification"""
+    """Generates an alias with 12h cooldown, bypassed if $1.99 was paid"""
     profile = db.query(DBProfile).first()
     bonus = profile.bonus_credits if profile else 0
     phone_bonus = profile.phone_line_bonus if profile else 0
@@ -375,9 +400,16 @@ async def generate_alias(request: AliasRequest, db: Session = Depends(get_db)):
         if current_phones >= max_phones:
             raise HTTPException(status_code=403, detail="PHONE_CAPACITY_REACHED")
 
-    # Cooldown Logic (Updated to 12h)
+    # Cooldown Logic check
     last_burn = db.query(DBPurgeLog).filter(DBPurgeLog.action_type == "ALIAS_TERMINATED").order_by(DBPurgeLog.timestamp.desc()).first()
-    if last_burn and (datetime.utcnow() - last_burn.timestamp) < timedelta(hours=COOLDOWN_HOURS):
+    
+    # Check for recent $1.99 bypass payment (last 15 mins)
+    has_bypass = db.query(DBPurgeLog).filter(
+        DBPurgeLog.action_type == "COOLDOWN_BYPASS_PURCHASED",
+        DBPurgeLog.timestamp > datetime.utcnow() - timedelta(minutes=15)
+    ).first()
+
+    if not has_bypass and last_burn and (datetime.utcnow() - last_burn.timestamp) < timedelta(hours=COOLDOWN_HOURS):
         raise HTTPException(
             status_code=429, 
             detail={"error": "COOL_DOWN_ACTIVE", "bypass_authorized": False}
