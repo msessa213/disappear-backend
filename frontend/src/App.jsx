@@ -195,14 +195,20 @@ function App() {
     // AUTHENTICATION_BRIDGE: Capture local user ID to bind payment event
     const activeUserId = localStorage.getItem("disappear_user_id") || "anonymous_agent";
 
-    const msg = (type === 'phone' || type === 'data' || type === 'permanent_slot') ? "EXPANDING PERMANENT CAPACITY..." : "REQUESTING BYPASS TUNNEL...";
+    // SYNC FIX: Ensure type strings match logic in latest main.py for $5.95 price
+    const mappedType = (type === 'phone' || type === 'data' || type === 'permanent_slot') 
+        ? 'permanent_slot' 
+        : 'cooldown_bypass';
+
+    const msg = (mappedType === 'permanent_slot') ? "EXPANDING PERMANENT CAPACITY..." : "REQUESTING BYPASS TUNNEL...";
     triggerToast(msg);
+    
     try {
       const res = await secureRequest(`${API_BASE_URL}/payments/create-session`, { 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-            expansion_type: type,
+            expansion_type: mappedType,
             user_id: activeUserId 
         })
       });
@@ -216,7 +222,7 @@ function App() {
       triggerToast("PAYMENT NODE OFFLINE"); 
       setIsProcessingPayment(false);
     } finally {
-      // RESET BUTTON LOGIC: Ensures button becomes clickable again if user backs out or session fails
+      // RESET BUTTON LOGIC: Ensures button becomes clickable again if user backs out
       setTimeout(() => setIsProcessingPayment(false), 5000);
     }
   };
@@ -684,7 +690,7 @@ function App() {
                         <span className="field-label">ACTIVE PHONE LINES</span>
                         <span className="tiger-text">{phones.length} / 2</span>
                     </div>
-                    <button className="purchase-btn" style={{borderColor: 'var(--tiger-blue)'}} disabled={isProcessingPayment} onClick={() => handlePurchaseExpansion('phone')}>
+                    <button className="purchase-btn" style={{borderColor: 'var(--tiger-blue)'}} disabled={isProcessingPayment} onClick={() => handlePurchaseExpansion('permanent_slot')}>
                       {isProcessingPayment ? "PROCESSING..." : "+ PROVISION EXTRA MOBILE LINE ($5.95)"}
                     </button>
                 </div>
