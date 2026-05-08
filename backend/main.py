@@ -21,6 +21,7 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
+    # This prevents the app from even starting with a "guess" password
     raise RuntimeError("DATABASE_URL not found in environment!")
 
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
@@ -312,7 +313,7 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
         raw_type = body.get("expansion_type", "")
         etype = str(raw_type).lower()
         
-        # KEY FIX: Map the User ID to metadata so the webhook knows WHO to update
+        # KEY FIX: Find the actual profile to get the real User ID for the metadata handshake
         profile = db.query(DBProfile).order_by(DBProfile.created_at.asc()).first()
         user_id = profile.id if profile else "anonymous_agent"
 
@@ -353,14 +354,14 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
 
 @app.post("/payments/webhook")
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
-    """Verifies Stripe signature and updates DBProfile capacity"""
+    """Verifies Stripe signature and updates DBProfile capacity with diagnostic logging"""
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
     except Exception as e:
         print(f"WEBHOOK SIG ERROR: {e}")
-        return Response(content=str(e), status_code=400)
+        return Response(content="SIG_FAIL", status_code=400)
 
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
@@ -368,26 +369,30 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         purchase_type = metadata.get("purchase_type")
         user_id = metadata.get("user_id")
         
-        # Match the User ID specifically to ensure the right account is updated
+        print(f"WEBHOOK_INBOUND: {purchase_type} for UID {user_id}")
+
+        # TARGETED LOOKUP: Find the specific agent account to update
         profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
         if not profile:
-            profile = db.query(DBProfile).first() # Fallback
+            profile = db.query(DBProfile).first() # Final fallback to allow revenue capture
 
         if profile:
             if purchase_type == "permanent_slot":
                 profile.bonus_credits += 1
                 action = "PERMANENT_CAPACITY_EXPANDED"
+                print(f"DB_UPDATE: Permanent slot added to account {profile.id}")
             else:
                 action = "COOLDOWN_BYPASS_PURCHASED"
+                print(f"DB_UPDATE: Tactical cooldown bypass authorized for {profile.id}")
 
-            # HARD-STAMP: Explicit UTC timestamp for the 15-minute validity window
+            # HARD-STAMP: Explicit UTC timestamp for the 15-minute tactical validity window
             db.add(DBPurgeLog(
                 action_type=action, 
                 node_id=f"STRIPE_{session['id'][-8:]}",
                 timestamp=datetime.utcnow()
             ))
             db.commit()
-            print(f"WEBHOOK SUCCESS: Applied {action} to {profile.id}")
+            print("DB_COMMIT: Webhook process finalized successfully.")
             
     return {"status": "success"}
 
@@ -403,7 +408,7 @@ async def get_aliases(db: Session = Depends(get_db)):
 
 @app.post("/aliases/mint")
 async def generate_alias(request: AliasRequest, db: Session = Depends(get_db)):
-    """Generates an alias with 12h cooldown and bypass check"""
+    """Generates an alias with 12h cooldown and bypass verification"""
     profile = db.query(DBProfile).first()
     bonus = profile.bonus_credits if profile else 0
     phone_bonus = profile.phone_line_bonus if profile else 0
@@ -423,7 +428,7 @@ async def generate_alias(request: AliasRequest, db: Session = Depends(get_db)):
     # Cooldown Logic
     last_burn = db.query(DBPurgeLog).filter(DBPurgeLog.action_type == "ALIAS_TERMINATED").order_by(DBPurgeLog.timestamp.desc()).first()
     
-    # BYPASS VERIFICATION: Check for purchase within 15-minute tactical window
+    # BYPASS VERIFICATION: Check for tactical override purchased in the last 15 minutes
     has_bypass = db.query(DBPurgeLog).filter(
         DBPurgeLog.action_type == "COOLDOWN_BYPASS_PURCHASED",
         DBPurgeLog.timestamp > datetime.utcnow() - timedelta(minutes=15)
