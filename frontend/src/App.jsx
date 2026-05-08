@@ -195,14 +195,13 @@ function App() {
     // AUTHENTICATION_BRIDGE: Capture local user ID to bind payment event
     const activeUserId = localStorage.getItem("disappear_user_id") || "anonymous_agent";
 
-    // HARD FIX: Explicitly map the 'permanent_slot' type so the Backend hits the $5.95 tier
+    // ABSOLUTE FIX: If it's a slot or line, force the 'permanent_slot' keyword so Backend hits $5.95
     const expansionType = (type === 'phone' || type === 'data' || type === 'permanent_slot') 
       ? 'permanent_slot' 
       : 'cooldown_bypass';
 
     const msg = (expansionType === 'permanent_slot') ? "EXPANDING PERMANENT CAPACITY..." : "REQUESTING BYPASS TUNNEL...";
     triggerToast(msg);
-    
     try {
       const res = await secureRequest(`${API_BASE_URL}/payments/create-session`, { 
         method: "POST",
@@ -222,7 +221,7 @@ function App() {
       triggerToast("PAYMENT NODE OFFLINE"); 
       setIsProcessingPayment(false);
     } finally {
-      // RESET BUTTON LOGIC: Ensures button becomes clickable again after a delay
+      // RESET BUTTON LOGIC: Ensures button becomes clickable again if user backs out or session fails
       setTimeout(() => setIsProcessingPayment(false), 5000);
     }
   };
