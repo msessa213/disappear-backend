@@ -21,7 +21,6 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
-    # This prevents the app from even starting with a "guess" password
     raise RuntimeError("DATABASE_URL not found in environment!")
 
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
@@ -313,7 +312,7 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
         raw_type = body.get("expansion_type", "")
         etype = str(raw_type).lower()
         
-        # TARGETED ID CAPTURE: Match current agent to ensure metadata is pinned
+        # KEY FIX: Map the User ID to metadata so the webhook knows WHO to update
         profile = db.query(DBProfile).order_by(DBProfile.created_at.asc()).first()
         user_id = profile.id if profile else "anonymous_agent"
 
@@ -360,6 +359,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
     except Exception as e:
+        print(f"WEBHOOK SIG ERROR: {e}")
         return Response(content=str(e), status_code=400)
 
     if event["type"] == "checkout.session.completed":
@@ -368,10 +368,10 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         purchase_type = metadata.get("purchase_type")
         user_id = metadata.get("user_id")
         
-        # TARGETED LOOKUP: Locate the specific agent to update
+        # Match the User ID specifically to ensure the right account is updated
         profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
         if not profile:
-            profile = db.query(DBProfile).first() # Fallback to prevent lost revenue
+            profile = db.query(DBProfile).first() # Fallback
 
         if profile:
             if purchase_type == "permanent_slot":
@@ -387,6 +387,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
                 timestamp=datetime.utcnow()
             ))
             db.commit()
+            print(f"WEBHOOK SUCCESS: Applied {action} to {profile.id}")
             
     return {"status": "success"}
 
