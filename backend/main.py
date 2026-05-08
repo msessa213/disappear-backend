@@ -304,7 +304,7 @@ async def sync(db: Session = Depends(get_db)):
     }
 
 
-# --- PAYMENTS & WEBHOOKS (FIXED PRICING LOGIC) ---
+# --- PAYMENTS & WEBHOOKS (HARD-CODED PRICING FIREWALL) ---
 
 @app.post("/payments/create-session")
 async def create_checkout_session(request: Request):
@@ -312,14 +312,13 @@ async def create_checkout_session(request: Request):
         body = await request.json()
         etype = str(body.get("expansion_type", "")).lower()
 
-        # FIXED LOGIC: Strict check for expansion vs bypass
+        # FIXED LOGIC: Any slot or phone expansion is strictly 5.95 one-time.
         if "permanent" in etype or "data" in etype or "phone" in etype:
-            # All Slot/Phone expansions are $5.95 one-time
             item_name = "Permanent Shield Slot Expansion (+1 Capacity)"
             unit_amount = 595 
             metadata = {"purchase_type": "permanent_slot"}
         else:
-            # Everything else (emergency_wipe, cooldown bypass) is $1.99
+            # Everything else (bypass/wipe) is strictly 1.99 one-time.
             item_name = "Emergency Wipe Protocol (Instant Cooldown Bypass)"
             unit_amount = 199 
             metadata = {"purchase_type": "cooldown_bypass"}
@@ -334,7 +333,7 @@ async def create_checkout_session(request: Request):
                 },
                 'quantity': 1,
             }],
-            mode="payment", # ONE-TIME PAYMENT
+            mode="payment",
             metadata=metadata,
             success_url="https://disappearco.com?payment=success",
             cancel_url="https://disappearco.com?payment=cancel",
@@ -365,7 +364,6 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
                 action = "PERMANENT_CAPACITY_EXPANDED"
             else:
                 action = "COOLDOWN_BYPASS_PURCHASED"
-            
             db.add(DBPurgeLog(action_type=action, node_id=f"STRIPE_{session['id'][-6:]}"))
             db.commit()
     return {"status": "success"}
@@ -399,10 +397,8 @@ async def generate_alias(request: AliasRequest, db: Session = Depends(get_db)):
         if current_phones >= max_phones:
             raise HTTPException(status_code=403, detail="PHONE_CAPACITY_REACHED")
 
-    # Cooldown Logic (Check for Paid Bypass)
+    # Cooldown Logic
     last_burn = db.query(DBPurgeLog).filter(DBPurgeLog.action_type == "ALIAS_TERMINATED").order_by(DBPurgeLog.timestamp.desc()).first()
-    
-    # Check if a bypass was paid for in the last 15 mins
     has_bypass = db.query(DBPurgeLog).filter(
         DBPurgeLog.action_type == "COOLDOWN_BYPASS_PURCHASED",
         DBPurgeLog.timestamp > datetime.utcnow() - timedelta(minutes=15)
