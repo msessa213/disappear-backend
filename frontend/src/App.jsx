@@ -191,13 +191,20 @@ function App() {
   const handlePurchaseExpansion = async (type) => {
     if (isProcessingPayment) return;
     setIsProcessingPayment(true);
+    
+    // AUTHENTICATION_BRIDGE: Capture local user ID to bind payment event
+    const activeUserId = localStorage.getItem("disappear_user_id") || "anonymous_agent";
+
     const msg = type === 'phone' ? "REQUESTING SECURE LINE..." : "EXPANDING VAULT CAPACITY...";
     triggerToast(msg);
     try {
       const res = await secureRequest(`${API_BASE_URL}/payments/create-session`, { 
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ expansion_type: type })
+        body: JSON.stringify({ 
+            expansion_type: type,
+            user_id: activeUserId 
+        })
       });
       const data = await res.json();
       if (data.url) {

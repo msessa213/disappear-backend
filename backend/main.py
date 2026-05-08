@@ -313,18 +313,20 @@ async def create_checkout_session(request: Request):
         # We lowercase everything to avoid matching errors
         etype = str(body.get("expansion_type", "")).lower()
 
-        # REVERSED LOGIC: Default to 1.99 unless it is EXPLICITLY a phone line
+        # Metadata identifies the purchase type in the webhook
         if "phone" in etype:
             item_name = "Elite Secure Mobile Line (Monthly Add-on)"
             unit_amount = 999
             mode = "subscription"
             recurring = {"interval": "month"}
+            metadata = {"purchase_type": "phone_bonus"}
         else:
             # This catches "emergency_wipe", "data", empty strings, and nulls
             item_name = f"Emergency Wipe Protocol [REV15]" # Unique name to break Stripe cache
             unit_amount = 199
             mode = "payment"
             recurring = None
+            metadata = {"purchase_type": "credit_bonus"}
 
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
@@ -338,6 +340,7 @@ async def create_checkout_session(request: Request):
                 'quantity': 1,
             }],
             mode=mode,
+            metadata=metadata,
             success_url="https://disappearco.com?payment=success",
             cancel_url="https://disappearco.com?payment=cancel",
         )
@@ -345,6 +348,45 @@ async def create_checkout_session(request: Request):
     except Exception as e:
         print(f"STRIPE ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/payments/webhook")
+async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
+    """
+    Listener for Stripe events. Updates DBProfile when a payment succeeds.
+    """
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, STRIPE_WEBHOOK_SECRET
+        )
+    except Exception as e:
+        return Response(content=str(e), status_code=400)
+
+    # Handle the successful payment event
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        purchase_type = session.get("metadata", {}).get("purchase_type")
+        
+        # Target the user profile to increase capacity
+        profile = db.query(DBProfile).first()
+        
+        if profile:
+            if purchase_type == "phone_bonus":
+                profile.phone_line_bonus += 1
+                action = "PHONE_CAPACITY_INCREASED"
+            else:
+                profile.bonus_credits += 1
+                action = "CREDIT_LIMIT_INCREASED"
+            
+            # Log the event for Central Command
+            db.add(DBPurgeLog(action_type=action, node_id=f"STRIPE_{session['id'][-6:]}"))
+            db.commit()
+            print(f"✅ WEBHOOK SUCCESS: {action} applied.")
+
+    return {"status": "success"}
 
 
 # --- PII CONTROL ROUTES ---
