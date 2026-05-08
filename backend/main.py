@@ -205,7 +205,7 @@ class ExpansionRequest(BaseModel):
 @app.get("/")
 async def health_status():
     """Health check endpoint"""
-    return {"status": "ACTIVE", "timestamp": datetime.now().isoformat()}
+    return {"status": "VERSION_20_LIVE", "timestamp": datetime.now().isoformat()}
 
 
 # --- NEW: FREE RECONNAISSANCE SCANNER ---
@@ -304,7 +304,7 @@ async def sync(db: Session = Depends(get_db)):
     }
 
 
-# --- PAYMENTS & WEBHOOKS ---
+# --- PAYMENTS & WEBHOOKS (FINAL PRICING FIREWALL) ---
 
 @app.post("/payments/create-session")
 async def create_checkout_session(request: Request):
@@ -313,15 +313,16 @@ async def create_checkout_session(request: Request):
         raw_type = body.get("expansion_type")
         etype = str(raw_type).lower() if raw_type else ""
 
-        # FIX: Strict Price Firewall
-        if "permanent" in etype or "data" in etype or "phone" in etype:
-            item_name = "Permanent Shield Slot Expansion (+1 Capacity)"
-            unit_amount = 595  # $5.95
-            metadata = {"purchase_type": "permanent_slot"}
-        else:
+        # RULE: Explicitly check for cooldown/wipe first for 1.99
+        if "cooldown" in etype or "wipe" in etype or "emergency" in etype:
             item_name = "Emergency Wipe Protocol (Instant Cooldown Bypass)"
-            unit_amount = 199  # $1.99
+            unit_amount = 199 # $1.99
             metadata = {"purchase_type": "cooldown_bypass"}
+        # DEFAULT/SLOT RULE: Force everything else to 5.95
+        else:
+            item_name = "Permanent Shield Slot Expansion (+1 Capacity)"
+            unit_amount = 595 # $5.95
+            metadata = {"purchase_type": "permanent_slot"}
 
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
@@ -333,7 +334,7 @@ async def create_checkout_session(request: Request):
                 },
                 'quantity': 1,
             }],
-            mode="payment", 
+            mode="payment", # FORCE ONE-TIME PAYMENT
             metadata=metadata,
             success_url="https://disappearco.com?payment=success",
             cancel_url="https://disappearco.com?payment=cancel",
@@ -346,7 +347,7 @@ async def create_checkout_session(request: Request):
 
 @app.post("/payments/webhook")
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
-    """Verifies Stripe signature and updates DBProfile capacity or authorized bypass"""
+    """Verifies Stripe signature and updates DBProfile capacity"""
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
     try:
@@ -397,7 +398,7 @@ async def generate_alias(request: AliasRequest, db: Session = Depends(get_db)):
         if current_phones >= max_phones:
             raise HTTPException(status_code=403, detail="PHONE_CAPACITY_REACHED")
 
-    # Cooldown Logic (Check for Paid Bypass)
+    # Cooldown Logic
     last_burn = db.query(DBPurgeLog).filter(DBPurgeLog.action_type == "ALIAS_TERMINATED").order_by(DBPurgeLog.timestamp.desc()).first()
     has_bypass = db.query(DBPurgeLog).filter(
         DBPurgeLog.action_type == "COOLDOWN_BYPASS_PURCHASED",
@@ -491,7 +492,7 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
     """Handles raw profile ingestion with granular name separation"""
     try:
         data = await request.json()
-        profile_id = fuser_{random.randint(1000, 9999)}
+        profile_id = f"user_{random.randint(1000, 9999)}"
         new_profile = DBProfile(
             id=profile_id,
             first_name=data.get("firstName", "Unknown"),
