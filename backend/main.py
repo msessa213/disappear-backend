@@ -304,23 +304,23 @@ async def sync(db: Session = Depends(get_db)):
     }
 
 
-# --- PAYMENTS & WEBHOOKS (HARD-CODED PRICING FIREWALL) ---
+# --- PAYMENTS & WEBHOOKS ---
 
 @app.post("/payments/create-session")
 async def create_checkout_session(request: Request):
     try:
         body = await request.json()
-        etype = str(body.get("expansion_type", "")).lower()
+        raw_type = body.get("expansion_type")
+        etype = str(raw_type).lower() if raw_type else ""
 
-        # FIXED LOGIC: Any slot or phone expansion is strictly 5.95 one-time.
+        # FIX: Strict Price Firewall
         if "permanent" in etype or "data" in etype or "phone" in etype:
             item_name = "Permanent Shield Slot Expansion (+1 Capacity)"
-            unit_amount = 595 
+            unit_amount = 595  # $5.95
             metadata = {"purchase_type": "permanent_slot"}
         else:
-            # Everything else (bypass/wipe) is strictly 1.99 one-time.
             item_name = "Emergency Wipe Protocol (Instant Cooldown Bypass)"
-            unit_amount = 199 
+            unit_amount = 199  # $1.99
             metadata = {"purchase_type": "cooldown_bypass"}
 
         session = stripe.checkout.Session.create(
@@ -333,7 +333,7 @@ async def create_checkout_session(request: Request):
                 },
                 'quantity': 1,
             }],
-            mode="payment",
+            mode="payment", 
             metadata=metadata,
             success_url="https://disappearco.com?payment=success",
             cancel_url="https://disappearco.com?payment=cancel",
@@ -397,7 +397,7 @@ async def generate_alias(request: AliasRequest, db: Session = Depends(get_db)):
         if current_phones >= max_phones:
             raise HTTPException(status_code=403, detail="PHONE_CAPACITY_REACHED")
 
-    # Cooldown Logic
+    # Cooldown Logic (Check for Paid Bypass)
     last_burn = db.query(DBPurgeLog).filter(DBPurgeLog.action_type == "ALIAS_TERMINATED").order_by(DBPurgeLog.timestamp.desc()).first()
     has_bypass = db.query(DBPurgeLog).filter(
         DBPurgeLog.action_type == "COOLDOWN_BYPASS_PURCHASED",
@@ -491,7 +491,7 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
     """Handles raw profile ingestion with granular name separation"""
     try:
         data = await request.json()
-        profile_id = f"user_{random.randint(1000, 9999)}"
+        profile_id = fuser_{random.randint(1000, 9999)}
         new_profile = DBProfile(
             id=profile_id,
             first_name=data.get("firstName", "Unknown"),
