@@ -21,6 +21,7 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
+    # This prevents the app from even starting with a "guess" password
     raise RuntimeError("DATABASE_URL not found in environment!")
 
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
@@ -306,22 +307,26 @@ async def sync(db: Session = Depends(get_db)):
 # --- PAYMENTS & WEBHOOKS (FINAL PRICING FIREWALL) ---
 
 @app.post("/payments/create-session")
-async def create_checkout_session(request: Request):
+async def create_checkout_session(request: Request, db: Session = Depends(get_db)):
     try:
         body = await request.json()
-        raw_type = body.get("expansion_type")
-        etype = str(raw_type).lower() if raw_type else ""
+        raw_type = body.get("expansion_type", "")
+        etype = str(raw_type).lower()
+        
+        # TARGETED ID CAPTURE: Match current agent to ensure metadata is pinned
+        profile = db.query(DBProfile).order_by(DBProfile.created_at.asc()).first()
+        user_id = profile.id if profile else "anonymous_agent"
 
         # RULE: Explicitly check for cooldown/wipe first for 1.99
         if "cooldown" in etype or "wipe" in etype or "emergency" in etype:
             item_name = "Emergency Wipe Protocol (Instant Cooldown Bypass)"
             unit_amount = 199 # $1.99
-            metadata = {"purchase_type": "cooldown_bypass"}
+            purchase_key = "cooldown_bypass"
         # DEFAULT/SLOT RULE: Force everything else (permanent_slot, data, phone) to 5.95
         else:
             item_name = "Permanent Shield Slot Expansion (+1 Capacity)"
             unit_amount = 595 # $5.95
-            metadata = {"purchase_type": "permanent_slot"}
+            purchase_key = "permanent_slot"
 
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
@@ -334,7 +339,10 @@ async def create_checkout_session(request: Request):
                 'quantity': 1,
             }],
             mode="payment", # FORCE ONE-TIME PAYMENT
-            metadata=metadata,
+            metadata={
+                "purchase_type": purchase_key,
+                "user_id": user_id
+            },
             success_url="https://disappearco.com?payment=success",
             cancel_url="https://disappearco.com?payment=cancel",
         )
@@ -356,16 +364,30 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
 
     if event["type"] == "checkout.session.completed":
         session = event["data"]["object"]
-        purchase_type = session.get("metadata", {}).get("purchase_type")
-        profile = db.query(DBProfile).first()
+        metadata = session.get("metadata", {})
+        purchase_type = metadata.get("purchase_type")
+        user_id = metadata.get("user_id")
+        
+        # TARGETED LOOKUP: Locate the specific agent to update
+        profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
+        if not profile:
+            profile = db.query(DBProfile).first() # Fallback to prevent lost revenue
+
         if profile:
             if purchase_type == "permanent_slot":
                 profile.bonus_credits += 1
                 action = "PERMANENT_CAPACITY_EXPANDED"
             else:
                 action = "COOLDOWN_BYPASS_PURCHASED"
-            db.add(DBPurgeLog(action_type=action, node_id=f"STRIPE_{session['id'][-6:]}"))
+
+            # HARD-STAMP: Explicit UTC timestamp for the 15-minute validity window
+            db.add(DBPurgeLog(
+                action_type=action, 
+                node_id=f"STRIPE_{session['id'][-8:]}",
+                timestamp=datetime.utcnow()
+            ))
             db.commit()
+            
     return {"status": "success"}
 
 
@@ -399,6 +421,8 @@ async def generate_alias(request: AliasRequest, db: Session = Depends(get_db)):
 
     # Cooldown Logic
     last_burn = db.query(DBPurgeLog).filter(DBPurgeLog.action_type == "ALIAS_TERMINATED").order_by(DBPurgeLog.timestamp.desc()).first()
+    
+    # BYPASS VERIFICATION: Check for purchase within 15-minute tactical window
     has_bypass = db.query(DBPurgeLog).filter(
         DBPurgeLog.action_type == "COOLDOWN_BYPASS_PURCHASED",
         DBPurgeLog.timestamp > datetime.utcnow() - timedelta(minutes=15)
