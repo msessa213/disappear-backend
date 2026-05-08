@@ -21,7 +21,6 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
-    # This prevents the app from even starting with a "guess" password
     raise RuntimeError("DATABASE_URL not found in environment!")
 
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
@@ -318,7 +317,7 @@ async def create_checkout_session(request: Request):
             item_name = "Emergency Wipe Protocol (Instant Cooldown Bypass)"
             unit_amount = 199 # $1.99
             metadata = {"purchase_type": "cooldown_bypass"}
-        # DEFAULT/SLOT RULE: Force everything else to 5.95
+        # DEFAULT/SLOT RULE: Force everything else (permanent_slot, data, phone) to 5.95
         else:
             item_name = "Permanent Shield Slot Expansion (+1 Capacity)"
             unit_amount = 595 # $5.95
