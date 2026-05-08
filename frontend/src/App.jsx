@@ -195,12 +195,12 @@ function App() {
     // AUTHENTICATION_BRIDGE: Capture local user ID to bind payment event
     const activeUserId = localStorage.getItem("disappear_user_id") || "anonymous_agent";
 
-    // SYNC FIX: Ensure type strings match logic in latest main.py for $5.95 price
-    const mappedType = (type === 'phone' || type === 'data' || type === 'permanent_slot') 
-        ? 'permanent_slot' 
-        : 'cooldown_bypass';
+    // HARD FIX: Explicitly map the 'permanent_slot' type so the Backend hits the $5.95 tier
+    const expansionType = (type === 'phone' || type === 'data' || type === 'permanent_slot') 
+      ? 'permanent_slot' 
+      : 'cooldown_bypass';
 
-    const msg = (mappedType === 'permanent_slot') ? "EXPANDING PERMANENT CAPACITY..." : "REQUESTING BYPASS TUNNEL...";
+    const msg = (expansionType === 'permanent_slot') ? "EXPANDING PERMANENT CAPACITY..." : "REQUESTING BYPASS TUNNEL...";
     triggerToast(msg);
     
     try {
@@ -208,7 +208,7 @@ function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-            expansion_type: mappedType,
+            expansion_type: expansionType,
             user_id: activeUserId 
         })
       });
@@ -222,7 +222,7 @@ function App() {
       triggerToast("PAYMENT NODE OFFLINE"); 
       setIsProcessingPayment(false);
     } finally {
-      // RESET BUTTON LOGIC: Ensures button becomes clickable again if user backs out
+      // RESET BUTTON LOGIC: Ensures button becomes clickable again after a delay
       setTimeout(() => setIsProcessingPayment(false), 5000);
     }
   };
@@ -737,7 +737,7 @@ function App() {
                           <code className="card-digits" onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("COPIED")}}> {c.number} </code>
                           <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #111', paddingTop: '10px', marginTop: '10px'}}>
                              <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>EXP</span><strong>{c.expiry || '08/28'}</strong></div>
-                             <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>CVV</span><strong>{c.cvv || '***'}</strong></div>
+                             <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>CVV</span><strong>***</strong></div>
                           </div>
                         </div>
                       </div>
