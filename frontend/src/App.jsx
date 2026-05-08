@@ -195,7 +195,7 @@ function App() {
     // AUTHENTICATION_BRIDGE: Capture local user ID to bind payment event
     const activeUserId = localStorage.getItem("disappear_user_id") || "anonymous_agent";
 
-    const msg = (type === 'permanent_slot' || type === 'data' || type === 'phone') ? "EXPANDING VAULT CAPACITY..." : "REQUESTING BYPASS TUNNEL...";
+    const msg = (type === 'phone' || type === 'data' || type === 'permanent_slot') ? "EXPANDING PERMANENT CAPACITY..." : "REQUESTING BYPASS TUNNEL...";
     triggerToast(msg);
     try {
       const res = await secureRequest(`${API_BASE_URL}/payments/create-session`, { 
@@ -214,10 +214,10 @@ function App() {
       }
     } catch (err) { 
       triggerToast("PAYMENT NODE OFFLINE"); 
-      setIsProcessingPayment(false); // FIXED: RESET BUTTON ON ERROR
+      setIsProcessingPayment(false);
     } finally {
-      // Small timeout to allow browser to start redirect before enabling
-      setTimeout(() => setIsProcessingPayment(false), 8000); 
+      // RESET BUTTON LOGIC: Ensures button becomes clickable again if user backs out or session fails
+      setTimeout(() => setIsProcessingPayment(false), 5000);
     }
   };
 
@@ -249,15 +249,11 @@ function App() {
         body: JSON.stringify({ type, label: aliasLabel })
       });
 
-      // NEW: CAPACITY FULL POPUP LOGIC
+      // TRIGGER POPUP TO BUY MORE SLOTS IF AT MAX
       if (res.status === 403) { 
-        setIsEncrypting(false);
-        const confirmPurchase = window.confirm(
-          "IDENTITY CAPACITY FULL: You have reached your concurrent slot limit. \n\nPurchase a Permanent Additional Slot for $5.95?"
-        );
-        if (confirmPurchase) {
-          handlePurchaseExpansion("permanent_slot");
-        }
+        setIsEncrypting(false); 
+        const upgrade = window.confirm("IDENTITY CAPACITY FULL: You have utilized all available nodes. \n\nAdd a Permanent Vault Slot for $5.95?");
+        if (upgrade) handlePurchaseExpansion("permanent_slot");
         return; 
       }
       
@@ -268,7 +264,7 @@ function App() {
           "EMERGENCY PROTOCOL: Node is currently cooling down (12h window). \n\nInitiate Emergency Protocol Wipe for $1.99?"
         );
         if (confirmBypass) {
-            handlePurchaseExpansion("emergency_wipe");
+            handlePurchaseExpansion("cooldown_bypass");
         }
         return; 
       }
@@ -332,15 +328,10 @@ function App() {
         body: JSON.stringify({ label: newCardLabel })
       });
       
-      // NEW: CAPACITY FULL POPUP LOGIC
       if (response.status === 403) { 
-        setIsEncrypting(false);
-        const confirmPurchase = window.confirm(
-          "IDENTITY CAPACITY FULL: You have reached your concurrent slot limit. \n\nPurchase a Permanent Additional Slot for $5.95?"
-        );
-        if (confirmPurchase) {
-          handlePurchaseExpansion("permanent_slot");
-        }
+        setIsEncrypting(false); 
+        const upgrade = window.confirm("IDENTITY CAPACITY FULL: All protection nodes are active. \n\nAdd a Permanent Vault Slot for $5.95?");
+        if (upgrade) handlePurchaseExpansion("permanent_slot");
         return; 
       }
 
@@ -686,13 +677,16 @@ function App() {
                         <span className="tiger-text">{credits.used} / {credits.total}</span>
                     </div>
                     <button className="purchase-btn" disabled={isProcessingPayment} onClick={() => handlePurchaseExpansion('permanent_slot')}>
-                      {isProcessingPayment ? "UPLINKING..." : "+ ADD PERMANENT VAULT SLOT ($5.95)"}
+                      {isProcessingPayment ? "PROCESSING..." : "+ ADD PERMANENT VAULT SLOT ($5.95)"}
                     </button>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '25px', marginBottom: '10px' }}>
                         <span className="field-label">ACTIVE PHONE LINES</span>
-                        <span className="tiger-text">{phones.length} / {Math.max(2, credits.total - 4)}</span>
+                        <span className="tiger-text">{phones.length} / 2</span>
                     </div>
+                    <button className="purchase-btn" style={{borderColor: 'var(--tiger-blue)'}} disabled={isProcessingPayment} onClick={() => handlePurchaseExpansion('phone')}>
+                      {isProcessingPayment ? "PROCESSING..." : "+ PROVISION EXTRA MOBILE LINE ($5.95)"}
+                    </button>
                 </div>
                 
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
