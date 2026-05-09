@@ -1,0 +1,23 @@
+[
+  {
+    "name": "disappear-api",
+    "image": "243621520640.dkr.ecr.us-east-1.amazonaws.com/disappear-backend:latest",
+    "cpu": 0,
+    "portMappings": [{"containerPort": 8000,"hostPort": 8000,"protocol": "tcp"}],
+    "essential": true,
+    "environment": [
+      {"name": "STRIPE_WEBHOOK_SECRET","value": "whsec_KNUCjGHjdHsF8iMLBHFArMpflGfxg1YH"},
+      {"name": "DATABASE_URL","value": "postgresql://postgres.chymgteinnczqfjqknan:Chase-246-Purge@aws-1-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require"},
+      {"name": "STRIPE_SECRET_KEY","value": "sk_test_51TG1blDn1ZPt54s0xIJDRCTYkS4jQ7kgA8jr1a8QoEAtwADkDHt9UMYE0xpnejlltKn00fPupPGDdY2EYkXnvDIf00flBJiScE"}
+    ],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "/ecs/disappear-task",
+        "awslogs-create-group": "true",
+        "awslogs-region": "us-east-1",
+        "awslogs-stream-prefix": "ecs"
+      }
+    }
+  }
+]

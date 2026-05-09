@@ -9,7 +9,7 @@ import os
 import time
 import stripe
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import Any, List, Optional
 from dotenv import load_dotenv
 
 # --- INITIALIZATION BLOCK ---
@@ -21,7 +21,6 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
-    # This prevents the app from even starting with a "guess" password
     raise RuntimeError("DATABASE_URL not found in environment!")
 
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
@@ -76,7 +75,7 @@ class DBProfile(Base):
     dob = Column(String)
     # Persistent column to track purchased capacity increases
     bonus_credits = Column(Integer, default=0) 
-    # NEW: Specific tracking for purchased premium phone lines
+    # Specific tracking for purchased premium phone lines
     phone_line_bonus = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -119,7 +118,8 @@ origins = [
     "https://disappearco.com",
     "https://www.disappearco.com",
     "https://disappearonline.net",
-    "https://onlinedisappear.com"
+    "https://onlinedisappear.com",
+    "https://api.disappearco.com"
 ]
 
 app.add_middleware(
@@ -364,8 +364,9 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         return Response(content="SIG_FAIL", status_code=400)
 
     if event["type"] == "checkout.session.completed":
-        session = event["data"]["object"]
-        metadata = session.get("metadata", {})
+        session = event['data']['object']
+        # FIXED: session is a StripeObject, convert to dict before using .get()
+        metadata = getattr(session, "metadata", {})
         purchase_type = metadata.get("purchase_type")
         user_id = metadata.get("user_id")
         
@@ -388,7 +389,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
             # HARD-STAMP: Explicit UTC timestamp for the 15-minute tactical validity window
             db.add(DBPurgeLog(
                 action_type=action, 
-                node_id=f"STRIPE_{session['id'][-8:]}",
+                node_id=f"STRIPE_{getattr(session, 'id', 'unknown')[-8:]}",
                 timestamp=datetime.utcnow()
             ))
             db.commit()
@@ -599,7 +600,7 @@ async def generate_purge_receipt(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="UPLINK_FAILURE_S3")
 
 
-# --- SUPPORT & INTELLIGENCE DATA ---
+# --- SUPPORT & FAQ ---
 
 @app.get("/support/manual")
 async def get_operation_manual():
