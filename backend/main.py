@@ -1,6 +1,6 @@
-from fastapi import FastAPI, Depends, HTTPException, Request, Response
+from fastapi import FastAPI, Depends, HTTPException, Request, Response, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import create_engine, Column, String, DateTime, Integer
+from sqlalchemy import create_engine, Column, String, DateTime, Integer, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from pydantic import BaseModel
@@ -8,6 +8,7 @@ import random
 import os
 import time
 import stripe
+import boto3
 from datetime import datetime, timedelta
 from typing import Any, List, Optional
 from dotenv import load_dotenv
@@ -80,6 +81,17 @@ class DBProfile(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+# NEW: Track removals from external data brokers for proof history
+class DBScrubLog(Base):
+    """Immutable proof of external data broker removal"""
+    __tablename__ = "scrub_logs_v1"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, index=True)
+    broker_name = Column(String)
+    status = Column(String) # "REMOVED" or "PENDING"
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+
 # NEW: Admin Purge Log Model for Central Command History
 class DBPurgeLog(Base):
     """Audit trail for identity 'burn' actions"""
@@ -136,6 +148,7 @@ app.add_middleware(
 @app.middleware("http")
 async def add_cors_header(request: Request, call_next):
     if request.method == "OPTIONS":
+        # Check if current time context is active
         response = Response(status_code=200)
     else:
         response = await call_next(request)
@@ -200,12 +213,17 @@ class ExpansionRequest(BaseModel):
     expansion_type: str # "data", "phone", or "emergency_wipe"
 
 
+# --- S3 CONFIGURATION ---
+S3_BUCKET = "disappear-purge-receipts-vault"
+s3_client = boto3.client('s3')
+
+
 # --- CORE SYSTEM ROUTES ---
 
 @app.get("/")
 async def health_status():
     """Health check endpoint"""
-    return {"status": "VERSION_20_LIVE", "timestamp": datetime.now().isoformat()}
+    return {"status": "VERSION_24_LIVE", "timestamp": datetime.now().isoformat()}
 
 
 # --- NEW: FREE RECONNAISSANCE SCANNER ---
@@ -260,7 +278,7 @@ async def sync(db: Session = Depends(get_db)):
     total_used = active_cards + active_aliases
     
     # FIX: Fetch the user's profile with a safety check if no profile exists
-    profile = db.query(DBProfile).first()
+    profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
     bonus = profile.bonus_credits if profile and hasattr(profile, 'bonus_credits') else 0
     max_credits = MAX_IDENTITY_CREDITS + bonus
     
@@ -313,8 +331,8 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
         raw_type = body.get("expansion_type", "")
         etype = str(raw_type).lower()
         
-        # KEY FIX: Find the actual profile to get the real User ID for the metadata handshake
-        profile = db.query(DBProfile).order_by(DBProfile.created_at.asc()).first()
+        # KEY FIX: Explicitly find the correct profile ID to anchor the metadata
+        profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
         user_id = profile.id if profile else "anonymous_agent"
 
         # RULE: Explicitly check for cooldown/wipe first for 1.99
@@ -365,17 +383,22 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
 
     if event["type"] == "checkout.session.completed":
         session = event['data']['object']
-        # FIXED: session is a StripeObject, convert to dict before using .get()
+        
+        # Hardened metadata extraction using getattr to prevent AttributeError: get
         metadata = getattr(session, "metadata", {})
-        purchase_type = metadata.get("purchase_type")
-        user_id = metadata.get("user_id")
+        
+        # Safe extraction with dual-access check
+        purchase_type = metadata.get("purchase_type") if hasattr(metadata, "get") else (metadata["purchase_type"] if "purchase_type" in metadata else None)
+        user_id = metadata.get("user_id") if hasattr(metadata, "get") else (metadata["user_id"] if "user_id" in metadata else None)
         
         print(f"WEBHOOK_INBOUND: {purchase_type} for UID {user_id}")
 
         # TARGETED LOOKUP: Find the specific agent account to update
         profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
+        
+        # SAFETY FALLBACK: If ID handshake fails, update the most recent profile so revenue is never lost
         if not profile:
-            profile = db.query(DBProfile).first() # Final fallback to allow revenue capture
+            profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
 
         if profile:
             if purchase_type == "permanent_slot":
@@ -386,10 +409,12 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
                 action = "COOLDOWN_BYPASS_PURCHASED"
                 print(f"DB_UPDATE: Tactical cooldown bypass authorized for {profile.id}")
 
-            # HARD-STAMP: Explicit UTC timestamp for the 15-minute tactical validity window
+            # Safe ID extraction for logging
+            session_id = session.get("id", "unknown") if hasattr(session, "get") else getattr(session, "id", "unknown")
+            
             db.add(DBPurgeLog(
                 action_type=action, 
-                node_id=f"STRIPE_{getattr(session, 'id', 'unknown')[-8:]}",
+                node_id=f"STRIPE_{str(session_id)[-8:]}",
                 timestamp=datetime.utcnow()
             ))
             db.commit()
@@ -410,7 +435,7 @@ async def get_aliases(db: Session = Depends(get_db)):
 @app.post("/aliases/mint")
 async def generate_alias(request: AliasRequest, db: Session = Depends(get_db)):
     """Generates an alias with 12h cooldown and bypass verification"""
-    profile = db.query(DBProfile).first()
+    profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
     bonus = profile.bonus_credits if profile else 0
     phone_bonus = profile.phone_line_bonus if profile else 0
     
@@ -488,7 +513,7 @@ async def financials(db: Session = Depends(get_db)):
 @app.post("/financials/mint")
 async def generate_card(request: CardRequest, db: Session = Depends(get_db)):
     """Initiates a new virtual card generation process on the secure node"""
-    profile = db.query(DBProfile).first()
+    profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
     bonus = profile.bonus_credits if profile else 0
     max_credits = MAX_IDENTITY_CREDITS + bonus
 
@@ -561,11 +586,10 @@ async def kill_card(card_id: str, db: Session = Depends(get_db)):
 
 @app.post("/financials/burn-all")
 async def burn_all_assets(db: Session = Depends(get_db)):
-    """Global wipe command: Deletes all profiles, cards, and aliases from the node"""
+    """Emergency Burn command: Deletes all compromised cards and aliases (Preserves Profile)"""
     db.query(DBCard).delete()
     db.query(DBAlias).delete()
-    db.query(DBProfile).delete()
-    log = DBPurgeLog(action_type="TOTAL_SYSTEM_PURGE", node_id="GLOBAL_NODE")
+    log = DBPurgeLog(action_type="EMERGENCY_BURN_PROTOCOL", node_id="GLOBAL_ASSET_WIPE")
     db.add(log)
     db.commit()
     return {"status": "TOTAL_PURGE_COMPLETE"}
@@ -580,11 +604,39 @@ async def regenerate_alias():
     return {"email_alias": STABLE_EMAIL, "phone_alias": STABLE_PHONE}
 
 
-# --- S3 PURGE RECEIPT ARCHITECTURE ---
+# --- PROOF OF REMOVAL ARCHITECTURE ---
+
+@app.get("/api/v1/scrub-history")
+async def get_scrub_history(db: Session = Depends(get_db)):
+    """Fetches the actual record of site removals for the Purge Receipt"""
+    profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+    if not profile:
+        return {"history": []}
+    
+    logs = db.query(DBScrubLog).filter(DBScrubLog.user_id == profile.id).all()
+    return {"history": logs}
+
+
+@app.post("/financials/receipt/upload")
+async def upload_purge_receipt(file: UploadFile = File(...), user_id: str = Form(...)):
+    """Receives proof-of-scrub PDF and vaults it in S3"""
+    try:
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        s3_key = f"receipts/{user_id}/PURGE_{timestamp}.pdf"
+        s3_client.upload_fileobj(file.file, S3_BUCKET, s3_key, ExtraArgs={'ContentType': 'application/pdf'})
+        
+        db = SessionLocal()
+        db.add(DBPurgeLog(action_type="S3_RECEIPT_VAULTED", node_id=s3_key))
+        db.commit()
+        db.close()
+        return {"status": "VAULTED", "s3_path": s3_key}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="VAULT_UPLINK_FAILED")
+
 
 @app.post("/financials/receipt")
 async def generate_purge_receipt(db: Session = Depends(get_db)):
-    """Generates an audit receipt of the identity purge for S3 storage"""
+    """Generates an audit receipt of the identity purge for tracking"""
     try:
         receipt_id = f"PRG-{random.randint(100000, 999999)}"
         log = DBPurgeLog(action_type="PURGE_RECEIPT_STORED", node_id=receipt_id)
@@ -597,7 +649,7 @@ async def generate_purge_receipt(db: Session = Depends(get_db)):
             "vault_signature": "SIG_TIGER_BLUE_ALPHA"
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail="UPLINK_FAILURE_S3")
+        raise HTTPException(status_code=500, detail="UPLINK_FAILURE_LOG")
 
 
 # --- SUPPORT & FAQ ---

@@ -295,17 +295,24 @@ function App() {
   };
 
   const handleEmergencyBurn = async () => {
+    const confirmation = window.confirm("CONFIRM EMERGENCY BURN? \n\nAll active aliases and card nodes will be terminated immediately. Your scrub history will be vaulted in S3 before wipe.");
+    if (!confirmation) return;
+
     setIsEmergencyWipe(true);
     setIsEncrypting(true);
-    setPurgeStatus("TOTAL PURGE IN EFFECT...");
-    pushNotification("GLOBAL_NODE_SHUTDOWN");
+    setPurgeStatus("UPLINKING FINAL AUDIT TO S3...");
+    pushNotification("PRE_PURGE_UPLINK_INITIATED");
+    
     try {
-      await secureRequest(`${API_BASE_URL}/financials/receipt`, { method: "POST" });
-      pushNotification("S3_AUDIT_STORED");
+      // 1. Generate and Upload the Final Receipt to S3
+      await handleDownloadPDF(true); 
+      pushNotification("S3_AUDIT_VAULTED");
+      
       setTimeout(async () => {
         setPurgeStatus("TERMINATING ALL ACTIVE NODES...");
         await secureRequest(`${API_BASE_URL}/financials/burn-all`, { method: "POST" });
         pushNotification("DATABASE_SCRUB_COMPLETE");
+        
         setTimeout(() => {
           setPurgeStatus("PURGE COMPLETED. VAULT IS CLEAN.");
           pushNotification("SESSION_TERMINATING");
@@ -373,20 +380,83 @@ function App() {
     }, 1500);
   };
 
-  const handleDownloadPDF = () => {
-    if (auditLog.length === 0) { triggerToast("NO DATA"); return; }
-    setIsGenerating(true);
-    triggerToast("COMPILING ENCRYPTED AUDIT...");
-    setTimeout(() => {
-      try {
-        const doc = new jsPDF();
-        doc.setFillColor(0, 0, 0); doc.rect(0, 0, 210, 40, 'F');
-        doc.setTextColor(255, 255, 255); doc.setFontSize(22);
-        doc.text("DISAPPEAR | PRIVACY AUDIT", 15, 25);
-        doc.save(`AUDIT_${Date.now()}.pdf`);
+  const handleDownloadPDF = async (isSilentUplink = false) => {
+    if (!isSilentUplink) setIsGenerating(true);
+    if (!isSilentUplink) triggerToast("COMPILING ENCRYPTED AUDIT...");
+    
+    try {
+      // 1. Fetch Real Scrub History from Backend
+      const scrubRes = await secureRequest(`${API_BASE_URL}/api/v1/scrub-history`);
+      const scrubData = await scrubRes.json();
+      const history = scrubData.history || [];
+
+      // 2. Build the "Total Purge" PDF Document
+      const doc = new jsPDF();
+      const agentId = localStorage.getItem("disappear_user_id") || "AGENT_UNKNOWN";
+      
+      // Cyberpunk Header
+      doc.setFillColor(0, 71, 171); // Tiger Blue
+      doc.rect(0, 0, 210, 40, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(22);
+      doc.text("OFFICIAL PURGE RECEIPT", 15, 25);
+      doc.setFontSize(10);
+      doc.text(`DISAPPEAR P-A-A-S | SYSTEM REVISION 24`, 15, 33);
+
+      // Audit Intelligence Section
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(12);
+      doc.text("AUDIT_METADATA", 15, 55);
+      doc.setFontSize(10);
+      doc.text(`AGENT_ID: ${agentId}`, 15, 65);
+      doc.text(`TIMESTAMP: ${new Date().toUTCString()}`, 15, 72);
+      doc.text(`VAULT_SIGNATURE: SIG_TIGER_BLUE_ALPHA`, 15, 79);
+
+      // Data Broker Removal History Table
+      doc.text("DATA_BROKER_REMOVAL_HISTORY", 15, 95);
+      const tableData = history.length > 0 
+        ? history.map(h => [h.broker_name, h.status, new Date(h.timestamp).toLocaleDateString()])
+        : [["NO_REMOVALS_LOGGED", "NOMINAL", "---"]];
+
+      doc.autoTable({
+        startY: 100,
+        head: [['BROKER_ENTITY', 'STATUS', 'CLEARED_DATE']],
+        body: tableData,
+        headStyles: { fillColor: [0, 0, 0] },
+        alternateRowStyles: { fillColor: [245, 245, 245] }
+      });
+
+      // 3. Convert PDF to Blob for S3 Uplink
+      const pdfBlob = doc.output('blob');
+      
+      const formData = new FormData();
+      formData.append('file', pdfBlob, `PURGE_${Date.now()}.pdf`);
+      formData.append('user_id', agentId);
+
+      // 4. Secure Uplink to AWS S3 via Backend
+      const uploadRes = await fetch(`${API_BASE_URL}/financials/receipt/upload`, {
+        method: "POST",
+        body: formData
+      });
+
+      if (uploadRes.ok) {
+        if (!isSilentUplink) triggerToast("AUDIT VAULTED IN S3");
+      }
+
+      // 5. Provide Local Download (Unless it's a silent emergency burn)
+      if (!isSilentUplink) {
+        doc.save(`DISAPPEAR_AUDIT_${Date.now()}.pdf`);
         triggerToast("AUDIT DOWNLOADED");
-      } catch (err) { triggerToast("FAILED"); } finally { setIsGenerating(false); }
-    }, 1500);
+      }
+      
+      return true;
+    } catch (err) { 
+      console.error("PDF_UPLINK_ERR:", err);
+      if (!isSilentUplink) triggerToast("AUDIT FAILED"); 
+      throw err;
+    } finally { 
+      if (!isSilentUplink) setIsGenerating(false); 
+    }
   };
 
   const handleFinalPurchase = async () => {
@@ -401,7 +471,12 @@ function App() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(targetProfile)
         });
+        const resData = await response.json();
+        
         if (response.ok) {
+            // AUTH_HANDSHAKE: Store the assigned Profile ID for S3/Stripe handshakes
+            if (resData.profile_id) localStorage.setItem("disappear_user_id", resData.profile_id);
+            
             setShowCheckout(false); 
             setShowPricing(false);
             setShowLanding(false);
@@ -788,12 +863,12 @@ function App() {
                       </div>
                     ))}
                   </div>
-                  <button className="pdf-btn" style={{ width: '100%', marginTop: '15px' }} onClick={handleDownloadPDF} disabled={isGenerating}>GENERATE AUDIT PDF</button>
+                  <button className="pdf-btn" style={{ width: '100%', marginTop: '15px' }} onClick={() => handleDownloadPDF(false)} disabled={isGenerating}>GENERATE AUDIT PDF</button>
                 </div>
 
                 <div style={{display: 'flex', flexDirection: 'column', gap: '15px', width: '100%', maxWidth: '400px', marginTop: '40px'}}>
                   <button className="reset-btn" onClick={() => {localStorage.clear(); window.location.reload();}}>LOGOUT SECURELY</button>
-                  <button className="burn-all-btn" onClick={() => { if(window.confirm("CONFIRM TOTAL PURGE? (S3 RECEIPT WILL BE ISSUED)")) handleEmergencyBurn(); }}>EMERGENCY BURN</button>
+                  <button className="burn-all-btn" onClick={handleEmergencyBurn}>INITIATE EMERGENCY BURN</button>
                 </div>
               </div>
             ) : (
