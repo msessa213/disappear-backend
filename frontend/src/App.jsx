@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { jsPDF } from "jspdf";
-import "jspdf-autotable";
-import { Capacitor, CapacitorHttp } from '@capacitor/core'; // UPDATED: Added CapacitorHttp
+import autoTable from "jspdf-autotable"; // FIXED: Explicit import for plugin functionality
+import { Capacitor, CapacitorHttp } from '@capacitor/core'; 
 
 // --- FIXED IMPORTS ---
 import { Manifesto } from './Manifesto';
@@ -385,10 +385,15 @@ function App() {
     if (!isSilentUplink) triggerToast("COMPILING ENCRYPTED AUDIT...");
     
     try {
-      // 1. Fetch Real Scrub History from Backend
-      const scrubRes = await secureRequest(`${API_BASE_URL}/api/v1/scrub-history`);
-      const scrubData = await scrubRes.json();
-      const history = scrubData.history || [];
+      // 1. Fetch Real Scrub History from Backend with 404 safety
+      let history = [];
+      try {
+          const scrubRes = await secureRequest(`${API_BASE_URL}/api/v1/scrub-history`);
+          if (scrubRes.ok) {
+              const scrubData = await scrubRes.json();
+              history = scrubData.history || [];
+          }
+      } catch (e) { console.warn("Scrub history node currently unreachable - continuing with empty record."); }
 
       // 2. Build the "Total Purge" PDF Document
       const doc = new jsPDF();
@@ -418,7 +423,8 @@ function App() {
         ? history.map(h => [h.broker_name, h.status, new Date(h.timestamp).toLocaleDateString()])
         : [["NO_REMOVALS_LOGGED", "NOMINAL", "---"]];
 
-      doc.autoTable({
+      // FIXED: Use the autoTable function directly
+      autoTable(doc, {
         startY: 100,
         head: [['BROKER_ENTITY', 'STATUS', 'CLEARED_DATE']],
         body: tableData,
@@ -434,13 +440,17 @@ function App() {
       formData.append('user_id', agentId);
 
       // 4. Secure Uplink to AWS S3 via Backend
-      const uploadRes = await fetch(`${API_BASE_URL}/financials/receipt/upload`, {
-        method: "POST",
-        body: formData
-      });
+      try {
+          const uploadRes = await fetch(`${API_BASE_URL}/financials/receipt/upload`, {
+            method: "POST",
+            body: formData
+          });
 
-      if (uploadRes.ok) {
-        if (!isSilentUplink) triggerToast("AUDIT VAULTED IN S3");
+          if (uploadRes.ok) {
+            if (!isSilentUplink) triggerToast("AUDIT VAULTED IN S3");
+          }
+      } catch (uploadErr) {
+          console.error("S3_UPLINK_FAILED:", uploadErr);
       }
 
       // 5. Provide Local Download (Unless it's a silent emergency burn)
