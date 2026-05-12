@@ -2,7 +2,6 @@
 FROM python:3.11-slim
 
 # Set environment variables to prevent Python from buffering logs
-# This is crucial for seeing real-time logs in AWS CloudWatch
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
@@ -14,18 +13,11 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Explicitly install all production libraries
-# Added 'stripe' for payments and 'gunicorn' for high-traffic stability
-RUN pip install --no-cache-dir \
-    fastapi \
-    uvicorn \
-    gunicorn \
-    sqlalchemy \
-    psycopg2-binary \
-    python-dotenv \
-    pydantic \
-    python-multipart \
-    stripe
+# Copy requirements first to leverage Docker caching
+COPY requirements.txt .
+
+# Install all libraries from requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy your backend source code into the container
 COPY . .
@@ -33,8 +25,5 @@ COPY . .
 # EXPOSE port 8000 for AWS routing
 EXPOSE 8000
 
-# Start the server using Gunicorn with Uvicorn workers
-# -w 4: 4 concurrent processes (Handles multiple paying users simultaneously)
-# -k uvicorn.workers.UvicornWorker: The high-speed async bridge
-# --timeout 120: Prevents the worker from killing long-running "Purge" tasks
-CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "main:app", "--bind", "0.0.0.0:8000", "--timeout", "120"]
+# Using 'python -m gunicorn' is a fail-safe that ensures the binary is found
+CMD ["python", "-m", "gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "main:app", "--bind", "0.0.0.0:8000", "--timeout", "120"]
