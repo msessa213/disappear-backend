@@ -89,6 +89,7 @@ function App() {
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [credits, setCredits] = useState({ total: 6, used: 0, available: 6 });
   const [auditLog, setAuditLog] = useState([]);
+  const [historyDays, setHistoryDays] = useState(30); // NEW: History Filter State
   const [cards, setCards] = useState([]);
   const [progress, setProgress] = useState(15);
   const [showToast, setShowToast] = useState("");
@@ -144,6 +145,7 @@ function App() {
 
   const syncDefenseData = useCallback(async () => {
     try {
+      // 1. Sync Base Dashboard Data
       const res = await secureRequest(`${API_BASE_URL}/dashboard/sync`);
       const data = await res.json();
       if (data.profile) {
@@ -153,16 +155,21 @@ function App() {
               available: data.profile.credits_available || 0
           });
       }
+
+      // 2. Sync Filtered Purge History (Replacing the static recent audit)
+      const historyRes = await secureRequest(`${API_BASE_URL}/api/v1/history?days=${historyDays}`);
+      const historyData = await historyRes.json();
+      
       setAuditLog(prevLog => {
-        if (data.recent_audit?.length > 0) {
-            const latest = data.recent_audit[0];
-            const oldLatest = prevLog.length > 0 ? prevLog[0] : null;
-            if (!oldLatest || latest.time !== oldLatest.time) {
-                pushNotification(`THREAT DEFLECTED: [${latest.broker}]`);
-            }
+        const latest = historyData.history?.[0];
+        const oldLatest = prevLog.length > 0 ? prevLog[0] : null;
+        if (latest && (!oldLatest || latest.timestamp !== oldLatest.timestamp)) {
+            pushNotification(`SYSTEM_UPDATE: [${latest.action}]`);
         }
-        return data.recent_audit || [];
+        return historyData.history || [];
       });
+
+      // 3. Sync Financial/Alias Nodes
       const finRes = await secureRequest(`${API_BASE_URL}/financials/data`);
       const finData = await finRes.json();
       setCards(finData.cards || []);
@@ -175,7 +182,7 @@ function App() {
     } catch (err) { 
         console.error("Connection Error: API Unreachable");
     }
-  }, [pushNotification]);
+  }, [pushNotification, historyDays]);
 
   useEffect(() => {
     let interval;
@@ -186,7 +193,7 @@ function App() {
       }, 10000);
     }
     return () => clearInterval(interval);
-  }, [showShield, syncDefenseData]);
+  }, [showShield, syncDefenseData, historyDays]);
 
   const handlePurchaseExpansion = async (type) => {
     if (isProcessingPayment) return;
@@ -864,16 +871,38 @@ function App() {
                   </div>
                 </div>
 
+                {/* --- UPDATED: LIVE SECURITY AUDIT (HISTORY VIEW) --- */}
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
                   <p className="tool-label" style={{ textAlign: 'center' }}>LIVE SECURITY AUDIT</p>
-                  <div className="audit-list" style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                    {auditLog.map((log, i) => (
-                      <div key={`audit-${log.time}-${i}`} className="audit-row" style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #111', padding: '10px 0' }}>
-                        <span className="audit-broker">[{log.broker}]</span><span className="audit-action">{log.action}</span>
-                      </div>
+                  
+                  {/* History Filter Toggles */}
+                  <div className="billing-toggle" style={{ display: 'flex', gap: '5px', marginBottom: '15px' }}>
+                    {[30, 60, 90].map(d => (
+                      <button 
+                        key={d}
+                        className={historyDays === d ? 'mask-btn active-toggle' : 'mask-btn'} 
+                        style={{ flex: 1, fontSize: '0.7rem' }} 
+                        onClick={() => setHistoryDays(d)}
+                      >
+                        {d}_DAYS
+                      </button>
                     ))}
                   </div>
-                  <button className="pdf-btn" style={{ width: '100%', marginTop: '15px' }} onClick={() => handleDownloadPDF(false)} disabled={isGenerating}>GENERATE AUDIT PDF</button>
+
+                  <div className="audit-list" style={{ maxHeight: '200px', overflowY: 'auto', background: '#000', padding: '10px' }}>
+                    {auditLog.length > 0 ? auditLog.map((log, i) => (
+                      <div key={`audit-${log.timestamp}-${i}`} className="audit-row" style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #111', padding: '10px 0' }}>
+                        <span className="audit-broker" style={{color: 'var(--tiger-blue)'}}>[{new Date(log.timestamp).toLocaleDateString()}]</span>
+                        <span className="audit-action" style={{fontSize: '0.7rem'}}>{log.action}</span>
+                        <span style={{fontSize: '0.6rem', color: '#444'}}>{log.node?.slice(-6)}</span>
+                      </div>
+                    )) : (
+                      <div className="terminal-line" style={{textAlign: 'center', opacity: 0.5}}>NO_RECORDS_IN_WINDOW</div>
+                    )}
+                  </div>
+                  
+                  {/* Backup: PDF logic still exists for vaulting but UI encourages live view */}
+                  <button className="pdf-btn" style={{ width: '100%', marginTop: '15px', opacity: 0.8 }} onClick={() => handleDownloadPDF(false)} disabled={isGenerating}>EXPORT_OFFICIAL_AUDIT_PDF</button>
                 </div>
 
                 <div style={{display: 'flex', flexDirection: 'column', gap: '15px', width: '100%', maxWidth: '400px', marginTop: '40px'}}>

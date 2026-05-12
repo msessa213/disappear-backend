@@ -226,15 +226,24 @@ input[type="checkbox"] {
   flex-direction: column;
   scrollbar-width: thin;
   scrollbar-color: var(--tiger-blue) #000;
+  background: #000;
+  border: 1px solid #111;
+  font-family: 'Courier New', monospace;
 }
 
 .audit-row {
   display: flex;
   justify-content: space-between;
-  padding: 12px 0;
+  padding: 12px 10px;
   border-bottom: 1px solid #111;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   text-align: left;
+  color: var(--tiger-blue);
+}
+
+.audit-action {
+  color: white;
+  text-transform: uppercase;
 }
 
 .recon-terminal {
@@ -905,6 +914,20 @@ input[type="checkbox"] {
   cursor: pointer;
   margin-left: 15px;
   font-weight: bold;
+}
+
+/* --- NEW: HISTORY FILTER SPECIFIC STYLES --- */
+.active-toggle {
+  background: var(--tiger-blue) !important;
+  border-color: white !important;
+  color: white !important;
+  box-shadow: 0 0 10px rgba(0, 71, 171, 0.4);
+}
+
+.billing-toggle .mask-btn {
+  height: 35px !important; /* Smaller buttons for filter row */
+  font-size: 0.65rem !important;
+  letter-spacing: 1px;
 }
 
 @media (max-width: 1024px) {

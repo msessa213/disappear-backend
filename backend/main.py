@@ -1,6 +1,6 @@
-from fastapi import FastAPI, Depends, HTTPException, Request, Response, File, UploadFile, Form
+from fastapi import FastAPI, Depends, HTTPException, Request, Response, File, UploadFile, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import create_engine, Column, String, DateTime, Integer, Boolean
+from sqlalchemy import create_engine, Column, String, DateTime, Integer, Boolean, desc
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from pydantic import BaseModel
@@ -615,6 +615,34 @@ async def get_scrub_history(db: Session = Depends(get_db)):
     
     logs = db.query(DBScrubLog).filter(DBScrubLog.user_id == profile.id).all()
     return {"history": logs}
+
+# --- NEW: PURGE HISTORY FILTER (30, 60, 90 DAYS) ---
+@app.get("/api/v1/history")
+async def get_action_history(
+    days: int = Query(30, enum=[30, 60, 90]), 
+    db: Session = Depends(get_db)
+):
+    """Fetches general action history for the app dashboard instead of PDF generation"""
+    cutoff_date = datetime.utcnow() - timedelta(days=days)
+    
+    history = (
+        db.query(DBPurgeLog)
+        .filter(DBPurgeLog.timestamp >= cutoff_date)
+        .order_by(desc(DBPurgeLog.timestamp))
+        .all()
+    )
+    
+    return {
+        "days_filtered": days,
+        "history": [
+            {
+                "id": entry.id,
+                "action": entry.action_type,
+                "node": entry.node_id,
+                "timestamp": entry.timestamp.isoformat()
+            } for entry in history
+        ]
+    }
 
 
 @app.post("/financials/receipt/upload")
