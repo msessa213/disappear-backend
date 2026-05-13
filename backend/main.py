@@ -617,7 +617,11 @@ async def get_scrub_history(db: Session = Depends(get_db)):
     return {"history": logs}
 
 # --- NEW: PURGE HISTORY FILTER (30, 60, 90 DAYS) ---
+# BULLETPROOF ROUTE DEFINITION FOR AWS LOAD BALANCER
+@app.get("/api/v1/history/")
 @app.get("/api/v1/history")
+@app.get("/history/")
+@app.get("/history")
 async def get_action_history(
     days: int = Query(30, enum=[30, 60, 90]), 
     db: Session = Depends(get_db)

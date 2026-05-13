@@ -1,7 +1,7 @@
 [
   {
     "name": "disappear-api",
-    "image": "243621520640.dkr.ecr.us-east-1.amazonaws.com/disappear-backend:rev47",
+    "image": "243621520640.dkr.ecr.us-east-1.amazonaws.com/disappear-backend:rev50",
     "portMappings": [
       {
         "containerPort": 8000,

@@ -19,13 +19,9 @@ import './App.css';
  */
 
 // --- DYNAMIC API ROUTING ---
-const LOCAL_API = "http://127.0.0.1:8000";
-// FIXED: Pointed to the newly established AWS API Gateway
+// FIXED: Explicitly forcing Production URL to prevent Native Apps from hitting Localhost
 const PROD_API = "https://api.disappearco.com"; 
-
-const API_BASE_URL = Capacitor.isNativePlatform() 
-  ? PROD_API 
-  : (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? LOCAL_API : PROD_API);
+const API_BASE_URL = PROD_API;
 
 function App() {
   // --- SECURE BRIDGE LOGIC ---
