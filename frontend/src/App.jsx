@@ -200,12 +200,12 @@ function App() {
     // AUTHENTICATION_BRIDGE: Capture local user ID to bind payment event
     const activeUserId = localStorage.getItem("disappear_user_id") || "anonymous_agent";
 
-    // SYNC FIX: Explicitly map 'permanent_slot' so Backend triggers $5.95
-    const mappedType = (type === 'phone' || type === 'data' || type === 'permanent_slot') 
-      ? 'permanent_slot' 
-      : 'cooldown_bypass';
+    // UPDATED: Corrected mapping for Phone Line Expansion
+    const mappedType = (type === 'phone') 
+      ? 'phone_line_bonus' 
+      : (type === 'permanent_slot' ? 'permanent_slot' : 'cooldown_bypass');
 
-    const msg = (mappedType === 'permanent_slot') ? "EXPANDING PERMANENT CAPACITY..." : "REQUESTING BYPASS TUNNEL...";
+    const msg = "AUTHORIZING PAYMENT NODE...";
     triggerToast(msg);
     
     try {
@@ -227,7 +227,6 @@ function App() {
       triggerToast("PAYMENT NODE OFFLINE"); 
       setIsProcessingPayment(false);
     } finally {
-      // RESET BUTTON LOGIC: Ensures button becomes clickable again if user backs out
       setTimeout(() => setIsProcessingPayment(false), 5000);
     }
   };
@@ -263,19 +262,19 @@ function App() {
       // TRIGGER POPUP TO BUY MORE SLOTS IF AT MAX
       if (res.status === 403) { 
         setIsEncrypting(false); 
-        const upgrade = window.confirm("IDENTITY CAPACITY FULL: You have utilized all available nodes. \n\nAdd a Permanent Vault Slot for $5.95?");
+        const upgrade = window.confirm("IDENTITY CAPACITY FULL: All protection nodes active. \n\nAdd a Permanent Vault Slot for $5.95?");
         if (upgrade) handlePurchaseExpansion("permanent_slot");
         return; 
       }
       
-      // EMERGENCY BYPASS LOGIC: Detect 12h Cooldown and offer fee override
+      // EMERGENCY BYPASS LOGIC
       if (res.status === 429) { 
         setIsEncrypting(false);
         const confirmBypass = window.confirm(
-          "EMERGENCY PROTOCOL: Node is currently cooling down (12h window). \n\nInitiate Emergency Protocol Wipe for $1.99?"
+          "EMERGENCY PROTOCOL: Node cooling down (12h window). \n\nInitiate Emergency Protocol Wipe for $1.99?"
         );
         if (confirmBypass) {
-            handlePurchaseExpansion("cooldown_bypass");
+          handlePurchaseExpansion("cooldown_bypass");
         }
         return; 
       }
@@ -794,7 +793,7 @@ function App() {
                         <span className="field-label">ACTIVE PHONE LINES</span>
                         <span className="tiger-text">{phones.length} / 2</span>
                     </div>
-                    <button className="purchase-btn" style={{borderColor: 'var(--tiger-blue)'}} disabled={isProcessingPayment} onClick={() => handlePurchaseExpansion('permanent_slot')}>
+                    <button className="purchase-btn" style={{borderColor: 'var(--tiger-blue)'}} disabled={isProcessingPayment} onClick={() => handlePurchaseExpansion('phone')}>
                       {isProcessingPayment ? "PROCESSING..." : "+ PROVISION EXTRA MOBILE LINE ($5.95)"}
                     </button>
                 </div>
@@ -812,7 +811,7 @@ function App() {
                       </div>
                     ))}
                   </div>
-                  <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed划分'}} onClick={() => setShowEmailModal(true)}> + GENERATE EMAIL ALIAS </button>
+                  <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowEmailModal(true)}> + GENERATE EMAIL ALIAS </button>
                 </div>
 
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
@@ -835,13 +834,13 @@ function App() {
                       <div key={c.id} className="managed-card-row enhanced-card">
                         <div className="card-row-info">
                           <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
-                             <span className="card-nickname" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>{c.label.toUpperCase()}</span>
-                             <button className="kill-text-bold" onClick={() => handleKillCard(c.id)}>TERMINATE</button>
+                               <span className="card-nickname" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>{c.label.toUpperCase()}</span>
+                               <button className="kill-text-bold" onClick={() => handleKillCard(c.id)}>TERMINATE</button>
                           </div>
                           <code className="card-digits" onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("COPIED")}}> {c.number} </code>
                           <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #111', paddingTop: '10px', marginTop: '10px'}}>
-                             <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>EXP</span><strong>{c.expiry || '08/28'}</strong></div>
-                             <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>CVV</span><strong>***</strong></div>
+                               <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>EXP</span><strong>{c.expiry || '08/28'}</strong></div>
+                               <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>CVV</span><strong>***</strong></div>
                           </div>
                         </div>
                       </div>

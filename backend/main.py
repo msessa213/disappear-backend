@@ -348,6 +348,7 @@ async def sync(db: Session = Depends(get_db)):
     # FIX: Fetch the user's profile with a safety check if no profile exists
     profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
     bonus = profile.bonus_credits if profile and hasattr(profile, 'bonus_credits') else 0
+    phone_bonus = profile.phone_line_bonus if profile and hasattr(profile, 'phone_line_bonus') else 0
     max_credits = MAX_IDENTITY_CREDITS + bonus
     
     now = datetime.now()
@@ -408,7 +409,12 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
             item_name = "Emergency Wipe Protocol (Instant Cooldown Bypass)"
             unit_amount = 199 # $1.99
             purchase_key = "cooldown_bypass"
-        # DEFAULT/SLOT RULE: Force everything else (permanent_slot, data, phone) to 5.95
+        # PHONE RULE
+        elif "phone" in etype:
+            item_name = "Premium Phone Line Expansion"
+            unit_amount = 595 # $5.95
+            purchase_key = "phone_line_bonus"
+        # DEFAULT/SLOT RULE
         else:
             item_name = "Permanent Shield Slot Expansion (+1 Capacity)"
             unit_amount = 595 # $5.95
@@ -441,30 +447,42 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
 @app.post("/payments/webhook")
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     """Verifies Stripe signature and updates DBProfile capacity with diagnostic logging"""
+    # 1. Get raw bytes directly
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
+    
+    if not sig_header:
+        print("WEBHOOK ERROR: Missing stripe-signature header")
+        raise HTTPException(status_code=400, detail="Missing signature")
+
     try:
-        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
-    except Exception as e:
+        # 2. Use the secret directly from the global variable
+        event = stripe.Webhook.construct_event(
+            payload, 
+            sig_header, 
+            STRIPE_WEBHOOK_SECRET
+        )
+    except ValueError as e:
+        # Invalid payload
+        print(f"WEBHOOK PAYLOAD ERROR: {e}")
+        return Response(content="INVALID_PAYLOAD", status_code=400)
+    except stripe.error.SignatureVerificationError as e:
+        # Invalid signature
         print(f"WEBHOOK SIG ERROR: {e}")
-        return Response(content="SIG_FAIL", status_code=400)
+        # Return a custom message so we know it's a signature failure
+        return Response(content=f"SIG_FAIL: {str(e)}", status_code=400)
 
     if event["type"] == "checkout.session.completed":
         session = event['data']['object']
         
-        # Hardened metadata extraction using getattr to prevent AttributeError: get
-        metadata = getattr(session, "metadata", {})
-        
-        # Safe extraction with dual-access check
-        purchase_type = metadata.get("purchase_type") if hasattr(metadata, "get") else (metadata["purchase_type"] if "purchase_type" in metadata else None)
-        user_id = metadata.get("user_id") if hasattr(metadata, "get") else (metadata["user_id"] if "user_id" in metadata else None)
+        # Hardened metadata extraction
+        metadata = session.get("metadata", {})
+        purchase_type = metadata.get("purchase_type")
+        user_id = metadata.get("user_id")
         
         print(f"WEBHOOK_INBOUND: {purchase_type} for UID {user_id}")
 
-        # TARGETED LOOKUP: Find the specific agent account to update
         profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
-        
-        # SAFETY FALLBACK: If ID handshake fails, update the most recent profile so revenue is never lost
         if not profile:
             profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
 
@@ -472,14 +490,18 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
             if purchase_type == "permanent_slot":
                 profile.bonus_credits += 1
                 action = "PERMANENT_CAPACITY_EXPANDED"
-                print(f"DB_UPDATE: Permanent slot added to account {profile.id}")
+                print(f"DB_UPDATE: Permanent credit slot added to account {profile.id}")
+            
+            elif purchase_type == "phone_line_bonus":
+                profile.phone_line_bonus += 1
+                action = "PHONE_LINE_EXPANDED"
+                print(f"DB_UPDATE: Phone line bonus added to account {profile.id}")
+                
             else:
                 action = "COOLDOWN_BYPASS_PURCHASED"
                 print(f"DB_UPDATE: Tactical cooldown bypass authorized for {profile.id}")
 
-            # Safe ID extraction for logging
-            session_id = session.get("id", "unknown") if hasattr(session, "get") else getattr(session, "id", "unknown")
-            
+            session_id = session.get("id", "unknown")
             db.add(DBPurgeLog(
                 action_type=action, 
                 node_id=f"STRIPE_{str(session_id)[-8:]}",
