@@ -132,7 +132,7 @@ function App() {
     }
   }, [showCheckout]);
 
-  const pushNotification = $.noop || useCallback((msg) => {
+  const pushNotification = useCallback((msg) => {
     if (!msg) return;
     const id = `notif-${Date.now()}-${Math.random()}`; 
     setNotifications(prev => [{ id, msg: msg.includes(':') ? msg : `SYSTEM_EVENT: [${msg}]` }, ...prev].slice(0, 3));
