@@ -44,13 +44,15 @@ Base = declarative_base()
 # --- DATABASE MODELS ---
 
 class DBCard(Base):
-    """Represents a virtual shield card asset in the secure vault"""
+    """Represents a virtual shield asset in the secure vault linked to a physical card"""
     __tablename__ = "shield_assets_v3"
     id = Column(String, primary_key=True, index=True)
     label = Column(String)
     number = Column(String)
     expiry = Column(String) 
     cvv = Column(String)     
+    real_card_token = Column(String, unique=True, nullable=True) # Tokenized representation of funding source
+    last_four = Column(String(4), nullable=True) # Storage of last 4 digits for billing management
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -88,7 +90,7 @@ class DBScrubLog(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String, index=True)
     broker_name = Column(String)
-    status = Column(String) # "REMOVED" or "PENDING"
+    status = Column(String) # "REMOVED", "PENDING", or "PROCESSING"
     timestamp = Column(DateTime, default=datetime.utcnow)
 
 
@@ -187,11 +189,17 @@ DOMAINS = ["disappear.private", "shield.mask", "secure.node", "ghost.vault"]
 STABLE_EMAIL = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
 STABLE_PHONE = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
 
+# INTERNAL ROUTING ARCHITECTURE: Controls task grouping for company operations
+AUTOMATED_BROKERS = ["SPOKEO", "ACXIOM", "WHITEPAGES"]
+MANUAL_BROKERS = ["INTELIUS", "PEOPLELOOKER"]
+
 
 # --- SCHEMAS ---
 
 class CardRequest(BaseModel):
     label: str
+    real_card_token: Optional[str] = None
+    last_four: Optional[str] = None
 
 
 class AliasRequest(BaseModel):
@@ -268,6 +276,66 @@ async def get_admin_stats(db: Session = Depends(get_db)):
         "system_health": "OPTIMAL",
         "last_purge": datetime.now().strftime("%Y-%m-%d %H:%M")
     }
+
+
+# --- INTERNAL OPERATION PORTALS FOR EMPLOYEES ---
+
+@app.get("/admin/ops/backlog")
+async def get_employee_backlog(db: Session = Depends(get_db)):
+    """Internal utility for staff to pull down targets needing manual opt-out submission forms"""
+    open_tasks = db.query(DBScrubLog).filter(DBScrubLog.status == "PROCESSING").all()
+    
+    automated_backlog = []
+    manual_backlog_queue = []
+    
+    for task in open_tasks:
+        # Cross-reference target profile so employees have PII ready to paste into manual opt-out fields
+        profile = db.query(DBProfile).filter(DBProfile.id == task.user_id).first()
+        
+        task_details = {
+            "task_id": task.id,
+            "broker_name": task.broker_name,
+            "submitted_at": task.timestamp.isoformat(),
+            "target_profile": {
+                "user_id": task.user_id,
+                "first_name": profile.first_name if profile else "N/A",
+                "middle_name": profile.middle_name if profile else "",
+                "last_name": profile.last_name if profile else "N/A",
+                "email": profile.email if profile else "N/A",
+                "address": profile.address if profile else "N/A",
+                "dob": profile.dob if profile else "N/A"
+            }
+        }
+        
+        if task.broker_name in MANUAL_BROKERS:
+            manual_backlog_queue.append(task_details)
+        else:
+            automated_backlog.append(task_details)
+            
+    return {
+        "manual_queue_count": len(manual_backlog_queue),
+        "automated_queue_count": len(automated_backlog),
+        "manual_processing_required": manual_backlog_queue,
+        "automated_processing_pool": automated_backlog
+    }
+
+
+@app.post("/admin/ops/resolve/{log_id}")
+async def resolve_manual_task(log_id: int, db: Session = Depends(get_db)):
+    """Staff execution terminal: Marks a manual data broker extraction completely finalized"""
+    task = db.query(DBScrubLog).filter(DBScrubLog.id == log_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task signature not located in active ledger.")
+        
+    task.status = "REMOVED"
+    task.timestamp = datetime.utcnow()
+    
+    db.add(DBPurgeLog(
+        action_type="MANUAL_BROKER_RESOLVED_BY_STAFF",
+        node_id=f"TASK_{log_id}_{task.broker_name}"
+    ))
+    db.commit()
+    return {"status": "SUCCESS", "message": f"Broker {task.broker_name} status updated to REMOVED."}
 
 
 @app.get("/dashboard/sync")
@@ -528,7 +596,9 @@ async def generate_card(request: CardRequest, db: Session = Depends(get_db)):
             label=request.label,
             number=f"4242 {random.randint(1000, 9999)} {random.randint(1000, 9999)} {random.randint(1000, 9999)}",
             expiry="08/28",
-            cvv=str(random.randint(100, 999))
+            cvv=str(random.randint(100, 999)),
+            real_card_token=request.real_card_token,
+            last_four=request.last_four
         )
         db.add(new_card)
         log = DBPurgeLog(action_type="CARD_PROTECTION_GENERATED", node_id=card_id)
@@ -544,7 +614,7 @@ async def generate_card(request: CardRequest, db: Session = Depends(get_db)):
 @app.post("/financials/profile")
 @app.post("/financials/profile/")
 async def save_profile(request: Request, db: Session = Depends(get_db)):
-    """Handles raw profile ingestion with granular name separation"""
+    """Handles raw profile ingestion and cleanly seeds initial tracking slots for all data brokers"""
     try:
         data = await request.json()
         profile_id = f"user_{random.randint(1000, 9999)}"
@@ -558,6 +628,16 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
             dob=data.get("dob")
         )
         db.add(new_profile)
+        
+        # Populate initial processing tracking logs for user stats
+        for broker in BROKERS:
+            db.add(DBScrubLog(
+                user_id=profile_id,
+                broker_name=broker,
+                status="PROCESSING",
+                timestamp=datetime.utcnow()
+            ))
+            
         db.commit()
         return {"status": "success", "profile_id": profile_id}
     except Exception as e:
@@ -608,13 +688,24 @@ async def regenerate_alias():
 
 @app.get("/api/v1/scrub-history")
 async def get_scrub_history(db: Session = Depends(get_db)):
-    """Fetches the actual record of site removals for the Purge Receipt"""
+    """Fetches clean removal timeline for end-user app display."""
     profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
     if not profile:
         return {"history": []}
     
     logs = db.query(DBScrubLog).filter(DBScrubLog.user_id == profile.id).all()
-    return {"history": logs}
+    
+    history_payload = []
+    for log in logs:
+        history_payload.append({
+            "id": log.id,
+            "broker_name": log.broker_name,
+            "status": log.status,
+            "timestamp": log.timestamp.isoformat()
+        })
+            
+    return {"history": history_payload}
+
 
 # --- NEW: PURGE HISTORY FILTER (30, 60, 90 DAYS) ---
 # BULLETPROOF ROUTE DEFINITION FOR AWS LOAD BALANCER

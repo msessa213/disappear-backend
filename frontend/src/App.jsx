@@ -63,6 +63,8 @@ function App() {
 
   const [showMintModal, setShowMintModal] = useState(false);
   const [newCardLabel, setNewCardLabel] = useState("");
+  const [newRealCardToken, setNewRealCardToken] = useState("");
+  const [newLastFour, setNewLastFour] = useState("");
 
   // --- SUPPORT & FAQ STATES ---
   const [showSupportModal, setShowSupportModal] = useState(false);
@@ -286,7 +288,7 @@ function App() {
         triggerToast(`${type.toUpperCase()} SECURED`);
       }
     } catch (err) { triggerToast("CONNECTION ERROR"); }
-    finally { setIsEncrypting(false); setPurgeStatus(""); } 
+    finally { setIsEncrypting(false); setPurgeStatus(""); }
   };
 
   const handleKillAlias = async (id) => {
@@ -341,7 +343,11 @@ function App() {
       const response = await secureRequest(`${API_BASE_URL}/financials/mint`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label: newCardLabel })
+        body: JSON.stringify({ 
+          label: newCardLabel,
+          real_card_token: newRealCardToken || null,
+          last_four: newLastFour || null
+        })
       });
       
       if (response.status === 403) { 
@@ -354,6 +360,8 @@ function App() {
       if (response.ok) {
         syncDefenseData();
         setNewCardLabel("");
+        setNewRealCardToken("");
+        setNewLastFour("");
         setShowMintModal(false);
         triggerToast("NODE SECURED");
       }
@@ -706,8 +714,16 @@ function App() {
             <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => setShowMintModal(false)}>
               <div className="price-box" onClick={e => e.stopPropagation()}>
                 <h3 className="tiger-text">GENERATE CARD PROTECTION</h3>
-                <p className="field-label">ASSOCIATE MERCHANT</p>
-                <input className="mask-btn" style={{width: '100%', color: 'white', textAlign: 'center'}} placeholder="e.g. Amazon, Netflix" value={newCardLabel} onChange={(e) => setNewCardLabel(e.target.value)} />
+                
+                <p className="field-label">ASSOCIATE MERCHANT / BILL</p>
+                <input className="mask-btn" style={{width: '100%', color: 'white', textAlign: 'center', marginBottom: '10px'}} placeholder="e.g. Amazon, Electric Bill" value={newCardLabel} onChange={(e) => setNewCardLabel(e.target.value)} />
+                
+                <p className="field-label">REAL CARD TOKEN (OPTIONAL)</p>
+                <input className="mask-btn" style={{width: '100%', color: 'white', textAlign: 'center', marginBottom: '10px'}} placeholder="Processor Source Token" value={newRealCardToken} onChange={(e) => setNewRealCardToken(e.target.value)} />
+                
+                <p className="field-label">LAST 4 DIGITS (OPTIONAL)</p>
+                <input className="mask-btn" style={{width: '100%', color: 'white', textAlign: 'center'}} placeholder="e.g. 4321" maxLength="4" value={newLastFour} onChange={(e) => setNewLastFour(e.target.value)} />
+
                 <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={handleMintCard}>AUTHORIZE NODE</button>
                 <button className="reset-btn" style={{width: '100%'}} onClick={() => setShowMintModal(false)}>CANCEL</button>
               </div>
@@ -892,7 +908,7 @@ function App() {
                         <span className="audit-action" style={{fontSize: '0.7rem'}}>{log.action}</span>
                         <span style={{fontSize: '0.6rem', color: '#444'}}>{log.node?.slice(-6)}</span>
                       </div>
-                    )) : (
+                    ))} : (
                       <div className="terminal-line" style={{textAlign: 'center', opacity: 0.5}}>NO_RECORDS_IN_WINDOW</div>
                     )}
                   </div>
@@ -1056,7 +1072,7 @@ function App() {
                       <div className="price-amount">${billingCycle === 'monthly' ? '24.99' : '19.99'}</div>
                       <p style={{fontSize: '0.6rem', color: 'var(--text-dim)', marginBottom: '20px'}}>Includes 6 Global Slots + Total Purge Access</p>
                       <button className="main-button" style={{width: '100%'}} onClick={() => setShowCheckout(true)}>PROCEED</button>
-                      <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowPricing(false)}>CANCEL</button>
+                      <button className="reset-btn" style={{width: '100%', marginTop: '10px'} } onClick={() => setShowPricing(false)}>CANCEL</button>
                     </div>
                   </div>
                 )}
