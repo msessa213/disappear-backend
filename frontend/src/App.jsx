@@ -793,9 +793,14 @@ function App() {
                         <span className="field-label">ACTIVE PHONE LINES</span>
                         <span className="tiger-text">{phones.length} / 2</span>
                     </div>
-                    <button className="purchase-btn" style={{borderColor: 'var(--tiger-blue)'}} disabled={isProcessingPayment} onClick={() => handlePurchaseExpansion('phone')}>
-                      {isProcessingPayment ? "PROCESSING..." : "+ PROVISION EXTRA MOBILE LINE ($5.95)"}
-                    </button>
+<button 
+  className="purchase-btn" 
+  style={{borderColor: 'var(--tiger-blue)'}} 
+  disabled={isProcessingPayment} 
+  onClick={() => handlePurchaseExpansion('phone')}
+>
+  {isProcessingPayment ? "PROCESSING..." : "+ PROVISION EXTRA MOBILE LINE ($5.95)"}
+</button>
                 </div>
                 
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
