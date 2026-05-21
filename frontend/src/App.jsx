@@ -132,7 +132,7 @@ function App() {
     }
   }, [showCheckout]);
 
-  const pushNotification = useCallback((msg) => {
+  const pushNotification = $.noop || useCallback((msg) => {
     if (!msg) return;
     const id = `notif-${Date.now()}-${Math.random()}`; 
     setNotifications(prev => [{ id, msg: msg.includes(':') ? msg : `SYSTEM_EVENT: [${msg}]` }, ...prev].slice(0, 3));
@@ -812,7 +812,7 @@ function App() {
                       </div>
                     ))}
                   </div>
-                  <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowEmailModal(true)}> + GENERATE EMAIL ALIAS </button>
+                  <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed划分'}} onClick={() => setShowEmailModal(true)}> + GENERATE EMAIL ALIAS </button>
                 </div>
 
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
@@ -908,7 +908,7 @@ function App() {
                         <span className="audit-action" style={{fontSize: '0.7rem'}}>{log.action}</span>
                         <span style={{fontSize: '0.6rem', color: '#444'}}>{log.node?.slice(-6)}</span>
                       </div>
-                    ))} : (
+                    )) : (
                       <div className="terminal-line" style={{textAlign: 'center', opacity: 0.5}}>NO_RECORDS_IN_WINDOW</div>
                     )}
                   </div>
@@ -1072,7 +1072,7 @@ function App() {
                       <div className="price-amount">${billingCycle === 'monthly' ? '24.99' : '19.99'}</div>
                       <p style={{fontSize: '0.6rem', color: 'var(--text-dim)', marginBottom: '20px'}}>Includes 6 Global Slots + Total Purge Access</p>
                       <button className="main-button" style={{width: '100%'}} onClick={() => setShowCheckout(true)}>PROCEED</button>
-                      <button className="reset-btn" style={{width: '100%', marginTop: '10px'} } onClick={() => setShowPricing(false)}>CANCEL</button>
+                      <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowPricing(false)}>CANCEL</button>
                     </div>
                   </div>
                 )}
