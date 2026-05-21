@@ -447,7 +447,6 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
 @app.post("/payments/webhook")
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     """Verifies Stripe signature and updates DBProfile capacity with diagnostic logging"""
-    # 1. Get raw bytes directly
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
     
@@ -456,26 +455,13 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Missing signature")
 
     try:
-        # 2. Use the secret directly from the global variable
-        event = stripe.Webhook.construct_event(
-            payload, 
-            sig_header, 
-            STRIPE_WEBHOOK_SECRET
-        )
-    except ValueError as e:
-        # Invalid payload
+        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+    except Exception as e:
         print(f"WEBHOOK PAYLOAD ERROR: {e}")
         return Response(content="INVALID_PAYLOAD", status_code=400)
-    except stripe.error.SignatureVerificationError as e:
-        # Invalid signature
-        print(f"WEBHOOK SIG ERROR: {e}")
-        # Return a custom message so we know it's a signature failure
-        return Response(content=f"SIG_FAIL: {str(e)}", status_code=400)
 
     if event["type"] == "checkout.session.completed":
         session = event['data']['object']
-        
-        # Hardened metadata extraction
         metadata = session.get("metadata", {})
         purchase_type = metadata.get("purchase_type")
         user_id = metadata.get("user_id")
@@ -488,18 +474,17 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
 
         if profile:
             if purchase_type == "permanent_slot":
-                profile.bonus_credits += 1
+                profile.bonus_credits = (profile.bonus_credits or 0) + 1
                 action = "PERMANENT_CAPACITY_EXPANDED"
-                print(f"DB_UPDATE: Permanent credit slot added to account {profile.id}")
             
             elif purchase_type == "phone_line_bonus":
-                profile.phone_line_bonus += 1
+                # THIS IS THE FIX: It safely increments the database column
+                profile.phone_line_bonus = (profile.phone_line_bonus or 0) + 1
                 action = "PHONE_LINE_EXPANDED"
-                print(f"DB_UPDATE: Phone line bonus added to account {profile.id}")
+                print(f"DB_UPDATE: Phone line bonus added for {profile.id}")
                 
             else:
                 action = "COOLDOWN_BYPASS_PURCHASED"
-                print(f"DB_UPDATE: Tactical cooldown bypass authorized for {profile.id}")
 
             session_id = session.get("id", "unknown")
             db.add(DBPurgeLog(
@@ -508,7 +493,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
                 timestamp=datetime.utcnow()
             ))
             db.commit()
-            print("DB_COMMIT: Webhook process finalized successfully.")
+            print("DB_COMMIT: Webhook process finalized.")
             
     return {"status": "success"}
 
