@@ -146,7 +146,8 @@ function App() {
   const syncDefenseData = useCallback(async () => {
     try {
       // 1. Sync Base Dashboard Data
-      const res = await secureRequest(`${API_BASE_URL}/dashboard/sync`);
+      const activeUserId = localStorage.getItem("disappear_user_id") || "";
+      const res = await secureRequest(`${API_BASE_URL}/dashboard/sync?user_id=${activeUserId}`);
       const data = await res.json();
       
       // LOGGING FOR PERSISTENCE DEBUGGING

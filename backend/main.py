@@ -339,14 +339,18 @@ async def resolve_manual_task(log_id: int, db: Session = Depends(get_db)):
 
 
 @app.get("/dashboard/sync")
-async def sync(db: Session = Depends(get_db)):
+async def sync(user_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
     """Synchronizes dashboard with credits and threat intelligence"""
     active_cards = db.query(DBCard).count()
     active_aliases = db.query(DBAlias).count()
     total_used = active_cards + active_aliases
     
-    # FIX: Fetch the user's profile with a safety check if no profile exists
-    profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+    # FIX: Fetch the specific user's profile, fallback to latest only if none provided
+    if user_id:
+        profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
+    else:
+        profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+        
     bonus = profile.bonus_credits if profile and hasattr(profile, 'bonus_credits') else 0
     phone_bonus = profile.phone_line_bonus if profile and hasattr(profile, 'phone_line_bonus') else 0
     
