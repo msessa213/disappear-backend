@@ -50,7 +50,7 @@ class DBCard(Base):
     label = Column(String)
     number = Column(String)
     expiry = Column(String) 
-    cvv = Column(String)     
+    cvv = Column(String)       
     real_card_token = Column(String, unique=True, nullable=True) # Tokenized representation of funding source
     last_four = Column(String(4), nullable=True) # Storage of last 4 digits for billing management
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -349,7 +349,14 @@ async def sync(db: Session = Depends(get_db)):
     profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
     bonus = profile.bonus_credits if profile and hasattr(profile, 'bonus_credits') else 0
     phone_bonus = profile.phone_line_bonus if profile and hasattr(profile, 'phone_line_bonus') else 0
-    max_credits = MAX_IDENTITY_CREDITS + bonus
+    
+    # SEPARATE LIMITS
+    vcc_email_capacity = MAX_IDENTITY_CREDITS + bonus
+    phone_capacity = BASE_PHONE_LIMIT + phone_bonus
+    
+    # NEW: DECOUPLED USAGE METRICS
+    used_vcc_email = active_cards + db.query(DBAlias).filter(DBAlias.type == 'email').count()
+    used_phones = db.query(DBAlias).filter(DBAlias.type == 'phone').count()
     
     now = datetime.now()
     minute_seed = now.minute + now.hour
@@ -378,9 +385,12 @@ async def sync(db: Session = Depends(get_db)):
         "profile": {
             "email_alias": STABLE_EMAIL,
             "phone_alias": STABLE_PHONE,
-            "credits_total": max_credits,
+            "vcc_email_total": vcc_email_capacity,
+            "phone_total": phone_capacity,
+            "used_vcc_email": used_vcc_email,
+            "used_phones": used_phones,
             "credits_used": total_used,
-            "credits_available": max(0, max_credits - total_used),
+            "credits_available": max(0, vcc_email_capacity - total_used),
             "threat_level": "NOMINAL",
             "uptime": "99.998%",
             "active_nodes": total_used 
@@ -476,12 +486,14 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
             if purchase_type == "permanent_slot":
                 profile.bonus_credits = (profile.bonus_credits or 0) + 1
                 action = "PERMANENT_CAPACITY_EXPANDED"
+                db.add(profile)
             
             elif purchase_type == "phone_line_bonus":
-                # THIS IS THE FIX: It safely increments the database column
+                # THIS IS THE FIX: It safely increments the database column and marks the instance as modified
                 profile.phone_line_bonus = (profile.phone_line_bonus or 0) + 1
                 action = "PHONE_LINE_EXPANDED"
                 print(f"DB_UPDATE: Phone line bonus added for {profile.id}")
+                db.add(profile)
                 
             else:
                 action = "COOLDOWN_BYPASS_PURCHASED"
