@@ -85,7 +85,9 @@ function App() {
   });
 
   const [billingCycle, setBillingCycle] = useState("monthly");
-  const [credits, setCredits] = useState({ total: 6, used: 0, available: 6 });
+  
+  // UPDATED: Decoupled capacities
+  const [credits, setCredits] = useState({ vcc_total: 6, vcc_used: 0, phone_total: 2, phone_used: 0 });
   const [auditLog, setAuditLog] = useState([]);
   const [historyDays, setHistoryDays] = useState(30); // NEW: History Filter State
   const [cards, setCards] = useState([]);
@@ -146,11 +148,17 @@ function App() {
       // 1. Sync Base Dashboard Data
       const res = await secureRequest(`${API_BASE_URL}/dashboard/sync`);
       const data = await res.json();
+      
+      // LOGGING FOR PERSISTENCE DEBUGGING
+      console.log("SYNC_DATA_DEBUG:", data);
+
       if (data.profile) {
+          // FIXED: Parsing the new decoupled fields from main.py
           setCredits({
-              total: data.profile.credits_total || 6,
-              used: data.profile.credits_used || 0,
-              available: data.profile.credits_available || 0
+              vcc_total: data.profile.vcc_email_total || 6,
+              vcc_used: data.profile.used_vcc_email || 0,
+              phone_total: data.profile.phone_total || 2,
+              phone_used: data.profile.used_phones || 0
           });
       }
 
@@ -297,8 +305,7 @@ function App() {
       triggerToast("DATA TERMINATED");
     } catch (err) { triggerToast("ERROR"); }
   };
-
-  const handleEmergencyBurn = async () => {
+const handleEmergencyBurn = async () => {
     const confirmation = window.confirm("CONFIRM EMERGENCY BURN? \n\nAll active aliases and card nodes will be terminated immediately. Your scrub history will be vaulted in S3 before wipe.");
     if (!confirmation) return;
 
@@ -595,8 +602,7 @@ function App() {
               </div>
             ))}
           </div>
-
-          {/* --- INTERACTIVE FAQ MODAL --- */}
+{/* --- INTERACTIVE FAQ MODAL --- */}
           {showFaqModal && (
             <div className="modal-overlay" style={{zIndex: 70000}} onClick={() => setShowFaqModal(false)}>
               <div className="price-box" style={{maxWidth: '650px', textAlign: 'left', overflowY: 'auto', maxHeight: '85vh'}} onClick={e => e.stopPropagation()}>
@@ -782,8 +788,8 @@ function App() {
 
                 <div className="masking-tool" style={{ border: '1px solid #111', background: '#050505', width: '100%', maxWidth: '600px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                        <span className="field-label">VAULT CAPACITY (EMAIL/VCC/PHONE)</span>
-                        <span className="tiger-text">{credits.used} / {credits.total}</span>
+                        <span className="field-label">VAULT CAPACITY (EMAIL/VCC)</span>
+                        <span className="tiger-text">{credits.vcc_used} / {credits.vcc_total}</span>
                     </div>
                     <button className="purchase-btn" disabled={isProcessingPayment} onClick={() => handlePurchaseExpansion('permanent_slot')}>
                       {isProcessingPayment ? "PROCESSING..." : "+ ADD PERMANENT VAULT SLOT ($5.95)"}
@@ -791,16 +797,16 @@ function App() {
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '25px', marginBottom: '10px' }}>
                         <span className="field-label">ACTIVE PHONE LINES</span>
-                        <span className="tiger-text">{phones.length} / 2</span>
+                        <span className="tiger-text">{credits.phone_used} / {credits.phone_total}</span>
                     </div>
-<button 
-  className="purchase-btn" 
-  style={{borderColor: 'var(--tiger-blue)'}} 
-  disabled={isProcessingPayment} 
-  onClick={() => handlePurchaseExpansion('phone')}
->
-  {isProcessingPayment ? "PROCESSING..." : "+ PROVISION EXTRA MOBILE LINE ($5.95)"}
-</button>
+                    <button 
+                      className="purchase-btn" 
+                      style={{borderColor: 'var(--tiger-blue)'}} 
+                      disabled={isProcessingPayment} 
+                      onClick={() => handlePurchaseExpansion('phone')}
+                    >
+                      {isProcessingPayment ? "PROCESSING..." : "+ PROVISION EXTRA MOBILE LINE ($5.95)"}
+                    </button>
                 </div>
                 
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
