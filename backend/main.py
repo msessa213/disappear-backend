@@ -9,6 +9,7 @@ import os
 import time
 import stripe
 import boto3
+from lithic import Lithic
 from datetime import datetime, timedelta
 from typing import Any, List, Optional
 from dotenv import load_dotenv
@@ -17,6 +18,12 @@ from dotenv import load_dotenv
 load_dotenv()
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+LITHIC_API_KEY = os.getenv("LITHIC_API_KEY")
+LITHIC_CARD_PROGRAM = os.getenv("LITHIC_CARD_PROGRAM")
+if not LITHIC_API_KEY:
+    raise RuntimeError("LITHIC_API_KEY not found in environment!")
+lithic_client = Lithic(api_key=LITHIC_API_KEY)
 
 # --- DATABASE CONFIGURATION ---
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -28,13 +35,20 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 # Consolidated SSL for AWS/Supabase handshake
+# --- ENHANCED CONNECTION POOLING ---
 engine = create_engine(
-    DATABASE_URL, 
-    pool_pre_ping=True,
-    pool_recycle=300,
+    DATABASE_URL,
+    # Connection pooling parameters
+    pool_size=20,                    # Number of connections to maintain in pool
+    max_overflow=40,                 # Maximum overflow connections beyond pool_size
+    pool_timeout=30,                 # Timeout for acquiring connection from pool (seconds)
+    pool_pre_ping=True,              # Test connection before using (catch stale connections)
+    pool_recycle=300,                # Recycle connections every 5 minutes
+    echo=False,                      # Set to True for SQL debugging
     connect_args={
         "sslmode": "require",
-        "connect_timeout": 10
+        "connect_timeout": 10,
+        "application_name": "disappear_paas"
     }
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -229,6 +243,7 @@ s3_client = boto3.client('s3')
 # --- CORE SYSTEM ROUTES ---
 
 @app.get("/")
+@app.get("/health")
 async def health_status():
     """Health check endpoint"""
     return {"status": "VERSION_24_LIVE", "timestamp": datetime.now().isoformat()}
@@ -611,17 +626,33 @@ async def generate_card(request: CardRequest, db: Session = Depends(get_db)):
     total_active = db.query(DBCard).count() + db.query(DBAlias).count()
     if total_active >= max_credits:
         raise HTTPException(status_code=403, detail="IDENTITY_LIMIT_REACHED")
-        
+
     try:
+        lithic_payload = {
+            "type": "virtual",
+        }
+        if LITHIC_CARD_PROGRAM:
+            lithic_payload["card_program"] = LITHIC_CARD_PROGRAM
+
+        card_response = lithic_client.cards.create(**lithic_payload)
+
+        expiry_month = getattr(card_response, "expiry_month", None)
+        expiry_year = getattr(card_response, "expiry_year", None)
+        expiry = (
+            f"{expiry_month:02d}/{str(expiry_year)[-2:]}"
+            if expiry_month and expiry_year
+            else "08/28"
+        )
+
         card_id = f"vcc_{int(time.time())}_{random.randint(100, 999)}"
         new_card = DBCard(
             id=card_id,
             label=request.label,
-            number=f"4242 {random.randint(1000, 9999)} {random.randint(1000, 9999)} {random.randint(1000, 9999)}",
-            expiry="08/28",
-            cvv=str(random.randint(100, 999)),
-            real_card_token=request.real_card_token,
-            last_four=request.last_four
+            number=getattr(card_response, "number", None) or getattr(card_response, "card_number", None) or "UNKNOWN",
+            expiry=expiry,
+            cvv=str(getattr(card_response, "cvv", None) or "000"),
+            real_card_token=getattr(card_response, "token", None) or request.real_card_token,
+            last_four=getattr(card_response, "last_four", None) or request.last_four,
         )
         db.add(new_card)
         log = DBPurgeLog(action_type="CARD_PROTECTION_GENERATED", node_id=card_id)

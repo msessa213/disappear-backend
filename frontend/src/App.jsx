@@ -53,6 +53,8 @@ function App() {
   const [isScanning, setIsScanning] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEncrypting, setIsEncrypting] = useState(false); 
+  const [isMinting, setIsMinting] = useState(false);
+  const [mintedCardToken, setMintedCardToken] = useState("");
   const [purgeStatus, setPurgeStatus] = useState(""); 
   const [isProcessingPayment, setIsProcessingPayment] = useState(false); 
   const [notifications, setNotifications] = useState([]); 
@@ -492,34 +494,41 @@ const handleEmergencyBurn = async () => {
         triggerToast("REQUIRED FIELDS MISSING");
         return;
     }
-    setIsScanning(true);
+    if (isMinting) return;
+
+    setIsMinting(true);
     try {
-        const response = await secureRequest(`${API_BASE_URL}/financials/profile`, {
-            method: "POST", 
+        const response = await secureRequest(`${API_BASE_URL}/financials/mint-vcc`, {
+            method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(targetProfile)
+            body: JSON.stringify({
+                label: `${targetProfile.firstName} ${targetProfile.lastName}`,
+                real_card_token: targetProfile.email || null,
+                last_four: targetProfile.dob ? targetProfile.dob.slice(-4) : null
+            })
         });
         const resData = await response.json();
         
         if (response.ok) {
-            // AUTH_HANDSHAKE: Store the assigned Profile ID for S3/Stripe handshakes
-            if (resData.profile_id) localStorage.setItem("disappear_user_id", resData.profile_id);
-            
+            const cardToken = resData.card_token || resData.token || "";
+            if (cardToken) {
+                localStorage.setItem("disappear_card_token", cardToken);
+                setMintedCardToken(cardToken);
+            }
             setShowCheckout(false); 
             setShowPricing(false);
             setShowLanding(false);
-            setIsScanning(false);
             setShowShield(true); 
             setProgress(100);
-            triggerToast("IDENTITY PURGE INITIATED");
+            triggerToast(cardToken ? "VCC ISSUED" : "NODE SECURED");
             syncDefenseData();
-        } else { 
-            setIsScanning(false);
-            triggerToast("NODE ERROR"); 
+        } else {
+            triggerToast("MINT FAILURE");
         }
-    } catch (err) { 
-        setIsScanning(false);
+    } catch (err) {
         triggerToast("NODE OFFLINE");
+    } finally {
+        setIsMinting(false);
     }
   };
 
@@ -1104,7 +1113,9 @@ const handleEmergencyBurn = async () => {
                         <input type="checkbox" checked={targetProfile.termsAccepted} onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})} />
                         <label style={{ fontSize: '0.65rem', color: '#94A3B8' }}>Authorize Full PII Scrub and Burn</label>
                       </div>
-                      <button className="main-button" style={{ width: '100%', marginTop: '25px' }} onClick={handleFinalPurchase} disabled={!targetProfile.termsAccepted}>CONFIRM & INITIATE</button>
+                      <button className="main-button" style={{ width: '100%', marginTop: '25px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }} onClick={handleFinalPurchase} disabled={!targetProfile.termsAccepted || isMinting}>
+                        {isMinting ? <><span className="cyberpunk-spinner"></span> INITIATING...</> : 'CONFIRM & INITIATE'}
+                      </button>
                       <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowCheckout(false)}>BACK</button>
                     </div>
                   </div>
