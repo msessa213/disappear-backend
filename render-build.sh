@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
-# Exit on error
 set -o errexit
 
-# Force remove the broken virtual environment
-rm -rf /opt/render/project/src/.venv
-
-# Install dependencies using the system python
-pip install --upgrade pip
-pip install -r backend/requirements.txt
+# Upgrade pip and install with the flag that bypasses the PEP 668 restriction
+pip install --upgrade pip --break-system-packages
+pip install -r backend/requirements.txt --break-system-packages
