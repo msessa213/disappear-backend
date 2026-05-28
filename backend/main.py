@@ -1,8 +1,12 @@
 from fastapi import FastAPI, Depends, HTTPException, Request, Response, File, UploadFile, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy import create_engine, Column, String, DateTime, Integer, Boolean, desc
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from pydantic import BaseModel
 import random
 import os
@@ -10,6 +14,8 @@ import time
 import stripe
 import boto3
 from lithic import Lithic
+import logging
+import json
 from datetime import datetime, timedelta
 from typing import Any, List, Optional
 from dotenv import load_dotenv
@@ -24,6 +30,26 @@ LITHIC_CARD_PROGRAM = os.getenv("LITHIC_CARD_PROGRAM")
 if not LITHIC_API_KEY:
     raise RuntimeError("LITHIC_API_KEY not found in environment!")
 lithic_client = Lithic(api_key=LITHIC_API_KEY)
+
+# --- STRUCTURED LOGGING ---
+class JSONFormatter(logging.Formatter):
+    def format(self, record):
+        log_record = {
+            "timestamp": self.formatTime(record, self.datefmt),
+            "level": record.levelname,
+            "message": record.getMessage(),
+        }
+        if hasattr(record, "audit_info"):
+            log_record.update(record.audit_info)
+        if record.exc_info:
+            log_record["exc_info"] = self.formatException(record.exc_info)
+        return json.dumps(log_record)
+
+logger = logging.getLogger("disappear")
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+handler.setFormatter(JSONFormatter())
+logger.addHandler(handler)
 
 # --- DATABASE CONFIGURATION ---
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -121,13 +147,18 @@ class DBPurgeLog(Base):
 # Auto-create tables on startup with crash protection
 try:
     Base.metadata.create_all(bind=engine)
+    logger.info("Database tables verified/created.")
 except Exception as e:
-    print(f"ALARM: DB Sync Deferred - {e}")
+    logger.error(f"ALARM: DB Sync Deferred - {e}")
 
 
 # --- APP CONFIGURATION ---
 
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(title="Disappear P-A-A-S Engine")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # FIXED: Production Origins + Mobile App Capacitor Support
 origins = [
@@ -177,6 +208,23 @@ async def add_cors_header(request: Request, call_next):
         response.headers["Access-Control-Allow-Headers"] = "*"
     return response
 
+
+# --- COMPLIANCE AUDIT TRAIL MIDDLEWARE ---
+@app.middleware("http")
+async def audit_log_middleware(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    
+    audit_info = {
+        "http_method": request.method,
+        "http_path": request.url.path,
+        "client_ip": request.client.host if request.client else "unknown",
+        "status_code": response.status_code,
+        "process_time_ms": round(process_time * 1000, 2)
+    }
+    logger.info(f"API Request: {request.method} {request.url.path}", extra={"audit_info": audit_info})
+    return response
 
 # Database Dependency Injection
 def get_db():
@@ -249,9 +297,28 @@ async def health_status():
     return {"status": "VERSION_24_LIVE", "timestamp": datetime.now().isoformat()}
 
 
+@app.get("/download/app")
+async def download_apk():
+    # Use the bucket and filename exactly as they appear in S3
+    bucket_name = "disappear-purge-receipts-vault"
+    file_key = "app-debug.apk"
+    
+    # Generate a secure, temporary link
+    # This automatically includes the correct MIME type from S3's metadata
+    s3 = boto3.client('s3', region_name='us-east-1')
+    url = s3.generate_presigned_url(
+        'get_object',
+        Params={'Bucket': bucket_name, 'Key': file_key},
+        ExpiresIn=3600
+    )
+    
+    return RedirectResponse(url=url)
+
+
 # --- NEW: FREE RECONNAISSANCE SCANNER ---
 @app.get("/api/v1/free-scan")
-async def free_recon_scan(query: str):
+@limiter.limit("10/minute")
+async def free_recon_scan(request: Request, query: str):
     """
     Public PII exposure lookup for Landing Page lead magnet.
     Simulates high-velocity broker database crawl.
@@ -423,6 +490,7 @@ async def sync(user_id: Optional[str] = Query(None), db: Session = Depends(get_d
 # --- PAYMENTS & WEBHOOKS (FINAL PRICING FIREWALL) ---
 
 @app.post("/payments/create-session")
+@limiter.limit("5/minute")
 async def create_checkout_session(request: Request, db: Session = Depends(get_db)):
     try:
         body = await request.json()
@@ -469,7 +537,7 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
         )
         return {"url": session.url}
     except Exception as e:
-        print(f"STRIPE ERROR: {str(e)}")
+        logger.error(f"STRIPE ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -480,13 +548,13 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     sig_header = request.headers.get("stripe-signature")
     
     if not sig_header:
-        print("WEBHOOK ERROR: Missing stripe-signature header")
+        logger.error("WEBHOOK ERROR: Missing stripe-signature header")
         raise HTTPException(status_code=400, detail="Missing signature")
 
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
     except Exception as e:
-        print(f"WEBHOOK PAYLOAD ERROR: {e}")
+        logger.error(f"WEBHOOK PAYLOAD ERROR: {e}")
         return Response(content="INVALID_PAYLOAD", status_code=400)
 
     if event["type"] == "checkout.session.completed":
@@ -495,7 +563,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         purchase_type = metadata.get("purchase_type")
         user_id = metadata.get("user_id")
         
-        print(f"WEBHOOK_INBOUND: {purchase_type} for UID {user_id}")
+        logger.info(f"WEBHOOK_INBOUND: {purchase_type} for UID {user_id}")
 
         profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
         if not profile:
@@ -511,7 +579,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
                 # THIS IS THE FIX: It safely increments the database column and marks the instance as modified
                 profile.phone_line_bonus = (profile.phone_line_bonus or 0) + 1
                 action = "PHONE_LINE_EXPANDED"
-                print(f"DB_UPDATE: Phone line bonus added for {profile.id}")
+                logger.info(f"DB_UPDATE: Phone line bonus added for {profile.id}")
                 db.add(profile)
                 
             else:
@@ -524,7 +592,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
                 timestamp=datetime.utcnow()
             ))
             db.commit()
-            print("DB_COMMIT: Webhook process finalized.")
+            logger.info("DB_COMMIT: Webhook process finalized.")
             
     return {"status": "success"}
 
@@ -539,7 +607,8 @@ async def get_aliases(db: Session = Depends(get_db)):
 
 
 @app.post("/aliases/mint")
-async def generate_alias(request: AliasRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+async def generate_alias(request: Request, alias_req: AliasRequest, db: Session = Depends(get_db)):
     """Generates an alias with 12h cooldown and bypass verification"""
     profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
     bonus = profile.bonus_credits if profile else 0
@@ -552,7 +621,7 @@ async def generate_alias(request: AliasRequest, db: Session = Depends(get_db)):
     if total_active >= max_credits:
         raise HTTPException(status_code=403, detail="IDENTITY_LIMIT_REACHED")
 
-    if request.type.lower() == "phone":
+    if alias_req.type.lower() == "phone":
         current_phones = db.query(DBAlias).filter(DBAlias.type == "phone").count()
         if current_phones >= max_phones:
             raise HTTPException(status_code=403, detail="PHONE_CAPACITY_REACHED")
@@ -574,15 +643,15 @@ async def generate_alias(request: AliasRequest, db: Session = Depends(get_db)):
 
     alias_id = f"als_{int(time.time())}_{random.randint(100, 999)}"
     
-    if request.type.lower() == "email":
+    if alias_req.type.lower() == "email":
         content = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
     else:
         content = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
         
     new_alias = DBAlias(
         id=alias_id,
-        type=request.type.lower(),
-        label=request.label,
+        type=alias_req.type.lower(),
+        label=alias_req.label,
         content=content
     )
     db.add(new_alias)
@@ -617,7 +686,8 @@ async def financials(db: Session = Depends(get_db)):
 
 
 @app.post("/financials/mint")
-async def generate_card(request: CardRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+async def generate_card(request: Request, card_req: CardRequest, db: Session = Depends(get_db)):
     """Initiates a new virtual card generation process on the secure node"""
     profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
     bonus = profile.bonus_credits if profile else 0
@@ -647,12 +717,12 @@ async def generate_card(request: CardRequest, db: Session = Depends(get_db)):
         card_id = f"vcc_{int(time.time())}_{random.randint(100, 999)}"
         new_card = DBCard(
             id=card_id,
-            label=request.label,
+            label=card_req.label,
             number=getattr(card_response, "number", None) or getattr(card_response, "card_number", None) or "UNKNOWN",
             expiry=expiry,
             cvv=str(getattr(card_response, "cvv", None) or "000"),
-            real_card_token=getattr(card_response, "token", None) or request.real_card_token,
-            last_four=getattr(card_response, "last_four", None) or request.last_four,
+            real_card_token=getattr(card_response, "token", None) or card_req.real_card_token,
+            last_four=getattr(card_response, "last_four", None) or card_req.last_four,
         )
         db.add(new_card)
         log = DBPurgeLog(action_type="CARD_PROTECTION_GENERATED", node_id=card_id)
@@ -667,6 +737,7 @@ async def generate_card(request: CardRequest, db: Session = Depends(get_db)):
 
 @app.post("/financials/profile")
 @app.post("/financials/profile/")
+@limiter.limit("5/minute")
 async def save_profile(request: Request, db: Session = Depends(get_db)):
     """Handles raw profile ingestion and cleanly seeds initial tracking slots for all data brokers"""
     try:
@@ -859,10 +930,11 @@ async def get_faq_data():
 
 
 @app.post("/support/ticket")
-async def create_support_ticket(request: SupportRequest, db: Session = Depends(get_db)):
+@limiter.limit("3/minute")
+async def create_support_ticket(request: Request, support_req: SupportRequest, db: Session = Depends(get_db)):
     """Logs support requests for PaaS serviceability"""
     try:
-        log_entry = f"SUB: {request.subject} | MSG: {request.message}"
+        log_entry = f"SUB: {support_req.subject} | MSG: {support_req.message}"
         log = DBPurgeLog(action_type="SUPPORT_REQUEST", node_id=log_entry)
         db.add(log)
         db.commit()

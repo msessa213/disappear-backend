@@ -576,7 +576,7 @@ const handleEmergencyBurn = async () => {
               padding: '0 20px'
             }}>
               <a 
-                href="/Disappear.apk" 
+                href="https://d3bipqcsrujl11.cloudfront.net/app-debug.apk" 
                 download="Disappear_Shield.apk" 
                 className="main-button" 
                 style={{ 
