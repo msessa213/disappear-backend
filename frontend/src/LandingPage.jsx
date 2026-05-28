@@ -194,20 +194,12 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
           Download the standalone Disappear Android client for direct-to-device identity management.
         </p>
         <a 
-          href="/Disappear.apk" 
-          download="Disappear_v1.apk"
+          href="https://d3bipqcsrujl11.cloudfront.net/app-debug.apk" 
+          download="Disappear_Shield.apk"
           className="main-button" 
-          style={{ 
-            textDecoration: 'none', 
-            display: 'inline-block', 
-            padding: '15px 40px',
-            background: 'transparent',
-            border: '1px solid var(--tiger-blue)',
-            color: 'var(--tiger-blue)',
-            fontSize: '0.75rem'
-          }}
+          style={{ textDecoration: 'none' }}
         >
-          DOWNLOAD_MOBILE_ENGINE.APK
+          Get Android App
         </a>
       </section>
 
