@@ -33,6 +33,6 @@ uvicorn==0.40.0
 boto3==1.34.0
 gunicorn==21.2.0
 python-multipart==0.0.9
-lithic==0.1.0
+git+https://github.com/lithic-com/lithic-python.git
 slowapi==0.1.9
 limits
