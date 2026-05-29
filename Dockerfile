@@ -1,11 +1,13 @@
 # Use a lightweight Python base image
 FROM python:3.11-slim
 
+# Install git (needed for installing python packages via git+)
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+
 # Set the working directory inside the container
 WORKDIR /app
 
 # Copy the requirements file from the backend directory first
-# (This allows Docker to cache the installation step)
 COPY backend/requirements.txt .
 
 # Install dependencies
@@ -18,5 +20,4 @@ COPY . .
 EXPOSE 8000
 
 # Start the application from the backend module
-# (This points to backend/main.py, running the app instance)
 CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
