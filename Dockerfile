@@ -1,22 +1,25 @@
-# Use official Python image
+# Use a lightweight, stable official Python image
 FROM python:3.11-slim
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y libpq-dev gcc && rm -rf /var/lib/apt/lists/*
-
-# Set working directory to /app
+# Set the working directory
 WORKDIR /app
 
-# Copy requirements from the backend folder
-COPY backend/requirements.txt .
+# Install essential build tools only if absolutely needed for extensions
+# (If your app relies on psycopg2-binary, you might not even need this, 
+# but build-essential is safer and more standard for slim images)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
+# Copy requirements and install dependencies
+# --no-cache-dir keeps the image size small
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the entire backend directory into /app
-COPY backend/ .
+# Copy all application files
+COPY . .
 
-# Expose the port Render expects (Render usually maps to 10000, but 8000 is fine if configured)
+# Expose the port
 EXPOSE 8000
 
 # Start the application
