@@ -67,6 +67,7 @@ function App() {
   const [newCardLabel, setNewCardLabel] = useState("");
   const [newRealCardToken, setNewRealCardToken] = useState("");
   const [newLastFour, setNewLastFour] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
 
   // --- SUPPORT & FAQ STATES ---
   const [showSupportModal, setShowSupportModal] = useState(false);
@@ -264,7 +265,8 @@ function App() {
     setPurgeStatus(`ENCRYPTING ${type.toUpperCase()}...`);
     setIsEncrypting(true); 
     try {
-      const res = await secureRequest(`${API_BASE_URL}/aliases/mint`, {
+      const activeUserId = localStorage.getItem("disappear_user_id") || "";
+      const res = await secureRequest(`${API_BASE_URL}/aliases/mint?user_id=${activeUserId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type, label: aliasLabel })
@@ -349,7 +351,8 @@ const handleEmergencyBurn = async () => {
     setPurgeStatus("GENERATING PROTECTED DIGITS...");
     setIsEncrypting(true); 
     try {
-      const response = await secureRequest(`${API_BASE_URL}/financials/mint`, {
+      const activeUserId = localStorage.getItem("disappear_user_id") || "";
+      const response = await secureRequest(`${API_BASE_URL}/financials/mint?user_id=${activeUserId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -388,16 +391,31 @@ const handleEmergencyBurn = async () => {
     } catch (err) { triggerToast("ERROR"); }
   };
 
-  const verify2FA = () => {
+  const verify2FA = async () => {
+    if(!loginEmail) { triggerToast("ENTER REGISTERED EMAIL"); return; }
     triggerToast("AUTHENTICATING...");
-    setTimeout(() => {
-      localStorage.setItem("disappear_session", "active");
-      setShow2FA(false); 
-      setShowLanding(false); // Switch to app
-      setShowShield(true); 
-      setProgress(100);
-      triggerToast("WELCOME BACK, AGENT");
-    }, 1500);
+    try {
+      const res = await secureRequest(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: loginEmail })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem("disappear_session", "active");
+        localStorage.setItem("disappear_user_id", data.user_id);
+        setShow2FA(false); 
+        setShowLanding(false); // Switch to app
+        setShowShield(true); 
+        setProgress(100);
+        triggerToast(`WELCOME BACK, ${data.first_name.toUpperCase()}`);
+        syncDefenseData();
+      } else {
+        triggerToast("ACCESS DENIED: AGENT NOT FOUND");
+      }
+    } catch (err) {
+       triggerToast("UPLINK FAILURE");
+    }
   };
 
   const handleDownloadPDF = async (isSilentUplink = false) => {
@@ -498,7 +516,20 @@ const handleEmergencyBurn = async () => {
 
     setIsMinting(true);
     try {
-        const response = await secureRequest(`${API_BASE_URL}/financials/mint-vcc`, {
+        // 1. Ingest Profile & Get User ID
+        const profileRes = await secureRequest(`${API_BASE_URL}/financials/profile`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(targetProfile)
+        });
+        
+        if (profileRes.ok) {
+            const profileData = await profileRes.json();
+            localStorage.setItem("disappear_user_id", profileData.profile_id);
+        }
+
+        // 2. Mint the initial shield card
+        const response = await secureRequest(`${API_BASE_URL}/financials/mint`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -1073,10 +1104,13 @@ const handleEmergencyBurn = async () => {
                 {show2FA && (
                   <div className="pricing-card fade-in">
                     <div className="price-box">
-                      <h3 className="tiger-text">MFA CHALLENGE</h3>
-                      <input id="mfa_code" className="mask-btn" style={{width: '100%', textAlign: 'center'}} placeholder="******" />
-                      <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={verify2FA}>VERIFY</button>
-                      <button className="reset-btn" style={{width: '100%'}} onClick={() => setShow2FA(false)}>CANCEL</button>
+                      <h3 className="tiger-text">AGENT AUTHENTICATION</h3>
+                      <p className="field-label">REGISTERED EMAIL</p>
+                      <input className="mask-btn" style={{width: '100%', textAlign: 'center', marginBottom: '10px', color: 'white'}} placeholder="agent@email.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
+                      <p className="field-label">MFA CODE (OPTIONAL)</p>
+                      <input className="mask-btn" style={{width: '100%', textAlign: 'center', color: 'white'}} placeholder="******" />
+                      <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={verify2FA}>VERIFY IDENTITY</button>
+                      <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShow2FA(false)}>CANCEL</button>
                     </div>
                   </div>
                 )}
