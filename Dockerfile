@@ -5,14 +5,14 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Install essential build tools only if absolutely needed for extensions
-# (If your app relies on psycopg2-binary, you might not even need this, 
-# but build-essential is safer and more standard for slim images)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
+# Upgrade pip to the latest version to avoid dependency resolution issues
+RUN pip install --no-cache-dir --upgrade pip
+
 # Copy requirements and install dependencies
-# --no-cache-dir keeps the image size small
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
