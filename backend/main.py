@@ -270,7 +270,8 @@ class AliasRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    token: str = None
+    email: str
+    code: Optional[str] = None
 
 
 # NEW: Support Request Schema
@@ -289,6 +290,19 @@ s3_client = boto3.client('s3')
 
 
 # --- CORE SYSTEM ROUTES ---
+
+@app.post("/auth/login")
+@limiter.limit("5/minute")
+async def login_agent(request: Request, login_req: LoginRequest, db: Session = Depends(get_db)):
+    """Authenticates an agent via email to sync their specific profile to the app"""
+    profile = db.query(DBProfile).filter(DBProfile.email.ilike(login_req.email)).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="AGENT_NOT_FOUND")
+    return {
+        "status": "AUTHORIZED",
+        "user_id": profile.id,
+        "first_name": profile.first_name
+    }
 
 @app.get("/")
 @app.get("/health")
@@ -493,9 +507,7 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
         raw_type = body.get("expansion_type", "")
         etype = str(raw_type).lower()
         
-        # KEY FIX: Explicitly find the correct profile ID to anchor the metadata
-        profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
-        user_id = profile.id if profile else "anonymous_agent"
+        user_id = body.get("user_id", "anonymous_agent")
 
         # RULE: Explicitly check for cooldown/wipe first for 1.99
         if "cooldown" in etype or "wipe" in etype or "emergency" in etype:
@@ -562,8 +574,6 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         logger.info(f"WEBHOOK_INBOUND: {purchase_type} for UID {user_id}")
 
         profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
-        if not profile:
-            profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
 
         if profile:
             if purchase_type == "permanent_slot":
@@ -604,9 +614,9 @@ async def get_aliases(db: Session = Depends(get_db)):
 
 @app.post("/aliases/mint")
 @limiter.limit("5/minute")
-async def generate_alias(request: Request, alias_req: AliasRequest, db: Session = Depends(get_db)):
+async def generate_alias(request: Request, alias_req: AliasRequest, x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Generates an alias with 12h cooldown and bypass verification"""
-    profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+    profile = db.query(DBProfile).filter(DBProfile.id == x_user_id).first() if x_user_id else None
     bonus = profile.bonus_credits if profile else 0
     phone_bonus = profile.phone_line_bonus if profile else 0
     
@@ -683,9 +693,9 @@ async def financials(db: Session = Depends(get_db)):
 
 @app.post("/financials/mint")
 @limiter.limit("5/minute")
-async def generate_card(request: Request, card_req: CardRequest, db: Session = Depends(get_db)):
+async def generate_card(request: Request, card_req: CardRequest, x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Initiates a new virtual card generation process on the secure node"""
-    profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+    profile = db.query(DBProfile).filter(DBProfile.id == x_user_id).first() if x_user_id else None
     bonus = profile.bonus_credits if profile else 0
     max_credits = MAX_IDENTITY_CREDITS + bonus
 
@@ -809,9 +819,9 @@ async def regenerate_alias():
 # --- PROOF OF REMOVAL ARCHITECTURE ---
 
 @app.get("/api/v1/scrub-history")
-async def get_scrub_history(db: Session = Depends(get_db)):
+async def get_scrub_history(x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Fetches clean removal timeline for end-user app display."""
-    profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+    profile = db.query(DBProfile).filter(DBProfile.id == x_user_id).first() if x_user_id else None
     if not profile:
         return {"history": []}
     
@@ -944,4 +954,4 @@ async def create_support_ticket(request: Request, support_req: SupportRequest, d
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("backend.main:app", host="0.0.0.0", port=port, reload=False)
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
