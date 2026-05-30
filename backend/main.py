@@ -705,7 +705,7 @@ async def generate_card(request: Request, card_req: CardRequest, x_user_id: Opti
 
     try:
         lithic_payload = {
-            "type": "virtual",
+            "type": "VIRTUAL",
         }
         # ONLY add card_program if the variable is actually set in Railway
         if os.getenv("LITHIC_CARD_PROGRAM"):
@@ -713,8 +713,8 @@ async def generate_card(request: Request, card_req: CardRequest, x_user_id: Opti
 
         card_response = lithic_client.cards.create(**lithic_payload)
 
-        expiry_month = getattr(card_response, "expiry_month", None)
-        expiry_year = getattr(card_response, "expiry_year", None)
+        expiry_month = getattr(card_response, "exp_month", None)
+        expiry_year = getattr(card_response, "exp_year", None)
         expiry = (
             f"{expiry_month:02d}/{str(expiry_year)[-2:]}"
             if expiry_month and expiry_year
@@ -725,7 +725,7 @@ async def generate_card(request: Request, card_req: CardRequest, x_user_id: Opti
         new_card = DBCard(
             id=card_id,
             label=card_req.label,
-            number=getattr(card_response, "number", None) or getattr(card_response, "card_number", None) or "UNKNOWN",
+            number=getattr(card_response, "pan", None) or getattr(card_response, "number", None) or "UNKNOWN",
             expiry=expiry,
             cvv=str(getattr(card_response, "cvv", None) or "000"),
             real_card_token=getattr(card_response, "token", None) or card_req.real_card_token,
