@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Request, Response, File, UploadFile, Form, Query
+from fastapi import FastAPI, Depends, HTTPException, Request, Response, File, UploadFile, Form, Query, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy import create_engine, Column, String, DateTime, Integer, Boolean, desc
@@ -421,17 +421,13 @@ async def resolve_manual_task(log_id: int, db: Session = Depends(get_db)):
 
 
 @app.get("/dashboard/sync")
-async def sync(user_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
-    """Synchronizes dashboard with credits and threat intelligence"""
+async def sync(x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    """Synchronizes dashboard using secure X-User-ID header"""
     active_cards = db.query(DBCard).count()
     active_aliases = db.query(DBAlias).count()
     total_used = active_cards + active_aliases
     
-    # FIX: Fetch the specific user's profile, fallback to latest only if none provided
-    if user_id:
-        profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
-    else:
-        profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+    profile = db.query(DBProfile).filter(DBProfile.id == x_user_id).first() if x_user_id else db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
         
     bonus = profile.bonus_credits if profile and hasattr(profile, 'bonus_credits') else 0
     phone_bonus = profile.phone_line_bonus if profile and hasattr(profile, 'phone_line_bonus') else 0
@@ -947,4 +943,4 @@ async def create_support_ticket(request: Request, support_req: SupportRequest, d
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=port, reload=False)
