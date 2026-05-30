@@ -697,8 +697,9 @@ async def generate_card(request: Request, card_req: CardRequest, db: Session = D
         lithic_payload = {
             "type": "virtual",
         }
-        if LITHIC_CARD_PROGRAM:
-            lithic_payload["card_program"] = LITHIC_CARD_PROGRAM
+        # ONLY add card_program if the variable is actually set in Railway
+        if os.getenv("LITHIC_CARD_PROGRAM"):
+            lithic_payload["card_program"] = os.getenv("LITHIC_CARD_PROGRAM")
 
         card_response = lithic_client.cards.create(**lithic_payload)
 
