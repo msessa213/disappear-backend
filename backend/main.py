@@ -29,7 +29,10 @@ LITHIC_API_KEY = os.getenv("LITHIC_API_KEY")
 LITHIC_CARD_PROGRAM = os.getenv("LITHIC_CARD_PROGRAM")
 if not LITHIC_API_KEY:
     raise RuntimeError("LITHIC_API_KEY not found in environment!")
-lithic_client = Lithic(api_key=LITHIC_API_KEY)
+
+# Default to sandbox to avoid 401 errors with test keys, unless explicitly set to 'production'
+LITHIC_ENVIRONMENT = os.getenv("LITHIC_ENVIRONMENT", "sandbox")
+lithic_client = Lithic(api_key=LITHIC_API_KEY, environment=LITHIC_ENVIRONMENT)
 
 # --- STRUCTURED LOGGING ---
 class JSONFormatter(logging.Formatter):
@@ -186,7 +189,7 @@ app.add_middleware(
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_headers=["*", "x-user-id"],
     expose_headers=["*"],
 )
 
@@ -205,7 +208,12 @@ async def add_cors_header(request: Request, call_next):
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Credentials"] = "true"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "*"
+        
+        req_headers = request.headers.get("access-control-request-headers")
+        if req_headers:
+            response.headers["Access-Control-Allow-Headers"] = req_headers
+        else:
+            response.headers["Access-Control-Allow-Headers"] = "x-user-id, content-type, authorization, accept, origin"
     return response
 
 
@@ -616,7 +624,8 @@ async def get_aliases(db: Session = Depends(get_db)):
 @limiter.limit("5/minute")
 async def generate_alias(request: Request, alias_req: AliasRequest, x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Generates an alias with 12h cooldown and bypass verification"""
-    profile = db.query(DBProfile).filter(DBProfile.id == x_user_id).first() if x_user_id else None
+    user_id = x_user_id or "anonymous_agent"
+    profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
     bonus = profile.bonus_credits if profile else 0
     phone_bonus = profile.phone_line_bonus if profile else 0
     
@@ -695,7 +704,8 @@ async def financials(db: Session = Depends(get_db)):
 @limiter.limit("5/minute")
 async def generate_card(request: Request, card_req: CardRequest, x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Initiates a new virtual card generation process on the secure node"""
-    profile = db.query(DBProfile).filter(DBProfile.id == x_user_id).first() if x_user_id else None
+    user_id = x_user_id or "anonymous_agent"
+    profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
     bonus = profile.bonus_credits if profile else 0
     max_credits = MAX_IDENTITY_CREDITS + bonus
 
