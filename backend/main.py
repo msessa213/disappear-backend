@@ -713,13 +713,9 @@ async def generate_card(request: Request, card_req: CardRequest, x_user_id: Opti
 
         card_response = lithic_client.cards.create(**lithic_payload)
 
-        expiry_month = getattr(card_response, "exp_month", None)
-        expiry_year = getattr(card_response, "exp_year", None)
-        expiry = (
-            f"{expiry_month:02d}/{str(expiry_year)[-2:]}"
-            if expiry_month and expiry_year
-            else "08/28"
-        )
+        exp_month = getattr(card_response, "exp_month", None)
+        exp_year = getattr(card_response, "exp_year", None)
+        expiry = f"{exp_month:02d}/{str(exp_year)[-2:]}" if exp_month and exp_year else "08/28"
 
         card_id = f"vcc_{int(time.time())}_{random.randint(100, 999)}"
         new_card = DBCard(
@@ -728,8 +724,8 @@ async def generate_card(request: Request, card_req: CardRequest, x_user_id: Opti
             number=getattr(card_response, "pan", None) or getattr(card_response, "number", None) or "UNKNOWN",
             expiry=expiry,
             cvv=str(getattr(card_response, "cvv", None) or "000"),
-            real_card_token=getattr(card_response, "token", None) or card_req.real_card_token,
-            last_four=getattr(card_response, "last_four", None) or card_req.last_four,
+            real_card_token=getattr(card_response, "token", None),
+            last_four=getattr(card_response, "last_four", None)
         )
         db.add(new_card)
         log = DBPurgeLog(action_type="CARD_PROTECTION_GENERATED", node_id=card_id)
@@ -739,7 +735,7 @@ async def generate_card(request: Request, card_req: CardRequest, x_user_id: Opti
         return new_card
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"GENERATION_ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"LITHIC_API_ERROR: {str(e)}")
 
 
 @app.post("/financials/profile")
