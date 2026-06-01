@@ -523,21 +523,28 @@ const handleEmergencyBurn = async () => {
             body: JSON.stringify(targetProfile)
         });
         
+        let activeUserId = localStorage.getItem("disappear_user_id");
         if (profileRes.ok) {
             const profileData = await profileRes.json();
-            localStorage.setItem("disappear_user_id", profileData.profile_id);
+            activeUserId = profileData.profile_id;
+            localStorage.setItem("disappear_user_id", activeUserId);
         }
 
         // 2. Mint the initial shield card
+        // FIX: Added 'x-user-id' header and used absolute URL
         const response = await secureRequest(`${API_BASE_URL}/financials/mint`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "x-user-id": activeUserId // This must match the header expected by your main.py
+            },
             body: JSON.stringify({
                 label: `${targetProfile.firstName} ${targetProfile.lastName}`,
                 real_card_token: targetProfile.email || null,
                 last_four: targetProfile.dob ? targetProfile.dob.slice(-4) : null
             })
         });
+        
         const resData = await response.json();
         
         if (response.ok) {
@@ -554,9 +561,12 @@ const handleEmergencyBurn = async () => {
             triggerToast(cardToken ? "VCC ISSUED" : "NODE SECURED");
             syncDefenseData();
         } else {
-            triggerToast("MINT FAILURE");
+            // This will now capture the LITHIC_API_ERROR from the backend
+            console.error("Backend Error:", resData);
+            triggerToast(resData.detail || "MINT FAILURE");
         }
     } catch (err) {
+        console.error("Connection Error:", err);
         triggerToast("NODE OFFLINE");
     } finally {
         setIsMinting(false);

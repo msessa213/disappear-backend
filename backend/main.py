@@ -54,6 +54,15 @@ handler = logging.StreamHandler()
 handler.setFormatter(JSONFormatter())
 logger.addHandler(handler)
 
+# --- DEBUGGING LITHIC KEY ---
+debug_key = os.getenv("LITHIC_API_KEY")
+if debug_key:
+    # Using the logger ensures this shows up in your structured Railway logs
+    logger.info(f"DEBUG_KEY_START: {debug_key[:4]}")
+    logger.info(f"DEBUG_KEY_LENGTH: {len(debug_key)}")
+else:
+    logger.error("DEBUG: LITHIC_API_KEY is missing!")
+
 # --- DATABASE CONFIGURATION ---
 DATABASE_URL = os.getenv("DATABASE_URL")
 
