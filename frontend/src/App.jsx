@@ -528,42 +528,17 @@ const handleEmergencyBurn = async () => {
             const profileData = await profileRes.json();
             activeUserId = profileData.profile_id;
             localStorage.setItem("disappear_user_id", activeUserId);
-        }
-
-        // 2. Mint the initial shield card
-        // FIX: Added 'x-user-id' header and used absolute URL
-        const response = await secureRequest(`${API_BASE_URL}/financials/mint`, {
-            method: "POST",
-            headers: { 
-                "Content-Type": "application/json",
-                "x-user-id": activeUserId // This must match the header expected by your main.py
-            },
-            body: JSON.stringify({
-                label: `${targetProfile.firstName} ${targetProfile.lastName}`,
-                real_card_token: targetProfile.email || null,
-                last_four: targetProfile.dob ? targetProfile.dob.slice(-4) : null
-            })
-        });
-        
-        const resData = await response.json();
-        
-        if (response.ok) {
-            const cardToken = resData.card_token || resData.token || "";
-            if (cardToken) {
-                localStorage.setItem("disappear_card_token", cardToken);
-                setMintedCardToken(cardToken);
-            }
+            
+            // ALWAYS let the user into the dashboard since their profile was created successfully.
             setShowCheckout(false); 
             setShowPricing(false);
             setShowLanding(false);
             setShowShield(true); 
             setProgress(100);
-            triggerToast(cardToken ? "VCC ISSUED" : "NODE SECURED");
             syncDefenseData();
+            triggerToast("SYSTEM SYNCING: PROVISIONING SHIELD...");
         } else {
-            // This will now capture the LITHIC_API_ERROR from the backend
-            console.error("Backend Error:", resData);
-            triggerToast(resData.detail || "MINT FAILURE");
+            triggerToast("PROFILE REGISTRATION FAILED");
         }
     } catch (err) {
         console.error("Connection Error:", err);

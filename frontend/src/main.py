@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Request, Response, File, UploadFile, Form, Query, Header
+from fastapi import FastAPI, Depends, HTTPException, Request, Response, File, UploadFile, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy import create_engine, Column, String, DateTime, Integer, Boolean, desc
@@ -27,21 +27,9 @@ STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 LITHIC_API_KEY = os.getenv("LITHIC_API_KEY")
 LITHIC_CARD_PROGRAM = os.getenv("LITHIC_CARD_PROGRAM")
-
-# Default to sandbox to avoid 401 errors with test keys, unless explicitly set to 'production'
-LITHIC_ENVIRONMENT = os.getenv("LITHIC_ENVIRONMENT", "sandbox")
-
-class LithicManager:
-    _client = None
-
-    @classmethod
-    def get_client(cls):
-        if cls._client is None:
-            api_key = os.getenv("LITHIC_API_KEY")
-            if not api_key:
-                raise ValueError("LITHIC_API_KEY not found in environment!")
-            cls._client = Lithic(api_key=api_key, environment=LITHIC_ENVIRONMENT)
-        return cls._client
+if not LITHIC_API_KEY:
+    raise RuntimeError("LITHIC_API_KEY not found in environment!")
+lithic_client = Lithic(api_key=LITHIC_API_KEY)
 
 # --- STRUCTURED LOGGING ---
 class JSONFormatter(logging.Formatter):
@@ -62,15 +50,6 @@ logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 handler.setFormatter(JSONFormatter())
 logger.addHandler(handler)
-
-# --- DEBUGGING LITHIC KEY ---
-debug_key = os.getenv("LITHIC_API_KEY")
-if debug_key:
-    # Using the logger ensures this shows up in your structured Railway logs
-    logger.info(f"DEBUG_KEY_START: {debug_key[:4]}")
-    logger.info(f"DEBUG_KEY_LENGTH: {len(debug_key)}")
-else:
-    logger.error("DEBUG: LITHIC_API_KEY is missing!")
 
 # --- DATABASE CONFIGURATION ---
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -207,7 +186,7 @@ app.add_middleware(
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*", "x-user-id"],
+    allow_headers=["*"],
     expose_headers=["*"],
 )
 
@@ -226,12 +205,7 @@ async def add_cors_header(request: Request, call_next):
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Credentials"] = "true"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-        
-        req_headers = request.headers.get("access-control-request-headers")
-        if req_headers:
-            response.headers["Access-Control-Allow-Headers"] = req_headers
-        else:
-            response.headers["Access-Control-Allow-Headers"] = "x-user-id, content-type, authorization, accept, origin"
+        response.headers["Access-Control-Allow-Headers"] = "*"
     return response
 
 
@@ -461,13 +435,17 @@ async def resolve_manual_task(log_id: int, db: Session = Depends(get_db)):
 
 
 @app.get("/dashboard/sync")
-async def sync(x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
-    """Synchronizes dashboard using secure X-User-ID header"""
+async def sync(user_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
+    """Synchronizes dashboard with credits and threat intelligence"""
     active_cards = db.query(DBCard).count()
     active_aliases = db.query(DBAlias).count()
     total_used = active_cards + active_aliases
     
-    profile = db.query(DBProfile).filter(DBProfile.id == x_user_id).first() if x_user_id else db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+    # FIX: Fetch the specific user's profile, fallback to latest only if none provided
+    if user_id:
+        profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
+    else:
+        profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
         
     bonus = profile.bonus_credits if profile and hasattr(profile, 'bonus_credits') else 0
     phone_bonus = profile.phone_line_bonus if profile and hasattr(profile, 'phone_line_bonus') else 0
@@ -533,7 +511,9 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
         raw_type = body.get("expansion_type", "")
         etype = str(raw_type).lower()
         
-        user_id = body.get("user_id", "anonymous_agent")
+        # KEY FIX: Explicitly find the correct profile ID to anchor the metadata
+        profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+        user_id = profile.id if profile else "anonymous_agent"
 
         # RULE: Explicitly check for cooldown/wipe first for 1.99
         if "cooldown" in etype or "wipe" in etype or "emergency" in etype:
@@ -600,6 +580,8 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         logger.info(f"WEBHOOK_INBOUND: {purchase_type} for UID {user_id}")
 
         profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
+        if not profile:
+            profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
 
         if profile:
             if purchase_type == "permanent_slot":
@@ -640,10 +622,12 @@ async def get_aliases(db: Session = Depends(get_db)):
 
 @app.post("/aliases/mint")
 @limiter.limit("5/minute")
-async def generate_alias(request: Request, alias_req: AliasRequest, x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
+async def generate_alias(request: Request, alias_req: AliasRequest, user_id: str = Query(None), db: Session = Depends(get_db)):
     """Generates an alias with 12h cooldown and bypass verification"""
-    user_id = x_user_id or "anonymous_agent"
-    profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
+    if user_id:
+        profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
+    else:
+        profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
     bonus = profile.bonus_credits if profile else 0
     phone_bonus = profile.phone_line_bonus if profile else 0
     
@@ -720,10 +704,12 @@ async def financials(db: Session = Depends(get_db)):
 
 @app.post("/financials/mint")
 @limiter.limit("5/minute")
-async def generate_card(request: Request, card_req: CardRequest, x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
+async def generate_card(request: Request, card_req: CardRequest, user_id: str = Query(None), db: Session = Depends(get_db)):
     """Initiates a new virtual card generation process on the secure node"""
-    user_id = x_user_id or "anonymous_agent"
-    profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
+    if user_id:
+        profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
+    else:
+        profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
     bonus = profile.bonus_credits if profile else 0
     max_credits = MAX_IDENTITY_CREDITS + bonus
 
@@ -733,28 +719,30 @@ async def generate_card(request: Request, card_req: CardRequest, x_user_id: Opti
 
     try:
         lithic_payload = {
-            "type": "VIRTUAL",
+            "type": "virtual",
         }
-        # ONLY add card_program if the variable is actually set in Railway
-        if os.getenv("LITHIC_CARD_PROGRAM"):
-            lithic_payload["card_program"] = os.getenv("LITHIC_CARD_PROGRAM")
+        if LITHIC_CARD_PROGRAM:
+            lithic_payload["card_program"] = LITHIC_CARD_PROGRAM
 
-        client = LithicManager.get_client()
-        card_response = client.cards.create(**lithic_payload)
+        card_response = lithic_client.cards.create(**lithic_payload)
 
-        exp_month = getattr(card_response, "exp_month", None)
-        exp_year = getattr(card_response, "exp_year", None)
-        expiry = f"{exp_month:02d}/{str(exp_year)[-2:]}" if exp_month and exp_year else "08/28"
+        expiry_month = getattr(card_response, "expiry_month", None)
+        expiry_year = getattr(card_response, "expiry_year", None)
+        expiry = (
+            f"{expiry_month:02d}/{str(expiry_year)[-2:]}"
+            if expiry_month and expiry_year
+            else "08/28"
+        )
 
         card_id = f"vcc_{int(time.time())}_{random.randint(100, 999)}"
         new_card = DBCard(
             id=card_id,
             label=card_req.label,
-            number=getattr(card_response, "pan", None) or getattr(card_response, "number", None) or "UNKNOWN",
+            number=getattr(card_response, "number", None) or getattr(card_response, "card_number", None) or "UNKNOWN",
             expiry=expiry,
             cvv=str(getattr(card_response, "cvv", None) or "000"),
-            real_card_token=getattr(card_response, "token", None),
-            last_four=getattr(card_response, "last_four", None)
+            real_card_token=getattr(card_response, "token", None) or card_req.real_card_token,
+            last_four=getattr(card_response, "last_four", None) or card_req.last_four,
         )
         db.add(new_card)
         log = DBPurgeLog(action_type="CARD_PROTECTION_GENERATED", node_id=card_id)
@@ -764,7 +752,7 @@ async def generate_card(request: Request, card_req: CardRequest, x_user_id: Opti
         return new_card
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"LITHIC_API_ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"GENERATION_ERROR: {str(e)}")
 
 
 @app.post("/financials/profile")
@@ -844,9 +832,9 @@ async def regenerate_alias():
 # --- PROOF OF REMOVAL ARCHITECTURE ---
 
 @app.get("/api/v1/scrub-history")
-async def get_scrub_history(x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
+async def get_scrub_history(db: Session = Depends(get_db)):
     """Fetches clean removal timeline for end-user app display."""
-    profile = db.query(DBProfile).filter(DBProfile.id == x_user_id).first() if x_user_id else None
+    profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
     if not profile:
         return {"history": []}
     
