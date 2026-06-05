@@ -789,12 +789,6 @@ const handleEmergencyBurn = async () => {
                 <p className="field-label">ASSOCIATE MERCHANT / BILL</p>
                 <input className="mask-btn" style={{width: '100%', color: 'white', textAlign: 'center', marginBottom: '10px'}} placeholder="e.g. Amazon, Electric Bill" value={newCardLabel} onChange={(e) => setNewCardLabel(e.target.value)} />
                 
-                <p className="field-label">REAL CARD TOKEN (OPTIONAL)</p>
-                <input className="mask-btn" style={{width: '100%', color: 'white', textAlign: 'center', marginBottom: '10px'}} placeholder="Processor Source Token" value={newRealCardToken} onChange={(e) => setNewRealCardToken(e.target.value)} />
-                
-                <p className="field-label">LAST 4 DIGITS (OPTIONAL)</p>
-                <input className="mask-btn" style={{width: '100%', color: 'white', textAlign: 'center'}} placeholder="e.g. 4321" maxLength="4" value={newLastFour} onChange={(e) => setNewLastFour(e.target.value)} />
-
                 <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={handleMintCard}>AUTHORIZE NODE</button>
                 <button className="reset-btn" style={{width: '100%'}} onClick={() => setShowMintModal(false)}>CANCEL</button>
               </div>
