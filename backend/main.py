@@ -343,7 +343,7 @@ async def login_agent(request: Request, login_req: LoginRequest, db: Session = D
     """Authenticates an agent via email to sync their specific profile to the app"""
     profile = db.query(DBProfile).filter(DBProfile.email.ilike(login_req.email)).first()
     if not profile:
-        raise HTTPException(status_code=404, detail="AGENT_NOT_FOUND")
+        raise HTTPException(status_code=404, detail="DATA_ERROR: AGENT_NOT_FOUND_IN_DATABASE")
     return {
         "status": "AUTHORIZED",
         "user_id": profile.id,
@@ -573,7 +573,7 @@ async def add_target_email(req: TargetEmailRequest, user_id: Optional[str] = Que
         profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
         
     if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
+        raise HTTPException(status_code=404, detail="DATA_ERROR: TARGET_PROFILE_NOT_FOUND")
         
     current_extra_count = db.query(DBTargetEmail).filter(DBTargetEmail.profile_id == profile.id).count()
     allowed_extras = 1 + (profile.extra_email_slots or 0)
@@ -852,7 +852,8 @@ async def generate_card(request: Request, card_req: CardRequest, x_user_id: Opti
         return new_card
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"LITHIC_API_ERROR: {str(e)}")
+        logger.error(f"LITHIC_API_ERROR: {str(e)}")
+        raise HTTPException(status_code=502, detail=f"LITHIC_API_ERROR: {str(e)}")
 
 
 @app.post("/financials/profile")

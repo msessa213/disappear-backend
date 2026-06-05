@@ -415,8 +415,12 @@ const handleEmergencyBurn = async () => {
         setNewLastFour("");
         setShowMintModal(false);
         triggerToast("NODE SECURED");
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        console.error("Mint Error:", errData);
+        triggerToast(errData.detail || "MINT FAILURE: EXTERNAL API ERROR");
       }
-    } catch (err) { triggerToast("CONNECTION ERROR"); }
+    } catch (err) { console.error(err); triggerToast("CONNECTION ERROR"); }
     finally { setIsEncrypting(false); setPurgeStatus(""); } 
   };
 
