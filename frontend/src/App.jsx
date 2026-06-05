@@ -761,27 +761,6 @@ const handleEmergencyBurn = async () => {
             </div>
           )}
 
-          {/* --- LEGAL & ADMIN MODALS --- */}
-          {showLegal && (
-            <div className="modal-overlay" onClick={() => setShowLegal(null)}>
-              <div className="info-modal-content" onClick={e => e.stopPropagation()}>
-                {showLegal === 'manifesto' && <Manifesto />}
-                {showLegal === 'privacy' && <Privacy />}
-                {showLegal === 'terms' && <Terms />}
-                <button className="reset-btn" style={{marginTop: '20px', width: '100%'}} onClick={() => setShowLegal(null)}>CLOSE</button>
-              </div>
-            </div>
-          )}
-
-          {showAdmin && (
-            <div className="modal-overlay" onClick={() => setShowAdmin(false)}>
-              <div onClick={e => e.stopPropagation()}>
-                <AdminDashboard API_BASE_URL={API_BASE_URL} />
-                <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowAdmin(false)}>EXIT COMMAND</button>
-              </div>
-            </div>
-          )}
-
           <main>
             {showShield ? (
               /* 3. SECURE APPLICATION ENGINE (Restored) */
@@ -1156,6 +1135,27 @@ const handleEmergencyBurn = async () => {
             )}
           </main>
         </>
+      )}
+
+      {/* --- LEGAL & ADMIN MODALS --- */}
+      {showLegal && (
+        <div className="modal-overlay" onClick={() => setShowLegal(null)}>
+          <div className="info-modal-content" onClick={e => e.stopPropagation()}>
+            {showLegal === 'manifesto' && <Manifesto />}
+            {showLegal === 'privacy' && <Privacy />}
+            {showLegal === 'terms' && <Terms />}
+            <button className="reset-btn" style={{marginTop: '20px', width: '100%'}} onClick={() => setShowLegal(null)}>CLOSE</button>
+          </div>
+        </div>
+      )}
+
+      {showAdmin && (
+        <div className="modal-overlay" onClick={() => setShowAdmin(false)}>
+          <div onClick={e => e.stopPropagation()}>
+            <AdminDashboard API_BASE_URL={API_BASE_URL} />
+            <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowAdmin(false)}>EXIT COMMAND</button>
+          </div>
+        </div>
       )}
 
       <footer className="home-footer">
