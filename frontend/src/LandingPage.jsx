@@ -183,7 +183,7 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
             <strong>Disappear returns control to you.</strong> By automating the removal of your 
             Personal Identifiable Information (PII), we effectively <strong>neutralize your digital presence</strong>.
           </p>
-          <div style={{ display: 'flex', gap: '15px', marginTop: '20px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '15px', marginTop: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
             <button className="main-button" onClick={onEnterVault}>INITIATE FULL PURGE</button>
             <button className="reset-btn" onClick={onReadManifesto}>READ MANIFESTO</button>
           </div>

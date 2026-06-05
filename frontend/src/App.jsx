@@ -617,6 +617,7 @@ const handleEmergencyBurn = async () => {
           <LandingPage 
             onEnterVault={() => setShowLanding(false)} 
             onLoginRequest={() => { setShowLanding(false); setShow2FA(true); }}
+            onReadManifesto={() => setShowLegal('manifesto')}
           />
           {/* MOBILE DOWNLOAD BRIDGE: Fixed Positioning Fix */}
           {!Capacitor.isNativePlatform() && (
