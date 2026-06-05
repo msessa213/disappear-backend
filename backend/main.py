@@ -1060,10 +1060,10 @@ async def create_support_ticket(request: Request, support_req: SupportRequest, d
         db.add(log)
         db.commit()
         return {"status": "TRANSMITTED", "id": random.randint(1000, 9999)}
-    except Exception:
+    except Exception as e:
         db.rollback()
-                logger.error(f"LITHIC_API_ERROR: {str(e)}")
-                raise HTTPException(status_code=502, detail=f"LITHIC_API_ERROR: {str(e)}")
+        logger.error(f"SUPPORT_TICKET_ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"SUPPORT_TICKET_ERROR: {str(e)}")
 
 
 if __name__ == "__main__":
