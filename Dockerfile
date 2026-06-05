@@ -19,5 +19,8 @@ COPY . .
 # Expose the port your FastAPI app runs on
 EXPOSE 8000
 
-# Start the application from the backend module
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Shift working directory to the backend folder before starting
+WORKDIR /app/backend
+
+# Start the application and respect Railway's dynamic PORT environment variable
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}

@@ -141,7 +141,7 @@ class DBProfile(Base):
     bonus_credits = Column(Integer, default=0) 
     # Specific tracking for purchased premium phone lines
     phone_line_bonus = Column(Integer, default=0)
-        extra_email_slots = Column(Integer, default=0)
+    extra_email_slots = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
