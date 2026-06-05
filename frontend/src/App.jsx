@@ -481,7 +481,7 @@ const handleEmergencyBurn = async () => {
       const agentId = localStorage.getItem("disappear_user_id") || "AGENT_UNKNOWN";
       
       // Cyberpunk Header
-      doc.setFillColor(0, 71, 171); // Tiger Blue
+      doc.setFillColor(0, 163, 255); // Bright Blue
       doc.rect(0, 0, 210, 40, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(22);
@@ -641,7 +641,7 @@ const handleEmergencyBurn = async () => {
                 className="main-button" 
                 style={{ 
                   textDecoration: 'none', 
-                  boxShadow: '0 0 20px rgba(0, 71, 171, 0.6)',
+                  boxShadow: '0 0 20px rgba(0, 163, 255, 0.6)',
                   width: '100%',
                   maxWidth: '300px',
                   textAlign: 'center',
@@ -698,11 +698,11 @@ const handleEmergencyBurn = async () => {
                 </div>
 
                 <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'vcc' ? null : 'vcc')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
-                    <div className="faq-trigger" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>
+                    <div className="faq-trigger" style={{color: '#00A3FF', fontWeight: 'bold'}}>
                       {activeFaqNode === 'vcc' ? '[-] CREDIT CARD PROTECTION' : '[+] CREDIT CARD PROTECTION'}
                     </div>
                     {activeFaqNode === 'vcc' && (
-                        <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid var(--tiger-blue)'}}>
+                        <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid #00A3FF'}}>
                             <p><strong>USAGE:</strong> Best for individual subscriptions and untrusted merchant endpoints.</p>
                             <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION STEPS:</strong>
                             <ol style={{paddingLeft: '15px'}}>
@@ -715,11 +715,11 @@ const handleEmergencyBurn = async () => {
                 </div>
 
                 <div className="faq-item" onClick={() => {setActiveFaqNode(activeFaqNode === 'email' ? null : 'email')}} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
-                    <div className="faq-trigger" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>
+                    <div className="faq-trigger" style={{color: '#00A3FF', fontWeight: 'bold'}}>
                       {activeFaqNode === 'email' ? '[-] EMAIL RELAY NODES' : '[+] EMAIL RELAY NODES'}
                     </div>
                     {activeFaqNode === 'email' && (
-                        <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid var(--tiger-blue)'}}>
+                        <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid #00A3FF'}}>
                             <p><strong>USAGE:</strong> Protects your primary identity from marketing lists and data broker aggregators.</p>
                             <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION STEPS:</strong>
                             <ol style={{paddingLeft: '15px'}}>
@@ -732,11 +732,11 @@ const handleEmergencyBurn = async () => {
                 </div>
 
                 <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'phone' ? null : 'phone')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
-                    <div className="faq-trigger" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>
+                    <div className="faq-trigger" style={{color: '#00A3FF', fontWeight: 'bold'}}>
                       {activeFaqNode === 'phone' ? '[-] SMS VERIFICATION NODES' : '[+] SMS VERIFICATION NODES'}
                     </div>
                     {activeFaqNode === 'phone' && (
-                        <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid var(--tiger-blue)'}}>
+                        <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid #00A3FF'}}>
                             <p><strong>USAGE:</strong> Best for 2FA bypass and anonymous app verifications.</p>
                             <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION STEPS:</strong>
                             <ol style={{paddingLeft: '15px'}}>
@@ -844,7 +844,7 @@ const handleEmergencyBurn = async () => {
                     </div>
                     <button 
                       className="purchase-btn" 
-                      style={{borderColor: 'var(--tiger-blue)'}} 
+                      style={{borderColor: '#00A3FF'}} 
                       disabled={isProcessingPayment} 
                       onClick={() => handlePurchaseExpansion('phone')}
                     >
@@ -858,7 +858,7 @@ const handleEmergencyBurn = async () => {
                     {emails.map((e) => (
                       <div key={e.id} className="alias-row" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '15px' }}>
                         <div className="alias-info" style={{ width: '100%', wordBreak: 'break-all', marginBottom: '10px' }}>
-                            <span className="alias-label" style={{ display: 'block', color: 'var(--tiger-blue)', marginBottom: '5px' }}>{e.label.toUpperCase()}</span>
+                            <span className="alias-label" style={{ display: 'block', color: '#00A3FF', marginBottom: '5px' }}>{e.label.toUpperCase()}</span>
                             <span className="alias-content" style={{ fontSize: '0.85rem' }} onClick={() => {navigator.clipboard.writeText(e.content); triggerToast("COPIED")}}>{e.content}</span>
                         </div>
                         <button className="kill-text-bold" onClick={() => handleKillAlias(e.id)}>TERMINATE</button>
@@ -888,7 +888,7 @@ const handleEmergencyBurn = async () => {
                       <div key={c.id} className="managed-card-row enhanced-card">
                         <div className="card-row-info">
                           <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
-                               <span className="card-nickname" style={{color: 'var(--tiger-blue)', fontWeight: 'bold'}}>{c.label.toUpperCase()}</span>
+                               <span className="card-nickname" style={{color: '#00A3FF', fontWeight: 'bold'}}>{c.label.toUpperCase()}</span>
                                <button className="kill-text-bold" onClick={() => handleKillCard(c.id)}>TERMINATE</button>
                           </div>
                           <code className="card-digits" onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("COPIED")}}> {c.number} </code>
@@ -912,7 +912,7 @@ const handleEmergencyBurn = async () => {
                   
                   {targetEmails.additional.map(e => (
                     <div key={e.id} className="alias-row" style={{ marginBottom: '10px' }}>
-                      <div className="alias-info"><span className="alias-label" style={{color: 'var(--tiger-blue)'}}>SECONDARY</span><span className="alias-content">{e.email}</span></div>
+                      <div className="alias-info"><span className="alias-label" style={{color: '#00A3FF'}}>SECONDARY</span><span className="alias-content">{e.email}</span></div>
                       <button className="kill-text-bold" onClick={async () => { await secureRequest(`${API_BASE_URL}/profile/emails/${e.id}`, {method: 'DELETE'}); fetchTargetEmails(); }}>REMOVE</button>
                     </div>
                   ))}
@@ -932,7 +932,7 @@ const handleEmergencyBurn = async () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                     <div>
                         <span style={{ fontSize: '0.6rem', color: '#64748b', display: 'block' }}>CURRENT_PLAN</span>
-                        <strong style={{ color: 'var(--tiger-blue)' }}>ELITE_OPERATIVE_{billingCycle.toUpperCase()}</strong>
+                        <strong style={{ color: '#00A3FF' }}>ELITE_OPERATIVE_{billingCycle.toUpperCase()}</strong>
                     </div>
                     <div style={{ textAlign: 'right' }}>
                         <span style={{ fontSize: '0.6rem', color: '#64748b', display: 'block' }}>STATUS</span>
@@ -949,8 +949,8 @@ const handleEmergencyBurn = async () => {
                   </div>
                 </div>
 
-                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
-                  <p className="tool-label" style={{ textAlign: 'center', color: 'var(--tiger-blue)' }}>SYSTEM SUPPORT NODE</p>
+                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #00A3FF' }}>
+                  <p className="tool-label" style={{ textAlign: 'center', color: '#00A3FF' }}>SYSTEM SUPPORT NODE</p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
                     <button className="reset-btn" style={{ fontSize: '0.75rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setShowSupportModal(true)}>OPEN_TICKET</button>
                     <button className="reset-btn" style={{ fontSize: '0.75rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setShowFaqModal(true)}>ACCESS FAQ</button>
@@ -981,7 +981,7 @@ const handleEmergencyBurn = async () => {
                   <div className="audit-list" style={{ maxHeight: '200px', overflowY: 'auto', background: '#000', padding: '10px' }}>
                     {auditLog.length > 0 ? auditLog.map((log, i) => (
                       <div key={`audit-${log.timestamp}-${i}`} className="audit-row" style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #111', padding: '10px 0' }}>
-                        <span className="audit-broker" style={{color: 'var(--tiger-blue)'}}>[{new Date(log.timestamp).toLocaleDateString()}]</span>
+                        <span className="audit-broker" style={{color: '#00A3FF'}}>[{new Date(log.timestamp).toLocaleDateString()}]</span>
                         <span className="audit-action" style={{fontSize: '0.7rem'}}>{log.action}</span>
                         <span style={{fontSize: '0.6rem', color: '#444'}}>{log.node?.slice(-6)}</span>
                       </div>
@@ -1045,7 +1045,7 @@ const handleEmergencyBurn = async () => {
 
                          <div style={{borderTop: '1px solid #111', paddingTop: '20px'}}>
                             <p style={{fontSize: '0.75rem', color: '#94A3B8', lineHeight: '1.4'}}>
-                              <span style={{color: 'var(--tiger-blue)'}}>» DISAPPEAR_STATUS:</span> Ongoing monitoring prevents re-indexing by third-party aggregators.
+                              <span style={{color: '#00A3FF'}}>» DISAPPEAR_STATUS:</span> Ongoing monitoring prevents re-indexing by third-party aggregators.
                             </p>
                          </div>
                       </div>
@@ -1074,33 +1074,33 @@ const handleEmergencyBurn = async () => {
                 )}
 
                 {showHelp && !showShield && !showCheckout && !show2FA && (
-                  <div className="pricing-card fade-in" style={{ marginBottom: '40px', border: '1px solid #0047AB', background: '#020202' }}>
+                  <div className="pricing-card fade-in" style={{ marginBottom: '40px', border: '1px solid #00A3FF', background: '#020202' }}>
                     <div className="price-box" style={{ textAlign: 'left', maxWidth: '600px' }}>
                       <h3 className="tiger-text" style={{letterSpacing: '2px'}}>Operation Manual v1.2</h3>
                       <p style={{fontSize: '0.6rem', color: '#444', marginBottom: '20px'}}>USER GUIDE</p>
                       
-                      <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                      <div style={{ marginBottom: '20px', borderLeft: '2px solid #00A3FF', paddingLeft: '15px' }}>
                         <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>💳 CREDIT CARD PROTECTION</p>
                         <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
                           Generate merchant-locked virtual digits. These prevent your real banking data from being logged by retailers or leaked in breaches.
                         </p>
                       </div>
 
-                      <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                      <div style={{ marginBottom: '20px', borderLeft: '2px solid #00A3FF', paddingLeft: '15px' }}>
                         <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>✉️ EMAIL RELAY NODES</p>
                         <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
                           Deploy forwarding addresses that scrub hidden PII trackers from incoming mail before they reach your primary inbox.
                         </p>
                       </div>
 
-                      <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                      <div style={{ marginBottom: '20px', borderLeft: '2px solid #00A3FF', paddingLeft: '15px' }}>
                         <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>📱 PHONE ALIAS NODES</p>
                         <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
                           Generate secondary numbers for 2FA bypass and app verifications. Incoming SMS codes appear directly in your Live Security Audit.
                         </p>
                       </div>
 
-                      <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                      <div style={{ marginBottom: '25px', borderLeft: '2px solid #00A3FF', paddingLeft: '15px' }}>
                         <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>🔥 DATA REMOVAL PROTOCOL</p>
                         <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
                           Automated legal requests are dispatched to major data brokers. Use the 'Emergency Burn' to instantly wipe all vault assets and profile data.
@@ -1108,7 +1108,7 @@ const handleEmergencyBurn = async () => {
                       </div>
 
                       <div style={{ marginBottom: '20px', borderTop: '1px solid #111', paddingTop: '15px' }}>
-                        <p className="field-label" style={{ color: 'var(--tiger-blue)', marginBottom: '10px' }}>ACCOUNT LIMITS</p>
+                        <p className="field-label" style={{ color: '#00A3FF', marginBottom: '10px' }}>ACCOUNT LIMITS</p>
                         <table style={{ width: '100%', fontSize: '0.7rem', borderCollapse: 'collapse', color: '#94A3B8' }}>
                           <tbody>
                             <tr style={{ borderBottom: '1px solid #111' }}>

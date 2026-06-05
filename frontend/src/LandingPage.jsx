@@ -83,7 +83,7 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
             </div>
             <div className="intel-update" style={{ marginTop: 'auto' }}>
               <p style={{ fontSize: '0.8rem', color: '#94A3B8', lineHeight: '1.4', margin: '0' }}>
-                <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>» SYSTEM_LOG:</span> Your digital footprint is harvested daily. Disappear automates the removal of your data from lead-gen lists.
+                <span style={{ color: '#00A3FF', fontWeight: 'bold' }}>» SYSTEM_LOG:</span> Your digital footprint is harvested daily. Disappear automates the removal of your data from lead-gen lists.
               </p>
             </div>
           </div>
@@ -115,8 +115,8 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
           </button>
           
           {scanResult && (
-            <div className="fade-in scan-alert-node" style={{ marginTop: '20px', padding: '20px', background: 'rgba(0, 71, 171, 0.05)', border: '1px dashed var(--tiger-blue)' }}>
-              <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>[!] ALERT:</span> IDENTITY EXPOSED ON {scanResult} BROKER SITES.
+            <div className="fade-in scan-alert-node" style={{ marginTop: '20px', padding: '20px', background: 'rgba(0, 163, 255, 0.05)', border: '1px dashed #00A3FF' }}>
+              <span style={{ color: '#00A3FF', fontWeight: 'bold' }}>[!] ALERT:</span> IDENTITY EXPOSED ON {scanResult} BROKER SITES.
               <button 
                 onClick={onEnterVault}
                 className="text-link-btn"
@@ -177,8 +177,8 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
 
       {/* --- SECTION 03: THE MISSION --- */}
       <section className="manifesto-teaser">
-        <div className="manifesto-box" style={{ borderLeft: '4px solid var(--tiger-blue)' }}>
-          <h3 className="card-title" style={{ color: 'var(--tiger-blue)' }}>WHY SOVEREIGNTY MATTERS</h3>
+        <div className="manifesto-box" style={{ borderLeft: '4px solid #00A3FF' }}>
+          <h3 className="card-title" style={{ color: '#00A3FF' }}>WHY SOVEREIGNTY MATTERS</h3>
           <p className="manifesto-text">
             <strong>Disappear returns control to you.</strong> By automating the removal of your 
             Personal Identifiable Information (PII), we effectively <strong>neutralize your digital presence</strong>.
@@ -191,8 +191,8 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
       </section>
 
       {/* --- MOBILE UPLINK SECTION --- */}
-      <section className="mobile-uplink" style={{ padding: '60px 20px', textAlign: 'center', borderTop: '1px solid #111', background: 'rgba(0, 71, 171, 0.03)' }}>
-        <span className="mono-label" style={{ color: 'var(--tiger-blue)', display: 'block', marginBottom: '10px', fontSize: '0.75rem', letterSpacing: '3px' }}>[!] NATIVE CLIENT UPLINK</span>
+      <section className="mobile-uplink" style={{ padding: '60px 20px', textAlign: 'center', borderTop: '1px solid #111', background: 'rgba(0, 163, 255, 0.03)' }}>
+        <span className="mono-label" style={{ color: '#00A3FF', display: 'block', marginBottom: '10px', fontSize: '0.75rem', letterSpacing: '3px' }}>[!] NATIVE CLIENT UPLINK</span>
         <p className="hero-description" style={{ fontSize: '0.85rem', marginBottom: '25px', maxWidth: '500px', margin: '0 auto 25px' }}>
           Download the standalone Disappear Android client for direct-to-device identity management.
         </p>
