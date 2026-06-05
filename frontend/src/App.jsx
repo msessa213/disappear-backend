@@ -578,7 +578,6 @@ const handleEmergencyBurn = async () => {
           <LandingPage 
             onEnterVault={() => setShowLanding(false)} 
             onLoginRequest={() => { setShowLanding(false); setShow2FA(true); }}
-            onReadManifesto={() => setShowLegal('manifesto')}
           />
           {/* MOBILE DOWNLOAD BRIDGE: Fixed Positioning Fix */}
           {!Capacitor.isNativePlatform() && (
@@ -1159,13 +1158,24 @@ const handleEmergencyBurn = async () => {
         </div>
       )}
 
-      <footer className="home-footer">
-          <span onClick={() => setShowLegal('manifesto')}>MANIFESTO</span>
-          <span className="footer-divider">|</span>
-          <span onClick={() => setShowLegal('privacy')}>PRIVACY</span>
-          <span className="footer-divider">|</span>
-          <span onClick={() => setShowLegal('terms')}>TERMS</span>
-          <span className="admin-trigger" onClick={() => setShowAdmin(true)}>.</span>
+      <footer className="home-footer" style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '15px',
+          padding: '25px 15px',
+          width: '100%',
+          fontSize: '0.75rem',
+          color: '#64748B',
+          textAlign: 'center'
+      }}>
+          <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => setShowLegal('manifesto')}>MANIFESTO</span>
+          <span className="footer-divider" style={{ opacity: 0.4 }}>|</span>
+          <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => setShowLegal('privacy')}>PRIVACY</span>
+          <span className="footer-divider" style={{ opacity: 0.4 }}>|</span>
+          <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => setShowLegal('terms')}>TERMS</span>
+          <span className="admin-trigger" style={{ cursor: 'pointer', opacity: 0 }} onClick={() => setShowAdmin(true)}>.</span>
       </footer>
 
       {/* --- GLOBAL ENCRYPTION & PURGE OVERLAY --- */}
