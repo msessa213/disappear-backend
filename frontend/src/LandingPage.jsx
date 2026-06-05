@@ -7,7 +7,7 @@ import React, { useState } from 'react';
  * UPDATE: Precision structural alignment + Mobile Binary Uplink Integration
  */
 
-function LandingPage({ onEnterVault, onLoginRequest }) {
+function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
   const [scanData, setScanData] = useState({
     firstName: '',
     middleName: '',
@@ -183,7 +183,10 @@ function LandingPage({ onEnterVault, onLoginRequest }) {
             <strong>Disappear returns control to you.</strong> By automating the removal of your 
             Personal Identifiable Information (PII), we effectively <strong>neutralize your digital presence</strong>.
           </p>
-          <button className="main-button" style={{ marginTop: '20px' }} onClick={onEnterVault}>INITIATE FULL PURGE</button>
+          <div style={{ display: 'flex', gap: '15px', marginTop: '20px', flexWrap: 'wrap' }}>
+            <button className="main-button" onClick={onEnterVault}>INITIATE FULL PURGE</button>
+            <button className="reset-btn" onClick={onReadManifesto}>READ MANIFESTO</button>
+          </div>
         </div>
       </section>
 

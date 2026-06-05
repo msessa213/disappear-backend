@@ -578,6 +578,7 @@ const handleEmergencyBurn = async () => {
           <LandingPage 
             onEnterVault={() => setShowLanding(false)} 
             onLoginRequest={() => { setShowLanding(false); setShow2FA(true); }}
+            onReadManifesto={() => setShowLegal('manifesto')}
           />
           {/* MOBILE DOWNLOAD BRIDGE: Fixed Positioning Fix */}
           {!Capacitor.isNativePlatform() && (
@@ -1159,6 +1160,8 @@ const handleEmergencyBurn = async () => {
       )}
 
       <footer className="home-footer">
+          <span onClick={() => setShowLegal('manifesto')}>MANIFESTO</span>
+          <span className="footer-divider">|</span>
           <span onClick={() => setShowLegal('privacy')}>PRIVACY</span>
           <span className="footer-divider">|</span>
           <span onClick={() => setShowLegal('terms')}>TERMS</span>
