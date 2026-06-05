@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, Request, Response, File, UploadFile, Form, Query, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
-from sqlalchemy import create_engine, Column, String, DateTime, Integer, Boolean, desc
+from sqlalchemy import create_engine, Column, String, DateTime, Integer, Boolean, desc, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -141,6 +141,16 @@ class DBProfile(Base):
     bonus_credits = Column(Integer, default=0) 
     # Specific tracking for purchased premium phone lines
     phone_line_bonus = Column(Integer, default=0)
+        extra_email_slots = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class DBTargetEmail(Base):
+    """Represents additional target emails to be scrubbed from data brokers"""
+    __tablename__ = "shield_target_emails_v1"
+    id = Column(Integer, primary_key=True, index=True)
+    profile_id = Column(String, index=True)
+    email = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -172,6 +182,12 @@ try:
 except Exception as e:
     logger.error(f"ALARM: DB Sync Deferred - {e}")
 
+
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN extra_email_slots INTEGER DEFAULT 0"))
+except Exception:
+    pass
 
 # --- APP CONFIGURATION ---
 
@@ -299,6 +315,10 @@ class LoginRequest(BaseModel):
     email: str
     code: Optional[str] = None
 
+
+
+class TargetEmailRequest(BaseModel):
+    email: str
 
 # NEW: Support Request Schema
 class SupportRequest(BaseModel):
@@ -523,6 +543,63 @@ async def sync(x_user_id: Optional[str] = Header(None), db: Session = Depends(ge
     }
 
 
+@app.get("/profile/emails")
+async def get_target_emails(user_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
+    """Retrieves the list of target emails being scrubbed"""
+    if user_id:
+        profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
+    else:
+        profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+        
+    if not profile:
+        return {"primary": "", "additional": [], "slots": 1, "used": 0}
+        
+    emails = db.query(DBTargetEmail).filter(DBTargetEmail.profile_id == profile.id).all()
+    allowed_extras = 1 + (profile.extra_email_slots or 0)
+    
+    return {
+        "primary": profile.email,
+        "additional": [{"id": e.id, "email": e.email} for e in emails],
+        "slots": allowed_extras,
+        "used": len(emails)
+    }
+
+@app.post("/profile/emails")
+async def add_target_email(req: TargetEmailRequest, user_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
+    """Adds a new secondary email to the active scrubbing pool"""
+    if user_id:
+        profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
+    else:
+        profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+        
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+        
+    current_extra_count = db.query(DBTargetEmail).filter(DBTargetEmail.profile_id == profile.id).count()
+    allowed_extras = 1 + (profile.extra_email_slots or 0)
+    
+    if current_extra_count >= allowed_extras:
+        raise HTTPException(status_code=403, detail="EMAIL_SLOT_LIMIT_REACHED")
+        
+    new_email = DBTargetEmail(profile_id=profile.id, email=req.email)
+    db.add(new_email)
+    
+    for broker in BROKERS:
+        db.add(DBScrubLog(user_id=profile.id, broker_name=broker, status="PROCESSING", timestamp=datetime.utcnow()))
+        
+    db.commit()
+    return {"status": "success"}
+
+@app.delete("/profile/emails/{email_id}")
+async def delete_target_email(email_id: int, db: Session = Depends(get_db)):
+    """Removes an email from active scrubbing"""
+    email = db.query(DBTargetEmail).filter(DBTargetEmail.id == email_id).first()
+    if email:
+        db.delete(email)
+        db.commit()
+        return {"status": "deleted"}
+    raise HTTPException(status_code=404, detail="Not found")
+
 # --- PAYMENTS & WEBHOOKS (FINAL PRICING FIREWALL) ---
 
 @app.post("/payments/create-session")
@@ -540,6 +617,11 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
             item_name = "Emergency Wipe Protocol (Instant Cooldown Bypass)"
             unit_amount = 199 # $1.99
             purchase_key = "cooldown_bypass"
+        # TARGET EMAIL SLOT
+        elif "email" in etype:
+            item_name = "Additional Target Email Slot"
+            unit_amount = 250 # $2.50
+            purchase_key = "extra_email_slot"
         # PHONE RULE
         elif "phone" in etype:
             item_name = "Premium Phone Line Expansion"
@@ -607,6 +689,12 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
                 action = "PERMANENT_CAPACITY_EXPANDED"
                 db.add(profile)
             
+            elif purchase_type == "extra_email_slot":
+                profile.extra_email_slots = (profile.extra_email_slots or 0) + 1
+                action = "EXTRA_EMAIL_SLOT_EXPANDED"
+                logger.info(f"DB_UPDATE: Email slot added for {profile.id}")
+                db.add(profile)
+
             elif purchase_type == "phone_line_bonus":
                 # THIS IS THE FIX: It safely increments the database column and marks the instance as modified
                 profile.phone_line_bonus = (profile.phone_line_bonus or 0) + 1

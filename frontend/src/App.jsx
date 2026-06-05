@@ -96,6 +96,9 @@ function App() {
   const [cards, setCards] = useState([]);
   const [progress, setProgress] = useState(15);
   const [showToast, setShowToast] = useState("");
+  
+  const [targetEmails, setTargetEmails] = useState({ primary: "", additional: [], slots: 1, used: 0 });
+  const [newTargetEmail, setNewTargetEmail] = useState("");
 
   const triggerToast = (msg) => { 
     setShowToast(msg); 
@@ -129,6 +132,14 @@ function App() {
             email: "", dob: "", address: "", termsAccepted: false
         });
     }
+  }, []);
+
+  const fetchTargetEmails = useCallback(async () => {
+    const activeUserId = localStorage.getItem("disappear_user_id") || "";
+    try {
+        const res = await secureRequest(`${API_BASE_URL}/profile/emails?user_id=${activeUserId}`);
+        if(res.ok) setTargetEmails(await res.json());
+    } catch(e) {}
   }, []);
 
   useEffect(() => {
@@ -189,6 +200,9 @@ function App() {
       
       setEmails(allAliases.filter(a => a.type === 'email'));
       setPhones(allAliases.filter(a => a.type === 'phone'));
+      
+      // 4. Sync Target Emails
+      await fetchTargetEmails();
     } catch (err) { 
         console.error("Connection Error: API Unreachable");
     }
@@ -203,7 +217,7 @@ function App() {
       }, 10000);
     }
     return () => clearInterval(interval);
-  }, [showShield, syncDefenseData, historyDays]);
+  }, [showShield, syncDefenseData, historyDays, fetchTargetEmails]);
 
   const handlePurchaseExpansion = async (type) => {
     if (isProcessingPayment) return;
@@ -215,7 +229,9 @@ function App() {
     // UPDATED: Corrected mapping for Phone Line Expansion
     const mappedType = (type === 'phone') 
       ? 'phone_line_bonus' 
-      : (type === 'permanent_slot' ? 'permanent_slot' : 'cooldown_bypass');
+      : (type === 'permanent_slot' ? 'permanent_slot' 
+      : (type === 'email' ? 'extra_email_slot' 
+      : 'cooldown_bypass'));
 
     const msg = "AUTHORIZING PAYMENT NODE...";
     triggerToast(msg);
@@ -241,6 +257,29 @@ function App() {
     } finally {
       setTimeout(() => setIsProcessingPayment(false), 5000);
     }
+  };
+
+  const handleAddTargetEmail = async () => {
+    if(!newTargetEmail) return;
+    const activeUserId = localStorage.getItem("disappear_user_id") || "";
+    try {
+        const res = await secureRequest(`${API_BASE_URL}/profile/emails?user_id=${activeUserId}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: newTargetEmail })
+        });
+        if(res.status === 403) {
+            if(window.confirm("EMAIL SLOT LIMIT REACHED. Add an extra target email slot for $2.50?")) {
+                handlePurchaseExpansion('email');
+            }
+            return;
+        }
+        if(res.ok) {
+            setNewTargetEmail("");
+            triggerToast("TARGET EMAIL ADDED TO SCRUB QUEUE");
+            fetchTargetEmails();
+        }
+    } catch(e) {}
   };
 
   const handleSendTicket = async () => {
@@ -863,6 +902,30 @@ const handleEmergencyBurn = async () => {
                     ))}
                   </div>
                   <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowMintModal(true)}> + GENERATE CARD PROTECTION </button>
+                </div>
+
+                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #111' }}>
+                  <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>DATA BROKER TARGETS</p>
+                  
+                  <div className="alias-row" style={{ marginBottom: '10px' }}>
+                    <div className="alias-info"><span className="alias-label" style={{color: '#10b981'}}>PRIMARY</span><span className="alias-content">{targetEmails.primary || "Awaiting Sync..."}</span></div>
+                  </div>
+                  
+                  {targetEmails.additional.map(e => (
+                    <div key={e.id} className="alias-row" style={{ marginBottom: '10px' }}>
+                      <div className="alias-info"><span className="alias-label" style={{color: 'var(--tiger-blue)'}}>SECONDARY</span><span className="alias-content">{e.email}</span></div>
+                      <button className="kill-text-bold" onClick={async () => { await secureRequest(`${API_BASE_URL}/profile/emails/${e.id}`, {method: 'DELETE'}); fetchTargetEmails(); }}>REMOVE</button>
+                    </div>
+                  ))}
+                  
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+                    <input className="mask-btn" style={{flex: 1, color: 'white', textAlign: 'center'}} placeholder="Add secondary email to scrub..." value={newTargetEmail} onChange={e => setNewTargetEmail(e.target.value)} />
+                    <button className="reset-btn" onClick={handleAddTargetEmail}>ADD TARGET</button>
+                  </div>
+                  
+                  <div style={{ fontSize: '0.6rem', color: '#64748b', textAlign: 'center', marginTop: '10px' }}>
+                    EXTRA EMAIL SLOTS USED: {targetEmails.used} / {targetEmails.slots}
+                  </div>
                 </div>
 
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #444' }}>
