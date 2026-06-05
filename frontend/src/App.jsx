@@ -862,7 +862,7 @@ const handleEmergencyBurn = async () => {
                             <span className="alias-label" style={{ display: 'block', color: 'var(--tiger-blue)', marginBottom: '5px' }}>{e.label.toUpperCase()}</span>
                             <span className="alias-content" style={{ fontSize: '0.85rem' }} onClick={() => {navigator.clipboard.writeText(e.content); triggerToast("COPIED")}}>{e.content}</span>
                         </div>
-                        <button className="kill-text-bold" onClick={() => handleKillAlias(e.id)}>TERMINATE_NODE</button>
+                        <button className="kill-text-bold" onClick={() => handleKillAlias(e.id)}>TERMINATE</button>
                       </div>
                     ))}
                   </div>
@@ -920,10 +920,10 @@ const handleEmergencyBurn = async () => {
                   
                   <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
                     <input className="mask-btn" style={{flex: 1, color: 'white', textAlign: 'center'}} placeholder="Add secondary email to scrub..." value={newTargetEmail} onChange={e => setNewTargetEmail(e.target.value)} />
-                    <button className="reset-btn" onClick={handleAddTargetEmail}>ADD TARGET</button>
+                    <button className="reset-btn" style={{ fontSize: '0.75rem', padding: '0 15px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={handleAddTargetEmail}>ADD TARGET</button>
                   </div>
                   
-                  <div style={{ fontSize: '0.6rem', color: '#64748b', textAlign: 'center', marginTop: '10px' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', textAlign: 'center', marginTop: '10px' }}>
                     EXTRA EMAIL SLOTS USED: {targetEmails.used} / {targetEmails.slots}
                   </div>
                 </div>
@@ -941,10 +941,10 @@ const handleEmergencyBurn = async () => {
                     </div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
-                    <button className="reset-btn" style={{ fontSize: '0.7rem', padding: '12px 5px', whiteSpace: 'normal', lineHeight: '1.2' }} onClick={handleManageBilling}>
+                    <button className="reset-btn" style={{ fontSize: '0.75rem', padding: '12px 5px', whiteSpace: 'normal', lineHeight: '1.2', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={handleManageBilling}>
                       {billingCycle === 'monthly' ? "SWITCH_TO_ANNUAL" : "SWITCH_TO_MONTHLY"}
                     </button>
-                    <button className="reset-btn" style={{ borderColor: '#ff4444', color: '#ff4444' }} onClick={() => { if(window.confirm("CANCEL SUBSCRIPTION? PII shielding will be deactivated at end of cycle.")) handleManageBilling(); }}>
+                    <button className="reset-btn" style={{ borderColor: '#ff4444', color: '#ff4444', fontSize: '0.75rem', padding: '12px 5px', whiteSpace: 'normal', lineHeight: '1.2', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => { if(window.confirm("CANCEL SUBSCRIPTION? PII shielding will be deactivated at end of cycle.")) handleManageBilling(); }}>
                       CANCEL_PLAN
                     </button>
                   </div>
@@ -953,8 +953,8 @@ const handleEmergencyBurn = async () => {
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
                   <p className="tool-label" style={{ textAlign: 'center', color: 'var(--tiger-blue)' }}>SYSTEM SUPPORT NODE</p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
-                    <button className="reset-btn" onClick={() => setShowSupportModal(true)}>OPEN_TICKET</button>
-                    <button className="reset-btn" onClick={() => setShowFaqModal(true)}>ACCESS FAQ</button>
+                    <button className="reset-btn" style={{ fontSize: '0.75rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setShowSupportModal(true)}>OPEN_TICKET</button>
+                    <button className="reset-btn" style={{ fontSize: '0.75rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setShowFaqModal(true)}>ACCESS FAQ</button>
                   </div>
                   <div style={{ marginTop: '20px', fontSize: '0.7rem', color: '#64748b', textAlign: 'center' }}>
                     <p className="faq-link" onClick={() => setShowFaqModal(true)} style={{cursor: 'pointer', textDecoration: 'underline'}}> Operation Manual </p>
@@ -992,12 +992,12 @@ const handleEmergencyBurn = async () => {
                   </div>
                   
                   {/* Backup: PDF logic still exists for vaulting but UI encourages live view */}
-                  <button className="pdf-btn" style={{ width: '100%', marginTop: '15px', opacity: 0.8 }} onClick={() => handleDownloadPDF(false)} disabled={isGenerating}>EXPORT_OFFICIAL_AUDIT_PDF</button>
+                  <button className="pdf-btn" style={{ width: '100%', marginTop: '15px', opacity: 0.8, fontSize: '0.75rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => handleDownloadPDF(false)} disabled={isGenerating}>EXPORT_OFFICIAL_AUDIT_PDF</button>
                 </div>
 
                 <div style={{display: 'flex', flexDirection: 'column', gap: '15px', width: '100%', maxWidth: '400px', marginTop: '40px'}}>
-                  <button className="reset-btn" onClick={() => {localStorage.clear(); window.location.reload();}}>LOGOUT SECURELY</button>
-                  <button className="burn-all-btn" onClick={handleEmergencyBurn}>INITIATE EMERGENCY BURN</button>
+                  <button className="reset-btn" style={{ fontSize: '0.8rem', padding: '12px 10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => {localStorage.clear(); window.location.reload();}}>LOGOUT SECURELY</button>
+                  <button className="burn-all-btn" style={{ fontSize: '0.8rem', padding: '12px 10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={handleEmergencyBurn}>INITIATE EMERGENCY BURN</button>
                 </div>
               </div>
             ) : (
