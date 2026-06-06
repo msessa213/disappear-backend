@@ -481,7 +481,7 @@ const handleEmergencyBurn = async () => {
       const agentId = localStorage.getItem("disappear_user_id") || "AGENT_UNKNOWN";
       
       // Cyberpunk Header
-      doc.setFillColor(0, 163, 255); // Bright Blue
+      doc.setFillColor(0, 71, 171); // Jesuit Tiger Blue
       doc.rect(0, 0, 210, 40, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(22);
@@ -641,7 +641,7 @@ const handleEmergencyBurn = async () => {
                 className="main-button" 
                 style={{ 
                   textDecoration: 'none', 
-                  boxShadow: '0 0 20px rgba(0, 163, 255, 0.6)',
+                  boxShadow: '0 0 20px rgba(0, 71, 171, 0.6)',
                   width: '100%',
                   maxWidth: '300px',
                   textAlign: 'center',
@@ -698,11 +698,11 @@ const handleEmergencyBurn = async () => {
                 </div>
 
                 <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'vcc' ? null : 'vcc')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
-                    <div className="faq-trigger" style={{color: '#00A3FF', fontWeight: 'bold'}}>
+                    <div className="faq-trigger tiger-text">
                       {activeFaqNode === 'vcc' ? '[-] CREDIT CARD PROTECTION' : '[+] CREDIT CARD PROTECTION'}
                     </div>
                     {activeFaqNode === 'vcc' && (
-                        <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid #00A3FF'}}>
+                        <div className="faq-content fade-in" style={{fontSize: '0.95rem', color: '#cbd5e1', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid var(--tiger-blue)'}}>
                             <p><strong>USAGE:</strong> Best for individual subscriptions and untrusted merchant endpoints.</p>
                             <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION STEPS:</strong>
                             <ol style={{paddingLeft: '15px'}}>
@@ -715,11 +715,11 @@ const handleEmergencyBurn = async () => {
                 </div>
 
                 <div className="faq-item" onClick={() => {setActiveFaqNode(activeFaqNode === 'email' ? null : 'email')}} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
-                    <div className="faq-trigger" style={{color: '#00A3FF', fontWeight: 'bold'}}>
+                    <div className="faq-trigger tiger-text">
                       {activeFaqNode === 'email' ? '[-] EMAIL RELAY NODES' : '[+] EMAIL RELAY NODES'}
                     </div>
                     {activeFaqNode === 'email' && (
-                        <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid #00A3FF'}}>
+                        <div className="faq-content fade-in" style={{fontSize: '0.95rem', color: '#cbd5e1', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid var(--tiger-blue)'}}>
                             <p><strong>USAGE:</strong> Protects your primary identity from marketing lists and data broker aggregators.</p>
                             <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION STEPS:</strong>
                             <ol style={{paddingLeft: '15px'}}>
@@ -732,11 +732,11 @@ const handleEmergencyBurn = async () => {
                 </div>
 
                 <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'phone' ? null : 'phone')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
-                    <div className="faq-trigger" style={{color: '#00A3FF', fontWeight: 'bold'}}>
+                    <div className="faq-trigger tiger-text">
                       {activeFaqNode === 'phone' ? '[-] SMS VERIFICATION NODES' : '[+] SMS VERIFICATION NODES'}
                     </div>
                     {activeFaqNode === 'phone' && (
-                        <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid #00A3FF'}}>
+                        <div className="faq-content fade-in" style={{fontSize: '0.95rem', color: '#cbd5e1', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid var(--tiger-blue)'}}>
                             <p><strong>USAGE:</strong> Best for 2FA bypass and anonymous app verifications.</p>
                             <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION STEPS:</strong>
                             <ol style={{paddingLeft: '15px'}}>
@@ -808,7 +808,7 @@ const handleEmergencyBurn = async () => {
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #FFD700', background: '#050505', position: 'relative' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                     <p className="tool-label" style={{ margin: 0, color: '#FFD700' }}>GLOBAL WALLET NODE</p>
-                    <span style={{ fontSize: '0.6rem', color: '#444' }}>WALLETS_ENABLED: [TRUE]</span>
+                    <span style={{ fontSize: '0.85rem', color: '#94A3B8' }}>WALLETS_ENABLED: [TRUE]</span>
                   </div>
                   <div className="managed-card-row enhanced-card" style={{ background: 'linear-gradient(135deg, #050505 0%, #111 100%)' }}>
                     <div className="card-row-info">
@@ -818,11 +818,11 @@ const handleEmergencyBurn = async () => {
                       </div>
                       <code className="card-digits" style={{ fontSize: '1.2rem', letterSpacing: '3px' }}> 4242 8888 9999 0001 </code>
                       <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #222', paddingTop: '10px', marginTop: '10px'}}>
-                         <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>EXP</span><strong>12/29</strong></div>
-                         <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>CVV</span><strong>***</strong></div>
+                         <div><span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>EXP</span><strong>12/29</strong></div>
+                         <div><span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>CVV</span><strong>***</strong></div>
                          <div style={{ marginLeft: 'auto' }}>
-                            <span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>TYPE</span>
-                            <span style={{ fontSize: '0.7rem' }}>VISA_DEBIT</span>
+                            <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>TYPE</span>
+                            <span style={{ fontSize: '0.9rem' }}>VISA_DEBIT</span>
                          </div>
                       </div>
                     </div>
@@ -844,7 +844,7 @@ const handleEmergencyBurn = async () => {
                     </div>
                     <button 
                       className="purchase-btn" 
-                      style={{borderColor: '#00A3FF'}} 
+                      style={{borderColor: 'var(--tiger-blue)'}} 
                       disabled={isProcessingPayment} 
                       onClick={() => handlePurchaseExpansion('phone')}
                     >
@@ -858,8 +858,8 @@ const handleEmergencyBurn = async () => {
                     {emails.map((e) => (
                       <div key={e.id} className="alias-row" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '15px' }}>
                         <div className="alias-info" style={{ width: '100%', wordBreak: 'break-all', marginBottom: '10px' }}>
-                            <span className="alias-label" style={{ display: 'block', color: '#00A3FF', marginBottom: '5px' }}>{e.label.toUpperCase()}</span>
-                            <span className="alias-content" style={{ fontSize: '0.85rem' }} onClick={() => {navigator.clipboard.writeText(e.content); triggerToast("COPIED")}}>{e.content}</span>
+                            <span className="alias-label tiger-text" style={{ display: 'block', marginBottom: '5px' }}>{e.label.toUpperCase()}</span>
+                            <span className="alias-content" style={{ fontSize: '1rem' }} onClick={() => {navigator.clipboard.writeText(e.content); triggerToast("COPIED")}}>{e.content}</span>
                         </div>
                         <button className="kill-text-bold" onClick={() => handleKillAlias(e.id)}>TERMINATE</button>
                       </div>
@@ -888,13 +888,13 @@ const handleEmergencyBurn = async () => {
                       <div key={c.id} className="managed-card-row enhanced-card">
                         <div className="card-row-info">
                           <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
-                               <span className="card-nickname" style={{color: '#00A3FF', fontWeight: 'bold'}}>{c.label.toUpperCase()}</span>
+                               <span className="card-nickname tiger-text">{c.label.toUpperCase()}</span>
                                <button className="kill-text-bold" onClick={() => handleKillCard(c.id)}>TERMINATE</button>
                           </div>
                           <code className="card-digits" onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("COPIED")}}> {c.number} </code>
                           <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #111', paddingTop: '10px', marginTop: '10px'}}>
-                               <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>EXP</span><strong>{c.expiry || '08/28'}</strong></div>
-                               <div><span style={{fontSize: '0.5rem', color: '#64748b', display: 'block'}}>CVV</span><strong>***</strong></div>
+                               <div><span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>EXP</span><strong>{c.expiry || '08/28'}</strong></div>
+                               <div><span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>CVV</span><strong>***</strong></div>
                           </div>
                         </div>
                       </div>
@@ -912,17 +912,17 @@ const handleEmergencyBurn = async () => {
                   
                   {targetEmails.additional.map(e => (
                     <div key={e.id} className="alias-row" style={{ marginBottom: '10px' }}>
-                      <div className="alias-info"><span className="alias-label" style={{color: '#00A3FF'}}>SECONDARY</span><span className="alias-content">{e.email}</span></div>
+                      <div className="alias-info"><span className="alias-label tiger-text">SECONDARY</span><span className="alias-content">{e.email}</span></div>
                       <button className="kill-text-bold" onClick={async () => { await secureRequest(`${API_BASE_URL}/profile/emails/${e.id}`, {method: 'DELETE'}); fetchTargetEmails(); }}>REMOVE</button>
                     </div>
                   ))}
                   
                   <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
                     <input className="mask-btn" style={{flex: 1, color: 'white', textAlign: 'center'}} placeholder="Add secondary email to scrub..." value={newTargetEmail} onChange={e => setNewTargetEmail(e.target.value)} />
-                    <button className="reset-btn" style={{ fontSize: '0.75rem', padding: '0 15px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={handleAddTargetEmail}>ADD TARGET</button>
+                    <button className="reset-btn" style={{ fontSize: '0.95rem', padding: '0 15px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={handleAddTargetEmail}>ADD TARGET</button>
                   </div>
                   
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', textAlign: 'center', marginTop: '10px' }}>
+                  <div style={{ fontSize: '0.95rem', color: '#cbd5e1', textAlign: 'center', marginTop: '10px' }}>
                     EXTRA EMAIL SLOTS USED: {targetEmails.used} / {targetEmails.slots}
                   </div>
                 </div>
@@ -931,31 +931,31 @@ const handleEmergencyBurn = async () => {
                   <p className="tool-label" style={{ textAlign: 'center' }}>SUBSCRIPTION_MANAGEMENT</p>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                     <div>
-                        <span style={{ fontSize: '0.6rem', color: '#64748b', display: 'block' }}>CURRENT_PLAN</span>
-                        <strong style={{ color: '#00A3FF' }}>ELITE_OPERATIVE_{billingCycle.toUpperCase()}</strong>
+                        <span style={{ fontSize: '0.85rem', color: '#cbd5e1', display: 'block' }}>CURRENT_PLAN</span>
+                        <strong className="tiger-text">ELITE_OPERATIVE_{billingCycle.toUpperCase()}</strong>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                        <span style={{ fontSize: '0.6rem', color: '#64748b', display: 'block' }}>STATUS</span>
-                        <span style={{ color: '#00FF00', fontSize: '0.7rem' }}>[ACTIVE]</span>
+                        <span style={{ fontSize: '0.85rem', color: '#cbd5e1', display: 'block' }}>STATUS</span>
+                        <span style={{ color: '#00FF00', fontSize: '0.9rem' }}>[ACTIVE]</span>
                     </div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
-                    <button className="reset-btn" style={{ fontSize: '0.75rem', padding: '12px 5px', whiteSpace: 'normal', lineHeight: '1.2', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={handleManageBilling}>
+                    <button className="reset-btn" style={{ fontSize: '0.95rem', padding: '12px 5px', whiteSpace: 'normal', lineHeight: '1.2', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={handleManageBilling}>
                       {billingCycle === 'monthly' ? "SWITCH_TO_ANNUAL" : "SWITCH_TO_MONTHLY"}
                     </button>
-                    <button className="reset-btn" style={{ borderColor: '#ff4444', color: '#ff4444', fontSize: '0.75rem', padding: '12px 5px', whiteSpace: 'normal', lineHeight: '1.2', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => { if(window.confirm("CANCEL SUBSCRIPTION? PII shielding will be deactivated at end of cycle.")) handleManageBilling(); }}>
+                    <button className="reset-btn" style={{ borderColor: '#ff4444', color: '#ff4444', fontSize: '0.95rem', padding: '12px 5px', whiteSpace: 'normal', lineHeight: '1.2', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => { if(window.confirm("CANCEL SUBSCRIPTION? PII shielding will be deactivated at end of cycle.")) handleManageBilling(); }}>
                       CANCEL_PLAN
                     </button>
                   </div>
                 </div>
 
-                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #00A3FF' }}>
-                  <p className="tool-label" style={{ textAlign: 'center', color: '#00A3FF' }}>SYSTEM SUPPORT NODE</p>
+                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
+                  <p className="tool-label tiger-text" style={{ textAlign: 'center' }}>SYSTEM SUPPORT NODE</p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '10px' }}>
-                    <button className="reset-btn" style={{ fontSize: '0.75rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setShowSupportModal(true)}>OPEN_TICKET</button>
-                    <button className="reset-btn" style={{ fontSize: '0.75rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setShowFaqModal(true)}>ACCESS FAQ</button>
+                    <button className="reset-btn" style={{ fontSize: '0.95rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setShowSupportModal(true)}>OPEN_TICKET</button>
+                    <button className="reset-btn" style={{ fontSize: '0.95rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setShowFaqModal(true)}>ACCESS FAQ</button>
                   </div>
-                  <div style={{ marginTop: '20px', fontSize: '0.7rem', color: '#64748b', textAlign: 'center' }}>
+                  <div style={{ marginTop: '20px', fontSize: '0.9rem', color: '#cbd5e1', textAlign: 'center' }}>
                     <p className="faq-link" onClick={() => setShowFaqModal(true)} style={{cursor: 'pointer', textDecoration: 'underline'}}> Operation Manual </p>
                   </div>
                 </div>
@@ -970,7 +970,7 @@ const handleEmergencyBurn = async () => {
                       <button 
                         key={d}
                         className={historyDays === d ? 'mask-btn active-toggle' : 'mask-btn'} 
-                        style={{ flex: 1, fontSize: '0.7rem' }} 
+                        style={{ flex: 1, fontSize: '0.9rem' }} 
                         onClick={() => setHistoryDays(d)}
                       >
                         {d}_DAYS
@@ -981,9 +981,9 @@ const handleEmergencyBurn = async () => {
                   <div className="audit-list" style={{ maxHeight: '200px', overflowY: 'auto', background: '#000', padding: '10px' }}>
                     {auditLog.length > 0 ? auditLog.map((log, i) => (
                       <div key={`audit-${log.timestamp}-${i}`} className="audit-row" style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #111', padding: '10px 0' }}>
-                        <span className="audit-broker" style={{color: '#00A3FF'}}>[{new Date(log.timestamp).toLocaleDateString()}]</span>
-                        <span className="audit-action" style={{fontSize: '0.7rem'}}>{log.action}</span>
-                        <span style={{fontSize: '0.6rem', color: '#444'}}>{log.node?.slice(-6)}</span>
+                        <span className="audit-broker tiger-text">[{new Date(log.timestamp).toLocaleDateString()}]</span>
+                        <span className="audit-action" style={{fontSize: '0.9rem'}}>{log.action}</span>
+                        <span style={{fontSize: '0.85rem', color: '#94A3B8'}}>{log.node?.slice(-6)}</span>
                       </div>
                     )) : (
                       <div className="terminal-line" style={{textAlign: 'center', opacity: 0.5}}>NO_RECORDS_IN_WINDOW</div>
@@ -991,12 +991,12 @@ const handleEmergencyBurn = async () => {
                   </div>
                   
                   {/* Backup: PDF logic still exists for vaulting but UI encourages live view */}
-                  <button className="pdf-btn" style={{ width: '100%', marginTop: '15px', opacity: 0.8, fontSize: '0.75rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => handleDownloadPDF(false)} disabled={isGenerating}>EXPORT_OFFICIAL_AUDIT_PDF</button>
+                  <button className="pdf-btn" style={{ width: '100%', marginTop: '15px', opacity: 0.8, fontSize: '0.95rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => handleDownloadPDF(false)} disabled={isGenerating}>EXPORT_OFFICIAL_AUDIT_PDF</button>
                 </div>
 
                 <div style={{display: 'flex', flexDirection: 'column', gap: '15px', width: '100%', maxWidth: '400px', marginTop: '40px'}}>
-                  <button className="reset-btn" style={{ fontSize: '0.8rem', padding: '12px 10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => {localStorage.clear(); window.location.reload();}}>LOGOUT SECURELY</button>
-                  <button className="burn-all-btn" style={{ fontSize: '0.8rem', padding: '12px 10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={handleEmergencyBurn}>INITIATE EMERGENCY BURN</button>
+                  <button className="reset-btn" style={{ fontSize: '1rem', padding: '12px 10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => {localStorage.clear(); window.location.reload();}}>LOGOUT SECURELY</button>
+                  <button className="burn-all-btn" style={{ fontSize: '1rem', padding: '12px 10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={handleEmergencyBurn}>INITIATE EMERGENCY BURN</button>
                 </div>
               </div>
             ) : (
@@ -1013,7 +1013,7 @@ const handleEmergencyBurn = async () => {
                         <h1 className="brand-name" style={{fontSize: 'clamp(2.5rem, 8vw, 4rem)', margin: '0'}}>DISAPPEAR</h1>
                         <h2 style={{color: 'white', fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', fontWeight: '900', letterSpacing: '-1px', marginBottom: '20px'}}>STAY VIGILANT.</h2>
                         
-                        <p style={{color: '#94A3B8', lineHeight: '1.6', fontSize: '1rem', marginBottom: '30px'}}>
+                        <p style={{color: '#cbd5e1', lineHeight: '1.6', fontSize: '1.1rem', marginBottom: '30px'}}>
                           Your identity is a target. In 2026, data brokers weaponize your PII for profit. 
                           <strong> Disappear</strong> is the tactical counter-measure: A Privacy-as-a-Service engine 
                           built to scorch your digital trail and replace exposure with synthetic security.
@@ -1024,7 +1024,7 @@ const handleEmergencyBurn = async () => {
                           <button className="login-btn-outline" style={{padding: '18px 20px', width: '100%'}} onClick={() => {triggerToast("CHALLENGE REQUEST SENT..."); setShow2FA(true);}}>CLIENT LOGIN</button>
                         </div>
 
-                        <p style={{fontSize: '0.65rem', color: '#444', letterSpacing: '1px', marginBottom: '40px'}}>
+                        <p style={{fontSize: '0.85rem', color: '#94A3B8', letterSpacing: '1px', marginBottom: '40px'}}>
                           AUTOMATED PII REMOVAL // ENCRYPTED VAULT ARCHITECTURE
                         </p>
                       </div>
@@ -1035,17 +1035,17 @@ const handleEmergencyBurn = async () => {
                          
                          <div style={{marginBottom: '25px'}}>
                             <h3 style={{fontSize: '2rem', color: 'white', margin: '0'}}>4.7B</h3>
-                            <p style={{fontSize: '0.65rem', color: '#64748B', margin: '5px 0'}}>PROFILES INDEXED BY BROKERS</p>
+                            <p style={{fontSize: '0.85rem', color: '#cbd5e1', margin: '5px 0'}}>PROFILES INDEXED BY BROKERS</p>
                          </div>
 
                          <div style={{marginBottom: '25px'}}>
                             <h3 style={{fontSize: '2rem', color: 'white', margin: '0'}}>82%</h3>
-                            <p style={{fontSize: '0.65rem', color: '#64748B', margin: '5px 0'}}>OF USERS HAVE EXPOSED PII</p>
+                            <p style={{fontSize: '0.85rem', color: '#cbd5e1', margin: '5px 0'}}>OF USERS HAVE EXPOSED PII</p>
                          </div>
 
                          <div style={{borderTop: '1px solid #111', paddingTop: '20px'}}>
-                            <p style={{fontSize: '0.75rem', color: '#94A3B8', lineHeight: '1.4'}}>
-                              <span style={{color: '#00A3FF'}}>» DISAPPEAR_STATUS:</span> Ongoing monitoring prevents re-indexing by third-party aggregators.
+                            <p style={{fontSize: '0.95rem', color: '#cbd5e1', lineHeight: '1.4'}}>
+                              <span className="tiger-text">» DISAPPEAR_STATUS:</span> Ongoing monitoring prevents re-indexing by third-party aggregators.
                             </p>
                          </div>
                       </div>
@@ -1056,17 +1056,17 @@ const handleEmergencyBurn = async () => {
                         <div className="masking-tool" style={{border: '1px solid #111', padding: '20px'}}>
                           <span style={{fontSize: '1.5rem', marginBottom: '10px', display: 'block'}}>📞</span>
                           <h4 style={{color: 'white', margin: '10px 0'}}>TERMINATE SPAM</h4>
-                          <p style={{fontSize: '0.8rem', color: '#64748B'}}>Intercept lead lists at the source. Neutralize robocalls and SMS phishing before they reach your hardware.</p>
+                          <p style={{fontSize: '0.95rem', color: '#cbd5e1'}}>Intercept lead lists at the source. Neutralize robocalls and SMS phishing before they reach your hardware.</p>
                         </div>
                         <div className="masking-tool" style={{border: '1px solid #111', padding: '20px'}}>
                           <span style={{fontSize: '1.5rem', marginBottom: '10px', display: 'block'}}>✉️</span>
                           <h4 style={{color: 'white', margin: '10px 0'}}>INBOX SANITIZATION</h4>
-                          <p style={{fontSize: '0.8rem', color: '#64748B'}}>Scrub your primary email from 250+ marketing databases to collapse the volume of targeted tracking emails.</p>
+                          <p style={{fontSize: '0.95rem', color: '#cbd5e1'}}>Scrub your primary email from 250+ marketing databases to collapse the volume of targeted tracking emails.</p>
                         </div>
                         <div className="masking-tool" style={{border: '1px solid #111', padding: '20px'}}>
                           <span style={{fontSize: '1.5rem', marginBottom: '10px', display: 'block'}}>💳</span>
                           <h4 style={{color: 'white', margin: '10px 0'}}>FINANCIAL SHIELD</h4>
-                          <p style={{fontSize: '0.8rem', color: '#64748B'}}>Replace real card data with merchant-locked nodes to prevent synthetic identity creation and unauthorized inquiries.</p>
+                          <p style={{fontSize: '0.95rem', color: '#cbd5e1'}}>Replace real card data with merchant-locked nodes to prevent synthetic identity creation and unauthorized inquiries.</p>
                         </div>
                     </div>
 
@@ -1074,42 +1074,42 @@ const handleEmergencyBurn = async () => {
                 )}
 
                 {showHelp && !showShield && !showCheckout && !show2FA && (
-                  <div className="pricing-card fade-in" style={{ marginBottom: '40px', border: '1px solid #00A3FF', background: '#020202' }}>
+                  <div className="pricing-card fade-in" style={{ marginBottom: '40px', border: '1px solid var(--tiger-blue)', background: '#020202' }}>
                     <div className="price-box" style={{ textAlign: 'left', maxWidth: '600px' }}>
                       <h3 className="tiger-text" style={{letterSpacing: '2px'}}>Operation Manual v1.2</h3>
-                      <p style={{fontSize: '0.6rem', color: '#444', marginBottom: '20px'}}>USER GUIDE</p>
+                      <p style={{fontSize: '0.85rem', color: '#94A3B8', marginBottom: '20px'}}>USER GUIDE</p>
                       
-                      <div style={{ marginBottom: '20px', borderLeft: '2px solid #00A3FF', paddingLeft: '15px' }}>
+                      <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
                         <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>💳 CREDIT CARD PROTECTION</p>
-                        <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
+                        <p style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1' }}>
                           Generate merchant-locked virtual digits. These prevent your real banking data from being logged by retailers or leaked in breaches.
                         </p>
                       </div>
 
-                      <div style={{ marginBottom: '20px', borderLeft: '2px solid #00A3FF', paddingLeft: '15px' }}>
+                      <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
                         <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>✉️ EMAIL RELAY NODES</p>
-                        <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
+                        <p style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1' }}>
                           Deploy forwarding addresses that scrub hidden PII trackers from incoming mail before they reach your primary inbox.
                         </p>
                       </div>
 
-                      <div style={{ marginBottom: '20px', borderLeft: '2px solid #00A3FF', paddingLeft: '15px' }}>
+                      <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
                         <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>📱 PHONE ALIAS NODES</p>
-                        <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
+                        <p style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1' }}>
                           Generate secondary numbers for 2FA bypass and app verifications. Incoming SMS codes appear directly in your Live Security Audit.
                         </p>
                       </div>
 
-                      <div style={{ marginBottom: '25px', borderLeft: '2px solid #00A3FF', paddingLeft: '15px' }}>
+                      <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
                         <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>🔥 DATA REMOVAL PROTOCOL</p>
-                        <p style={{ fontSize: '0.75rem', lineHeight: '1.4', color: '#94A3B8' }}>
+                        <p style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1' }}>
                           Automated legal requests are dispatched to major data brokers. Use the 'Emergency Burn' to instantly wipe all vault assets and profile data.
                         </p>
                       </div>
 
                       <div style={{ marginBottom: '20px', borderTop: '1px solid #111', paddingTop: '15px' }}>
-                        <p className="field-label" style={{ color: '#00A3FF', marginBottom: '10px' }}>ACCOUNT LIMITS</p>
-                        <table style={{ width: '100%', fontSize: '0.7rem', borderCollapse: 'collapse', color: '#94A3B8' }}>
+                        <p className="field-label tiger-text" style={{ marginBottom: '10px' }}>ACCOUNT LIMITS</p>
+                        <table style={{ width: '100%', fontSize: '0.9rem', borderCollapse: 'collapse', color: '#cbd5e1' }}>
                           <tbody>
                             <tr style={{ borderBottom: '1px solid #111' }}>
                               <td style={{ padding: '8px 0' }}>FREE_SLOTS</td>
@@ -1150,7 +1150,7 @@ const handleEmergencyBurn = async () => {
                     <div className="price-box">
                       <h3 className="tiger-text">ELITE PRIVACY P-A-A-S</h3>
                       <div className="price-amount">${billingCycle === 'monthly' ? '24.99' : '19.99'}</div>
-                      <p style={{fontSize: '0.6rem', color: 'var(--text-dim)', marginBottom: '20px'}}>Includes 6 Global Slots + Total Purge Access</p>
+                      <p style={{fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: '20px'}}>Includes 6 Global Slots + Total Purge Access</p>
                       <button className="main-button" style={{width: '100%'}} onClick={() => setShowCheckout(true)}>PROCEED</button>
                       <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowPricing(false)}>CANCEL</button>
                     </div>
@@ -1171,7 +1171,7 @@ const handleEmergencyBurn = async () => {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '15px' }}>
                         <input type="checkbox" checked={targetProfile.termsAccepted} onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})} />
-                        <label style={{ fontSize: '0.65rem', color: '#94A3B8' }}>Authorize Full PII Scrub and Burn</label>
+                        <label style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>Authorize Full PII Scrub and Burn</label>
                       </div>
                       <button className="main-button" style={{ width: '100%', marginTop: '25px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }} onClick={handleFinalPurchase} disabled={!targetProfile.termsAccepted || isMinting}>
                         {isMinting ? <><span className="cyberpunk-spinner"></span> INITIATING...</> : 'CONFIRM & INITIATE'}

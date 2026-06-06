@@ -3,8 +3,8 @@
   --tiger-blue: #0047AB; /* Jesuit High School Blue */
   --bg-dark: #000000;
   --card-bg: #0A0A0A;
-  --text-dim: #94A3B8;
-  --border-dim: #1e293b;
+  --text-dim: #cbd5e1;
+  --border-dim: #334155;
   --alert-red: #ef4444;
   --burn-orange: #ff4d00;
   --terminal-green: #10b981;
@@ -70,9 +70,10 @@ body, html, #root {
 }
 
 .field-label {
-  font-size: 0.65rem;
+  font-size: 0.85rem;
   color: var(--tiger-blue);
-  font-weight: bold;
+  font-weight: 900;
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.4), 0 0 10px rgba(0, 71, 171, 0.8);
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-left: 5px;
@@ -159,7 +160,7 @@ body, html, #root {
 }
 
 .status-subtext {
-  font-size: 0.6rem;
+  font-size: 0.85rem;
   margin-top: 15px;
   color: var(--text-dim);
   letter-spacing: 1px;
@@ -262,7 +263,7 @@ input[type="checkbox"] {
   justify-content: space-between;
   padding: 12px 10px;
   border-bottom: 1px solid #111;
-  font-size: 0.7rem;
+  font-size: 0.9rem;
   text-align: left;
   color: var(--tiger-blue);
 }
@@ -283,8 +284,8 @@ input[type="checkbox"] {
 }
 
 .terminal-line {
-  color: var(--terminal-green);
-  font-size: 0.8rem;
+  color: #34d399;
+  font-size: 0.95rem;
   margin-bottom: 5px;
 }
 
@@ -321,8 +322,8 @@ input[type="checkbox"] {
   color: var(--alert-red);
   background: transparent;
   border: none;
-  font-weight: bold;
-  font-size: 0.7rem;
+  font-weight: 900;
+  font-size: 0.9rem;
   cursor: pointer;
   text-transform: uppercase;
   padding: 5px;
@@ -371,6 +372,12 @@ input[type="checkbox"] {
   text-transform: uppercase;
   margin: 0;
   text-shadow: 0 0 20px rgba(0, 71, 171, 0.4);
+}
+
+.tiger-text {
+  color: var(--tiger-blue);
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.4), 0 0 10px rgba(0, 71, 171, 0.8);
+  font-weight: 900;
 }
 
 .subtitle {
@@ -442,8 +449,8 @@ input[type="checkbox"] {
   color: white;
   padding: 15px 25px;
   border-radius: 8px;
-  font-weight: bold;
-  font-size: 0.8rem;
+  font-weight: 900;
+  font-size: 0.95rem;
   z-index: 100000;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
   animation: slideIn 0.3s ease-out;
@@ -567,7 +574,7 @@ input[type="checkbox"] {
   top: 10px;
   width: 100%;
   text-align: center;
-  font-size: 0.55rem;
+  font-size: 0.75rem;
   color: var(--tiger-blue);
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -598,7 +605,7 @@ input[type="checkbox"] {
   padding: 12px;
   border: 1px dashed var(--tiger-blue);
   color: var(--tiger-blue);
-  font-size: 0.65rem;
+  font-size: 0.9rem;
   background: transparent;
   cursor: pointer;
   text-transform: uppercase;
@@ -749,14 +756,15 @@ input[type="checkbox"] {
 
 .mono-label {
   font-family: 'Courier New', monospace;
-  font-size: 0.65rem;
+  font-size: 0.85rem;
   color: var(--tiger-blue);
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.4), 0 0 10px rgba(0, 71, 171, 0.8);
   letter-spacing: 3px;
   font-weight: bold;
 }
 
 .hero-description {
-  font-size: 1rem;
+  font-size: 1.1rem;
   color: var(--text-dim);
   max-width: 500px;
   line-height: 1.6;
@@ -764,8 +772,10 @@ input[type="checkbox"] {
 }
 
 .card-title {
-  font-size: 0.7rem;
+  font-size: 0.9rem;
   letter-spacing: 2px;
+  font-weight: 900;
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.4), 0 0 10px rgba(0, 71, 171, 0.8);
   text-transform: uppercase;
   color: var(--tiger-blue);
   border-bottom: 1px solid #111;
@@ -787,7 +797,7 @@ input[type="checkbox"] {
 }
 
 .stat-label {
-  font-size: 0.6rem;
+  font-size: 0.85rem;
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -825,21 +835,21 @@ input[type="checkbox"] {
 }
 
 .step-num {
-  font-size: 0.7rem;
+  font-size: 1rem;
   font-weight: 900;
   color: var(--tiger-blue);
   margin-bottom: 15px;
 }
 
 .directive-title {
-  font-size: 0.9rem;
+  font-size: 1.1rem;
   font-weight: 800;
   margin-bottom: 10px;
   text-transform: uppercase;
 }
 
 .directive-text {
-  font-size: 0.75rem;
+  font-size: 0.95rem;
   color: var(--text-dim);
   line-height: 1.5;
 }
@@ -867,7 +877,7 @@ input[type="checkbox"] {
 }
 
 .manifesto-text {
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   line-height: 1.8;
   color: white;
   margin: 30px 0;
@@ -882,7 +892,7 @@ input[type="checkbox"] {
 }
 
 .login-prompt {
-  font-size: 0.6rem;
+  font-size: 0.85rem;
   color: var(--text-dim);
   letter-spacing: 4px;
   margin-bottom: 20px;
@@ -915,7 +925,7 @@ input[type="checkbox"] {
   font-family: 'Courier New', monospace !important;
   outline: none !important;
   width: 100% !important;
-  font-size: 0.8rem !important;
+  font-size: 0.95rem !important;
   transition: border-color 0.3s ease !important;
 }
 
@@ -928,8 +938,8 @@ input[type="checkbox"] {
   padding: 20px;
   background: rgba(0, 71, 171, 0.05);
   border: 1px dashed var(--tiger-blue);
-  font-weight: bold;
-  font-size: 0.9rem;
+  font-weight: 900;
+  font-size: 1rem;
 }
 
 .text-link-btn {
