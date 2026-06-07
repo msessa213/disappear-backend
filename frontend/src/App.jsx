@@ -28,12 +28,15 @@ function App() {
   // --- SECURE BRIDGE LOGIC ---
   // This bridges the gap between the app and the server on native hardware
   const secureRequest = async (url, options = {}) => {
+    const activeUserId = localStorage.getItem("disappear_user_id") || "";
+    const headers = { 'Content-Type': 'application/json', 'x-user-id': activeUserId, ...options.headers };
+
     if (Capacitor.isNativePlatform()) {
       const response = await CapacitorHttp.request({
         url,
         method: options.method || 'GET',
         data: (options.body && typeof options.body === 'string') ? JSON.parse(options.body) : options.body,
-        headers: { 'Content-Type': 'application/json', ...options.headers }
+        headers: headers
       });
       return { 
         ok: response.status >= 200 && response.status < 300, 
@@ -41,7 +44,7 @@ function App() {
         json: () => Promise.resolve(response.data) 
       };
     }
-    return fetch(url, options);
+    return fetch(url, { ...options, headers });
   };
 
   // --- CORE VIEW NAVIGATION (UPDATED) ---
