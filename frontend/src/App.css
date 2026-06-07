@@ -73,7 +73,6 @@ body, html, #root {
   font-size: 0.85rem;
   color: var(--tiger-blue);
   font-weight: 900;
-  text-shadow: 0 0 1px rgba(255, 255, 255, 0.4), 0 0 10px rgba(0, 71, 171, 0.8);
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-left: 5px;
@@ -371,12 +370,10 @@ input[type="checkbox"] {
   letter-spacing: clamp(5px, 2vw, 15px);
   text-transform: uppercase;
   margin: 0;
-  text-shadow: 0 0 20px rgba(0, 71, 171, 0.4);
 }
 
 .tiger-text {
   color: var(--tiger-blue);
-  text-shadow: 0 0 1px rgba(255, 255, 255, 0.4), 0 0 10px rgba(0, 71, 171, 0.8);
   font-weight: 900;
 }
 
@@ -758,7 +755,6 @@ input[type="checkbox"] {
   font-family: 'Courier New', monospace;
   font-size: 0.85rem;
   color: var(--tiger-blue);
-  text-shadow: 0 0 1px rgba(255, 255, 255, 0.4), 0 0 10px rgba(0, 71, 171, 0.8);
   letter-spacing: 3px;
   font-weight: bold;
 }
@@ -775,7 +771,6 @@ input[type="checkbox"] {
   font-size: 0.9rem;
   letter-spacing: 2px;
   font-weight: 900;
-  text-shadow: 0 0 1px rgba(255, 255, 255, 0.4), 0 0 10px rgba(0, 71, 171, 0.8);
   text-transform: uppercase;
   color: var(--tiger-blue);
   border-bottom: 1px solid #111;
