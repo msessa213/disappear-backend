@@ -20,9 +20,12 @@ import './App.css';
  */
 
 // --- DYNAMIC API ROUTING ---
-// FIXED: Explicitly forcing Production URL to prevent Native Apps from hitting Localhost
-const PROD_API = "https://api.disappearco.com"; 
-const API_BASE_URL = PROD_API;
+const PROD_API = "https://disappear-backend-production.up.railway.app"; 
+const LOCAL_API = "http://127.0.0.1:8000";
+
+// Uses local backend during local development, but forces Production for Native Apps and Live Web
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE_URL = (isLocal && !Capacitor.isNativePlatform()) ? LOCAL_API : PROD_API;
 
 function App() {
   // --- SECURE BRIDGE LOGIC ---
