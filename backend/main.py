@@ -1,9 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException, Request, Response, File, UploadFile, Form, Query, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
-from sqlalchemy import create_engine, Column, String, DateTime, Integer, Boolean, desc, text
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import desc, text
+from sqlalchemy.orm import Session
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -19,6 +18,9 @@ import json
 from datetime import datetime, timedelta
 from typing import Any, List, Optional
 from dotenv import load_dotenv
+
+# --- IMPORT DATABASE FROM MODELS ---
+from models import engine, SessionLocal, Base, DBCard, DBAlias, DBProfile, DBTargetEmail, DBScrubLog, DBPurgeLog
 
 # --- INITIALIZATION BLOCK ---
 load_dotenv()
@@ -277,6 +279,14 @@ def get_db():
         db.close()
 
 
+def verify_admin_token(x_disappear_admin_key: Optional[str] = Header(None)):
+    """Dependency to enforce Admin Security Key validation"""
+    admin_secret = os.getenv("ADMIN_SECRET_KEY")
+    if not admin_secret or x_disappear_admin_key != admin_secret:
+        raise HTTPException(status_code=403, detail="FORBIDDEN: Invalid Admin Key")
+    return x_disappear_admin_key
+
+
 # --- PROFIT PROTECTION CONSTANTS ---
 
 MAX_IDENTITY_CREDITS = 6
@@ -328,6 +338,11 @@ class SupportRequest(BaseModel):
 # NEW: Expansion Request Schema
 class ExpansionRequest(BaseModel):
     expansion_type: str # "data", "phone", or "emergency_wipe"
+
+
+class AdminVerificationRequest(BaseModel):
+    verification_link: Optional[str] = None
+    notes: Optional[str] = None
 
 
 # --- S3 CONFIGURATION ---
@@ -403,7 +418,7 @@ async def free_recon_scan(request: Request, query: str):
 
 
 @app.get("/admin/stats")
-async def get_admin_stats(db: Session = Depends(get_db)):
+async def get_admin_stats(db: Session = Depends(get_db), admin_key: str = Depends(verify_admin_token)):
     """Aggregates platform-wide metrics for the Central Command Dashboard"""
     total_users = db.query(DBProfile).count()
     total_cards = db.query(DBCard).count()
@@ -423,7 +438,7 @@ async def get_admin_stats(db: Session = Depends(get_db)):
 # --- INTERNAL OPERATION PORTALS FOR EMPLOYEES ---
 
 @app.get("/admin/ops/backlog")
-async def get_employee_backlog(db: Session = Depends(get_db)):
+async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = Depends(verify_admin_token)):
     """Internal utility for staff to pull down targets needing manual opt-out submission forms"""
     open_tasks = db.query(DBScrubLog).filter(DBScrubLog.status == "PROCESSING").all()
     
@@ -463,7 +478,7 @@ async def get_employee_backlog(db: Session = Depends(get_db)):
 
 
 @app.post("/admin/ops/resolve/{log_id}")
-async def resolve_manual_task(log_id: int, db: Session = Depends(get_db)):
+async def resolve_manual_task(log_id: int, db: Session = Depends(get_db), admin_key: str = Depends(verify_admin_token)):
     """Staff execution terminal: Marks a manual data broker extraction completely finalized"""
     task = db.query(DBScrubLog).filter(DBScrubLog.id == log_id).first()
     if not task:
@@ -478,6 +493,36 @@ async def resolve_manual_task(log_id: int, db: Session = Depends(get_db)):
     ))
     db.commit()
     return {"status": "SUCCESS", "message": f"Broker {task.broker_name} status updated to REMOVED."}
+
+
+@app.post("/api/admin/complete-manual-scrub/{log_id}")
+async def complete_manual_scrub(
+    log_id: int, 
+    req: AdminVerificationRequest, 
+    db: Session = Depends(get_db),
+    admin_key: str = Depends(verify_admin_token)
+):
+    """Admin Endpoint: Mark a manual removal process as completed"""
+    task = db.query(DBScrubLog).filter(DBScrubLog.id == log_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+        
+    task.status = "REMOVED"
+    if req.verification_link:
+        task.manual_instruction_url = req.verification_link
+    task.timestamp = datetime.utcnow()
+    
+    # Build audit trail
+    log_message = f"MANUAL_BROKER_RESOLVED: {task.broker_name}"
+    if req.notes:
+        log_message += f" | NOTES: {req.notes}"
+        
+    db.add(DBPurgeLog(
+        action_type=log_message,
+        node_id=f"TASK_{log_id}_{task.broker_name}"
+    ))
+    db.commit()
+    return {"status": "SUCCESS"}
 
 
 @app.get("/dashboard/sync")
@@ -585,7 +630,14 @@ async def add_target_email(req: TargetEmailRequest, user_id: Optional[str] = Que
     db.add(new_email)
     
     for broker in BROKERS:
-        db.add(DBScrubLog(user_id=profile.id, broker_name=broker, status="PROCESSING", timestamp=datetime.utcnow()))
+        is_auto = broker in AUTOMATED_BROKERS
+        db.add(DBScrubLog(
+            user_id=profile.id, 
+            broker_name=broker, 
+            status="PROCESSING" if is_auto else "MANUAL_PENDING", 
+            removal_type="AUTOMATED" if is_auto else "MANUAL",
+            timestamp=datetime.utcnow()
+        ))
         
     db.commit()
     return {"status": "success"}
@@ -877,10 +929,12 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         
         # Populate initial processing tracking logs for user stats
         for broker in BROKERS:
+            is_auto = broker in AUTOMATED_BROKERS
             db.add(DBScrubLog(
                 user_id=profile_id,
                 broker_name=broker,
-                status="PROCESSING",
+                status="PROCESSING" if is_auto else "MANUAL_PENDING",
+                removal_type="AUTOMATED" if is_auto else "MANUAL",
                 timestamp=datetime.utcnow()
             ))
             

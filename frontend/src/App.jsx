@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable"; // FIXED: Explicit import for plugin functionality
 import { Capacitor, CapacitorHttp } from '@capacitor/core'; 
+import CryptoJS from 'crypto-js';
 
 // --- FIXED IMPORTS ---
 import { Manifesto } from './Manifesto';
@@ -459,6 +460,40 @@ const handleEmergencyBurn = async () => {
     } catch (err) {
        triggerToast("UPLINK FAILURE");
     }
+  };
+
+  const handleExportJSON = () => {
+    const pwd = window.prompt("SECURITY CHECK: Create a password to encrypt this vault export. You will need it to decrypt the file later.");
+    if (!pwd) {
+      triggerToast("EXPORT ABORTED: PASSWORD REQUIRED");
+      return;
+    }
+    
+    triggerToast("ENCRYPTING VAULT CONFIGURATION...");
+    const exportData = {
+      agent_id: localStorage.getItem("disappear_user_id") || "AGENT_UNKNOWN",
+      timestamp: new Date().toISOString(),
+      vault_signature: "SIG_TIGER_BLUE_ALPHA",
+      assets: {
+        cards,
+        emails,
+        phones,
+        target_emails: targetEmails
+      },
+      history: auditLog
+    };
+    
+    // AES Client-Side Encryption
+    const ciphertext = CryptoJS.AES.encrypt(JSON.stringify(exportData, null, 2), pwd).toString();
+    
+    const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(ciphertext);
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `DISAPPEAR_VAULT_ENCRYPTED_${Date.now()}.disappear`);
+    document.body.appendChild(downloadAnchorNode); 
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+    triggerToast("VAULT EXPORTED SUCCESSFULLY");
   };
 
   const handleDownloadPDF = async (isSilentUplink = false) => {
@@ -991,7 +1026,10 @@ const handleEmergencyBurn = async () => {
                   </div>
                   
                   {/* Backup: PDF logic still exists for vaulting but UI encourages live view */}
-                  <button className="pdf-btn" style={{ width: '100%', marginTop: '15px', opacity: 0.8, fontSize: '0.95rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => handleDownloadPDF(false)} disabled={isGenerating}>EXPORT_OFFICIAL_AUDIT_PDF</button>
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '15px', width: '100%' }}>
+                    <button className="pdf-btn" style={{ flex: 1, opacity: 0.8, fontSize: '0.85rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => handleDownloadPDF(false)} disabled={isGenerating}>EXPORT_AUDIT_PDF</button>
+                    <button className="reset-btn" style={{ flex: 1, opacity: 0.8, fontSize: '0.85rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center', borderColor: 'var(--tiger-blue)', color: 'var(--tiger-blue)' }} onClick={handleExportJSON}>EXPORT_VAULT_JSON</button>
+                  </div>
                 </div>
 
                 <div style={{display: 'flex', flexDirection: 'column', gap: '15px', width: '100%', maxWidth: '400px', marginTop: '40px'}}>
