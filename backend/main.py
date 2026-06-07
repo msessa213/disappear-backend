@@ -105,6 +105,7 @@ origins = [
     "http://127.0.0.1:3000",
     "http://127.0.0.1:3001",
     "capacitor://localhost",
+    "https://disappearco.com", 
     "https://disappear-frontend-v2.vercel.app",
     "https://disappear-online.com",
     "https://www.disappear-online.com",
@@ -121,8 +122,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*", "x-user-id"],
+    allow_methods=["*"],
+    allow_headers=["*"],
     expose_headers=["*"],
 )
 
@@ -140,13 +141,13 @@ async def add_cors_header(request: Request, call_next):
     if origin in origins:
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Methods"] = "*"
         
         req_headers = request.headers.get("access-control-request-headers")
         if req_headers:
             response.headers["Access-Control-Allow-Headers"] = req_headers
         else:
-            response.headers["Access-Control-Allow-Headers"] = "x-user-id, content-type, authorization, accept, origin"
+            response.headers["Access-Control-Allow-Headers"] = "*"
     return response
 
 
