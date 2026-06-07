@@ -128,28 +128,6 @@ app.add_middleware(
 )
 
 
-# FIXED: Middleware to force CORS headers on 404s and preflights
-@app.middleware("http")
-async def add_cors_header(request: Request, call_next):
-    if request.method == "OPTIONS":
-        # Check if current time context is active
-        response = Response(status_code=200)
-    else:
-        response = await call_next(request)
-    
-    origin = request.headers.get("origin")
-    if origin in origins:
-        response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Allow-Methods"] = "*"
-        
-        req_headers = request.headers.get("access-control-request-headers")
-        if req_headers:
-            response.headers["Access-Control-Allow-Headers"] = req_headers
-        else:
-            response.headers["Access-Control-Allow-Headers"] = "*"
-    return response
-
 
 # --- COMPLIANCE AUDIT TRAIL MIDDLEWARE ---
 @app.middleware("http")
