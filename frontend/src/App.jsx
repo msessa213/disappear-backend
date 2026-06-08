@@ -170,9 +170,6 @@ function App() {
       const activeUserId = localStorage.getItem("disappear_user_id") || "";
       const res = await secureRequest(`${API_BASE_URL}/dashboard/sync?user_id=${activeUserId}&t=${Date.now()}`);
       const data = await res.json();
-      
-      // LOGGING FOR PERSISTENCE DEBUGGING
-      console.log("SYNC_DATA_DEBUG:", data);
 
       if (data.profile) {
           // FIXED: Parsing the new decoupled fields from main.py
