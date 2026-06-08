@@ -46,6 +46,15 @@ try:
     LITHIC_API_KEY = os.getenv("LITHIC_API_KEY")
     LITHIC_CARD_PROGRAM = os.getenv("LITHIC_CARD_PROGRAM")
 
+    # --- S3 CONFIGURATION ---
+    S3_BUCKET = "disappear-purge-receipts-vault"
+    s3_client = boto3.client('s3', region_name=os.getenv('AWS_REGION', 'us-east-1'))
+
+except Exception as startup_error:
+    print("CRITICAL STARTUP ERROR DETECTED:", file=sys.stderr)
+    traceback.print_exc()
+    sys.exit(1)
+
 # Default to sandbox to avoid 401 errors with test keys, unless explicitly set to 'production'
 LITHIC_ENVIRONMENT = os.getenv("LITHIC_ENVIRONMENT", "sandbox")
 
@@ -235,15 +244,6 @@ class AdminVerificationRequest(BaseModel):
     verification_link: Optional[str] = None
     notes: Optional[str] = None
 
-
-# --- S3 CONFIGURATION ---
-    S3_BUCKET = "disappear-purge-receipts-vault"
-    s3_client = boto3.client('s3', region_name=os.getenv('AWS_REGION', 'us-east-1'))
-
-except Exception as startup_error:
-    print("CRITICAL STARTUP ERROR DETECTED:", file=sys.stderr)
-    traceback.print_exc()
-    sys.exit(1)
 
 # --- CORE SYSTEM ROUTES ---
 
