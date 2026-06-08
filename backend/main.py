@@ -9,6 +9,8 @@ from slowapi.errors import RateLimitExceeded
 from pydantic import BaseModel
 import random
 import os
+import sys
+import traceback
 import time
 import stripe
 import boto3
@@ -19,16 +21,30 @@ from datetime import datetime, timedelta
 from typing import Any, List, Optional
 from dotenv import load_dotenv
 
-# --- IMPORT DATABASE FROM MODELS ---
-from models import engine, SessionLocal, Base, DBCard, DBAlias, DBProfile, DBTargetEmail, DBScrubLog, DBPurgeLog
+# --- EARLY FASTAPI INITIALIZATION ---
+app = FastAPI(title="Disappear P-A-A-S Engine")
 
-# --- INITIALIZATION BLOCK ---
-load_dotenv()
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+@app.get("/")
+async def root():
+    return {"status": "online"}
 
-LITHIC_API_KEY = os.getenv("LITHIC_API_KEY")
-LITHIC_CARD_PROGRAM = os.getenv("LITHIC_CARD_PROGRAM")
+@app.get("/health")
+async def health_status():
+    """Health check endpoint"""
+    return {"status": "VERSION_24_LIVE", "timestamp": datetime.now().isoformat()}
+
+# --- COMPREHENSIVE STARTUP ERROR HANDLING ---
+try:
+    # --- IMPORT DATABASE FROM MODELS ---
+    from models import engine, SessionLocal, Base, DBCard, DBAlias, DBProfile, DBTargetEmail, DBScrubLog, DBPurgeLog
+
+    # --- INITIALIZATION BLOCK ---
+    load_dotenv()
+    stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+    STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+    LITHIC_API_KEY = os.getenv("LITHIC_API_KEY")
+    LITHIC_CARD_PROGRAM = os.getenv("LITHIC_CARD_PROGRAM")
 
 # Default to sandbox to avoid 401 errors with test keys, unless explicitly set to 'production'
 LITHIC_ENVIRONMENT = os.getenv("LITHIC_ENVIRONMENT", "sandbox")
@@ -92,7 +108,6 @@ except Exception:
 
 limiter = Limiter(key_func=get_remote_address)
 
-app = FastAPI(title="Disappear P-A-A-S Engine")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -222,9 +237,13 @@ class AdminVerificationRequest(BaseModel):
 
 
 # --- S3 CONFIGURATION ---
-S3_BUCKET = "disappear-purge-receipts-vault"
-s3_client = boto3.client('s3', region_name=os.getenv('AWS_REGION', 'us-east-1'))
+    S3_BUCKET = "disappear-purge-receipts-vault"
+    s3_client = boto3.client('s3', region_name=os.getenv('AWS_REGION', 'us-east-1'))
 
+except Exception as startup_error:
+    print("CRITICAL STARTUP ERROR DETECTED:", file=sys.stderr)
+    traceback.print_exc()
+    sys.exit(1)
 
 # --- CORE SYSTEM ROUTES ---
 
@@ -240,13 +259,6 @@ async def login_agent(request: Request, login_req: LoginRequest, db: Session = D
         "user_id": profile.id,
         "first_name": profile.first_name
     }
-
-@app.get("/")
-@app.get("/health")
-async def health_status():
-    """Health check endpoint"""
-    return {"status": "VERSION_24_LIVE", "timestamp": datetime.now().isoformat()}
-
 
 @app.get("/download/app")
 async def download_apk():
