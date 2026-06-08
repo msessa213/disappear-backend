@@ -30,24 +30,32 @@ const API_BASE_URL = (isLocal && !Capacitor.isNativePlatform()) ? LOCAL_API : PR
 function App() {
   // --- SECURE BRIDGE LOGIC ---
   // This bridges the gap between the app and the server on native hardware
-  const secureRequest = async (url, options = {}) => {
+  const secureRequest = async (url, options = {}, retries = 3) => {
     const activeUserId = localStorage.getItem("disappear_user_id") || "";
     const headers = { 'Content-Type': 'application/json', 'x-user-id': activeUserId, ...options.headers };
 
-    if (Capacitor.isNativePlatform()) {
-      const response = await CapacitorHttp.request({
-        url,
-        method: options.method || 'GET',
-        data: (options.body && typeof options.body === 'string') ? JSON.parse(options.body) : options.body,
-        headers: headers
-      });
-      return { 
-        ok: response.status >= 200 && response.status < 300, 
-        status: response.status,
-        json: () => Promise.resolve(response.data) 
-      };
+    for (let i = 0; i < retries; i++) {
+      try {
+        if (Capacitor.isNativePlatform()) {
+          const response = await CapacitorHttp.request({
+            url,
+            method: options.method || 'GET',
+            data: (options.body && typeof options.body === 'string') ? JSON.parse(options.body) : options.body,
+            headers: headers
+          });
+          return { 
+            ok: response.status >= 200 && response.status < 300, 
+            status: response.status,
+            json: () => Promise.resolve(response.data) 
+          };
+        }
+        return await fetch(url, { ...options, headers });
+      } catch (err) {
+        if (i === retries - 1) throw err;
+        // Wait progressively longer before each retry (1s, then 2s...)
+        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+      }
     }
-    return fetch(url, { ...options, headers });
   };
 
   // --- CORE VIEW NAVIGATION (UPDATED) ---
@@ -208,7 +216,7 @@ function App() {
       // 4. Sync Target Emails
       await fetchTargetEmails();
     } catch (err) { 
-        console.error("Connection Error: API Unreachable");
+        console.warn("Network interrupted. Attempting silent reconnect on next cycle...");
     }
   }, [pushNotification, historyDays]);
 
