@@ -256,7 +256,7 @@ class AdminVerificationRequest(BaseModel):
 # --- CORE SYSTEM ROUTES ---
 
 @app.post("/auth/login")
-@limiter.limit("5/minute")
+@limiter.limit("20/minute")
 async def login_agent(request: Request, login_req: LoginRequest, db: Session = Depends(get_db)):
     """Authenticates an agent via email to sync their specific profile to the app"""
     profile = db.query(DBProfile).filter(DBProfile.email.ilike(login_req.email)).first()
@@ -666,7 +666,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
             session_id = session.get("id", "unknown")
             db.add(DBPurgeLog(
                 action_type=action, 
-                node_id=f"STRIPE_{str(session_id)[-8:]}",
+                node_id=f"{user_id}_STRIPE_{str(session_id)[-8:]}",
                 timestamp=datetime.utcnow()
             ))
             db.commit()
@@ -687,7 +687,7 @@ async def get_aliases(x_user_id: Optional[str] = Header(None), db: Session = Dep
 
 
 @app.post("/aliases/mint")
-@limiter.limit("5/minute")
+@limiter.limit("20/minute")
 async def generate_alias(request: Request, alias_req: AliasRequest, x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Generates an alias with 12h cooldown and bypass verification"""
     user_id = x_user_id or "anonymous_agent"
@@ -708,11 +708,15 @@ async def generate_alias(request: Request, alias_req: AliasRequest, x_user_id: O
             raise HTTPException(status_code=403, detail="PHONE_CAPACITY_REACHED")
 
     # Cooldown Logic
-    last_burn = db.query(DBPurgeLog).filter(DBPurgeLog.action_type == "ALIAS_TERMINATED").order_by(DBPurgeLog.timestamp.desc()).first()
+    last_burn = db.query(DBPurgeLog).filter(
+        DBPurgeLog.action_type == "ALIAS_TERMINATED",
+        DBPurgeLog.node_id.startswith(f"{user_id}_")
+    ).order_by(DBPurgeLog.timestamp.desc()).first()
     
     # BYPASS VERIFICATION: Check for tactical override purchased in the last 15 minutes
     has_bypass = db.query(DBPurgeLog).filter(
         DBPurgeLog.action_type == "COOLDOWN_BYPASS_PURCHASED",
+        DBPurgeLog.node_id.startswith(f"{user_id}_"),
         DBPurgeLog.timestamp > datetime.utcnow() - timedelta(minutes=15)
     ).first()
 
@@ -747,7 +751,7 @@ async def kill_alias(alias_id: str, db: Session = Depends(get_db)):
     """TERMINATE command for a specific PII node"""
     alias = db.query(DBAlias).filter(DBAlias.id == alias_id).first()
     if alias:
-        log = DBPurgeLog(action_type="ALIAS_TERMINATED", node_id=alias_id)
+        log = DBPurgeLog(action_type="ALIAS_TERMINATED", node_id=f"{alias.user_id}_{alias_id}")
         db.add(log)
         db.delete(alias)
         db.commit()
@@ -770,7 +774,7 @@ async def financials(x_user_id: Optional[str] = Header(None), db: Session = Depe
 
 
 @app.post("/financials/mint")
-@limiter.limit("5/minute")
+@limiter.limit("20/minute")
 async def generate_card(request: Request, card_req: CardRequest, x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Initiates a new virtual card generation process on the secure node"""
     user_id = x_user_id or "anonymous_agent"
@@ -822,7 +826,7 @@ async def generate_card(request: Request, card_req: CardRequest, x_user_id: Opti
 
 @app.post("/financials/profile")
 @app.post("/financials/profile/")
-@limiter.limit("5/minute")
+@limiter.limit("20/minute")
 async def save_profile(request: Request, db: Session = Depends(get_db)):
     """Handles raw profile ingestion and cleanly seeds initial tracking slots for all data brokers"""
     try:
