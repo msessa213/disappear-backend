@@ -3,6 +3,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable"; // FIXED: Explicit import for plugin functionality
 import { Capacitor, CapacitorHttp } from '@capacitor/core'; 
 import CryptoJS from 'crypto-js';
+import { Loader } from "@googlemaps/js-api-loader";
 
 // --- FIXED IMPORTS ---
 import { Manifesto } from './Manifesto';
@@ -135,12 +136,18 @@ function App() {
       setGoogleLoaded(true);
       return;
     }
-    window.initGoogleMaps = () => setGoogleLoaded(true);
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initGoogleMaps`;
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
+    
+    const loader = new Loader({
+      apiKey: apiKey,
+      version: "weekly",
+      libraries: ["places"],
+    });
+
+    loader.load().then(() => {
+      setGoogleLoaded(true);
+    }).catch(e => {
+      console.error("Google Maps failed to load", e);
+    });
   }, []);
 
   useEffect(() => {
