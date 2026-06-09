@@ -3,7 +3,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable"; // FIXED: Explicit import for plugin functionality
 import { Capacitor, CapacitorHttp } from '@capacitor/core'; 
 import CryptoJS from 'crypto-js';
-import { Loader } from "@googlemaps/js-api-loader";
+import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
 
 // --- FIXED IMPORTS ---
 import { Manifesto } from './Manifesto';
@@ -132,18 +132,17 @@ function App() {
       console.warn("GOOGLE MAPS: Missing VITE_GOOGLE_MAPS_API_KEY in .env");
       return;
     }
-    if (window.google) {
+    if (window.google?.maps?.places) {
       setGoogleLoaded(true);
       return;
     }
     
-    const loader = new Loader({
+    setOptions({
       apiKey: apiKey,
-      version: "weekly",
-      libraries: ["places"],
+      version: "weekly"
     });
 
-    loader.load().then(() => {
+    importLibrary("places").then(() => {
       setGoogleLoaded(true);
     }).catch(e => {
       console.error("Google Maps failed to load", e);
@@ -1275,9 +1274,9 @@ const handleEmergencyBurn = async () => {
 
                 {showPricing && !showCheckout && !isScanning && (
                   <div className="pricing-card fade-in">
-                    <div className="billing-toggle" style={{ display: 'flex', gap: '5px' }}>
-                      <button className={billingCycle === 'monthly' ? 'mask-btn active-toggle' : 'mask-btn'} style={{ flex: 1 }} onClick={() => setBillingCycle('monthly')}>Monthly</button>
-                      <button className={billingCycle === 'annual' ? 'mask-btn active-toggle' : 'mask-btn'} style={{ flex: 1 }} onClick={() => setBillingCycle('annual')}>Annual</button>
+                    <div className="billing-toggle" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px' }}>
+                      <button className={billingCycle === 'monthly' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('monthly')}>Monthly</button>
+                      <button className={billingCycle === 'annual' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('annual')}>Annual</button>
                     </div>
                     <div className="price-box">
                       <h3 className="tiger-text">ELITE PRIVACY P-A-A-S</h3>
@@ -1300,13 +1299,13 @@ const handleEmergencyBurn = async () => {
                           <input className="mask-btn full-row" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
                           <input ref={addressRef} className="mask-btn full-row" placeholder="Street Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
                           <input className="mask-btn" placeholder="City" value={targetProfile.city} onChange={(e) => setTargetProfile({...targetProfile, city: e.target.value})} />
-                          <div style={{ display: 'flex', gap: '10px' }}>
-                            <input className="mask-btn" style={{ flex: 1 }} placeholder="State" value={targetProfile.state} onChange={(e) => setTargetProfile({...targetProfile, state: e.target.value})} />
-                            <input className="mask-btn" style={{ flex: 1 }} placeholder="ZIP" value={targetProfile.zip} onChange={(e) => setTargetProfile({...targetProfile, zip: e.target.value})} />
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                            <input className="mask-btn" placeholder="State" value={targetProfile.state} onChange={(e) => setTargetProfile({...targetProfile, state: e.target.value})} />
+                            <input className="mask-btn" placeholder="ZIP" value={targetProfile.zip} onChange={(e) => setTargetProfile({...targetProfile, zip: e.target.value})} />
                           </div>
                           <input className="mask-btn full-row" type="text" inputMode="numeric" placeholder="DATE OF BIRTH (MM/DD/YYYY)" value={targetProfile.dob} onChange={handleNumericDateInput} />
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '15px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', alignItems: 'flex-start', gap: '10px', marginTop: '15px' }}>
                         <input type="checkbox" checked={targetProfile.termsAccepted} onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})} />
                         <label style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>Authorize Full PII Scrub and Burn</label>
                       </div>

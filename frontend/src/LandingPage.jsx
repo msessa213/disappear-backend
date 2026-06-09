@@ -24,6 +24,20 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
     setScanData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handlePhoneChange = (e) => {
+    let val = e.target.value.replace(/\D/g, ''); // Strip non-numeric characters
+    if (val.length > 10) val = val.slice(0, 10);
+    let formatted = val;
+    if (val.length > 6) {
+      formatted = `(${val.slice(0, 3)}) ${val.slice(3, 6)}-${val.slice(6)}`;
+    } else if (val.length > 3) {
+      formatted = `(${val.slice(0, 3)}) ${val.slice(3)}`;
+    } else if (val.length > 0) {
+      formatted = `(${val}`;
+    }
+    setScanData(prev => ({ ...prev, phone: formatted }));
+  };
+
   const handleScan = () => {
     if (!scanData.email && !scanData.phone) return;
     setIsScanning(true);
@@ -97,12 +111,12 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
           </p>
           
           <div className="checkout-grid">
-            <input type="text" name="firstName" placeholder="FIRST NAME" className="scanner-input" onChange={handleInputChange} />
-            <input type="text" name="middleName" placeholder="MIDDLE NAME" className="scanner-input" onChange={handleInputChange} />
-            <input type="text" name="lastName" placeholder="LAST NAME" className="scanner-input" onChange={handleInputChange} />
-            <input type="text" name="phone" placeholder="PHONE NUMBER" className="scanner-input" onChange={handleInputChange} />
-            <input type="text" name="email" placeholder="EMAIL ADDRESS" className="scanner-input" onChange={handleInputChange} />
-            <input type="text" name="dob" placeholder="DATE OF BIRTH (MM/DD/YYYY)" className="scanner-input" onChange={handleInputChange} />
+            <input type="text" name="firstName" placeholder="FIRST NAME" className="scanner-input" value={scanData.firstName} onChange={handleInputChange} />
+            <input type="text" name="middleName" placeholder="MIDDLE NAME" className="scanner-input" value={scanData.middleName} onChange={handleInputChange} />
+            <input type="text" name="lastName" placeholder="LAST NAME" className="scanner-input" value={scanData.lastName} onChange={handleInputChange} />
+            <input type="text" name="phone" placeholder="PHONE NUMBER" className="scanner-input" value={scanData.phone} onChange={handlePhoneChange} />
+            <input type="text" name="email" placeholder="EMAIL ADDRESS" className="scanner-input" value={scanData.email} onChange={handleInputChange} />
+            <input type="text" name="dob" placeholder="DATE OF BIRTH (MM/DD/YYYY)" className="scanner-input" value={scanData.dob} onChange={handleInputChange} />
           </div>
 
           <button 
