@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable"; // FIXED: Explicit import for plugin functionality
 import { Capacitor, CapacitorHttp } from '@capacitor/core'; 
@@ -104,8 +104,8 @@ function App() {
   const [phones, setPhones] = useState([]);
 
   const [targetProfile, setTargetProfile] = useState({
-      firstName: "", middleName: "", lastName: "", 
-      email: "", dob: "", address: "", termsAccepted: false
+      firstName: "", middleName: "", lastName: "", email: "", 
+      dob: "", address: "", city: "", state: "", zip: "", termsAccepted: false
   });
 
   const [billingCycle, setBillingCycle] = useState("monthly");
@@ -120,6 +120,70 @@ function App() {
   
   const [targetEmails, setTargetEmails] = useState({ primary: "", additional: [], slots: 1, used: 0 });
   const [newTargetEmail, setNewTargetEmail] = useState("");
+  
+  const addressRef = useRef(null);
+  const [googleLoaded, setGoogleLoaded] = useState(false);
+
+  // --- GOOGLE MAPS PLACES AUTOCOMPLETE ---
+  useEffect(() => {
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      console.warn("GOOGLE MAPS: Missing VITE_GOOGLE_MAPS_API_KEY in .env");
+      return;
+    }
+    if (window.google) {
+      setGoogleLoaded(true);
+      return;
+    }
+    window.initGoogleMaps = () => setGoogleLoaded(true);
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=initGoogleMaps`;
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  }, []);
+
+  useEffect(() => {
+    let listener;
+    // Small timeout ensures the DOM node is fully painted after the checkout screen opens
+    const initTimer = setTimeout(() => {
+      if (showCheckout && googleLoaded && addressRef.current) {
+        const autocomplete = new window.google.maps.places.Autocomplete(addressRef.current, {
+          fields: ['address_components'],
+          types: ['address'],
+          componentRestrictions: { country: "us" }
+        });
+        listener = autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace();
+          if (!place.address_components) return;
+          
+          let streetNumber = "", route = "", city = "", state = "", zip = "";
+
+          for (const component of place.address_components) {
+            const type = component.types[0];
+            if (type === "street_number") streetNumber = component.long_name;
+            if (type === "route") route = component.short_name;
+            if (type === "locality" || type === "sublocality_level_1") city = component.long_name;
+            if (type === "administrative_area_level_1") state = component.short_name;
+            if (type === "postal_code") zip = component.long_name;
+          }
+
+          setTargetProfile(prev => ({
+            ...prev,
+            address: `${streetNumber} ${route}`.trim(),
+            city: city,
+            state: state,
+            zip: zip
+          }));
+        });
+      }
+    }, 100);
+
+    return () => {
+      clearTimeout(initTimer);
+      if (listener && window.google) window.google.maps.event.removeListener(listener);
+    };
+  }, [showCheckout, googleLoaded]);
 
   const triggerToast = (msg) => { 
     setShowToast(msg); 
@@ -149,8 +213,8 @@ function App() {
         setProgress(100);
     } else if (!isNative) {
         setTargetProfile({
-            firstName: "", middleName: "", lastName: "", 
-            email: "", dob: "", address: "", termsAccepted: false
+            firstName: "", middleName: "", lastName: "", email: "", 
+            dob: "", address: "", city: "", state: "", zip: "", termsAccepted: false
         });
     }
   }, []);
@@ -603,7 +667,7 @@ const handleEmergencyBurn = async () => {
   };
 
   const handleFinalPurchase = async () => {
-    if(!targetProfile.firstName || !targetProfile.lastName || !targetProfile.email || !targetProfile.address) {
+    if(!targetProfile.firstName || !targetProfile.lastName || !targetProfile.email || !targetProfile.address || !targetProfile.city || !targetProfile.state || !targetProfile.zip) {
         triggerToast("REQUIRED FIELDS MISSING");
         return;
     }
@@ -611,11 +675,17 @@ const handleEmergencyBurn = async () => {
 
     setIsMinting(true);
     try {
+        // Combine the address components so the backend database doesn't need to change
+        const payload = {
+            ...targetProfile,
+            address: `${targetProfile.address}, ${targetProfile.city}, ${targetProfile.state} ${targetProfile.zip}`
+        };
+        
         // 1. Ingest Profile & Get User ID
         const profileRes = await secureRequest(`${API_BASE_URL}/financials/profile`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(targetProfile)
+            body: JSON.stringify(payload)
         });
         
         let activeUserId = localStorage.getItem("disappear_user_id");
@@ -1216,13 +1286,18 @@ const handleEmergencyBurn = async () => {
                   <div className="pricing-card fade-in">
                     <div className="price-box" style={{maxWidth: '450px', width: '100%', margin: '0 auto'}}>
                       <h3 className="tiger-text">TARGET PROFILE DATA</h3>
-                      <div className="checkout-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                          <input className="mask-btn" style={{ flex: '1 1 140px' }} placeholder="First Name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
-                          <input className="mask-btn" style={{ flex: '1 1 140px' }} placeholder="Middle Name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
-                          <input className="mask-btn full-row" style={{ width: '100%' }} placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
-                          <input className="mask-btn full-row" style={{ width: '100%' }} placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
-                          <input className="mask-btn full-row" style={{ width: '100%' }} placeholder="Home Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
-                          <input className="mask-btn full-row" style={{ width: '100%' }} type="text" inputMode="numeric" placeholder="MM/DD/YYYY" value={targetProfile.dob} onChange={handleNumericDateInput} />
+                      <div className="checkout-grid">
+                          <input className="mask-btn" placeholder="First Name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
+                          <input className="mask-btn" placeholder="Middle Name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
+                          <input className="mask-btn full-row" placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
+                          <input className="mask-btn full-row" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
+                          <input ref={addressRef} className="mask-btn full-row" placeholder="Street Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
+                          <input className="mask-btn" placeholder="City" value={targetProfile.city} onChange={(e) => setTargetProfile({...targetProfile, city: e.target.value})} />
+                          <div style={{ display: 'flex', gap: '10px' }}>
+                            <input className="mask-btn" style={{ flex: 1 }} placeholder="State" value={targetProfile.state} onChange={(e) => setTargetProfile({...targetProfile, state: e.target.value})} />
+                            <input className="mask-btn" style={{ flex: 1 }} placeholder="ZIP" value={targetProfile.zip} onChange={(e) => setTargetProfile({...targetProfile, zip: e.target.value})} />
+                          </div>
+                          <input className="mask-btn full-row" type="text" inputMode="numeric" placeholder="DATE OF BIRTH (MM/DD/YYYY)" value={targetProfile.dob} onChange={handleNumericDateInput} />
                       </div>
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginTop: '15px' }}>
                         <input type="checkbox" checked={targetProfile.termsAccepted} onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})} />

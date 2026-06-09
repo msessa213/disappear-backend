@@ -986,3 +986,29 @@ input[type="checkbox"] {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* 21. GOOGLE MAPS AUTOCOMPLETE DARK MODE */
+.pac-container {
+  background-color: #050505 !important;
+  border: 1px solid var(--tiger-blue) !important;
+  font-family: 'Inter', -apple-system, sans-serif !important;
+  box-shadow: 0 0 20px rgba(0, 71, 171, 0.4) !important;
+  z-index: 100000 !important;
+  border-radius: 8px !important;
+}
+.pac-item {
+  border-top: 1px solid #111 !important;
+  color: #94A3B8 !important;
+  padding: 10px !important;
+  cursor: pointer !important;
+}
+.pac-item:hover {
+  background-color: rgba(0, 71, 171, 0.2) !important;
+}
+.pac-item-query {
+  color: white !important;
+  font-weight: bold !important;
+}
+.pac-matched {
+  color: var(--tiger-blue) !important;
+}
