@@ -38,6 +38,7 @@ Base = declarative_base()
 class DBCard(Base):
     __tablename__ = "shield_assets_v3"
     id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, index=True, nullable=True)
     label = Column(String)
     number = Column(String)
     expiry = Column(String) 
@@ -49,6 +50,7 @@ class DBCard(Base):
 class DBAlias(Base):
     __tablename__ = "shield_aliases_v3"
     id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, index=True, nullable=True)
     type = Column(String)
     content = Column(String)
     label = Column(String)

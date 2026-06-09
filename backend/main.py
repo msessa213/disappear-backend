@@ -422,17 +422,26 @@ async def complete_manual_scrub(
 
 
 @app.get("/dashboard/sync")
-async def sync(x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
-    """Synchronizes dashboard using secure X-User-ID header"""
-    profile = db.query(DBProfile).filter(DBProfile.id == x_user_id).first() if x_user_id else db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
-    uid = profile.id if profile else None
+async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    """Synchronizes dashboard using user_id from query or header"""
+    target_user_id = user_id or x_user_id
+    
+    if target_user_id:
+        profile = db.query(DBProfile).filter(DBProfile.id == target_user_id).first()
+    else:
+        profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+
+    if not profile:
+        raise HTTPException(status_code=404, detail="PROFILE_NOT_FOUND")
+
+    uid = profile.id
         
     active_cards = db.query(DBCard).filter(DBCard.user_id == uid).count()
     active_aliases = db.query(DBAlias).filter(DBAlias.user_id == uid).count()
     total_used = active_cards + active_aliases
         
-    bonus = profile.bonus_credits if profile and hasattr(profile, 'bonus_credits') else 0
-    phone_bonus = profile.phone_line_bonus if profile and hasattr(profile, 'phone_line_bonus') else 0
+    bonus = profile.bonus_credits or 0
+    phone_bonus = profile.phone_line_bonus or 0
     
     # SEPARATE LIMITS
     vcc_email_capacity = MAX_IDENTITY_CREDITS + bonus
