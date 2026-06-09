@@ -24,13 +24,19 @@ from dotenv import load_dotenv
 # --- EARLY FASTAPI INITIALIZATION ---
 app = FastAPI(title="Disappear P-A-A-S Engine")
 
+startup_error_message = None
+
 @app.get("/")
 async def root():
+    if startup_error_message:
+        return {"status": "degraded", "error": startup_error_message}
     return {"status": "online"}
 
 @app.get("/health")
 async def health_status():
     """Health check endpoint"""
+    if startup_error_message:
+        return {"status": "CRITICAL_STARTUP_ERROR", "detail": startup_error_message}
     return {"status": "VERSION_24_LIVE", "timestamp": datetime.now().isoformat()}
 
 # --- COMPREHENSIVE STARTUP ERROR HANDLING ---
@@ -51,9 +57,9 @@ try:
     s3_client = boto3.client('s3', region_name=os.getenv('AWS_REGION', 'us-east-1'))
 
 except Exception as startup_error:
+    startup_error_message = str(startup_error)
     print("CRITICAL STARTUP ERROR DETECTED:", file=sys.stderr)
     traceback.print_exc()
-    sys.exit(1)
 
 # Default to sandbox to avoid 401 errors with test keys, unless explicitly set to 'production'
 LITHIC_ENVIRONMENT = os.getenv("LITHIC_ENVIRONMENT", "sandbox")
@@ -109,9 +115,11 @@ except Exception as e:
 
 try:
     with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN extra_email_slots INTEGER DEFAULT 0"))
-except Exception:
-    pass
+        conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS extra_email_slots INTEGER DEFAULT 0"))
+        conn.execute(text("ALTER TABLE shield_assets_v3 ADD COLUMN IF NOT EXISTS user_id VARCHAR"))
+        conn.execute(text("ALTER TABLE shield_aliases_v3 ADD COLUMN IF NOT EXISTS user_id VARCHAR"))
+except Exception as e:
+    logger.error(f"DB ALTER WARNING: {e}")
 
 # --- APP CONFIGURATION ---
 
@@ -416,11 +424,12 @@ async def complete_manual_scrub(
 @app.get("/dashboard/sync")
 async def sync(x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Synchronizes dashboard using secure X-User-ID header"""
-    active_cards = db.query(DBCard).count()
-    active_aliases = db.query(DBAlias).count()
-    total_used = active_cards + active_aliases
-    
     profile = db.query(DBProfile).filter(DBProfile.id == x_user_id).first() if x_user_id else db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+    uid = profile.id if profile else None
+        
+    active_cards = db.query(DBCard).filter(DBCard.user_id == uid).count()
+    active_aliases = db.query(DBAlias).filter(DBAlias.user_id == uid).count()
+    total_used = active_cards + active_aliases
         
     bonus = profile.bonus_credits if profile and hasattr(profile, 'bonus_credits') else 0
     phone_bonus = profile.phone_line_bonus if profile and hasattr(profile, 'phone_line_bonus') else 0
@@ -430,8 +439,8 @@ async def sync(x_user_id: Optional[str] = Header(None), db: Session = Depends(ge
     phone_capacity = BASE_PHONE_LIMIT + phone_bonus
     
     # NEW: DECOUPLED USAGE METRICS
-    used_vcc_email = active_cards + db.query(DBAlias).filter(DBAlias.type == 'email').count()
-    used_phones = db.query(DBAlias).filter(DBAlias.type == 'phone').count()
+    used_vcc_email = active_cards + db.query(DBAlias).filter(DBAlias.user_id == uid, DBAlias.type == 'email').count()
+    used_phones = db.query(DBAlias).filter(DBAlias.user_id == uid, DBAlias.type == 'phone').count()
     
     now = datetime.now()
     minute_seed = now.minute + now.hour
@@ -660,9 +669,11 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
 # --- PII CONTROL ROUTES ---
 
 @app.get("/aliases/data")
-async def get_aliases(db: Session = Depends(get_db)):
+async def get_aliases(x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Retrieves all active aliases for separate rendering"""
-    aliases = db.query(DBAlias).order_by(DBAlias.created_at.desc()).all()
+    profile = db.query(DBProfile).filter(DBProfile.id == x_user_id).first() if x_user_id else db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+    uid = profile.id if profile else None
+    aliases = db.query(DBAlias).filter(DBAlias.user_id == uid).order_by(DBAlias.created_at.desc()).all()
     return {"aliases": aliases if aliases else []}
 
 
@@ -678,12 +689,12 @@ async def generate_alias(request: Request, alias_req: AliasRequest, x_user_id: O
     max_credits = MAX_IDENTITY_CREDITS + bonus
     max_phones = BASE_PHONE_LIMIT + phone_bonus
     
-    total_active = db.query(DBAlias).count() + db.query(DBCard).count()
+    total_active = db.query(DBAlias).filter(DBAlias.user_id == user_id).count() + db.query(DBCard).filter(DBCard.user_id == user_id).count()
     if total_active >= max_credits:
         raise HTTPException(status_code=403, detail="IDENTITY_LIMIT_REACHED")
 
     if alias_req.type.lower() == "phone":
-        current_phones = db.query(DBAlias).filter(DBAlias.type == "phone").count()
+        current_phones = db.query(DBAlias).filter(DBAlias.user_id == user_id, DBAlias.type == "phone").count()
         if current_phones >= max_phones:
             raise HTTPException(status_code=403, detail="PHONE_CAPACITY_REACHED")
 
@@ -711,6 +722,7 @@ async def generate_alias(request: Request, alias_req: AliasRequest, x_user_id: O
         
     new_alias = DBAlias(
         id=alias_id,
+        user_id=user_id,
         type=alias_req.type.lower(),
         label=alias_req.label,
         content=content
@@ -737,10 +749,12 @@ async def kill_alias(alias_id: str, db: Session = Depends(get_db)):
 # --- FINANCIALS & PROFILE STORAGE ---
 
 @app.get("/financials/data")
-async def financials(db: Session = Depends(get_db)):
+async def financials(x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Retrieves list of active virtual cards from the secure ledger"""
+    profile = db.query(DBProfile).filter(DBProfile.id == x_user_id).first() if x_user_id else db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+    uid = profile.id if profile else None
     try:
-        cards = db.query(DBCard).order_by(DBCard.created_at.desc()).all()
+        cards = db.query(DBCard).filter(DBCard.user_id == uid).order_by(DBCard.created_at.desc()).all()
         return {"cards": cards if cards else []}
     except Exception as e:
         return {"cards": [], "error": str(e)}
@@ -755,7 +769,7 @@ async def generate_card(request: Request, card_req: CardRequest, x_user_id: Opti
     bonus = profile.bonus_credits if profile else 0
     max_credits = MAX_IDENTITY_CREDITS + bonus
 
-    total_active = db.query(DBCard).count() + db.query(DBAlias).count()
+    total_active = db.query(DBCard).filter(DBCard.user_id == user_id).count() + db.query(DBAlias).filter(DBAlias.user_id == user_id).count()
     if total_active >= max_credits:
         raise HTTPException(status_code=403, detail="IDENTITY_LIMIT_REACHED")
 
@@ -777,6 +791,7 @@ async def generate_card(request: Request, card_req: CardRequest, x_user_id: Opti
         card_id = f"vcc_{int(time.time())}_{random.randint(100, 999)}"
         new_card = DBCard(
             id=card_id,
+            user_id=user_id,
             label=card_req.label,
             number=getattr(card_response, "pan", None) or getattr(card_response, "number", None) or "UNKNOWN",
             expiry=expiry,
@@ -853,10 +868,12 @@ async def kill_card(card_id: str, db: Session = Depends(get_db)):
 
 
 @app.post("/financials/burn-all")
-async def burn_all_assets(db: Session = Depends(get_db)):
+async def burn_all_assets(x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Emergency Burn command: Deletes all compromised cards and aliases (Preserves Profile)"""
-    db.query(DBCard).delete()
-    db.query(DBAlias).delete()
+    profile = db.query(DBProfile).filter(DBProfile.id == x_user_id).first() if x_user_id else db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+    uid = profile.id if profile else None
+    db.query(DBCard).filter(DBCard.user_id == uid).delete()
+    db.query(DBAlias).filter(DBAlias.user_id == uid).delete()
     log = DBPurgeLog(action_type="EMERGENCY_BURN_PROTOCOL", node_id="GLOBAL_ASSET_WIPE")
     db.add(log)
     db.commit()

@@ -32,7 +32,13 @@ function App() {
   // This bridges the gap between the app and the server on native hardware
   const secureRequest = async (url, options = {}, retries = 3) => {
     const activeUserId = localStorage.getItem("disappear_user_id") || "";
-    const headers = { 'Content-Type': 'application/json', 'x-user-id': activeUserId, ...options.headers };
+    const headers = { 
+      'Content-Type': 'application/json', 
+      'x-user-id': activeUserId, 
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache',
+      ...options.headers 
+    };
 
     for (let i = 0; i < retries; i++) {
       try {
