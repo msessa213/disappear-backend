@@ -18,6 +18,7 @@ from lithic import Lithic
 import logging
 import json
 from datetime import datetime, timedelta
+import httpx
 from typing import Any, List, Optional
 from dotenv import load_dotenv
 
@@ -688,35 +689,35 @@ async def get_aliases(x_user_id: Optional[str] = Header(None), db: Session = Dep
 
 @app.post("/aliases/mint")
 @limiter.limit("20/minute")
-async def generate_alias(request: Request, alias_req: AliasRequest, x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
+async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Optional[str] = Query(None), x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Generates an alias with 12h cooldown and bypass verification"""
-    user_id = x_user_id or "anonymous_agent"
-    profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
+    target_user_id = user_id or x_user_id or "anonymous_agent"
+    profile = db.query(DBProfile).filter(DBProfile.id == target_user_id).first()
     bonus = profile.bonus_credits if profile else 0
     phone_bonus = profile.phone_line_bonus if profile else 0
     
     max_credits = MAX_IDENTITY_CREDITS + bonus
     max_phones = BASE_PHONE_LIMIT + phone_bonus
     
-    total_active = db.query(DBAlias).filter(DBAlias.user_id == user_id).count() + db.query(DBCard).filter(DBCard.user_id == user_id).count()
+    total_active = db.query(DBAlias).filter(DBAlias.user_id == target_user_id).count() + db.query(DBCard).filter(DBCard.user_id == target_user_id).count()
     if total_active >= max_credits:
         raise HTTPException(status_code=403, detail="IDENTITY_LIMIT_REACHED")
 
     if alias_req.type.lower() == "phone":
-        current_phones = db.query(DBAlias).filter(DBAlias.user_id == user_id, DBAlias.type == "phone").count()
+        current_phones = db.query(DBAlias).filter(DBAlias.user_id == target_user_id, DBAlias.type == "phone").count()
         if current_phones >= max_phones:
             raise HTTPException(status_code=403, detail="PHONE_CAPACITY_REACHED")
 
     # Cooldown Logic
     last_burn = db.query(DBPurgeLog).filter(
         DBPurgeLog.action_type == "ALIAS_TERMINATED",
-        DBPurgeLog.node_id.startswith(f"{user_id}_")
+        DBPurgeLog.node_id.startswith(f"{target_user_id}_")
     ).order_by(DBPurgeLog.timestamp.desc()).first()
     
     # BYPASS VERIFICATION: Check for tactical override purchased in the last 15 minutes
     has_bypass = db.query(DBPurgeLog).filter(
         DBPurgeLog.action_type == "COOLDOWN_BYPASS_PURCHASED",
-        DBPurgeLog.node_id.startswith(f"{user_id}_"),
+        DBPurgeLog.node_id.startswith(f"{target_user_id}_"),
         DBPurgeLog.timestamp > datetime.utcnow() - timedelta(minutes=15)
     ).first()
 
@@ -729,13 +730,33 @@ async def generate_alias(request: Request, alias_req: AliasRequest, x_user_id: O
     alias_id = f"als_{int(time.time())}_{random.randint(100, 999)}"
     
     if alias_req.type.lower() == "email":
-        content = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
+        addy_api_key = os.getenv("ADDY_API_KEY")
+        if not addy_api_key:
+            logger.error("ADDY_IO_ERROR: ADDY_API_KEY is missing from environment variables")
+            raise HTTPException(status_code=500, detail="EMAIL_RELAY_PROVIDER_OFFLINE")
+            
+        try:
+            async with httpx.AsyncClient() as client:
+                addy_response = await client.post(
+                    "https://app.addy.io/api/v1/aliases",
+                    headers={
+                        "Authorization": f"Bearer {addy_api_key}",
+                        "Content-Type": "application/json",
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    json={"description": f"Disappear Vault - {alias_req.label}"}
+                )
+                addy_response.raise_for_status()
+                content = addy_response.json().get("data", {}).get("email")
+        except Exception as e:
+            logger.error(f"ADDY_IO_MINT_ERROR: {str(e)}")
+            raise HTTPException(status_code=502, detail="EMAIL_RELAY_PROVIDER_OFFLINE")
     else:
         content = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
         
     new_alias = DBAlias(
         id=alias_id,
-        user_id=user_id,
+        user_id=target_user_id,
         type=alias_req.type.lower(),
         label=alias_req.label,
         content=content
@@ -775,14 +796,14 @@ async def financials(x_user_id: Optional[str] = Header(None), db: Session = Depe
 
 @app.post("/financials/mint")
 @limiter.limit("20/minute")
-async def generate_card(request: Request, card_req: CardRequest, x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
+async def generate_card(request: Request, card_req: CardRequest, user_id: Optional[str] = Query(None), x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Initiates a new virtual card generation process on the secure node"""
-    user_id = x_user_id or "anonymous_agent"
-    profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
+    target_user_id = user_id or x_user_id or "anonymous_agent"
+    profile = db.query(DBProfile).filter(DBProfile.id == target_user_id).first()
     bonus = profile.bonus_credits if profile else 0
     max_credits = MAX_IDENTITY_CREDITS + bonus
 
-    total_active = db.query(DBCard).filter(DBCard.user_id == user_id).count() + db.query(DBAlias).filter(DBAlias.user_id == user_id).count()
+    total_active = db.query(DBCard).filter(DBCard.user_id == target_user_id).count() + db.query(DBAlias).filter(DBAlias.user_id == target_user_id).count()
     if total_active >= max_credits:
         raise HTTPException(status_code=403, detail="IDENTITY_LIMIT_REACHED")
 
@@ -804,7 +825,7 @@ async def generate_card(request: Request, card_req: CardRequest, x_user_id: Opti
         card_id = f"vcc_{int(time.time())}_{random.randint(100, 999)}"
         new_card = DBCard(
             id=card_id,
-            user_id=user_id,
+            user_id=target_user_id,
             label=card_req.label,
             number=getattr(card_response, "pan", None) or getattr(card_response, "number", None) or "UNKNOWN",
             expiry=expiry,

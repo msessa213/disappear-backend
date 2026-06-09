@@ -36,3 +36,4 @@ python-multipart==0.0.9
 git+https://github.com/lithic-com/lithic-python.git
 slowapi==0.1.9
 limits
+httpx
