@@ -737,17 +737,28 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
             
         try:
             async with httpx.AsyncClient() as client:
+                headers = {
+                    "Authorization": f"Bearer {addy_api_key}",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                    "X-Requested-With": "XMLHttpRequest" 
+                }
                 addy_response = await client.post(
                     "https://app.addy.io/api/v1/aliases",
-                    headers={
-                        "Authorization": f"Bearer {addy_api_key}",
-                        "Content-Type": "application/json",
-                        "X-Requested-With": "XMLHttpRequest"
-                    },
-                    json={"description": f"Disappear Vault - {alias_req.label}"}
+                    headers=headers,
+                    json={
+                        "description": f"Disappear Vault - {alias_req.label}",
+                        "format": "uuid"
+                    }
                 )
-                addy_response.raise_for_status()
+                
+                if addy_response.status_code >= 400:
+                    logger.error(f"ADDY_IO_REJECTED [{addy_response.status_code}]: {addy_response.text}")
+                    raise HTTPException(status_code=502, detail=f"ADDY.IO REJECTED: {addy_response.text}")
+                    
                 content = addy_response.json().get("data", {}).get("email")
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"ADDY_IO_MINT_ERROR: {str(e)}")
             raise HTTPException(status_code=502, detail="EMAIL_RELAY_PROVIDER_OFFLINE")
