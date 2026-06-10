@@ -425,6 +425,9 @@ function App() {
         setShowEmailModal(false);
         setShowPhoneModal(false);
         triggerToast(`${type.toUpperCase()} SECURED`);
+      } else if (res.status !== 403 && res.status !== 429) {
+        const errData = await res.json().catch(() => ({}));
+        triggerToast(errData.detail || "MINT FAILURE: EXTERNAL API ERROR");
       }
     } catch (err) { triggerToast("CONNECTION ERROR"); }
     finally { setIsEncrypting(false); setPurgeStatus(""); }

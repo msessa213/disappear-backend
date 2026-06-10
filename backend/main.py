@@ -44,6 +44,7 @@ async def health_status():
 try:
     # --- IMPORT DATABASE FROM MODELS ---
     from models import engine, SessionLocal, Base, DBCard, DBAlias, DBProfile, DBTargetEmail, DBScrubLog, DBPurgeLog
+    from services.twilio_service import send_sms, make_voice_call, twilio_client
 
     # --- INITIALIZATION BLOCK ---
     load_dotenv()
@@ -244,6 +245,10 @@ class SupportRequest(BaseModel):
     subject: str
     message: str
 
+class CallTestRequest(BaseModel):
+    to_phone_number: str
+    twiml_url: str
+
 # NEW: Expansion Request Schema
 class ExpansionRequest(BaseModel):
     expansion_type: str # "data", "phone", or "emergency_wipe"
@@ -252,6 +257,11 @@ class ExpansionRequest(BaseModel):
 class AdminVerificationRequest(BaseModel):
     verification_link: Optional[str] = None
     notes: Optional[str] = None
+
+# NEW: SMS Test Schema
+class SMSTestRequest(BaseModel):
+    to_phone_number: str
+    message: str
 
 
 # --- CORE SYSTEM ROUTES ---
@@ -330,6 +340,38 @@ async def get_admin_stats(db: Session = Depends(get_db), admin_key: str = Depend
         "system_health": "OPTIMAL",
         "last_purge": datetime.now().strftime("%Y-%m-%d %H:%M")
     }
+
+@app.post("/admin/test-sms")
+async def test_sms_sending(req: SMSTestRequest, admin_key: str = Depends(verify_admin_token)):
+    """Admin endpoint to test Twilio SMS sending functionality."""
+    if not twilio_client:
+        raise HTTPException(status_code=503, detail="TWILIO_SERVICE_UNAVAILABLE: Client not initialized.")
+
+    success = send_sms(
+        to_phone_number=req.to_phone_number,
+        message_body=req.message
+    )
+
+    if success:
+        return {"status": "SUCCESS", "message": f"SMS sent to {req.to_phone_number}"}
+    else:
+        raise HTTPException(status_code=500, detail="TWILIO_SEND_FAILED: Check worker logs for details.")
+
+@app.post("/admin/test-call")
+async def test_voice_call(req: CallTestRequest, admin_key: str = Depends(verify_admin_token)):
+    """Admin endpoint to test Twilio Voice call functionality."""
+    if not twilio_client:
+        raise HTTPException(status_code=503, detail="TWILIO_SERVICE_UNAVAILABLE: Client not initialized.")
+
+    success = make_voice_call(
+        to_phone_number=req.to_phone_number,
+        twiml_url=req.twiml_url
+    )
+
+    if success:
+        return {"status": "SUCCESS", "message": f"Voice call initiated to {req.to_phone_number}"}
+    else:
+        raise HTTPException(status_code=500, detail="TWILIO_CALL_FAILED: Check worker logs for details.")
 
 
 # --- INTERNAL OPERATION PORTALS FOR EMPLOYEES ---
