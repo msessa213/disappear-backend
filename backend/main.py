@@ -655,7 +655,7 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
         return {"url": session.url}
     except Exception as e:
         logger.error(f"STRIPE ERROR: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Payment gateway initialization failed.")
 
 
 @app.post("/payments/webhook")
@@ -896,7 +896,7 @@ async def generate_card(request: Request, card_req: CardRequest, user_id: Option
     except Exception as e:
         db.rollback()
         logger.error(f"LITHIC_API_ERROR: {str(e)}")
-        raise HTTPException(status_code=502, detail=f"LITHIC_API_ERROR: {str(e)}")
+            raise HTTPException(status_code=502, detail="Secure card generation failed at the upstream provider.")
 
 
 @app.post("/financials/profile")
@@ -933,7 +933,8 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         return {"status": "success", "profile_id": profile_id}
     except Exception as e:
         db.rollback()
-        return {"status": "error", "message": str(e)}
+            logger.error(f"PROFILE_SAVE_ERROR: {str(e)}")
+            return {"status": "error", "message": "Failed to store target profile."}
 
 
 @app.delete("/financials/kill/{card_id}")
@@ -1110,7 +1111,7 @@ async def create_support_ticket(request: Request, support_req: SupportRequest, d
     except Exception as e:
         db.rollback()
         logger.error(f"SUPPORT_TICKET_ERROR: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"SUPPORT_TICKET_ERROR: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to transmit support ticket.")
 
 
 if __name__ == "__main__":
