@@ -37,3 +37,5 @@ git+https://github.com/lithic-com/lithic-python.git
 slowapi==0.1.9
 limits
 httpx
+twilio
+pydantic-settings

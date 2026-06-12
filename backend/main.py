@@ -21,6 +21,7 @@ from datetime import datetime, timedelta
 import httpx
 from typing import Any, List, Optional
 from dotenv import load_dotenv
+import re
 
 # --- EARLY FASTAPI INITIALIZATION ---
 app = FastAPI(title="Disappear P-A-A-S Engine")
@@ -242,6 +243,7 @@ class TargetEmailRequest(BaseModel):
 
 # NEW: Support Request Schema
 class SupportRequest(BaseModel):
+    category: str
     subject: str
     message: str
 
@@ -1098,15 +1100,52 @@ async def get_faq_data():
     }
 
 
+def contains_pii(text: str) -> bool:
+    """Scans text for common PII patterns to enforce data minimization."""
+    # 16-digit numbers (potential Credit Card PANs)
+    if re.search(r'\b(?:\d[ -]*?){13,16}\b', text):
+        return True
+    # Email addresses
+    if re.search(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', text):
+        return True
+    # Social Security Numbers
+    if re.search(r'\b\d{3}-\d{2}-\d{4}\b', text):
+        return True
+    return False
+
+@app.post("/api/support")
 @app.post("/support/ticket")
 @limiter.limit("3/minute")
 async def create_support_ticket(request: Request, support_req: SupportRequest, db: Session = Depends(get_db)):
     """Logs support requests for PaaS serviceability"""
     try:
-        log_entry = f"SUB: {support_req.subject} | MSG: {support_req.message}"
+        # Strict PII firewall rejection
+        if contains_pii(support_req.subject) or contains_pii(support_req.message):
+            raise HTTPException(status_code=400, detail="PII_DETECTED: Please remove email addresses, credit card numbers, or SSNs from your message. This channel is for technical inquiries only.")
+            
+        log_entry = f"CAT: {support_req.category} | SUB: {support_req.subject} | MSG: {support_req.message}"
         log = DBPurgeLog(action_type="SUPPORT_REQUEST", node_id=log_entry)
         db.add(log)
         db.commit()
+        
+        # --- NEW: SECURE EMAIL DISPATCH ---
+        resend_key = os.getenv("RESEND_API_KEY")
+        if resend_key:
+            try:
+                async with httpx.AsyncClient() as client:
+                    await client.post(
+                        "https://api.resend.com/emails",
+                        headers={"Authorization": f"Bearer {resend_key}"},
+                        json={
+                            "from": "Disappear System <onboarding@resend.dev>",
+                            "to": "customer.service@disappearco.com",
+                            "subject": f"DISAPPEAR TICKET [{support_req.category}]: {support_req.subject}",
+                            "text": f"SECURE SUPPORT TICKET LOGGED\n\nCATEGORY: {support_req.category}\nSUBJECT: {support_req.subject}\n\nPAYLOAD:\n{support_req.message}\n\n---\nDisappear PaaS Automated Dispatch"
+                        }
+                    )
+            except Exception as email_err:
+                logger.error(f"EMAIL_DISPATCH_FAILED: {str(email_err)}")
+                
         return {"status": "TRANSMITTED", "id": random.randint(1000, 9999)}
     except Exception as e:
         db.rollback()
