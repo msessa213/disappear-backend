@@ -76,9 +76,9 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
               Your identity is a target. In 2026, data brokers weaponize your PII for profit. 
               <strong> Disappear</strong> is the tactical counter-measure built to scorch your digital trail and replace exposure with synthetic security.
             </p>
-            <div className="hero-cta-group" style={{ marginTop: 'auto' }}>
+            <div className="hero-cta-group" style={{ marginTop: '30px' }}>
               <button className="main-button" onClick={onEnterVault}>INITIATE IDENTITY SCRUB</button>
-              <p className="cta-subtext">Proprietary PII Scrubbing Engine // Global Data Broker Coverage</p>
+              <p className="cta-subtext" style={{ marginTop: '15px' }}>Proprietary PII Scrubbing Engine // Global Data Broker Coverage</p>
             </div>
           </div>
         </div>
