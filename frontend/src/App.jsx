@@ -884,25 +884,6 @@ const handleEmergencyBurn = async () => {
             </div>
           )}
 
-          {/* --- SUPPORT MODAL --- */}
-          {showSupportModal && (
-            <div className="modal-overlay" style={{zIndex: 60000}} onClick={() => setShowSupportModal(false)}>
-              <div className="price-box" onClick={e => e.stopPropagation()}>
-                <h3 className="tiger-text">SUPPORT UPLINK</h3>
-                <p className="field-label">ISSUE CATEGORY</p>
-                <select className="mask-btn" style={{width: '100%', background: '#000', color: 'white', marginBottom: '15px'}} value={supportData.subject} onChange={(e) => setSupportData({...supportData, subject: e.target.value})}>
-                  <option value="PAYMENT_ERR">PAYMENT_ISSUE</option>
-                  <option value="NODE_ERR">NODE_FAILURE</option>
-                  <option value="PURGE_ERR">PURGE_TIMEOUT</option>
-                  <option value="OTHER">OTHER_INQUIRY</option>
-                </select>
-                <textarea className="mask-btn" style={{width: '100%', height: '100px', color: 'white', textAlign: 'left', paddingTop: '10px'}} placeholder="Describe the anomaly..." value={supportData.message} onChange={(e) => setSupportData({...supportData, message: e.target.value})} />
-                <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={handleSendTicket}>TRANSMIT_TICKET</button>
-                <button className="reset-btn" style={{width: '100%'}} onClick={() => setShowSupportModal(false)}>ABORT</button>
-              </div>
-            </div>
-          )}
-
           {/* --- ALIAS MINTING MODALS --- */}
           {(showEmailModal || showPhoneModal) && (
             <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => {setShowEmailModal(false); setShowPhoneModal(false)}}>
@@ -1359,6 +1340,25 @@ const handleEmergencyBurn = async () => {
         </div>
       )}
 
+      {/* --- GLOBAL SUPPORT MODAL --- */}
+      {showSupportModal && (
+        <div className="modal-overlay" style={{zIndex: 60000}} onClick={() => setShowSupportModal(false)}>
+          <div className="price-box" onClick={e => e.stopPropagation()}>
+            <h3 className="tiger-text">SUPPORT UPLINK</h3>
+            <p className="field-label">ISSUE CATEGORY</p>
+            <select className="mask-btn" style={{width: '100%', background: '#000', color: 'white', marginBottom: '15px'}} value={supportData.subject} onChange={(e) => setSupportData({...supportData, subject: e.target.value})}>
+              <option value="PAYMENT_ERR">PAYMENT_ISSUE</option>
+              <option value="NODE_ERR">NODE_FAILURE</option>
+              <option value="PURGE_ERR">PURGE_TIMEOUT</option>
+              <option value="OTHER">OTHER_INQUIRY</option>
+            </select>
+            <textarea className="mask-btn" style={{width: '100%', height: '100px', color: 'white', textAlign: 'left', paddingTop: '10px'}} placeholder="Describe the anomaly..." value={supportData.message} onChange={(e) => setSupportData({...supportData, message: e.target.value})} />
+            <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={handleSendTicket}>TRANSMIT_TICKET</button>
+            <button className="reset-btn" style={{width: '100%'}} onClick={() => setShowSupportModal(false)}>ABORT</button>
+          </div>
+        </div>
+      )}
+
       <footer className="home-footer" style={{
           display: 'flex',
           justifyContent: 'center',
@@ -1376,6 +1376,8 @@ const handleEmergencyBurn = async () => {
           <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => setShowLegal('privacy')}>PRIVACY</span>
           <span className="footer-divider" style={{ opacity: 0.4 }}>|</span>
           <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => setShowLegal('terms')}>TERMS</span>
+          <span className="footer-divider" style={{ opacity: 0.4 }}>|</span>
+          <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => setShowSupportModal(true)}>SUPPORT</span>
           <span className="admin-trigger" style={{ cursor: 'pointer', opacity: 0 }} onClick={() => setShowAdmin(true)}>.</span>
       </footer>
 
