@@ -71,23 +71,37 @@ class MarqetaClient:
         return (MARQETA_USERNAME, MARQETA_PASSWORD)
 
     @classmethod
-    async def create_user(cls, user_token: str):
-        """Ensure the user exists in Marqeta."""
+    async def get_or_create_user(cls, user_token: str):
+        """Helper to ensure user exists before minting."""
         async with httpx.AsyncClient(auth=cls.get_auth()) as client:
+            # 1. Check if user exists
+            res = await client.get(f"{MARQETA_BASE_URL}/users/{user_token}")
+            if res.status_code == 200:
+                return res.json()
+            
+            # 2. If 404, create user
             res = await client.post(f"{MARQETA_BASE_URL}/users", json={"token": user_token})
-            if res.status_code not in (201, 200, 409):
-                logger.error(f"MARQETA_USER_ERROR: {res.text}")
-            return res.json() if res.status_code in (201, 200) else {}
+            res.raise_for_status()
+            return res.json()
 
     @classmethod
     async def create_card(cls, user_token: str):
         """Issue a virtual card linked to the user."""
+        # Ensure user exists first!
+        await cls.get_or_create_user(user_token)
+        
         card_product_token = os.getenv("MARQETA_CARD_PRODUCT_TOKEN", "default_virtual_card")
         async with httpx.AsyncClient(auth=cls.get_auth()) as client:
-            res = await client.post(f"{MARQETA_BASE_URL}/cards?show_pan=true&show_cvv_number=true", json={
-                "user_token": user_token,
-                "card_product_token": card_product_token
-            })
+            res = await client.post(
+                f"{MARQETA_BASE_URL}/cards",
+                params={"show_pan": "true", "show_cvv_number": "true"},
+                json={
+                    "user_token": user_token,
+                    "card_product_token": card_product_token
+                }
+            )
+            if res.status_code >= 400:
+                logger.error(f"MARQETA_CARD_ERROR: {res.text}")
             res.raise_for_status()
             return res.json()
 
@@ -908,9 +922,6 @@ async def generate_card(request: Request, card_req: CardRequest, user_id: Option
         raise HTTPException(status_code=403, detail="IDENTITY_LIMIT_REACHED")
 
     try:
-        # Ensure user exists in Marqeta
-        await MarqetaClient.create_user(target_user_id)
-        
         # Create the Virtual Card
         card_response = await MarqetaClient.create_card(target_user_id)
 
@@ -935,6 +946,18 @@ async def generate_card(request: Request, card_req: CardRequest, user_id: Option
         db.commit()
         db.refresh(new_card)
         return new_card
+        
+    except httpx.HTTPError as http_err:
+        db.rollback()
+        error_msg = str(http_err)
+        if hasattr(http_err, "response") and http_err.response is not None:
+            try:
+                error_data = http_err.response.json()
+                error_msg = error_data.get("error_message", http_err.response.text)
+            except Exception:
+                error_msg = http_err.response.text
+        logger.error(f"MARQETA_HTTP_ERROR: {error_msg}")
+        raise HTTPException(status_code=502, detail=f"Marqeta API Error: {error_msg}")
     except Exception as e:
         db.rollback()
         logger.error(f"MARQETA_API_ERROR: {str(e)}")
