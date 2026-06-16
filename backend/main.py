@@ -1099,7 +1099,7 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         logger.error(f"PROFILE_SAVE_ERROR: {str(e)}")
-        return {"status": "error", "message": "Failed to store target profile."}
+        raise HTTPException(status_code=500, detail="Failed to store target profile.")
 
 
 @app.delete("/financials/kill/{card_id}")

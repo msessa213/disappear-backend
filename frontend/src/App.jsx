@@ -258,6 +258,14 @@ function App() {
     try {
       // 1. Sync Base Dashboard Data
       const activeUserId = localStorage.getItem("disappear_user_id") || "";
+      
+      // FIX: Clean up corrupt state from previous errors
+      if (activeUserId === "undefined") {
+          localStorage.removeItem("disappear_user_id");
+          localStorage.removeItem("disappear_session");
+          window.location.reload();
+          return;
+      }
       const res = await secureRequest(`${API_BASE_URL}/dashboard/sync?user_id=${activeUserId}&t=${Date.now()}`);
       const data = await res.json();
 
@@ -739,6 +747,13 @@ const handleEmergencyBurn = async () => {
         let activeUserId = localStorage.getItem("disappear_user_id");
         if (profileRes.ok) {
             const profileData = await profileRes.json();
+            
+            // PREVENT SAVING 'undefined' if error was returned
+            if (profileData.status === "error" || !profileData.profile_id) {
+                triggerToast("PROFILE REGISTRATION FAILED");
+                setIsMinting(false);
+                return;
+            }
             activeUserId = profileData.profile_id;
             localStorage.setItem("disappear_user_id", activeUserId);
             

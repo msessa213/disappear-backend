@@ -69,6 +69,8 @@ class DBProfile(Base):
     bonus_credits = Column(Integer, default=0) 
     phone_line_bonus = Column(Integer, default=0)
     extra_email_slots = Column(Integer, default=0)
+    stripe_customer_id = Column(String, nullable=True)
+    marqeta_user_token = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class DBTargetEmail(Base):
