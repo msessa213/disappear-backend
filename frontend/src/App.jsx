@@ -94,6 +94,7 @@ function App() {
   // --- SUPPORT & FAQ STATES ---
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [showFaqModal, setShowFaqModal] = useState(false); 
+  const [showManualModal, setShowManualModal] = useState(false);
   const [activeFaqNode, setActiveFaqNode] = useState(null);
   const [supportData, setSupportData] = useState({ subject: "TECHNICAL_ERR", message: "" });
 
@@ -938,6 +939,80 @@ const handleEmergencyBurn = async () => {
             </div>
           )}
 
+          {/* --- OPERATION MANUAL MODAL --- */}
+          {showManualModal && (
+            <div className="modal-overlay" style={{zIndex: 70000}} onClick={() => setShowManualModal(false)}>
+              <div className="price-box" style={{maxWidth: '650px', textAlign: 'left', overflowY: 'auto', maxHeight: '85vh'}} onClick={e => e.stopPropagation()}>
+                <h3 className="tiger-text">OPERATION MANUAL v2.0</h3>
+                <p className="field-label" style={{marginBottom: '20px'}}>STEP-BY-STEP NODE INSTRUCTIONS</p>
+
+                <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                  <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>💳 GLOBAL WALLET NODE</p>
+                  <ol style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1', paddingLeft: '20px', margin: 0 }}>
+                    <li style={{ marginBottom: '5px' }}>Select "ACTIVATE GLOBAL NODE" to generate your primary digits.</li>
+                    <li style={{ marginBottom: '5px' }}>Add the 16-digit card number, EXP, and CVV to your smartphone wallet (Apple/Google Pay).</li>
+                    <li style={{ marginBottom: '5px' }}>Use this node for high-trust, in-person, or recurring trusted payments.</li>
+                    <li>Click "RESET NODE" to instantly burn the old digits and generate a new set if you suspect a breach.</li>
+                  </ol>
+                </div>
+
+                <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                  <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>💳 CREDIT CARD PROTECTION</p>
+                  <ol style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1', paddingLeft: '20px', margin: 0 }}>
+                    <li style={{ marginBottom: '5px' }}>Click "GENERATE CARD PROTECTION".</li>
+                    <li style={{ marginBottom: '5px' }}>Enter a label identifying the merchant (e.g., "Netflix" or "Amazon").</li>
+                    <li style={{ marginBottom: '5px' }}>Select which of your linked funding sources (Stripe) will cover this specific virtual card.</li>
+                    <li style={{ marginBottom: '5px' }}>Use the generated digits exclusively at that merchant.</li>
+                    <li>Click "TERMINATE" to instantly destroy the card and block future charges when no longer needed.</li>
+                  </ol>
+                </div>
+
+                <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                  <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>✉️ EMAIL RELAY NODES</p>
+                  <ol style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1', paddingLeft: '20px', margin: 0 }}>
+                    <li style={{ marginBottom: '5px' }}>Click "GENERATE EMAIL ALIAS".</li>
+                    <li style={{ marginBottom: '5px' }}>Assign a recognizable label to the alias.</li>
+                    <li style={{ marginBottom: '5px' }}>Copy the generated <code style={{background: '#111', padding: '2px 4px', borderRadius: '3px'}}>@anonaddy.me</code> address and use it for web registrations.</li>
+                    <li style={{ marginBottom: '5px' }}>Incoming mail will be stripped of hidden PII trackers and forwarded to your primary inbox.</li>
+                    <li>Click "TERMINATE" to permanently block all mail sent to that specific alias.</li>
+                  </ol>
+                </div>
+
+                <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                  <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>📱 PHONE ALIAS NODES</p>
+                  <ol style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1', paddingLeft: '20px', margin: 0 }}>
+                    <li style={{ marginBottom: '5px' }}>Click "GENERATE PHONE ALIAS" to provision a secure +1 phone number.</li>
+                    <li style={{ marginBottom: '5px' }}>Provide this number when signing up for services that require SMS 2FA.</li>
+                    <li style={{ marginBottom: '5px' }}>Any incoming SMS messages will automatically appear in your "LIVE SECURITY AUDIT" feed.</li>
+                    <li>Click "TERMINATE" to release the number back to the carrier and prevent future contact.</li>
+                  </ol>
+                </div>
+                
+                <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                  <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>🏦 EXTERNAL FUNDING SOURCES</p>
+                  <ol style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1', paddingLeft: '20px', margin: 0 }}>
+                    <li style={{ marginBottom: '5px' }}>Click "LINK REAL CARD (STRIPE)".</li>
+                    <li style={{ marginBottom: '5px' }}>Securely enter your real credit/debit card into the encrypted Stripe vault.</li>
+                    <li style={{ marginBottom: '5px' }}>Return to the dashboard to see your linked funding sources.</li>
+                    <li>Assign these funding sources when generating new virtual cards for secure pass-through charging.</li>
+                  </ol>
+                </div>
+
+                <div style={{ marginBottom: '20px', borderLeft: '2px solid #ef4444', paddingLeft: '15px' }}>
+                  <p className="field-label" style={{ color: '#ef4444', marginBottom: '5px' }}>🔥 EMERGENCY BURN PROTOCOL</p>
+                  <ol style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1', paddingLeft: '20px', margin: 0 }}>
+                    <li style={{ marginBottom: '5px' }}>Click "INITIATE EMERGENCY BURN" at the bottom of the dashboard.</li>
+                    <li style={{ marginBottom: '5px' }}>The system will export and vault your entire removal history as a PDF.</li>
+                    <li style={{ marginBottom: '5px' }}>All active virtual cards and aliases will be instantly terminated.</li>
+                    <li>You will be securely logged out of the system.</li>
+                  </ol>
+                </div>
+
+                <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={() => setShowManualModal(false)}>CLOSE MANUAL</button>
+              </div>
+            </div>
+          )}
+
           {/* --- ALIAS MINTING MODALS --- */}
           {(showEmailModal || showPhoneModal) && (
             <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => {setShowEmailModal(false); setShowPhoneModal(false)}}>
@@ -1165,7 +1240,7 @@ const handleEmergencyBurn = async () => {
                     <button className="reset-btn" style={{ fontSize: '0.95rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setShowFaqModal(true)}>ACCESS FAQ</button>
                   </div>
                   <div style={{ marginTop: '20px', fontSize: '0.9rem', color: '#cbd5e1', textAlign: 'center' }}>
-                    <p className="faq-link" onClick={() => setShowFaqModal(true)} style={{cursor: 'pointer', textDecoration: 'underline'}}> Operation Manual </p>
+                    <p className="faq-link" onClick={() => setShowManualModal(true)} style={{cursor: 'pointer', textDecoration: 'underline'}}> Operation Manual </p>
                   </div>
                 </div>
 
