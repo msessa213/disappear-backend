@@ -2,6 +2,7 @@ import logging
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioRestException
 from pydantic_settings import BaseSettings
+from typing import Optional
 
 # Use the existing logger from the main application
 logger = logging.getLogger("disappear")
@@ -11,10 +12,10 @@ class TwilioSettings(BaseSettings):
     Manages Twilio configuration using environment variables.
     pydantic-settings will automatically read from .env files or the environment.
     """
-    TWILIO_ACCOUNT_SID: str
-    TWILIO_API_KEY_SID: str
-    TWILIO_API_KEY_SECRET: str
-    TWILIO_PHONE_NUMBER: str # The Twilio phone number to send messages from
+    TWILIO_ACCOUNT_SID: Optional[str] = None
+    TWILIO_API_KEY_SID: Optional[str] = None
+    TWILIO_API_KEY_SECRET: Optional[str] = None
+    TWILIO_PHONE_NUMBER: Optional[str] = None
 
     class Config:
         # If you use a .env file, pydantic-settings will load it.
@@ -23,9 +24,13 @@ class TwilioSettings(BaseSettings):
 
 try:
     settings = TwilioSettings()
-    # Initialize client using API Key and Secret for better security
-    twilio_client = Client(settings.TWILIO_API_KEY_SID, settings.TWILIO_API_KEY_SECRET, settings.TWILIO_ACCOUNT_SID)
-    logger.info("Twilio client initialized successfully.")
+    if settings.TWILIO_API_KEY_SID and settings.TWILIO_API_KEY_SECRET and settings.TWILIO_ACCOUNT_SID:
+        # Initialize client using API Key and Secret for better security
+        twilio_client = Client(settings.TWILIO_API_KEY_SID, settings.TWILIO_API_KEY_SECRET, settings.TWILIO_ACCOUNT_SID)
+        logger.info("Twilio client initialized successfully.")
+    else:
+        logger.warning("TWILIO_WARNING: Missing environment variables. SMS/Voice temporarily disabled.")
+        twilio_client = None
 except Exception as e:
     logger.error(f"CRITICAL_TWILIO_ERROR: Failed to initialize Twilio client. Check environment variables (TWILIO_*). Error: {e}")
     twilio_client = None
