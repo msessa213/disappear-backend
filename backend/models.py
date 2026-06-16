@@ -45,6 +45,7 @@ class DBCard(Base):
     cvv = Column(String)       
     real_card_token = Column(String, unique=True, nullable=True)
     last_four = Column(String(4), nullable=True)
+    funding_source_id = Column(String, nullable=True) # Holds the Stripe PaymentMethod ID
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class DBAlias(Base):

@@ -149,6 +149,7 @@ try:
         conn.execute(text("ALTER TABLE shield_aliases_v3 ADD COLUMN IF NOT EXISTS user_id VARCHAR"))
         conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR"))
         conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS marqeta_user_token VARCHAR"))
+        conn.execute(text("ALTER TABLE shield_assets_v3 ADD COLUMN IF NOT EXISTS funding_source_id VARCHAR"))
 except Exception as e:
     logger.error(f"DB ALTER WARNING: {e}")
 
@@ -251,8 +252,7 @@ MANUAL_BROKERS = ["INTELIUS", "PEOPLELOOKER"]
 
 class CardRequest(BaseModel):
     label: str
-    real_card_token: Optional[str] = None
-    last_four: Optional[str] = None
+    funding_source_id: Optional[str] = None
 
 
 class AliasRequest(BaseModel):
@@ -282,6 +282,9 @@ class CallTestRequest(BaseModel):
 # NEW: Expansion Request Schema
 class ExpansionRequest(BaseModel):
     expansion_type: str # "data", "phone", or "emergency_wipe"
+
+class SetupSessionRequest(BaseModel):
+    return_url: Optional[str] = "https://disappearco.com"
 
 
 class AdminVerificationRequest(BaseModel):
@@ -642,6 +645,7 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
         etype = str(raw_type).lower()
         
         user_id = body.get("user_id", "anonymous_agent")
+        return_url = body.get("return_url", "https://disappearco.com")
 
         # RULE: Explicitly check for cooldown/wipe first for 1.99
         if "cooldown" in etype or "wipe" in etype or "emergency" in etype:
@@ -679,8 +683,8 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
                 "purchase_type": purchase_key,
                 "user_id": user_id
             },
-            success_url="https://disappearco.com?payment=success",
-            cancel_url="https://disappearco.com?payment=cancel",
+            success_url=f"{return_url}?payment=success",
+            cancel_url=f"{return_url}?payment=cancel",
         )
         return {"url": session.url}
     except Exception as e:
@@ -748,6 +752,59 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     return {"status": "success"}
 
 
+@app.post("/payments/create-setup-session")
+@limiter.limit("5/minute")
+async def create_setup_session(req: SetupSessionRequest, request: Request, user_id: str = Query(...), db: Session = Depends(get_db)):
+    """Creates a secure Stripe Checkout session exclusively for securely linking a credit card"""
+    profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found.")
+        
+    # If no Stripe Customer ID, create one
+    if not profile.stripe_customer_id:
+        try:
+            customer = stripe.Customer.create(
+                email=profile.email,
+                name=f"{profile.first_name} {profile.last_name}".strip()
+            )
+            profile.stripe_customer_id = customer.id
+            db.add(profile)
+            db.commit()
+        except Exception as e:
+            logger.error(f"STRIPE_CUSTOMER_CREATE_ERROR: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to initialize Stripe customer.")
+
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            mode="setup",
+            customer=profile.stripe_customer_id,
+            success_url=f"{req.return_url}?setup=success",
+            cancel_url=f"{req.return_url}?setup=cancel",
+        )
+        return {"url": session.url}
+    except Exception as e:
+        logger.error(f"STRIPE_SETUP_SESSION_ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create setup session.")
+
+@app.get("/payments/methods")
+async def get_payment_methods(user_id: str = Query(...), db: Session = Depends(get_db)):
+    profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
+    if not profile or not profile.stripe_customer_id:
+        return {"methods": []}
+    
+    try:
+        methods = stripe.PaymentMethod.list(
+            customer=profile.stripe_customer_id,
+            type="card",
+        )
+        result = [{"id": m.id, "brand": m.card.brand, "last4": m.card.last4, "exp_month": m.card.exp_month, "exp_year": m.card.exp_year} for m in methods.data]
+        return {"methods": result}
+    except Exception as e:
+        logger.error(f"STRIPE_METHODS_ERROR: {e}")
+        return {"methods": []}
+
+
 @app.post("/marqeta/webhook")
 async def marqeta_webhook(request: Request, db: Session = Depends(get_db)):
     """Independent Webhook for Marqeta authorizations and transactions."""
@@ -771,7 +828,36 @@ async def marqeta_webhook(request: Request, db: Session = Depends(get_db)):
         db.add(DBMarqetaEvent(token=token, type=event_type))
         db.commit()
         
-        # Process Marqeta-specific authorization / clearing events here
+        # --- JUST-IN-TIME (JIT) FUNDING LOGIC (OPTION B) ---
+        # When a user swipes their VCC, Marqeta asks us if they have funds.
+        if event_type == "authorization" or event_type == "authorization.clearing":
+            card_token = payload.get("card", {}).get("token")
+            amount = payload.get("transaction", {}).get("amount", 0)
+            
+            # Find which real Stripe card this VCC is mapped to
+            linked_card = db.query(DBCard).filter(DBCard.real_card_token == card_token).first()
+            
+            if linked_card and linked_card.funding_source_id:
+                user_profile = db.query(DBProfile).filter(DBProfile.id == linked_card.user_id).first()
+                if user_profile and user_profile.stripe_customer_id:
+                    try:
+                        # Attempt to charge the user's real card via Stripe for the exact amount
+                        stripe.PaymentIntent.create(
+                            amount=int(float(amount) * 100), # Convert to cents
+                            currency='usd',
+                            customer=user_profile.stripe_customer_id,
+                            payment_method=linked_card.funding_source_id,
+                            off_session=True,
+                            confirm=True
+                        )
+                        logger.info(f"JIT_APPROVED: Successfully charged Stripe funding source {linked_card.funding_source_id} for ${amount}")
+                    except stripe.error.CardError as e:
+                        logger.error(f"JIT_DECLINED: Stripe charge failed - {e}")
+                    except Exception as e:
+                        logger.error(f"JIT_DECLINED: System error - {e}")
+            else:
+                logger.error(f"JIT_DECLINED: No external funding source mapped to VCC token {card_token}")
+
         return {"status": "acknowledged"}
     except Exception as e:
         logger.error(f"MARQETA_WEBHOOK_ERROR: {str(e)}")
@@ -938,7 +1024,8 @@ async def generate_card(request: Request, card_req: CardRequest, user_id: Option
             expiry=expiry,
             cvv=str(card_response.get("cvv_number", "000")),
             real_card_token=card_response.get("token", None),
-            last_four=card_response.get("last_four", "0000")
+            last_four=card_response.get("last_four", "0000"),
+            funding_source_id=card_req.funding_source_id
         )
         db.add(new_card)
         log = DBPurgeLog(action_type="CARD_PROTECTION_GENERATED", node_id=card_id)
@@ -972,6 +1059,18 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
     try:
         data = await request.json()
         profile_id = f"user_{random.randint(1000, 9999)}"
+        
+        # Initialize Stripe Customer
+        stripe_customer_id = None
+        try:
+            customer = stripe.Customer.create(
+                email=data.get("email"),
+                name=f'{data.get("firstName", "")} {data.get("lastName", "")}'.strip()
+            )
+            stripe_customer_id = customer.id
+        except Exception as e:
+            logger.error(f"STRIPE_CUSTOMER_CREATE_ERROR: {str(e)}")
+
         new_profile = DBProfile(
             id=profile_id,
             first_name=data.get("firstName", "Unknown"),
@@ -979,7 +1078,8 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
             last_name=data.get("lastName", ""),
             email=data.get("email"),
             address=data.get("address"),
-            dob=data.get("dob")
+            dob=data.get("dob"),
+            stripe_customer_id=stripe_customer_id
         )
         db.add(new_profile)
         

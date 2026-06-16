@@ -87,9 +87,9 @@ function App() {
 
   const [showMintModal, setShowMintModal] = useState(false);
   const [newCardLabel, setNewCardLabel] = useState("");
-  const [newRealCardToken, setNewRealCardToken] = useState("");
-  const [newLastFour, setNewLastFour] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [selectedFundingSource, setSelectedFundingSource] = useState("");
 
   // --- SUPPORT & FAQ STATES ---
   const [showSupportModal, setShowSupportModal] = useState(false);
@@ -213,6 +213,12 @@ function App() {
         syncDefenseData();
     }
 
+    if (query.get("setup") === "success") {
+        triggerToast("FUNDING SOURCE LINKED SUCCESSFULLY");
+        window.history.replaceState({}, document.title, "/");
+        syncDefenseData();
+    }
+
     if (session === "active") {
         setShowLanding(false); // Bypass website for active agents
         setShowShield(true);
@@ -291,6 +297,20 @@ function App() {
       
       // 4. Sync Target Emails
       await fetchTargetEmails();
+
+      // 5. Sync Linked Funding Sources
+      try {
+        const methodsRes = await secureRequest(`${API_BASE_URL}/payments/methods?user_id=${activeUserId}`);
+        if (methodsRes.ok) {
+          const methodsData = await methodsRes.json();
+          setPaymentMethods(methodsData.methods || []);
+          if (methodsData.methods && methodsData.methods.length > 0 && !selectedFundingSource) {
+            setSelectedFundingSource(methodsData.methods[0].id);
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to sync payment methods");
+      }
     } catch (err) { 
         console.warn("Network interrupted. Attempting silent reconnect on next cycle...");
     }
@@ -330,7 +350,8 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
             expansion_type: mappedType,
-            user_id: activeUserId 
+            user_id: activeUserId,
+            return_url: window.location.origin
         })
       });
       const data = await res.json();
@@ -476,6 +497,27 @@ const handleEmergencyBurn = async () => {
     }
   };
 
+  const handleLinkFundingSource = async () => {
+    if (isProcessingPayment) return;
+    setIsProcessingPayment(true);
+    triggerToast("UPLINKING TO STRIPE SECURE VAULT...");
+    try {
+      const activeUserId = localStorage.getItem("disappear_user_id") || "";
+      const res = await secureRequest(`${API_BASE_URL}/payments/create-setup-session?user_id=${activeUserId}`, { 
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ return_url: window.location.origin })
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+      else throw new Error("Handshake failed");
+    } catch (err) {
+      triggerToast("STRIPE VAULT OFFLINE");
+    } finally {
+      setTimeout(() => setIsProcessingPayment(false), 3000);
+    }
+  };
+
   const handleMintCard = async () => {
     if (!newCardLabel) { triggerToast("ENTER MERCHANT NAME"); return; }
     setPurgeStatus("GENERATING PROTECTED DIGITS...");
@@ -487,8 +529,7 @@ const handleEmergencyBurn = async () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           label: newCardLabel,
-          real_card_token: newRealCardToken || null,
-          last_four: newLastFour || null
+          funding_source_id: selectedFundingSource
         })
       });
       
@@ -502,8 +543,6 @@ const handleEmergencyBurn = async () => {
       if (response.ok) {
         syncDefenseData();
         setNewCardLabel("");
-        setNewRealCardToken("");
-        setNewLastFour("");
         setShowMintModal(false);
         triggerToast("NODE SECURED");
       } else {
@@ -905,7 +944,20 @@ const handleEmergencyBurn = async () => {
                 <p className="field-label">ASSOCIATE MERCHANT / BILL</p>
                 <input className="mask-btn" style={{width: '100%', color: 'white', textAlign: 'center', marginBottom: '10px'}} placeholder="e.g. Amazon, Electric Bill" value={newCardLabel} onChange={(e) => setNewCardLabel(e.target.value)} />
                 
-                <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={handleMintCard}>AUTHORIZE NODE</button>
+                <p className="field-label" style={{marginTop: '15px'}}>SELECT FUNDING SOURCE</p>
+                {paymentMethods.length > 0 ? (
+                    <select className="mask-btn" style={{width: '100%', background: '#000', color: 'white', marginBottom: '10px'}} value={selectedFundingSource} onChange={(e) => setSelectedFundingSource(e.target.value)}>
+                        {paymentMethods.map(m => (
+                            <option key={m.id} value={m.id}>{m.brand.toUpperCase()} ending in {m.last4}</option>
+                        ))}
+                    </select>
+                ) : (
+                    <div style={{ color: '#ff4444', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center' }}>
+                        NO FUNDING SOURCES AVAILABLE. LINK A CARD FIRST.
+                    </div>
+                )}
+
+                <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={handleMintCard} disabled={paymentMethods.length === 0}>AUTHORIZE NODE</button>
                 <button className="reset-btn" style={{width: '100%'}} onClick={() => setShowMintModal(false)}>CANCEL</button>
               </div>
             </div>
@@ -1037,6 +1089,23 @@ const handleEmergencyBurn = async () => {
                   <div style={{ fontSize: '0.95rem', color: '#cbd5e1', textAlign: 'center', marginTop: '10px' }}>
                     EXTRA EMAIL SLOTS USED: {targetEmails.used} / {targetEmails.slots}
                   </div>
+                </div>
+
+                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #111' }}>
+                  <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>EXTERNAL FUNDING SOURCES</p>
+                  {paymentMethods.length > 0 ? paymentMethods.map(m => (
+                    <div key={m.id} className="alias-row" style={{ marginBottom: '10px' }}>
+                      <div className="alias-info" style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span className="alias-label tiger-text">{m.brand.toUpperCase()}</span>
+                        <span className="alias-content">**** **** **** {m.last4} (EXP {m.exp_month}/{m.exp_year})</span>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="terminal-line" style={{textAlign: 'center', opacity: 0.5, marginBottom: '15px'}}>NO FUNDING SOURCES LINKED</div>
+                  )}
+                  <button className="reset-btn" style={{ fontSize: '0.95rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', borderStyle: 'dashed' }} onClick={handleLinkFundingSource} disabled={isProcessingPayment}>
+                    {isProcessingPayment ? "UPLINKING..." : "+ LINK REAL CARD (STRIPE)"}
+                  </button>
                 </div>
 
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #444' }}>
