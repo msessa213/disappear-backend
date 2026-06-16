@@ -989,23 +989,33 @@ const handleEmergencyBurn = async () => {
                     <p className="tool-label" style={{ margin: 0, color: '#FFD700' }}>GLOBAL WALLET NODE</p>
                     <span style={{ fontSize: '0.85rem', color: '#94A3B8' }}>WALLETS_ENABLED: [TRUE]</span>
                   </div>
-                  <div className="managed-card-row enhanced-card" style={{ background: 'linear-gradient(135deg, #050505 0%, #111 100%)' }}>
-                    <div className="card-row-info">
-                      <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
-                         <span className="card-nickname" style={{color: '#FFD700', fontWeight: 'bold'}}>PRIMARY_PAY_NODE</span>
-                         <button className="kill-text-bold" onClick={() => { if(window.confirm("RESET NODE? Old card will be burned and a new one issued.")) handleKillCard('global-1'); }}>RESET NODE</button>
+                  {(() => {
+                    const globalCard = cards.find(c => c.label.toUpperCase() === 'PRIMARY_PAY_NODE' || c.label.toUpperCase().includes('GLOBAL'));
+                    return globalCard ? (
+                      <div className="managed-card-row enhanced-card" style={{ background: 'linear-gradient(135deg, #050505 0%, #111 100%)' }}>
+                        <div className="card-row-info">
+                          <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
+                             <span className="card-nickname" style={{color: '#FFD700', fontWeight: 'bold'}}>{globalCard.label.toUpperCase()}</span>
+                             <button className="kill-text-bold" onClick={() => { if(window.confirm("RESET NODE? Old card will be burned.")) handleKillCard(globalCard.id); }}>RESET NODE</button>
+                          </div>
+                          <code className="card-digits" style={{ fontSize: '1.2rem', letterSpacing: '3px', cursor: 'pointer' }} onClick={() => {navigator.clipboard.writeText(globalCard.number.replace(/\s/g, '')); triggerToast("COPIED")}}> {globalCard.number} </code>
+                          <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #222', paddingTop: '10px', marginTop: '10px'}}>
+                             <div><span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>EXP</span><strong>{globalCard.expiry || '12/29'}</strong></div>
+                             <div><span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>CVV</span><strong>***</strong></div>
+                             <div style={{ marginLeft: 'auto' }}>
+                                <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>TYPE</span>
+                                <span style={{ fontSize: '0.9rem' }}>VIRTUAL_DEBIT</span>
+                             </div>
+                          </div>
+                        </div>
                       </div>
-                      <code className="card-digits" style={{ fontSize: '1.2rem', letterSpacing: '3px' }}> 4242 8888 9999 0001 </code>
-                      <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #222', paddingTop: '10px', marginTop: '10px'}}>
-                         <div><span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>EXP</span><strong>12/29</strong></div>
-                         <div><span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>CVV</span><strong>***</strong></div>
-                         <div style={{ marginLeft: 'auto' }}>
-                            <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>TYPE</span>
-                            <span style={{ fontSize: '0.9rem' }}>VISA_DEBIT</span>
-                         </div>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '20px', border: '1px dashed #334155', borderRadius: '4px' }}>
+                        <span style={{ color: '#94A3B8', fontSize: '0.85rem', display: 'block', marginBottom: '15px' }}>NO ACTIVE GLOBAL WALLET LINKED.</span>
+                        <button className="reset-btn" style={{ fontSize: '0.85rem', padding: '8px 15px' }} onClick={() => { setNewCardLabel('PRIMARY_PAY_NODE'); setShowMintModal(true); }}>ACTIVATE GLOBAL NODE</button>
                       </div>
-                    </div>
-                  </div>
+                    );
+                  })()}
                 </div>
 
                 <div className="masking-tool" style={{ border: '1px solid #111', background: '#050505', width: '100%', maxWidth: '600px' }}>
@@ -1063,23 +1073,26 @@ const handleEmergencyBurn = async () => {
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
                   <p className="tool-label" style={{ textAlign: 'center', marginBottom: '20px' }}>CREDIT CARD PROTECTION</p>
                   <div className="card-manager-list">
-                    {cards.map((c) => (
-                      <div key={c.id} className="managed-card-row enhanced-card">
-                        <div className="card-row-info">
-                          <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
-                               <span className="card-nickname tiger-text">{c.label.toUpperCase()}</span>
-                               <button className="kill-text-bold" onClick={() => handleKillCard(c.id)}>TERMINATE</button>
-                          </div>
-                          <code className="card-digits" onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("COPIED")}}> {c.number} </code>
-                          <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #111', paddingTop: '10px', marginTop: '10px'}}>
-                               <div><span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>EXP</span><strong>{c.expiry || '08/28'}</strong></div>
-                               <div><span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>CVV</span><strong>***</strong></div>
+                    {cards.filter(c => {
+                       const globalCard = cards.find(gc => gc.label.toUpperCase() === 'PRIMARY_PAY_NODE' || gc.label.toUpperCase().includes('GLOBAL'));
+                       return !globalCard || c.id !== globalCard.id;
+                    }).map((c) => (
+                        <div key={c.id} className="managed-card-row enhanced-card">
+                          <div className="card-row-info">
+                            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
+                                 <span className="card-nickname tiger-text">{c.label.toUpperCase()}</span>
+                                 <button className="kill-text-bold" onClick={() => handleKillCard(c.id)}>TERMINATE</button>
+                            </div>
+                            <code className="card-digits" onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("COPIED")}}> {c.number} </code>
+                            <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #111', paddingTop: '10px', marginTop: '10px'}}>
+                                 <div><span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>EXP</span><strong>{c.expiry || '08/28'}</strong></div>
+                                 <div><span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>CVV</span><strong>***</strong></div>
+                            </div>
                           </div>
                         </div>
-                      </div>
                     ))}
                   </div>
-                  <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowMintModal(true)}> + GENERATE CARD PROTECTION </button>
+                  <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => { setNewCardLabel(""); setShowMintModal(true); }}> + GENERATE CARD PROTECTION </button>
                 </div>
 
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #111' }}>
