@@ -93,3 +93,10 @@ class DBPurgeLog(Base):
     action_type = Column(String)
     node_id = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
+
+class DBMarqetaEvent(Base):
+    __tablename__ = "marqeta_processed_events_v1"
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String, unique=True, index=True)
+    type = Column(String)
+    timestamp = Column(DateTime, default=datetime.utcnow)

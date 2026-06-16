@@ -14,7 +14,6 @@ import traceback
 import time
 import stripe
 import boto3
-from lithic import Lithic
 import logging
 import json
 from datetime import datetime, timedelta
@@ -44,7 +43,7 @@ async def health_status():
 # --- COMPREHENSIVE STARTUP ERROR HANDLING ---
 try:
     # --- IMPORT DATABASE FROM MODELS ---
-    from models import engine, SessionLocal, Base, DBCard, DBAlias, DBProfile, DBTargetEmail, DBScrubLog, DBPurgeLog
+    from models import engine, SessionLocal, Base, DBCard, DBAlias, DBProfile, DBTargetEmail, DBScrubLog, DBPurgeLog, DBMarqetaEvent
     from services.twilio_service import send_sms, make_voice_call, twilio_client
 
     # --- INITIALIZATION BLOCK ---
@@ -52,8 +51,10 @@ try:
     stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
     STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
-    LITHIC_API_KEY = os.getenv("LITHIC_API_KEY")
-    LITHIC_CARD_PROGRAM = os.getenv("LITHIC_CARD_PROGRAM")
+    MARQETA_BASE_URL = os.getenv("MARQETA_BASE_URL", "https://sandbox-api.marqeta.com/v3").rstrip('/')
+    MARQETA_USERNAME = os.getenv("MARQETA_USERNAME")
+    MARQETA_PASSWORD = os.getenv("MARQETA_PASSWORD")
+    MARQETA_WEBHOOK_SECRET = os.getenv("MARQETA_WEBHOOK_SECRET")
 
     # --- S3 CONFIGURATION ---
     S3_BUCKET = "disappear-purge-receipts-vault"
@@ -64,20 +65,31 @@ except Exception as startup_error:
     print("CRITICAL STARTUP ERROR DETECTED:", file=sys.stderr)
     traceback.print_exc()
 
-# Default to sandbox to avoid 401 errors with test keys, unless explicitly set to 'production'
-LITHIC_ENVIRONMENT = os.getenv("LITHIC_ENVIRONMENT", "sandbox")
-
-class LithicManager:
-    _client = None
+class MarqetaClient:
+    @staticmethod
+    def get_auth():
+        return (MARQETA_USERNAME, MARQETA_PASSWORD)
 
     @classmethod
-    def get_client(cls):
-        if cls._client is None:
-            api_key = os.getenv("LITHIC_API_KEY")
-            if not api_key:
-                raise ValueError("LITHIC_API_KEY not found in environment!")
-            cls._client = Lithic(api_key=api_key, environment=LITHIC_ENVIRONMENT)
-        return cls._client
+    async def create_user(cls, user_token: str):
+        """Ensure the user exists in Marqeta."""
+        async with httpx.AsyncClient(auth=cls.get_auth()) as client:
+            res = await client.post(f"{MARQETA_BASE_URL}/users", json={"token": user_token})
+            if res.status_code not in (201, 200, 409):
+                logger.error(f"MARQETA_USER_ERROR: {res.text}")
+            return res.json() if res.status_code in (201, 200) else {}
+
+    @classmethod
+    async def create_card(cls, user_token: str):
+        """Issue a virtual card linked to the user."""
+        card_product_token = os.getenv("MARQETA_CARD_PRODUCT_TOKEN", "default_virtual_card")
+        async with httpx.AsyncClient(auth=cls.get_auth()) as client:
+            res = await client.post(f"{MARQETA_BASE_URL}/cards?show_pan=true&show_cvv_number=true", json={
+                "user_token": user_token,
+                "card_product_token": card_product_token
+            })
+            res.raise_for_status()
+            return res.json()
 
 # --- STRUCTURED LOGGING ---
 class JSONFormatter(logging.Formatter):
@@ -99,14 +111,14 @@ handler = logging.StreamHandler()
 handler.setFormatter(JSONFormatter())
 logger.addHandler(handler)
 
-# --- DEBUGGING LITHIC KEY ---
-debug_key = os.getenv("LITHIC_API_KEY")
+# --- DEBUGGING MARQETA CREDENTIALS ---
+debug_key = os.getenv("MARQETA_USERNAME")
 if debug_key:
     # Using the logger ensures this shows up in your structured Railway logs
-    logger.info(f"DEBUG_KEY_START: {debug_key[:4]}")
-    logger.info(f"DEBUG_KEY_LENGTH: {len(debug_key)}")
+    logger.info(f"MARQETA_USER_DEBUG_START: {debug_key[:4]}")
+    logger.info(f"MARQETA_USER_DEBUG_LENGTH: {len(debug_key)}")
 else:
-    logger.error("DEBUG: LITHIC_API_KEY is missing!")
+    logger.error("DEBUG: MARQETA_USERNAME is missing!")
 
 # Auto-create tables on startup with crash protection
 try:
@@ -121,6 +133,8 @@ try:
         conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS extra_email_slots INTEGER DEFAULT 0"))
         conn.execute(text("ALTER TABLE shield_assets_v3 ADD COLUMN IF NOT EXISTS user_id VARCHAR"))
         conn.execute(text("ALTER TABLE shield_aliases_v3 ADD COLUMN IF NOT EXISTS user_id VARCHAR"))
+        conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR"))
+        conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS marqeta_user_token VARCHAR"))
 except Exception as e:
     logger.error(f"DB ALTER WARNING: {e}")
 
@@ -720,6 +734,36 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     return {"status": "success"}
 
 
+@app.post("/marqeta/webhook")
+async def marqeta_webhook(request: Request, db: Session = Depends(get_db)):
+    """Independent Webhook for Marqeta authorizations and transactions."""
+    try:
+        payload = await request.json()
+        token = payload.get("token")
+        event_type = payload.get("type")
+        
+        if not token:
+            return {"status": "ignored", "reason": "Missing token"}
+            
+        # Idempotency check: prevent webhook loops
+        existing_event = db.query(DBMarqetaEvent).filter(DBMarqetaEvent.token == token).first()
+        if existing_event:
+            logger.info(f"MARQETA_WEBHOOK_DUPLICATE: Event token {token} already processed.")
+            return {"status": "acknowledged"}
+
+        logger.info(f"MARQETA_WEBHOOK_EVENT: {event_type} for token {token}")
+        
+        # Mark event as processed
+        db.add(DBMarqetaEvent(token=token, type=event_type))
+        db.commit()
+        
+        # Process Marqeta-specific authorization / clearing events here
+        return {"status": "acknowledged"}
+    except Exception as e:
+        logger.error(f"MARQETA_WEBHOOK_ERROR: {str(e)}")
+        raise HTTPException(status_code=400, detail="Invalid Payload")
+
+
 # --- PII CONTROL ROUTES ---
 
 @app.get("/aliases/data")
@@ -864,30 +908,26 @@ async def generate_card(request: Request, card_req: CardRequest, user_id: Option
         raise HTTPException(status_code=403, detail="IDENTITY_LIMIT_REACHED")
 
     try:
-        lithic_payload = {
-            "type": "VIRTUAL",
-        }
-        # ONLY add card_program if the variable is actually set in Railway
-        if os.getenv("LITHIC_CARD_PROGRAM"):
-            lithic_payload["card_program"] = os.getenv("LITHIC_CARD_PROGRAM")
+        # Ensure user exists in Marqeta
+        await MarqetaClient.create_user(target_user_id)
+        
+        # Create the Virtual Card
+        card_response = await MarqetaClient.create_card(target_user_id)
 
-        client = LithicManager.get_client()
-        card_response = client.cards.create(**lithic_payload)
-
-        exp_month = getattr(card_response, "exp_month", None)
-        exp_year = getattr(card_response, "exp_year", None)
-        expiry = f"{exp_month:02d}/{str(exp_year)[-2:]}" if exp_month and exp_year else "08/28"
+        # Parse Expiration from Marqeta Format (e.g. "0828")
+        raw_exp = card_response.get("expiration", "0828")
+        expiry = f"{raw_exp[0:2]}/{raw_exp[2:4]}" if len(raw_exp) == 4 else "08/28"
 
         card_id = f"vcc_{int(time.time())}_{random.randint(100, 999)}"
         new_card = DBCard(
             id=card_id,
             user_id=target_user_id,
             label=card_req.label,
-            number=getattr(card_response, "pan", None) or getattr(card_response, "number", None) or "UNKNOWN",
+            number=card_response.get("pan", "UNKNOWN"),
             expiry=expiry,
-            cvv=str(getattr(card_response, "cvv", None) or "000"),
-            real_card_token=getattr(card_response, "token", None),
-            last_four=getattr(card_response, "last_four", None)
+            cvv=str(card_response.get("cvv_number", "000")),
+            real_card_token=card_response.get("token", None),
+            last_four=card_response.get("last_four", "0000")
         )
         db.add(new_card)
         log = DBPurgeLog(action_type="CARD_PROTECTION_GENERATED", node_id=card_id)
@@ -897,7 +937,7 @@ async def generate_card(request: Request, card_req: CardRequest, user_id: Option
         return new_card
     except Exception as e:
         db.rollback()
-        logger.error(f"LITHIC_API_ERROR: {str(e)}")
+        logger.error(f"MARQETA_API_ERROR: {str(e)}")
         raise HTTPException(status_code=502, detail="Secure card generation failed at the upstream provider.")
 
 
