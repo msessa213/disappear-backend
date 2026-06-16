@@ -1278,7 +1278,7 @@ const handleEmergencyBurn = async () => {
                   {/* Backup: PDF logic still exists for vaulting but UI encourages live view */}
                   <div style={{ display: 'flex', gap: '10px', marginTop: '15px', width: '100%' }}>
                     <button className="pdf-btn" style={{ flex: 1, opacity: 0.8, fontSize: '0.85rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => handleDownloadPDF(false)} disabled={isGenerating}>EXPORT_AUDIT_PDF</button>
-                    <button className="reset-btn" style={{ flex: 1, opacity: 0.8, fontSize: '0.85rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center', borderColor: 'var(--tiger-blue)', color: 'var(--tiger-blue)' }} onClick={handleExportJSON}>EXPORT_VAULT_JSON</button>
+                    <button className="reset-btn" style={{ flex: 1, opacity: 0.8, fontSize: '0.85rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center', borderColor: 'var(--tiger-blue)', color: 'var(--tiger-blue)' }} onClick={handleExportJSON}>EXPORT_SECURE_BACKUP</button>
                   </div>
                 </div>
 
