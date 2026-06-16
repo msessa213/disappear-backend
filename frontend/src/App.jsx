@@ -1137,8 +1137,11 @@ const handleEmergencyBurn = async () => {
                   <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>PHONE PROTECTION</p>
                   <div className="alias-manager-list">
                     {phones.map((p) => (
-                      <div key={p.id} className="alias-row">
-                        <div className="alias-info"><span className="alias-label">{p.label.toUpperCase()}</span><span className="alias-content" onClick={() => {navigator.clipboard.writeText(p.content); triggerToast("COPIED")}}>{p.content}</span></div>
+                      <div key={p.id} className="alias-row" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '15px' }}>
+                        <div className="alias-info" style={{ width: '100%', wordBreak: 'break-all', marginBottom: '10px' }}>
+                            <span className="alias-label tiger-text" style={{ display: 'block', marginBottom: '5px' }}>{p.label.toUpperCase()}</span>
+                            <span className="alias-content" style={{ fontSize: '1rem' }} onClick={() => {navigator.clipboard.writeText(p.content); triggerToast("COPIED")}}>{p.content}</span>
+                        </div>
                         <button className="kill-text-bold" onClick={() => handleKillAlias(p.id)}>TERMINATE</button>
                       </div>
                     ))}
