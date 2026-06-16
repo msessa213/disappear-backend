@@ -985,7 +985,9 @@ async def kill_alias(alias_id: str, db: Session = Depends(get_db)):
 @app.get("/financials/data")
 async def financials(x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Retrieves list of active virtual cards from the secure ledger"""
-    profile = db.query(DBProfile).filter(DBProfile.id == x_user_id).first() if x_user_id else db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="UNAUTHORIZED: Missing user context")
+    profile = db.query(DBProfile).filter(DBProfile.id == x_user_id).first()
     uid = profile.id if profile else None
     try:
         cards = db.query(DBCard).filter(DBCard.user_id == uid).order_by(DBCard.created_at.desc()).all()
@@ -998,7 +1000,9 @@ async def financials(x_user_id: Optional[str] = Header(None), db: Session = Depe
 @limiter.limit("20/minute")
 async def generate_card(request: Request, card_req: CardRequest, user_id: Optional[str] = Query(None), x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Initiates a new virtual card generation process on the secure node"""
-    target_user_id = user_id or x_user_id or "anonymous_agent"
+    target_user_id = user_id or x_user_id
+    if not target_user_id:
+        raise HTTPException(status_code=401, detail="UNAUTHORIZED: Missing user context")
     profile = db.query(DBProfile).filter(DBProfile.id == target_user_id).first()
     bonus = profile.bonus_credits if profile else 0
     max_credits = MAX_IDENTITY_CREDITS + bonus
@@ -1124,7 +1128,9 @@ async def kill_card(card_id: str, db: Session = Depends(get_db)):
 @app.post("/financials/burn-all")
 async def burn_all_assets(x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Emergency Burn command: Deletes all compromised cards and aliases (Preserves Profile)"""
-    profile = db.query(DBProfile).filter(DBProfile.id == x_user_id).first() if x_user_id else db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+    if not x_user_id:
+        raise HTTPException(status_code=401, detail="UNAUTHORIZED: Missing user context")
+    profile = db.query(DBProfile).filter(DBProfile.id == x_user_id).first()
     uid = profile.id if profile else None
     db.query(DBCard).filter(DBCard.user_id == uid).delete()
     db.query(DBAlias).filter(DBAlias.user_id == uid).delete()

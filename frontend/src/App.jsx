@@ -757,6 +757,7 @@ const handleEmergencyBurn = async () => {
             }
             activeUserId = profileData.profile_id;
             localStorage.setItem("disappear_user_id", activeUserId);
+            localStorage.setItem("disappear_session", "active");
             
             // ALWAYS let the user into the dashboard since their profile was created successfully.
             setShowCheckout(false); 
