@@ -151,6 +151,7 @@ try:
         conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR"))
         conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS marqeta_user_token VARCHAR"))
         conn.execute(text("ALTER TABLE shield_assets_v3 ADD COLUMN IF NOT EXISTS funding_source_id VARCHAR"))
+        conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS phone VARCHAR"))
 except Exception as e:
     logger.error(f"DB ALTER WARNING: {e}")
 
@@ -976,7 +977,13 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
             logger.error(f"ADDY_IO_MINT_ERROR: {str(e)}")
             raise HTTPException(status_code=502, detail="EMAIL_RELAY_PROVIDER_OFFLINE")
     else:
-        content = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
+        # Actually buy a real number from Twilio!
+        from services.twilio_service import provision_phone_number
+        real_number = provision_phone_number()
+        if not real_number:
+            logger.error("TWILIO_MINT_ERROR: Failed to provision real number.")
+            raise HTTPException(status_code=502, detail="SMS_PROVIDER_OFFLINE")
+        content = real_number
         
     new_alias = DBAlias(
         id=alias_id,
@@ -1107,6 +1114,7 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
             email=data.get("email"),
             address=data.get("address"),
             dob=data.get("dob"),
+            phone=data.get("phone"),
             stripe_customer_id=stripe_customer_id
         )
         db.add(new_profile)

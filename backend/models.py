@@ -66,6 +66,7 @@ class DBProfile(Base):
     email = Column(String)
     address = Column(String)
     dob = Column(String)
+    phone = Column(String, nullable=True)
     bonus_credits = Column(Integer, default=0) 
     phone_line_bonus = Column(Integer, default=0)
     extra_email_slots = Column(Integer, default=0)

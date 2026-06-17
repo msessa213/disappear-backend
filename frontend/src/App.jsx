@@ -106,7 +106,7 @@ function App() {
   const [phones, setPhones] = useState([]);
 
   const [targetProfile, setTargetProfile] = useState({
-      firstName: "", middleName: "", lastName: "", email: "", 
+      firstName: "", middleName: "", lastName: "", email: "", phone: "",
       dob: "", address: "", city: "", state: "", zip: "", termsAccepted: false
   });
 
@@ -231,7 +231,7 @@ function App() {
         setProgress(100);
     } else if (!isNative) {
         setTargetProfile({
-            firstName: "", middleName: "", lastName: "", email: "", 
+            firstName: "", middleName: "", lastName: "", email: "", phone: "",
             dob: "", address: "", city: "", state: "", zip: "", termsAccepted: false
         });
     }
@@ -1348,6 +1348,7 @@ const handleEmergencyBurn = async () => {
                           <input className="mask-btn" placeholder="Middle Name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
                           <input className="mask-btn full-row" placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
                           <input className="mask-btn full-row" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
+                          <input className="mask-btn full-row" placeholder="Real Phone Number (For SMS Forwarding)" value={targetProfile.phone} onChange={(e) => setTargetProfile({...targetProfile, phone: e.target.value})} />
                           <input ref={addressRef} className="mask-btn full-row" placeholder="Street Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
                           <input className="mask-btn" placeholder="City" value={targetProfile.city} onChange={(e) => setTargetProfile({...targetProfile, city: e.target.value})} />
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
