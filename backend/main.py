@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, Request, Response, File, UploadFile, Form, Query, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy import desc, text
 from sqlalchemy.orm import Session
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -194,21 +195,24 @@ app.add_middleware(
 
 
 # --- COMPLIANCE AUDIT TRAIL MIDDLEWARE ---
-@app.middleware("http")
-async def audit_log_middleware(request: Request, call_next):
-    start_time = time.time()
-    response = await call_next(request)
-    process_time = time.time() - start_time
-    
-    audit_info = {
-        "http_method": request.method,
-        "http_path": request.url.path,
-        "client_ip": request.client.host if request.client else "unknown",
-        "status_code": response.status_code,
-        "process_time_ms": round(process_time * 1000, 2)
-    }
-    logger.info(f"API Request: {request.method} {request.url.path}", extra={"audit_info": audit_info})
-    return response
+class AuditMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        start_time = time.time()
+        response = await call_next(request)
+        process_time = time.time() - start_time
+        
+        audit_data = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "client_ip": request.client.host if request.client else "unknown",
+            "request_method": request.method,
+            "request_path": request.url.path,
+            "status_code": response.status_code,
+            "process_time_ms": round(process_time * 1000, 2)
+        }
+        logger.info(f"AUDIT: {audit_data}")
+        return response
+
+app.add_middleware(AuditMiddleware)
 
 # Database Dependency Injection
 def get_db():

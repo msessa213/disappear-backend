@@ -153,7 +153,7 @@ aws ecs update-service \
 ### What Gets Deployed
 
 The workflow deploys the **backend only**. It includes:
-- ✅ Lithic SDK integration for card issuance
+- ✅ Marqeta integration for VCC card issuance and JIT Funding
 - ✅ Enhanced database connection pooling
 - ✅ Health check endpoint (`/health`)
 - ✅ All PII management endpoints
@@ -165,4 +165,4 @@ Frontend deployments remain manual (Vercel) until a separate workflow is configu
 ---
 
 **Last Updated**: May 27, 2026
-**Backend Version**: Latest with Lithic + Connection Pooling + Cyberpunk UI
+**Backend Version**: Latest with Marqeta + Connection Pooling + Cyberpunk UI
