@@ -209,7 +209,12 @@ function App() {
     }
     
     if (query.get("payment") === "success") {
-        triggerToast("CREDIT AUTHORIZED: NODE EXPANDED");
+        localStorage.setItem("disappear_session", "active");
+        setShowLanding(false);
+        setShowShield(true);
+        setProgress(100);
+        
+        triggerToast("CREDIT AUTHORIZED: SECURE NODE EXPANDED");
         window.history.replaceState({}, document.title, "/");
         syncDefenseData();
     }
@@ -757,16 +762,27 @@ const handleEmergencyBurn = async () => {
             }
             activeUserId = profileData.profile_id;
             localStorage.setItem("disappear_user_id", activeUserId);
-            localStorage.setItem("disappear_session", "active");
             
-            // ALWAYS let the user into the dashboard since their profile was created successfully.
-            setShowCheckout(false); 
-            setShowPricing(false);
-            setShowLanding(false);
-            setShowShield(true); 
-            setProgress(100);
-            syncDefenseData();
-            triggerToast("SYSTEM SYNCING: PROVISIONING SHIELD...");
+            triggerToast("AUTHORIZING SECURE PAYMENT NODE...");
+            try {
+                const stripeRes = await secureRequest(`${API_BASE_URL}/payments/create-session`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        expansion_type: "subscription_" + billingCycle,
+                        user_id: activeUserId,
+                        return_url: window.location.origin
+                    })
+                });
+                const stripeData = await stripeRes.json();
+                if (stripeData.url) {
+                    window.location.href = stripeData.url;
+                } else {
+                    throw new Error("Handshake failed");
+                }
+            } catch (err) {
+                triggerToast("PAYMENT NODE OFFLINE");
+            }
         } else {
             triggerToast("PROFILE REGISTRATION FAILED");
         }
@@ -806,7 +822,7 @@ const handleEmergencyBurn = async () => {
       {showLanding ? (
         <div style={{ position: 'relative', width: '100%', minHeight: '100vh' }}>
           <LandingPage 
-            onEnterVault={() => setShowLanding(false)} 
+            onEnterVault={() => { setShowLanding(false); setShowPricing(true); }} 
             onLoginRequest={() => { setShowLanding(false); setShow2FA(true); }}
             onReadManifesto={() => setShowLegal('manifesto')}
           />
@@ -1293,131 +1309,6 @@ const handleEmergencyBurn = async () => {
             ) : (
               /* 4. ONBOARDING & LOGIN FLOW (MOBILE OPTIMIZED) */
               <div className="onboarding-flow">
-                {!showPricing && !showCheckout && !isScanning && !show2FA && (
-                  <div className="fade-in" style={{display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '80vh', justifyContent: 'center', padding: '40px 20px'}}>
-                    
-                    {/* Main Content Container */}
-                    <div style={{display: 'flex', width: '100%', maxWidth: '1100px', gap: '40px', alignItems: 'flex-start', flexWrap: 'wrap', justifyContent: 'center'}}>
-                      
-                      {/* Left Side: Hero Brand */}
-                      <div style={{flex: '1 1 300px', textAlign: 'left', minWidth: '280px'}}>
-                        <h1 className="brand-name" style={{fontSize: 'clamp(2.5rem, 8vw, 4rem)', margin: '0'}}>DISAPPEAR</h1>
-                        <h2 style={{color: 'white', fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', fontWeight: '900', letterSpacing: '-1px', marginBottom: '20px'}}>STAY VIGILANT.</h2>
-                        
-                        <p style={{color: '#cbd5e1', lineHeight: '1.6', fontSize: '1.1rem', marginBottom: '30px'}}>
-                          Your identity is a target. In 2026, data brokers weaponize your PII for profit. 
-                          <strong> Disappear</strong> is the tactical counter-measure: A Privacy-as-a-Service engine 
-                          built to scorch your digital trail and replace exposure with synthetic security.
-                        </p>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '25px', width: '100%' }}>
-                          <button className="main-button" style={{padding: '18px 20px', fontSize: '1rem', width: '100%'}} onClick={() => setShowPricing(true)}>INITIATE IDENTITY SCRUB</button>
-                          <button className="login-btn-outline" style={{padding: '18px 20px', width: '100%'}} onClick={() => {triggerToast("CHALLENGE REQUEST SENT..."); setShow2FA(true);}}>CLIENT LOGIN</button>
-                        </div>
-
-                        <p style={{fontSize: '0.85rem', color: '#94A3B8', letterSpacing: '1px', marginBottom: '40px'}}>
-                          AUTOMATED PII REMOVAL // ENCRYPTED VAULT ARCHITECTURE
-                        </p>
-                      </div>
-
-                      {/* Right Side: Intelligence Brief */}
-                      <div className="masking-tool" style={{flex: '1 1 300px', background: '#050505', border: '1px solid #111', padding: '25px', width: '100%', boxSizing: 'border-box'}}>
-                         <p className="field-label" style={{color: 'white', marginBottom: '25px', borderBottom: '1px solid #111', paddingBottom: '10px'}}>INTELLIGENCE BRIEF</p>
-                         
-                         <div style={{marginBottom: '25px'}}>
-                            <h3 style={{fontSize: '2rem', color: 'white', margin: '0'}}>4.7B</h3>
-                            <p style={{fontSize: '0.85rem', color: '#cbd5e1', margin: '5px 0'}}>PROFILES INDEXED BY BROKERS</p>
-                         </div>
-
-                         <div style={{marginBottom: '25px'}}>
-                            <h3 style={{fontSize: '2rem', color: 'white', margin: '0'}}>82%</h3>
-                            <p style={{fontSize: '0.85rem', color: '#cbd5e1', margin: '5px 0'}}>OF USERS HAVE EXPOSED PII</p>
-                         </div>
-
-                         <div style={{borderTop: '1px solid #111', paddingTop: '20px'}}>
-                            <p style={{fontSize: '0.95rem', color: '#cbd5e1', lineHeight: '1.4'}}>
-                              <span className="tiger-text">» DISAPPEAR_STATUS:</span> Ongoing monitoring prevents re-indexing by third-party aggregators.
-                            </p>
-                         </div>
-                      </div>
-                    </div>
-
-                    {/* Value Section: Why Disappear? */}
-                    <div style={{width: '100%', maxWidth: '1100px', marginTop: '60px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px'}}>
-                        <div className="masking-tool" style={{border: '1px solid #111', padding: '20px'}}>
-                          <span style={{fontSize: '1.5rem', marginBottom: '10px', display: 'block'}}>📞</span>
-                          <h4 style={{color: 'white', margin: '10px 0'}}>TERMINATE SPAM</h4>
-                          <p style={{fontSize: '0.95rem', color: '#cbd5e1'}}>Intercept lead lists at the source. Neutralize robocalls and SMS phishing before they reach your hardware.</p>
-                        </div>
-                        <div className="masking-tool" style={{border: '1px solid #111', padding: '20px'}}>
-                          <span style={{fontSize: '1.5rem', marginBottom: '10px', display: 'block'}}>✉️</span>
-                          <h4 style={{color: 'white', margin: '10px 0'}}>INBOX SANITIZATION</h4>
-                          <p style={{fontSize: '0.95rem', color: '#cbd5e1'}}>Scrub your primary email from 250+ marketing databases to collapse the volume of targeted tracking emails.</p>
-                        </div>
-                        <div className="masking-tool" style={{border: '1px solid #111', padding: '20px'}}>
-                          <span style={{fontSize: '1.5rem', marginBottom: '10px', display: 'block'}}>💳</span>
-                          <h4 style={{color: 'white', margin: '10px 0'}}>FINANCIAL SHIELD</h4>
-                          <p style={{fontSize: '0.95rem', color: '#cbd5e1'}}>Replace real card data with merchant-locked nodes to prevent synthetic identity creation and unauthorized inquiries.</p>
-                        </div>
-                    </div>
-
-                  </div>
-                )}
-
-                {showHelp && !showShield && !showCheckout && !show2FA && (
-                  <div className="pricing-card fade-in" style={{ marginBottom: '40px', border: '1px solid var(--tiger-blue)', background: '#020202' }}>
-                    <div className="price-box" style={{ textAlign: 'left', maxWidth: '600px' }}>
-                      <h3 className="tiger-text" style={{letterSpacing: '2px'}}>Operation Manual v1.2</h3>
-                      <p style={{fontSize: '0.85rem', color: '#94A3B8', marginBottom: '20px'}}>USER GUIDE</p>
-                      
-                      <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
-                        <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>💳 CREDIT CARD PROTECTION</p>
-                        <p style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1' }}>
-                          Generate merchant-locked virtual digits. These prevent your real banking data from being logged by retailers or leaked in breaches.
-                        </p>
-                      </div>
-
-                      <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
-                        <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>✉️ EMAIL RELAY NODES</p>
-                        <p style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1' }}>
-                          Deploy forwarding addresses that scrub hidden PII trackers from incoming mail before they reach your primary inbox.
-                        </p>
-                      </div>
-
-                      <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
-                        <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>📱 PHONE ALIAS NODES</p>
-                        <p style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1' }}>
-                          Generate secondary numbers for 2FA bypass and app verifications. Incoming SMS codes appear directly in your Live Security Audit.
-                        </p>
-                      </div>
-
-                      <div style={{ marginBottom: '25px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
-                        <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>🔥 DATA REMOVAL PROTOCOL</p>
-                        <p style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1' }}>
-                          Automated legal requests are dispatched to major data brokers. Use the 'Emergency Burn' to instantly wipe all vault assets and profile data.
-                        </p>
-                      </div>
-
-                      <div style={{ marginBottom: '20px', borderTop: '1px solid #111', paddingTop: '15px' }}>
-                        <p className="field-label tiger-text" style={{ marginBottom: '10px' }}>ACCOUNT LIMITS</p>
-                        <table style={{ width: '100%', fontSize: '0.9rem', borderCollapse: 'collapse', color: '#cbd5e1' }}>
-                          <tbody>
-                            <tr style={{ borderBottom: '1px solid #111' }}>
-                              <td style={{ padding: '8px 0' }}>FREE_SLOTS</td>
-                              <td style={{ textAlign: 'right', color: 'white' }}>6 Concurrent Slots</td>
-                            </tr>
-                            <tr>
-                              <td style={{ padding: '8px 0' }}>ADD_MORE</td>
-                              <td style={{ textAlign: 'right', color: 'white' }}>$5.95 per Permanent Slot</td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                      <button className="reset-btn" style={{ width: '100%', marginTop: '10px' }} onClick={() => setShowHelp(false)}>I UNDERSTAND</button>
-                    </div>
-                  </div>
-                )}
-
                 {show2FA && (
                   <div className="pricing-card fade-in">
                     <div className="price-box">
@@ -1427,7 +1318,7 @@ const handleEmergencyBurn = async () => {
                       <p className="field-label">MFA CODE (OPTIONAL)</p>
                       <input className="mask-btn" style={{width: '100%', textAlign: 'center', color: 'white'}} placeholder="******" />
                       <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={verify2FA}>VERIFY IDENTITY</button>
-                      <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShow2FA(false)}>CANCEL</button>
+                      <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => { setShow2FA(false); setShowLanding(true); }}>CANCEL</button>
                     </div>
                   </div>
                 )}
@@ -1443,7 +1334,7 @@ const handleEmergencyBurn = async () => {
                       <div className="price-amount">${billingCycle === 'monthly' ? '24.99' : '19.99'}</div>
                       <p style={{fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: '20px'}}>Includes 6 Global Slots + Total Purge Access</p>
                       <button className="main-button" style={{width: '100%'}} onClick={() => setShowCheckout(true)}>PROCEED</button>
-                      <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowPricing(false)}>CANCEL</button>
+                      <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => { setShowPricing(false); setShowLanding(true); }}>CANCEL</button>
                     </div>
                   </div>
                 )}
@@ -1472,7 +1363,7 @@ const handleEmergencyBurn = async () => {
                       <button className="main-button" style={{ width: '100%', marginTop: '25px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }} onClick={handleFinalPurchase} disabled={!targetProfile.termsAccepted || isMinting}>
                         {isMinting ? <><span className="cyberpunk-spinner"></span> INITIATING...</> : 'CONFIRM & INITIATE'}
                       </button>
-                      <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowCheckout(false)}>BACK</button>
+                      <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => { setShowCheckout(false); setShowPricing(true); }}>BACK</button>
                     </div>
                   </div>
                 )}

@@ -652,6 +652,14 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
             item_name = "Emergency Wipe Protocol (Instant Cooldown Bypass)"
             unit_amount = 199 # $1.99
             purchase_key = "cooldown_bypass"
+        elif "subscription_monthly" in etype:
+            item_name = "Disappear Elite Operative (Monthly)"
+            unit_amount = 2499
+            purchase_key = "subscription_monthly"
+        elif "subscription_annual" in etype:
+            item_name = "Disappear Elite Operative (Annual)"
+            unit_amount = 19999
+            purchase_key = "subscription_annual"
         # TARGET EMAIL SLOT
         elif "email" in etype:
             item_name = "Additional Target Email Slot"
@@ -668,9 +676,12 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
             unit_amount = 595 # $5.95
             purchase_key = "permanent_slot"
 
-        session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[{
+        profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
+        customer_id = profile.stripe_customer_id if profile else None
+
+        session_args = {
+            "payment_method_types": ['card'],
+            "line_items": [{
                 'price_data': {
                     'currency': 'usd',
                     'product_data': {'name': item_name},
@@ -678,14 +689,19 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
                 },
                 'quantity': 1,
             }],
-            mode="payment", # FORCE ONE-TIME PAYMENT
-            metadata={
+            "mode": "payment",
+            "metadata": {
                 "purchase_type": purchase_key,
                 "user_id": user_id
             },
-            success_url=f"{return_url}?payment=success",
-            cancel_url=f"{return_url}?payment=cancel",
-        )
+            "success_url": f"{return_url}?payment=success",
+            "cancel_url": f"{return_url}?payment=cancel",
+        }
+
+        if customer_id:
+            session_args["customer"] = customer_id
+
+        session = stripe.checkout.Session.create(**session_args)
         return {"url": session.url}
     except Exception as e:
         logger.error(f"STRIPE ERROR: {str(e)}")
@@ -736,6 +752,10 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
                 action = "PHONE_LINE_EXPANDED"
                 logger.info(f"DB_UPDATE: Phone line bonus added for {profile.id}")
                 db.add(profile)
+                
+            elif purchase_type in ["subscription_monthly", "subscription_annual"]:
+                action = "SUBSCRIPTION_ACTIVATED"
+                logger.info(f"DB_UPDATE: Subscription activated for {profile.id}")
                 
             else:
                 action = "COOLDOWN_BYPASS_PURCHASED"
