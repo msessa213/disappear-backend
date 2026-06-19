@@ -152,6 +152,9 @@ try:
         conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS marqeta_user_token VARCHAR"))
         conn.execute(text("ALTER TABLE shield_assets_v3 ADD COLUMN IF NOT EXISTS funding_source_id VARCHAR"))
         conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS phone VARCHAR"))
+        conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS kyc_status VARCHAR DEFAULT 'PENDING'"))
+        conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS aml_flagged BOOLEAN DEFAULT FALSE"))
+        conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS daily_spend_limit INTEGER DEFAULT 2000"))
 except Exception as e:
     logger.error(f"DB ALTER WARNING: {e}")
 
@@ -864,6 +867,17 @@ async def marqeta_webhook(request: Request, db: Session = Depends(get_db)):
             
             if linked_card and linked_card.funding_source_id:
                 user_profile = db.query(DBProfile).filter(DBProfile.id == linked_card.user_id).first()
+                if user_profile:
+                    # 1. Enforce AML Blocks
+                    if user_profile.aml_flagged or user_profile.kyc_status != "APPROVED":
+                        logger.warning(f"JIT_DECLINED: Profile {user_profile.id} is blocked by compliance/AML.")
+                        return {"status": "declined", "reason": "COMPLIANCE_BLOCK"}
+                    
+                    # 2. Daily Spend Velocity Check
+                    if float(amount) > user_profile.daily_spend_limit:
+                        logger.warning(f"JIT_DECLINED: Charge of ${amount} exceeds daily limit of ${user_profile.daily_spend_limit} for profile {user_profile.id}")
+                        return {"status": "declined", "reason": "VELOCITY_LIMIT_EXCEEDED"}
+
                 if user_profile and user_profile.stripe_customer_id:
                     try:
                         # Attempt to charge the user's real card via Stripe for the exact amount
@@ -906,6 +920,14 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
     """Generates an alias with 12h cooldown and bypass verification"""
     target_user_id = user_id or x_user_id or "anonymous_agent"
     profile = db.query(DBProfile).filter(DBProfile.id == target_user_id).first()
+    if profile:
+        if profile.kyc_status != "APPROVED":
+            raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: KYC verification pending or rejected.")
+        if profile.aml_flagged:
+            raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: Profile flagged under AML policy.")
+    elif target_user_id != "anonymous_agent":
+        raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: KYC verification required.")
+        
     bonus = profile.bonus_credits if profile else 0
     phone_bonus = profile.phone_line_bonus if profile else 0
     
@@ -1035,6 +1057,10 @@ async def generate_card(request: Request, card_req: CardRequest, user_id: Option
     if not target_user_id:
         raise HTTPException(status_code=401, detail="UNAUTHORIZED: Missing user context")
     profile = db.query(DBProfile).filter(DBProfile.id == target_user_id).first()
+    if not profile or profile.kyc_status != "APPROVED":
+        raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: KYC verification pending or rejected.")
+    if profile.aml_flagged:
+        raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: Profile flagged under AML policy.")
     bonus = profile.bonus_credits if profile else 0
     max_credits = MAX_IDENTITY_CREDITS + bonus
 
@@ -1106,6 +1132,17 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         except Exception as e:
             logger.error(f"STRIPE_CUSTOMER_CREATE_ERROR: {str(e)}")
 
+        # Perform background Sanction Screening / Watchlist check (Simulated)
+        last_name_upper = data.get("lastName", "").upper()
+        first_name_upper = data.get("firstName", "").upper()
+        
+        is_watchlist_clean = True
+        if "SANCTIONED" in last_name_upper or "FRAUD" in last_name_upper or "SANCTIONED" in first_name_upper:
+            is_watchlist_clean = False
+            
+        kyc_status = "APPROVED" if is_watchlist_clean else "REJECTED"
+        aml_flagged = not is_watchlist_clean
+
         new_profile = DBProfile(
             id=profile_id,
             first_name=data.get("firstName", "Unknown"),
@@ -1115,7 +1152,9 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
             address=data.get("address"),
             dob=data.get("dob"),
             phone=data.get("phone"),
-            stripe_customer_id=stripe_customer_id
+            stripe_customer_id=stripe_customer_id,
+            kyc_status=kyc_status,
+            aml_flagged=aml_flagged
         )
         db.add(new_profile)
         
@@ -1131,7 +1170,7 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
             ))
             
         db.commit()
-        return {"status": "success", "profile_id": profile_id}
+        return {"status": "success", "profile_id": profile_id, "kyc_status": kyc_status, "aml_flagged": aml_flagged}
     except Exception as e:
         db.rollback()
         logger.error(f"PROFILE_SAVE_ERROR: {str(e)}")

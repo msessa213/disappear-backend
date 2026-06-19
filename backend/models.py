@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from sqlalchemy import create_engine, Column, String, DateTime, Integer, text
+from sqlalchemy import create_engine, Column, String, DateTime, Integer, text, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -72,6 +72,9 @@ class DBProfile(Base):
     extra_email_slots = Column(Integer, default=0)
     stripe_customer_id = Column(String, nullable=True)
     marqeta_user_token = Column(String, nullable=True)
+    kyc_status = Column(String, default="PENDING")
+    aml_flagged = Column(Boolean, default=False)
+    daily_spend_limit = Column(Integer, default=2000)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class DBTargetEmail(Base):
