@@ -46,6 +46,7 @@ try:
     # --- IMPORT DATABASE FROM MODELS ---
     from models import engine, SessionLocal, Base, DBCard, DBAlias, DBProfile, DBTargetEmail, DBScrubLog, DBPurgeLog, DBMarqetaEvent
     from services.twilio_service import send_sms, make_voice_call, twilio_client
+    from services.redaction_service import RedactionService
 
     # --- INITIALIZATION BLOCK ---
     load_dotenv()
@@ -269,6 +270,9 @@ MANUAL_BROKERS = ["INTELIUS", "PEOPLELOOKER"]
 
 
 # --- SCHEMAS ---
+
+class ScrubRequest(BaseModel):
+    text: str
 
 class CardRequest(BaseModel):
     label: str
@@ -1431,6 +1435,39 @@ async def create_support_ticket(request: Request, support_req: SupportRequest, d
         db.rollback()
         logger.error(f"SUPPORT_TICKET_ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to transmit support ticket.")
+
+
+@app.post("/scrub")
+@limiter.limit("10/minute")
+async def scrub_text_endpoint(
+    request: Request,
+    scrub_req: ScrubRequest,
+    user_id: Optional[str] = Query(None),
+    x_user_id: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Scrubs PII from the provided input text.
+    Enforces compliance/KYC authorization checks.
+    """
+    target_user_id = user_id or x_user_id
+    if not target_user_id:
+        raise HTTPException(status_code=401, detail="UNAUTHORIZED: Missing user context")
+        
+    profile = db.query(DBProfile).filter(DBProfile.id == target_user_id).first()
+    if not profile or profile.kyc_status != "APPROVED":
+        log_compliance_rejection(target_user_id, "TEXT_SCRUB", f"KYC status: {profile.kyc_status if profile else 'None'}")
+        raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: KYC verification pending or rejected.")
+    if profile.aml_flagged:
+        log_compliance_rejection(target_user_id, "TEXT_SCRUB", "Profile flagged under AML policy")
+        raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: Profile flagged under AML policy.")
+        
+    # Log successful execution call inside compliance_audits.log
+    compliance_logger.info(f"USER: {target_user_id} | ACTION: TEXT_SCRUB | STATUS: SUCCESS")
+    
+    # Run the scrubbing logic
+    scrubbed_result = RedactionService.scrub_text(scrub_req.text)
+    return {"scrubbed_text": scrubbed_result}
 
 
 if __name__ == "__main__":
