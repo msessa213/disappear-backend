@@ -9,6 +9,7 @@ import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
 import { Manifesto } from './Manifesto';
 import { Privacy } from './Privacy';
 import { Terms } from './Terms';
+import { AmlFraudPolicy } from './AmlFraudPolicy';
 import AdminDashboard from './AdminDashboard'; 
 import LandingPage from './LandingPage'; // Integration: Authority Website Layer
 
@@ -1394,6 +1395,7 @@ const handleEmergencyBurn = async () => {
             {showLegal === 'manifesto' && <Manifesto />}
             {showLegal === 'privacy' && <Privacy />}
             {showLegal === 'terms' && <Terms />}
+            {showLegal === 'aml' && <AmlFraudPolicy />}
             <button className="reset-btn" style={{marginTop: '20px', width: '100%'}} onClick={() => setShowLegal(null)}>CLOSE</button>
           </div>
         </div>
@@ -1444,6 +1446,8 @@ const handleEmergencyBurn = async () => {
           <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => setShowLegal('privacy')}>PRIVACY</span>
           <span className="footer-divider" style={{ opacity: 0.4 }}>|</span>
           <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => setShowLegal('terms')}>TERMS</span>
+          <span className="footer-divider" style={{ opacity: 0.4 }}>|</span>
+          <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => setShowLegal('aml')}>AML & FRAUD</span>
           <span className="footer-divider" style={{ opacity: 0.4 }}>|</span>
           <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => setShowSupportModal(true)}>SUPPORT</span>
           <span className="admin-trigger" style={{ cursor: 'pointer', opacity: 0 }} onClick={() => setShowAdmin(true)}>.</span>
