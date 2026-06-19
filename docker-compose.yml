@@ -27,6 +27,8 @@ services:
       - "8000:8000"
     depends_on:
       - db
+    volumes:
+      - ./backend/logs:/app/backend/logs
     environment:
       - DATABASE_URL=postgresql://admin:disappear_secret@db:5432/freedom_db
       - PGSSLMODE=allow

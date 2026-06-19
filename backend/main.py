@@ -129,7 +129,8 @@ logger.addHandler(handler)
 # --- Dedicated Compliance Audit Logger for AWS Audit Prep ---
 compliance_logger = logging.getLogger("compliance_audits")
 compliance_logger.setLevel(logging.INFO)
-compliance_handler = logging.FileHandler("compliance_audits.log")
+os.makedirs("logs", exist_ok=True)
+compliance_handler = logging.FileHandler("logs/compliance_audits.log")
 compliance_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 compliance_handler.setFormatter(compliance_formatter)
 compliance_logger.addHandler(compliance_handler)
@@ -696,6 +697,17 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
             purchase_key = "permanent_slot"
 
         profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
+        if profile:
+            if profile.kyc_status != "APPROVED":
+                log_compliance_rejection(user_id, "CREATE_CHECKOUT_SESSION", f"KYC status: {profile.kyc_status}")
+                raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: KYC verification pending or rejected.")
+            if profile.aml_flagged:
+                log_compliance_rejection(user_id, "CREATE_CHECKOUT_SESSION", "Profile flagged under AML policy")
+                raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: Profile flagged under AML policy.")
+        elif user_id != "anonymous_agent":
+            log_compliance_rejection(user_id, "CREATE_CHECKOUT_SESSION", "KYC verification required (missing profile)")
+            raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: KYC verification required.")
+
         customer_id = profile.stripe_customer_id if profile else None
 
         session_args = {
@@ -722,6 +734,8 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
 
         session = stripe.checkout.Session.create(**session_args)
         return {"url": session.url}
+    except HTTPException as http_ex:
+        raise http_ex
     except Exception as e:
         logger.error(f"STRIPE ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail="Payment gateway initialization failed.")
@@ -798,6 +812,13 @@ async def create_setup_session(req: SetupSessionRequest, request: Request, user_
     profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found.")
+        
+    if profile.kyc_status != "APPROVED":
+        log_compliance_rejection(user_id, "CREATE_SETUP_SESSION", f"KYC status: {profile.kyc_status}")
+        raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: KYC verification pending or rejected.")
+    if profile.aml_flagged:
+        log_compliance_rejection(user_id, "CREATE_SETUP_SESSION", "Profile flagged under AML policy")
+        raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: Profile flagged under AML policy.")
         
     # If no Stripe Customer ID, create one
     if not profile.stripe_customer_id:

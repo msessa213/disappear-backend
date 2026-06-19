@@ -60,6 +60,28 @@ def run_test():
     assert "KYC verification pending or rejected" in response.json().get("detail", ""), "Expected KYC error message"
     print("TEST PASSED: VCC minting correctly blocked for PENDING KYC profiles.")
     
+    # 5. Call Stripe checkout session creation route
+    print("Attempting to create Stripe checkout session for pending user...")
+    checkout_payload = {
+        "expansion_type": "permanent_slot",
+        "user_id": "user_test_pending"
+    }
+    checkout_response = client.post("/payments/create-session", json=checkout_payload)
+    print(f"Checkout Response Status Code: {checkout_response.status_code}")
+    print(f"Checkout Response JSON: {checkout_response.json()}")
+    assert checkout_response.status_code == 403, f"Expected checkout status code 403, got {checkout_response.status_code}"
+    
+    # 6. Call Stripe setup session creation route
+    print("Attempting to create Stripe setup session for pending user...")
+    setup_payload = {
+        "return_url": "https://disappearco.com"
+    }
+    setup_response = client.post("/payments/create-setup-session?user_id=user_test_pending", json=setup_payload)
+    print(f"Setup Response Status Code: {setup_response.status_code}")
+    print(f"Setup Response JSON: {setup_response.json()}")
+    assert setup_response.status_code == 403, f"Expected setup status code 403, got {setup_response.status_code}"
+    print("TEST PASSED: Payment session creation correctly blocked for PENDING KYC profiles.")
+    
     # 5. Clean up
     print("Cleaning up test data...")
     db.query(DBCard).filter(DBCard.user_id == "user_test_pending").delete()
