@@ -84,6 +84,8 @@ function App() {
   
   const [showLegal, setShowLegal] = useState(null); 
   const [showAdmin, setShowAdmin] = useState(false);
+  const [showKycModal, setShowKycModal] = useState(false);
+  const [kycModalReason, setKycModalReason] = useState("");
   const [isEmergencyWipe, setIsEmergencyWipe] = useState(false);
 
   const [showMintModal, setShowMintModal] = useState(false);
@@ -533,6 +535,23 @@ const handleEmergencyBurn = async () => {
     }
   };
 
+  const checkComplianceStatus = async (response) => {
+    if (response && response.status === 403) {
+      try {
+        const errData = await response.clone().json().catch(() => ({}));
+        const detail = errData.detail || "";
+        if (detail.includes("COMPLIANCE_HOLD") || detail.includes("KYC") || detail.includes("AML")) {
+          setKycModalReason(detail);
+          setShowKycModal(true);
+          return true;
+        }
+      } catch (err) {
+        console.error("Compliance intercept error:", err);
+      }
+    }
+    return false;
+  };
+
   const handleMintCard = async () => {
     if (!newCardLabel) { triggerToast("ENTER MERCHANT NAME"); return; }
     setPurgeStatus("GENERATING PROTECTED DIGITS...");
@@ -547,6 +566,13 @@ const handleEmergencyBurn = async () => {
           funding_source_id: selectedFundingSource
         })
       });
+      
+      const isComplianceHold = await checkComplianceStatus(response);
+      if (isComplianceHold) {
+        setIsEncrypting(false);
+        setPurgeStatus("");
+        return;
+      }
       
       if (response.status === 403) { 
         setIsEncrypting(false); 
@@ -1406,6 +1432,24 @@ const handleEmergencyBurn = async () => {
           <div onClick={e => e.stopPropagation()}>
             <AdminDashboard API_BASE_URL={API_BASE_URL} />
             <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowAdmin(false)}>EXIT COMMAND</button>
+          </div>
+        </div>
+      )}
+
+      {/* --- KYC COMPLIANCE MODAL --- */}
+      {showKycModal && (
+        <div className="modal-overlay" style={{zIndex: 60000}} onClick={() => setShowKycModal(false)}>
+          <div className="price-box" style={{border: '1px solid var(--tiger-blue)'}} onClick={e => e.stopPropagation()}>
+            <h3 className="tiger-text" style={{color: '#ff4444'}}>COMPLIANCE REVIEW</h3>
+            <p style={{marginTop: '15px', color: '#cbd5e1', fontSize: '0.9rem', lineHeight: '1.4rem'}}>
+              {kycModalReason.includes("flagged") 
+                ? "Your profile has been flagged under the AML & Fraud Prevention Policy. Asset creation is temporarily suspended. Please contact support to resolve this issue." 
+                : "Your identity verification is currently pending or has been rejected. Under our AML guidelines, VCC minting requires active KYC clearance. Please upload verification details or contact support."}
+            </p>
+            <div style={{marginTop: '25px', display: 'flex', flexDirection: 'column', gap: '10px'}}>
+              <button className="main-button" style={{width: '100%'}} onClick={() => { setShowKycModal(false); setShowSupportModal(true); }}>CONTACT SUPPORT</button>
+              <button className="reset-btn" style={{width: '100%'}} onClick={() => setShowKycModal(false)}>CLOSE</button>
+            </div>
           </div>
         </div>
       )}
