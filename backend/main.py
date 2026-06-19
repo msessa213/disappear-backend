@@ -126,6 +126,17 @@ handler = logging.StreamHandler()
 handler.setFormatter(JSONFormatter())
 logger.addHandler(handler)
 
+# --- Dedicated Compliance Audit Logger for AWS Audit Prep ---
+compliance_logger = logging.getLogger("compliance_audits")
+compliance_logger.setLevel(logging.INFO)
+compliance_handler = logging.FileHandler("compliance_audits.log")
+compliance_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+compliance_handler.setFormatter(compliance_formatter)
+compliance_logger.addHandler(compliance_handler)
+
+def log_compliance_rejection(user_id: str, action: str, reason: str):
+    compliance_logger.warning(f"USER: {user_id} | ACTION: {action} | REJECTION: COMPLIANCE_HOLD | REASON: {reason}")
+
 # --- DEBUGGING MARQETA CREDENTIALS ---
 debug_key = os.getenv("MARQETA_USERNAME")
 if debug_key:
@@ -871,12 +882,14 @@ async def marqeta_webhook(request: Request, db: Session = Depends(get_db)):
                     # 1. Enforce AML Blocks
                     if user_profile.aml_flagged or user_profile.kyc_status != "APPROVED":
                         logger.warning(f"JIT_DECLINED: Profile {user_profile.id} is blocked by compliance/AML.")
-                        return {"status": "declined", "reason": "COMPLIANCE_BLOCK"}
+                        log_compliance_rejection(user_profile.id, "JIT_TRANSACTION", f"AML Block. Flagged: {user_profile.aml_flagged}, KYC: {user_profile.kyc_status}")
+                        return {"status": "AUTO_DECLINE", "reason": "COMPLIANCE_BLOCK"}
                     
                     # 2. Daily Spend Velocity Check
                     if float(amount) > user_profile.daily_spend_limit:
                         logger.warning(f"JIT_DECLINED: Charge of ${amount} exceeds daily limit of ${user_profile.daily_spend_limit} for profile {user_profile.id}")
-                        return {"status": "declined", "reason": "VELOCITY_LIMIT_EXCEEDED"}
+                        log_compliance_rejection(user_profile.id, "JIT_TRANSACTION", f"Velocity limit exceeded: ${amount} > ${user_profile.daily_spend_limit}")
+                        return {"status": "AUTO_DECLINE", "reason": "VELOCITY_LIMIT_EXCEEDED"}
 
                 if user_profile and user_profile.stripe_customer_id:
                     try:
@@ -922,10 +935,13 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
     profile = db.query(DBProfile).filter(DBProfile.id == target_user_id).first()
     if profile:
         if profile.kyc_status != "APPROVED":
+            log_compliance_rejection(target_user_id, "ALIAS_MINT", f"KYC status: {profile.kyc_status}")
             raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: KYC verification pending or rejected.")
         if profile.aml_flagged:
+            log_compliance_rejection(target_user_id, "ALIAS_MINT", "Profile flagged under AML policy")
             raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: Profile flagged under AML policy.")
     elif target_user_id != "anonymous_agent":
+        log_compliance_rejection(target_user_id, "ALIAS_MINT", "KYC verification required (missing profile)")
         raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: KYC verification required.")
         
     bonus = profile.bonus_credits if profile else 0
@@ -1058,8 +1074,10 @@ async def generate_card(request: Request, card_req: CardRequest, user_id: Option
         raise HTTPException(status_code=401, detail="UNAUTHORIZED: Missing user context")
     profile = db.query(DBProfile).filter(DBProfile.id == target_user_id).first()
     if not profile or profile.kyc_status != "APPROVED":
+        log_compliance_rejection(target_user_id, "CARD_MINT", f"KYC status: {profile.kyc_status if profile else 'None'}")
         raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: KYC verification pending or rejected.")
     if profile.aml_flagged:
+        log_compliance_rejection(target_user_id, "CARD_MINT", "Profile flagged under AML policy")
         raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: Profile flagged under AML policy.")
     bonus = profile.bonus_credits if profile else 0
     max_credits = MAX_IDENTITY_CREDITS + bonus
@@ -1139,6 +1157,7 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         is_watchlist_clean = True
         if "SANCTIONED" in last_name_upper or "FRAUD" in last_name_upper or "SANCTIONED" in first_name_upper:
             is_watchlist_clean = False
+            log_compliance_rejection(profile_id, "PROFILE_CREATION", f"Failed AML Watchlist screening for name: {first_name_upper} {last_name_upper}")
             
         kyc_status = "APPROVED" if is_watchlist_clean else "REJECTED"
         aml_flagged = not is_watchlist_clean
