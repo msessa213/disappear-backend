@@ -40,6 +40,16 @@ if not is_sqlite:
     })
 
 engine = create_engine(DATABASE_URL, **engine_args)
+
+from sqlalchemy import event
+@event.listens_for(engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    if is_sqlite:
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA synchronous = OFF")
+        cursor.execute("PRAGMA journal_mode = WAL")
+        cursor.close()
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -80,6 +90,8 @@ class DBProfile(Base):
     extra_email_slots = Column(Integer, default=0)
     stripe_customer_id = Column(String, nullable=True)
     marqeta_user_token = Column(String, nullable=True)
+    marqeta_card_token = Column(String, nullable=True)  # Store card token, never raw PAN
+    funding_source_token = Column(String, nullable=True)  # Store funding source token
     kyc_status = Column(String, default="PENDING")
     aml_flagged = Column(Boolean, default=False)
     daily_spend_limit = Column(Integer, default=2000)

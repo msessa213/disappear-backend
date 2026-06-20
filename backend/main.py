@@ -156,20 +156,31 @@ except Exception as e:
     logger.error(f"ALARM: DB Sync Deferred - {e}")
 
 
-try:
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS extra_email_slots INTEGER DEFAULT 0"))
-        conn.execute(text("ALTER TABLE shield_assets_v3 ADD COLUMN IF NOT EXISTS user_id VARCHAR"))
-        conn.execute(text("ALTER TABLE shield_aliases_v3 ADD COLUMN IF NOT EXISTS user_id VARCHAR"))
-        conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR"))
-        conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS marqeta_user_token VARCHAR"))
-        conn.execute(text("ALTER TABLE shield_assets_v3 ADD COLUMN IF NOT EXISTS funding_source_id VARCHAR"))
-        conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS phone VARCHAR"))
-        conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS kyc_status VARCHAR DEFAULT 'PENDING'"))
-        conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS aml_flagged BOOLEAN DEFAULT FALSE"))
-        conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS daily_spend_limit INTEGER DEFAULT 2000"))
-except Exception as e:
-    logger.error(f"DB ALTER WARNING: {e}")
+def safe_add_column(table: str, column: str, col_type: str):
+    is_sqlite = engine.dialect.name == "sqlite"
+    if is_sqlite:
+        stmt = f"ALTER TABLE {table} ADD COLUMN {column} {col_type}"
+    else:
+        stmt = f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {col_type}"
+    try:
+        with engine.begin() as conn:
+            conn.execute(text(stmt))
+    except Exception as e:
+        # Ignore errors if the column already exists
+        pass
+
+safe_add_column("shield_profiles_v3", "extra_email_slots", "INTEGER DEFAULT 0")
+safe_add_column("shield_assets_v3", "user_id", "VARCHAR")
+safe_add_column("shield_aliases_v3", "user_id", "VARCHAR")
+safe_add_column("shield_profiles_v3", "stripe_customer_id", "VARCHAR")
+safe_add_column("shield_profiles_v3", "marqeta_user_token", "VARCHAR")
+safe_add_column("shield_profiles_v3", "marqeta_card_token", "VARCHAR")
+safe_add_column("shield_profiles_v3", "funding_source_token", "VARCHAR")
+safe_add_column("shield_assets_v3", "funding_source_id", "VARCHAR")
+safe_add_column("shield_profiles_v3", "phone", "VARCHAR")
+safe_add_column("shield_profiles_v3", "kyc_status", "VARCHAR DEFAULT 'PENDING'")
+safe_add_column("shield_profiles_v3", "aml_flagged", "BOOLEAN DEFAULT FALSE")
+safe_add_column("shield_profiles_v3", "daily_spend_limit", "INTEGER DEFAULT 2000")
 
 # --- APP CONFIGURATION ---
 
@@ -1468,6 +1479,11 @@ async def scrub_text_endpoint(
     # Run the scrubbing logic
     scrubbed_result = RedactionService.scrub_text(scrub_req.text)
     return {"scrubbed_text": scrubbed_result}
+
+
+# --- INTEGRATE MARQETA JIT GATEWAY ---
+from payments.jit_gateway import router as jit_gateway_router
+app.include_router(jit_gateway_router)
 
 
 if __name__ == "__main__":
