@@ -195,10 +195,34 @@ export default function Dashboard() {
 
             {financials.cards.map(card => (
               <div key={card.id} style={{ ...styles.cardRow, ...(card.active ? {} : styles.frozen) }}>
-                <div>
+                <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#0047AB' }}>{card.label.toUpperCase()}</div>
-                  <div style={{ fontSize: '11px', color: '#fff', letterSpacing: '2px', margin: '5px 0' }}>{card.number}</div>
-                  <div style={{ fontSize: '8px', color: '#475569' }}>EXP: {card.exp} | CVV: *** | SOURCE: {card.source_desc}</div>
+                  
+                  <div 
+                    style={{ fontSize: '11px', color: '#fff', letterSpacing: '2px', margin: '5px 0', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#000', padding: '4px 8px', borderRadius: '4px', border: '1px solid #1e293b' }} 
+                    onClick={() => { navigator.clipboard.writeText(card.number.replace(/\s/g, '')); addLog("COPIED: CARD_NUMBER"); }}
+                    title="Click to copy Card Number"
+                  >
+                    {card.number} <span style={{ color: '#0047AB' }}>📋</span>
+                  </div>
+                  
+                  <div style={{ fontSize: '8px', color: '#475569', display: 'flex', gap: '15px', marginTop: '4px' }}>
+                    <span 
+                      style={{ cursor: 'pointer' }} 
+                      onClick={() => { navigator.clipboard.writeText(card.exp || '08/28'); addLog("COPIED: CARD_EXPIRY"); }}
+                      title="Click to copy Expiration Date"
+                    >
+                      EXP: {card.exp || '08/28'} 📋
+                    </span>
+                    <span 
+                      style={{ cursor: 'pointer' }} 
+                      onClick={() => { navigator.clipboard.writeText(card.cvv || '000'); addLog("COPIED: CARD_CVV"); }}
+                      title="Click to copy CVV"
+                    >
+                      CVV: {card.cvv || '***'} 📋
+                    </span>
+                    <span>SOURCE: {card.source_desc}</span>
+                  </div>
                 </div>
                 <button style={{ ...styles.actionBtn, color: '#ef4444' }} onClick={() => killCard(card.id)}>
                   <Trash2 size={14}/>

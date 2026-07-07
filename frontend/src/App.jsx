@@ -1117,10 +1117,21 @@ const handleEmergencyBurn = async () => {
                              <span className="card-nickname" style={{color: '#FFD700', fontWeight: 'bold'}}>{globalCard.label.toUpperCase()}</span>
                              <button className="kill-text-bold" onClick={() => { if(window.confirm("RESET NODE? Old card will be burned.")) handleKillCard(globalCard.id); }}>RESET NODE</button>
                           </div>
-                          <code className="card-digits" style={{ fontSize: '1.2rem', letterSpacing: '3px', cursor: 'pointer' }} onClick={() => {navigator.clipboard.writeText(globalCard.number.replace(/\s/g, '')); triggerToast("COPIED")}}> {globalCard.number} </code>
+                          
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#020202', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', marginBottom: '12px' }} onClick={() => {navigator.clipboard.writeText(globalCard.number.replace(/\s/g, '')); triggerToast("CARD NUMBER COPIED")}}>
+                            <code className="card-digits" style={{ fontSize: '1.2rem', letterSpacing: '3px', color: '#fff', margin: 0, padding: 0 }}>{globalCard.number}</code>
+                            <span style={{ fontSize: '0.8rem', color: '#FFD700', fontWeight: 'bold' }}>COPY 📋</span>
+                          </div>
+
                           <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #222', paddingTop: '10px', marginTop: '10px'}}>
-                             <div><span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>EXP</span><strong>{globalCard.expiry || '12/29'}</strong></div>
-                             <div><span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>CVV</span><strong>***</strong></div>
+                             <div style={{ cursor: 'pointer' }} onClick={() => {navigator.clipboard.writeText(globalCard.expiry || '12/29'); triggerToast("EXPIRY COPIED")}}>
+                               <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>EXP 📋</span>
+                               <strong>{globalCard.expiry || '12/29'}</strong>
+                             </div>
+                             <div style={{ cursor: 'pointer' }} onClick={() => {navigator.clipboard.writeText(globalCard.cvv || '000'); triggerToast("CVV COPIED")}}>
+                               <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>CVV 📋</span>
+                               <strong>{globalCard.cvv || '***'}</strong>
+                             </div>
                              <div style={{ marginLeft: 'auto' }}>
                                 <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>TYPE</span>
                                 <span style={{ fontSize: '0.9rem' }}>VIRTUAL_DEBIT</span>
@@ -1167,7 +1178,10 @@ const handleEmergencyBurn = async () => {
                       <div key={e.id} className="alias-row" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '15px' }}>
                         <div className="alias-info" style={{ width: '100%', wordBreak: 'break-all', marginBottom: '10px' }}>
                             <span className="alias-label tiger-text" style={{ display: 'block', marginBottom: '5px' }}>{e.label.toUpperCase()}</span>
-                            <span className="alias-content" style={{ fontSize: '1rem' }} onClick={() => {navigator.clipboard.writeText(e.content); triggerToast("COPIED")}}>{e.content}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: '#0a0a0a', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', marginTop: '5px' }} onClick={() => {navigator.clipboard.writeText(e.content); triggerToast("EMAIL COPIED")}}>
+                              <span className="alias-content" style={{ fontSize: '1rem', color: '#fff', fontFamily: 'monospace' }}>{e.content}</span>
+                              <span style={{ fontSize: '0.8rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold' }}>COPY 📋</span>
+                            </div>
                         </div>
                         <button className="kill-text-bold" onClick={() => handleKillAlias(e.id)}>TERMINATE</button>
                       </div>
@@ -1183,7 +1197,10 @@ const handleEmergencyBurn = async () => {
                       <div key={p.id} className="alias-row" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '15px' }}>
                         <div className="alias-info" style={{ width: '100%', wordBreak: 'break-all', marginBottom: '10px' }}>
                             <span className="alias-label tiger-text" style={{ display: 'block', marginBottom: '5px' }}>{p.label.toUpperCase()}</span>
-                            <span className="alias-content" style={{ fontSize: '1rem' }} onClick={() => {navigator.clipboard.writeText(p.content); triggerToast("COPIED")}}>{p.content}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: '#0a0a0a', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', marginTop: '5px' }} onClick={() => {navigator.clipboard.writeText(p.content); triggerToast("PHONE COPIED")}}>
+                              <span className="alias-content" style={{ fontSize: '1rem', color: '#fff', fontFamily: 'monospace' }}>{p.content}</span>
+                              <span style={{ fontSize: '0.8rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold' }}>COPY 📋</span>
+                            </div>
                         </div>
                         <button className="kill-text-bold" onClick={() => handleKillAlias(p.id)}>TERMINATE</button>
                       </div>
@@ -1205,10 +1222,21 @@ const handleEmergencyBurn = async () => {
                                  <span className="card-nickname tiger-text">{c.label.toUpperCase()}</span>
                                  <button className="kill-text-bold" onClick={() => handleKillCard(c.id)}>TERMINATE</button>
                             </div>
-                            <code className="card-digits" onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("COPIED")}}> {c.number} </code>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#020202', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', marginBottom: '12px' }} onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("CARD NUMBER COPIED")}}>
+                              <code className="card-digits" style={{ fontSize: '1.15rem', letterSpacing: '2px', color: '#fff', margin: 0, padding: 0 }}>{c.number}</code>
+                              <span style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 'bold' }}>COPY 📋</span>
+                            </div>
+
                             <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #111', paddingTop: '10px', marginTop: '10px'}}>
-                                 <div><span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>EXP</span><strong>{c.expiry || '08/28'}</strong></div>
-                                 <div><span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>CVV</span><strong>***</strong></div>
+                                 <div style={{ cursor: 'pointer' }} onClick={() => {navigator.clipboard.writeText(c.expiry || '08/28'); triggerToast("EXPIRY COPIED")}}>
+                                   <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>EXP 📋</span>
+                                   <strong>{c.expiry || '08/28'}</strong>
+                                 </div>
+                                 <div style={{ cursor: 'pointer' }} onClick={() => {navigator.clipboard.writeText(c.cvv || '000'); triggerToast("CVV COPIED")}}>
+                                   <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>CVV 📋</span>
+                                   <strong>{c.cvv || '***'}</strong>
+                                 </div>
                             </div>
                           </div>
                         </div>
