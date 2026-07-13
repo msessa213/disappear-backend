@@ -284,6 +284,7 @@ class CardRequest(BaseModel):
 class AliasRequest(BaseModel):
     type: str  # "email" or "phone"
     label: str
+    area_code: Optional[str] = None
 
 
 class LoginRequest(BaseModel):
@@ -1044,7 +1045,15 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
     else:
         # Actually buy a real number from Twilio!
         from services.twilio_service import provision_phone_number
-        real_number = provision_phone_number()
+        
+        # Extract and validate area code input (must be exactly 3 numeric digits)
+        target_area_code = "800"
+        if alias_req.area_code:
+            cleaned_code = alias_req.area_code.strip()
+            if len(cleaned_code) == 3 and cleaned_code.isdigit():
+                target_area_code = cleaned_code
+                
+        real_number = provision_phone_number(area_code=target_area_code)
         if not real_number:
             logger.error("TWILIO_MINT_ERROR: Failed to provision real number.")
             raise HTTPException(status_code=502, detail="SMS_PROVIDER_OFFLINE")

@@ -105,6 +105,7 @@ function App() {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [aliasLabel, setAliasLabel] = useState("");
+  const [aliasAreaCode, setAliasAreaCode] = useState("");
   const [emails, setEmails] = useState([]);
   const [phones, setPhones] = useState([]);
 
@@ -539,7 +540,7 @@ function App() {
       const res = await secureRequest(`${API_BASE_URL}/aliases/mint?user_id=${activeUserId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, label: aliasLabel })
+        body: JSON.stringify({ type, label: aliasLabel, area_code: aliasAreaCode })
       });
 
       // TRIGGER POPUP TO BUY MORE SLOTS IF AT MAX
@@ -565,6 +566,7 @@ function App() {
       if (res.ok) {
         syncDefenseData();
         setAliasLabel("");
+        setAliasAreaCode("");
         setShowEmailModal(false);
         setShowPhoneModal(false);
         triggerToast(`${type.toUpperCase()} SECURED`);
@@ -1170,13 +1172,22 @@ const handleEmergencyBurn = async () => {
 
           {/* --- ALIAS MINTING MODALS --- */}
           {(showEmailModal || showPhoneModal) && (
-            <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => {setShowEmailModal(false); setShowPhoneModal(false)}}>
+            <div className="modal-overlay" style={{zIndex: 50000}} onClick={() => {setShowEmailModal(false); setShowPhoneModal(false); setAliasLabel(""); setAliasAreaCode("");}}>
               <div className="price-box" onClick={e => e.stopPropagation()}>
                 <h3 className="tiger-text">GENERATE {showEmailModal ? 'EMAIL' : 'PHONE'} ALIAS</h3>
+                
                 <p className="field-label">ASSOCIATE LABEL</p>
-                <input className="mask-btn" style={{color: 'white', textAlign: 'center'}} placeholder="e.g. Shopping, Personal" value={aliasLabel} onChange={(e) => setAliasLabel(e.target.value)} />
+                <input className="mask-btn" style={{color: 'white', textAlign: 'center', marginBottom: '15px'}} placeholder="e.g. Shopping, Personal" value={aliasLabel} onChange={(e) => setAliasLabel(e.target.value)} />
+                
+                {showPhoneModal && (
+                  <>
+                    <p className="field-label">PREFERRED AREA CODE (OPTIONAL)</p>
+                    <input className="mask-btn" style={{color: 'white', textAlign: 'center', marginBottom: '15px'}} placeholder="e.g. 212, 310, 800" maxLength={3} value={aliasAreaCode} onChange={(e) => setAliasAreaCode(e.target.value.replace(/\D/g, ''))} />
+                  </>
+                )}
+
                 <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={() => handleMintAlias(showEmailModal ? 'email' : 'phone')}>AUTHORIZE</button>
-                <button className="reset-btn" style={{width: '100%'}} onClick={() => {setShowEmailModal(false); setShowPhoneModal(false)}}>CANCEL</button>
+                <button className="reset-btn" style={{width: '100%'}} onClick={() => {setShowEmailModal(false); setShowPhoneModal(false); setAliasLabel(""); setAliasAreaCode("");}}>CANCEL</button>
               </div>
             </div>
           )}
