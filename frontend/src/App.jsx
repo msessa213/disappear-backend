@@ -1292,8 +1292,8 @@ const handleEmergencyBurn = async () => {
                         <div className="alias-info" style={{ width: '100%', wordBreak: 'break-all', marginBottom: '10px' }}>
                             <span className="alias-label tiger-text" style={{ display: 'block', marginBottom: '5px' }}>{e.label.toUpperCase()}</span>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: '#0a0a0a', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', marginTop: '5px' }} onClick={() => {navigator.clipboard.writeText(e.content); triggerToast("EMAIL COPIED")}}>
-                              <span className="alias-content" style={{ fontSize: '1rem', color: '#fff', fontFamily: 'monospace' }}>{e.content}</span>
-                              <span style={{ fontSize: '0.8rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold' }}>COPY 📋</span>
+                              <span className="alias-content" style={{ fontSize: '1rem', color: '#fff', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '10px', flex: 1 }}>{e.content}</span>
+                              <span style={{ fontSize: '0.8rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold', flexShrink: 0 }}>COPY 📋</span>
                             </div>
                         </div>
                         <button className="kill-text-bold" onClick={() => handleKillAlias(e.id)}>TERMINATE</button>
@@ -1311,8 +1311,8 @@ const handleEmergencyBurn = async () => {
                         <div className="alias-info" style={{ width: '100%', wordBreak: 'break-all', marginBottom: '10px' }}>
                             <span className="alias-label tiger-text" style={{ display: 'block', marginBottom: '5px' }}>{p.label.toUpperCase()}</span>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: '#0a0a0a', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', marginTop: '5px' }} onClick={() => {navigator.clipboard.writeText(p.content); triggerToast("PHONE COPIED")}}>
-                              <span className="alias-content" style={{ fontSize: '1rem', color: '#fff', fontFamily: 'monospace' }}>{p.content}</span>
-                              <span style={{ fontSize: '0.8rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold' }}>COPY 📋</span>
+                              <span className="alias-content" style={{ fontSize: '1rem', color: '#fff', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '10px', flex: 1 }}>{p.content}</span>
+                              <span style={{ fontSize: '0.8rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold', flexShrink: 0 }}>COPY 📋</span>
                             </div>
                         </div>
                         <button className="kill-text-bold" onClick={() => handleKillAlias(p.id)}>TERMINATE</button>
