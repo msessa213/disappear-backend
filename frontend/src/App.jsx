@@ -131,49 +131,49 @@ function App() {
 
   // --- DYNAMIC SEO & METADATA ENGINE ---
   useEffect(() => {
-    let title = "Disappear | Privacy-as-a-Service & Data Broker Removal";
-    let description = "Reclaim your privacy. Disappear actively scrubs your phone number, email, and personal data (PII) from broker databases. Secure your digital trail.";
+    let title = "Disappear Co | Privacy-as-a-Service & Data Broker Removal";
+    let description = "Reclaim your privacy. Disappear Co actively scrubs your phone number, email, and personal data (PII) from broker databases. Secure your digital trail.";
     let canonical = "https://disappearco.com/";
 
     if (showLanding) {
-      title = "Disappear | Privacy-as-a-Service & Data Broker Removal";
-      description = "Reclaim your privacy. Disappear actively scrubs your phone number, email, and personal data (PII) from broker databases. Secure your digital trail using real human analyst audits and encrypted aliases.";
+      title = "Disappear Co | Privacy-as-a-Service & Data Broker Removal";
+      description = "Reclaim your privacy. Disappear Co actively scrubs your phone number, email, and personal data (PII) from broker databases. Secure your digital trail using real human analyst audits and encrypted aliases.";
       canonical = "https://disappearco.com/";
     } else if (showPricing) {
-      title = "Disappear | Choose Your Shield Plan";
+      title = "Disappear Co | Choose Your Shield Plan";
       description = "Get continuous data broker opt-outs, human analyst removals, and encrypted phone lines. Select a tactical privacy plan starting at $5.95.";
       canonical = "https://disappearco.com/#pricing";
     } else if (showCheckout) {
-      title = "Disappear | Secure Checkout";
+      title = "Disappear Co | Secure Checkout";
       description = "Complete your subscription and secure your identity vault slot.";
       canonical = "https://disappearco.com/#checkout";
     } else if (show2FA) {
-      title = "Disappear | Decrypt Vault Access";
+      title = "Disappear Co | Decrypt Vault Access";
       description = "Authentication required. Enter your passcode to decrypt and unlock your digital protection vault.";
       canonical = "https://disappearco.com/#login";
     } else if (showLegal === 'manifesto') {
-      title = "Disappear | The Privacy Manifesto: Digital Sovereignty";
-      description = "Read the Disappear Privacy Manifesto. Understand why digital sovereignty matters and how data brokers weaponize your personal information for profit.";
+      title = "Disappear Co | The Privacy Manifesto: Digital Sovereignty";
+      description = "Read the Disappear Co Privacy Manifesto. Understand why digital sovereignty matters and how data brokers weaponize your personal information for profit.";
       canonical = "https://disappearco.com/#manifesto";
     } else if (showLegal === 'privacy') {
-      title = "Disappear | Privacy Policy";
+      title = "Disappear Co | Privacy Policy";
       description = "Our commitment to data minimization and absolute user privacy. Learn how we handle your information with zero data retention policies.";
       canonical = "https://disappearco.com/#privacy";
     } else if (showLegal === 'terms') {
-      title = "Disappear | Terms of Service";
+      title = "Disappear Co | Terms of Service";
       description = "Terms and conditions of our Privacy-as-a-Service (PaaS) and automated identity protection protocols.";
       canonical = "https://disappearco.com/#terms";
     } else if (showLegal === 'aml_policy') {
-      title = "Disappear | AML & Anti-Fraud Compliance Policy";
-      description = "Disappear's compliance guidelines under AML watchlist requirements and card verification screening policies.";
+      title = "Disappear Co | AML & Anti-Fraud Compliance Policy";
+      description = "Disappear Co compliance guidelines under AML watchlist requirements and verification screening policies.";
       canonical = "https://disappearco.com/#aml-policy";
     } else if (showAdmin) {
-      title = "Disappear | Central Operations Command";
+      title = "Disappear Co | Central Operations Command";
       description = "Administrative portal for manual removal tasks and security operations.";
       canonical = "https://disappearco.com/#admin";
     } else {
       // User is logged in and viewing their private dashboard
-      title = "Disappear | Operative Dashboard";
+      title = "Disappear Co | Operative Dashboard";
       description = "Active Identity Shield. Access secure email aliases, provision phone relays, and monitor pending automated and manual data scrubs.";
       canonical = "https://disappearco.com/#dashboard";
     }

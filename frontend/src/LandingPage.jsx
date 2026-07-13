@@ -58,7 +58,7 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
       {/* --- GLOBAL NAVIGATION --- */}
       <nav className="landing-navbar">
         <div className="logo-group">
-          <span className="tiger-text" style={{ fontWeight: '900', letterSpacing: '2px' }}>DISAPPEAR</span>
+          <span className="tiger-text" style={{ fontWeight: '900', letterSpacing: '2px' }}>DISAPPEAR CO</span>
         </div>
         <div className="nav-actions">
           <button className="login-btn-nav" onClick={onLoginRequest}>ACCESS VAULT</button>
@@ -74,7 +74,7 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
             <h1 className="elite-header site-hero-text">STAY<br />VIGILANT.</h1>
             <p className="hero-description">
               Your identity is a target. In 2026, data brokers weaponize your PII for profit. 
-              <strong> Disappear</strong> is the tactical counter-measure built to scorch your digital trail and replace exposure with synthetic security.
+              <strong> Disappear Co</strong> is the tactical identity security counter-measure built to scorch your digital trail and replace exposure with synthetic privacy.
             </p>
             <div className="hero-cta-group" style={{ marginTop: '30px' }}>
               <button className="main-button" onClick={onEnterVault}>INITIATE IDENTITY SCRUB</button>
@@ -146,7 +146,7 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
       {/* --- SECTION 02: SYSTEM DIRECTIVES --- */}
       <section className="directive-section">
         <div className="section-header">
-          <span className="mono-label">CAPABILITIES // WHY DISAPPEAR</span>
+          <span className="mono-label">CAPABILITIES // WHY DISAPPEAR CO PRIVACY</span>
           <h2 className="section-title">IDENTITY NEUTRALIZATION PROTOCOLS</h2>
         </div>
 
@@ -194,7 +194,7 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
         <div className="manifesto-box" style={{ borderLeft: '4px solid var(--tiger-blue)' }}>
           <h3 className="card-title">WHY SOVEREIGNTY MATTERS</h3>
           <p className="manifesto-text">
-            <strong>Disappear returns control to you.</strong> By automating the removal of your 
+            <strong>Disappear Co returns control to you.</strong> By automating the removal of your 
             Personal Identifiable Information (PII), we effectively <strong>neutralize your digital presence</strong>.
           </p>
           <div style={{ display: 'flex', gap: '15px', marginTop: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -208,7 +208,7 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
       <section className="mobile-uplink" style={{ padding: '60px 20px', textAlign: 'center', borderTop: '1px solid #111', background: 'rgba(0, 71, 171, 0.03)' }}>
         <span className="mono-label" style={{ display: 'block', marginBottom: '10px', fontSize: '0.85rem', letterSpacing: '3px' }}>[!] NATIVE CLIENT UPLINK</span>
         <p className="hero-description" style={{ fontSize: '1rem', marginBottom: '25px', maxWidth: '500px', margin: '0 auto 25px' }}>
-          Download the standalone Disappear Android client for direct-to-device identity management.
+          Download the standalone Disappear Co Android app client for direct-to-device identity management.
         </p>
         <a 
           href="https://d3bipqcsrujl11.cloudfront.net/app-debug.apk" 
