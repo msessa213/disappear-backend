@@ -171,10 +171,10 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
 
           <div className="bento-card-small">
             <div className="step-num">03</div>
-            <h4 className="directive-title">FINANCIAL SHIELDING</h4>
+            <h4 className="directive-title">HUMAN-IN-THE-LOOP AUDITS</h4>
             <p className="directive-text">
-              Merchant-locked virtual cards hide your real banking identity. Even if a retailer is 
-              breached, your primary accounts remain invisible and untouched.
+              Not all data brokers cooperate with automated removal tools. When a broker resists automated scripts, 
+              our dedicated team of real privacy analysts steps in to manually file, track, and verify your data removal.
             </p>
           </div>
 

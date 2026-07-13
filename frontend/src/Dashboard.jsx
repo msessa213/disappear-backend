@@ -162,7 +162,7 @@ export default function Dashboard() {
 
       {/* Tabs */}
       <div style={styles.tabGroup}>
-        {["LIVE_THREATS", "DARK_WEB", "LEAK_MAP", "IDENTITY_VAULT", "VCC_MANAGER"].map(tab => (
+        {["LIVE_THREATS", "DARK_WEB", "LEAK_MAP", "IDENTITY_VAULT"].map(tab => (
           <button key={tab} style={{ ...styles.tab, ...(activeTab === tab ? styles.activeTab : {}) }} onClick={() => setActiveTab(tab)}>
             {tab.replace("_", " ")}
           </button>

@@ -137,11 +137,11 @@ function App() {
 
     if (showLanding) {
       title = "Disappear | Privacy-as-a-Service & Data Broker Removal";
-      description = "Reclaim your privacy. Disappear actively scrubs your phone number, email, and personal data (PII) from broker databases. Secure your digital trail using virtual cards and encrypted aliases.";
+      description = "Reclaim your privacy. Disappear actively scrubs your phone number, email, and personal data (PII) from broker databases. Secure your digital trail using real human analyst audits and encrypted aliases.";
       canonical = "https://disappearco.com/";
     } else if (showPricing) {
       title = "Disappear | Choose Your Shield Plan";
-      description = "Get continuous data broker opt-outs, virtual credit cards, and encrypted phone lines. Select a tactical privacy plan starting at $5.95.";
+      description = "Get continuous data broker opt-outs, human analyst removals, and encrypted phone lines. Select a tactical privacy plan starting at $5.95.";
       canonical = "https://disappearco.com/#pricing";
     } else if (showCheckout) {
       title = "Disappear | Secure Checkout";
@@ -174,7 +174,7 @@ function App() {
     } else {
       // User is logged in and viewing their private dashboard
       title = "Disappear | Operative Dashboard";
-      description = "Active Identity Shield. Access virtual cards, provision encrypted aliases, and monitor pending data scrubs.";
+      description = "Active Identity Shield. Access secure email aliases, provision phone relays, and monitor pending automated and manual data scrubs.";
       canonical = "https://disappearco.com/#dashboard";
     }
 
@@ -1095,26 +1095,30 @@ const handleEmergencyBurn = async () => {
                 <h3 className="tiger-text">OPERATION MANUAL v2.0</h3>
                 <p className="field-label" style={{marginBottom: '20px'}}>STEP-BY-STEP NODE INSTRUCTIONS</p>
 
-                <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
-                  <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>💳 GLOBAL WALLET NODE</p>
-                  <ol style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1', paddingLeft: '20px', margin: 0 }}>
-                    <li style={{ marginBottom: '5px' }}>Select "ACTIVATE GLOBAL NODE" to generate your primary digits.</li>
-                    <li style={{ marginBottom: '5px' }}>Add the 16-digit card number, EXP, and CVV to your smartphone wallet (Apple/Google Pay).</li>
-                    <li style={{ marginBottom: '5px' }}>Use this node for high-trust, in-person, or recurring trusted payments.</li>
-                    <li>Click "RESET NODE" to instantly burn the old digits and generate a new set if you suspect a breach.</li>
-                  </ol>
-                </div>
+                {false && (
+                  <>
+                    <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                      <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>💳 GLOBAL WALLET NODE</p>
+                      <ol style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1', paddingLeft: '20px', margin: 0 }}>
+                        <li style={{ marginBottom: '5px' }}>Select "ACTIVATE GLOBAL NODE" to generate your primary digits.</li>
+                        <li style={{ marginBottom: '5px' }}>Add the 16-digit card number, EXP, and CVV to your smartphone wallet (Apple/Google Pay).</li>
+                        <li style={{ marginBottom: '5px' }}>Use this node for high-trust, in-person, or recurring trusted payments.</li>
+                        <li>Click "RESET NODE" to instantly burn the old digits and generate a new set if you suspect a breach.</li>
+                      </ol>
+                    </div>
 
-                <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
-                  <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>💳 CREDIT CARD PROTECTION</p>
-                  <ol style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1', paddingLeft: '20px', margin: 0 }}>
-                    <li style={{ marginBottom: '5px' }}>Click "GENERATE CARD PROTECTION".</li>
-                    <li style={{ marginBottom: '5px' }}>Enter a label identifying the merchant (e.g., "Netflix" or "Amazon").</li>
-                    <li style={{ marginBottom: '5px' }}>Select which of your linked funding sources (Stripe) will cover this specific virtual card.</li>
-                    <li style={{ marginBottom: '5px' }}>Use the generated digits exclusively at that merchant.</li>
-                    <li>Click "TERMINATE" to instantly destroy the card and block future charges when no longer needed.</li>
-                  </ol>
-                </div>
+                    <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                      <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>💳 CREDIT CARD PROTECTION</p>
+                      <ol style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1', paddingLeft: '20px', margin: 0 }}>
+                        <li style={{ marginBottom: '5px' }}>Click "GENERATE CARD PROTECTION".</li>
+                        <li style={{ marginBottom: '5px' }}>Enter a label identifying the merchant (e.g., "Netflix" or "Amazon").</li>
+                        <li style={{ marginBottom: '5px' }}>Select which of your linked funding sources (Stripe) will cover this specific virtual card.</li>
+                        <li style={{ marginBottom: '5px' }}>Use the generated digits exclusively at that merchant.</li>
+                        <li>Click "TERMINATE" to instantly destroy the card and block future charges when no longer needed.</li>
+                      </ol>
+                    </div>
+                  </>
+                )}
 
                 <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
                   <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>✉️ EMAIL RELAY NODES</p>
@@ -1137,22 +1141,24 @@ const handleEmergencyBurn = async () => {
                   </ol>
                 </div>
                 
-                <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
-                  <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>🏦 EXTERNAL FUNDING SOURCES</p>
-                  <ol style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1', paddingLeft: '20px', margin: 0 }}>
-                    <li style={{ marginBottom: '5px' }}>Click "LINK REAL CARD (STRIPE)".</li>
-                    <li style={{ marginBottom: '5px' }}>Securely enter your real credit/debit card into the encrypted Stripe vault.</li>
-                    <li style={{ marginBottom: '5px' }}>Return to the dashboard to see your linked funding sources.</li>
-                    <li>Assign these funding sources when generating new virtual cards for secure pass-through charging.</li>
-                  </ol>
-                </div>
+                {false && (
+                  <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
+                    <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>🏦 EXTERNAL FUNDING SOURCES</p>
+                    <ol style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1', paddingLeft: '20px', margin: 0 }}>
+                      <li style={{ marginBottom: '5px' }}>Click "LINK REAL CARD (STRIPE)".</li>
+                      <li style={{ marginBottom: '5px' }}>Securely enter your real credit/debit card into the encrypted Stripe vault.</li>
+                      <li style={{ marginBottom: '5px' }}>Return to the dashboard to see your linked funding sources.</li>
+                      <li>Assign these funding sources when generating new virtual cards for secure pass-through charging.</li>
+                    </ol>
+                  </div>
+                )}
 
                 <div style={{ marginBottom: '20px', borderLeft: '2px solid #ef4444', paddingLeft: '15px' }}>
                   <p className="field-label" style={{ color: '#ef4444', marginBottom: '5px' }}>🔥 EMERGENCY BURN PROTOCOL</p>
                   <ol style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1', paddingLeft: '20px', margin: 0 }}>
                     <li style={{ marginBottom: '5px' }}>Click "INITIATE EMERGENCY BURN" at the bottom of the dashboard.</li>
                     <li style={{ marginBottom: '5px' }}>The system will export and vault your entire removal history as a PDF.</li>
-                    <li style={{ marginBottom: '5px' }}>All active virtual cards and aliases will be instantly terminated.</li>
+                    <li style={{ marginBottom: '5px' }}>All active phone and email aliases will be instantly terminated.</li>
                     <li>You will be securely logged out of the system.</li>
                   </ol>
                 </div>
@@ -1208,54 +1214,56 @@ const handleEmergencyBurn = async () => {
               <div className="shield-container fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
                 <h2 className="shield-text">🛡️ SHIELD ACTIVE</h2>
                 
-                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #FFD700', background: '#050505', position: 'relative' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                    <p className="tool-label" style={{ margin: 0, color: '#FFD700' }}>GLOBAL WALLET NODE</p>
-                    <span style={{ fontSize: '0.85rem', color: '#94A3B8' }}>WALLETS_ENABLED: [TRUE]</span>
-                  </div>
-                  {(() => {
-                    const globalCard = cards.find(c => c.label.toUpperCase() === 'PRIMARY_PAY_NODE' || c.label.toUpperCase().includes('GLOBAL'));
-                    return globalCard ? (
-                      <div className="managed-card-row enhanced-card" style={{ background: 'linear-gradient(135deg, #050505 0%, #111 100%)' }}>
-                        <div className="card-row-info">
-                          <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
-                             <span className="card-nickname" style={{color: '#FFD700', fontWeight: 'bold'}}>{globalCard.label.toUpperCase()}</span>
-                             <button className="kill-text-bold" onClick={() => { if(window.confirm("RESET NODE? Old card will be burned.")) handleKillCard(globalCard.id); }}>RESET NODE</button>
-                          </div>
-                          
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#020202', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', marginBottom: '12px' }} onClick={() => {navigator.clipboard.writeText(globalCard.number.replace(/\s/g, '')); triggerToast("CARD NUMBER COPIED")}}>
-                            <code className="card-digits" style={{ fontSize: '1.2rem', letterSpacing: '3px', color: '#fff', margin: 0, padding: 0 }}>{globalCard.number}</code>
-                            <span style={{ fontSize: '0.8rem', color: '#FFD700', fontWeight: 'bold' }}>COPY 📋</span>
-                          </div>
+                {false && (
+                  <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #FFD700', background: '#050505', position: 'relative' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                      <p className="tool-label" style={{ margin: 0, color: '#FFD700' }}>GLOBAL WALLET NODE</p>
+                      <span style={{ fontSize: '0.85rem', color: '#94A3B8' }}>WALLETS_ENABLED: [TRUE]</span>
+                    </div>
+                    {(() => {
+                      const globalCard = cards.find(c => c.label.toUpperCase() === 'PRIMARY_PAY_NODE' || c.label.toUpperCase().includes('GLOBAL'));
+                      return globalCard ? (
+                        <div className="managed-card-row enhanced-card" style={{ background: 'linear-gradient(135deg, #050505 0%, #111 100%)' }}>
+                          <div className="card-row-info">
+                            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
+                               <span className="card-nickname" style={{color: '#FFD700', fontWeight: 'bold'}}>{globalCard.label.toUpperCase()}</span>
+                               <button className="kill-text-bold" onClick={() => { if(window.confirm("RESET NODE? Old card will be burned.")) handleKillCard(globalCard.id); }}>RESET NODE</button>
+                            </div>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#020202', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', marginBottom: '12px' }} onClick={() => {navigator.clipboard.writeText(globalCard.number.replace(/\s/g, '')); triggerToast("CARD NUMBER COPIED")}}>
+                              <code className="card-digits" style={{ fontSize: '1.2rem', letterSpacing: '3px', color: '#fff', margin: 0, padding: 0 }}>{globalCard.number}</code>
+                              <span style={{ fontSize: '0.8rem', color: '#FFD700', fontWeight: 'bold' }}>COPY 📋</span>
+                            </div>
 
-                          <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #222', paddingTop: '10px', marginTop: '10px'}}>
-                             <div style={{ cursor: 'pointer' }} onClick={() => {navigator.clipboard.writeText(globalCard.expiry || '12/29'); triggerToast("EXPIRY COPIED")}}>
-                               <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>EXP 📋</span>
-                               <strong>{globalCard.expiry || '12/29'}</strong>
-                             </div>
-                             <div style={{ cursor: 'pointer' }} onClick={() => {navigator.clipboard.writeText(globalCard.cvv || '000'); triggerToast("CVV COPIED")}}>
-                               <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>CVV 📋</span>
-                               <strong>{globalCard.cvv || '***'}</strong>
-                             </div>
-                             <div style={{ marginLeft: 'auto' }}>
-                                <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>TYPE</span>
-                                <span style={{ fontSize: '0.9rem' }}>VIRTUAL_DEBIT</span>
-                             </div>
+                            <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #222', paddingTop: '10px', marginTop: '10px'}}>
+                               <div style={{ cursor: 'pointer' }} onClick={() => {navigator.clipboard.writeText(globalCard.expiry || '12/29'); triggerToast("EXPIRY COPIED")}}>
+                                 <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>EXP 📋</span>
+                                 <strong>{globalCard.expiry || '12/29'}</strong>
+                               </div>
+                               <div style={{ cursor: 'pointer' }} onClick={() => {navigator.clipboard.writeText(globalCard.cvv || '000'); triggerToast("CVV COPIED")}}>
+                                 <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>CVV 📋</span>
+                                 <strong>{globalCard.cvv || '***'}</strong>
+                                </div>
+                               <div style={{ marginLeft: 'auto' }}>
+                                  <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>TYPE</span>
+                                  <span style={{ fontSize: '0.9rem' }}>VIRTUAL_DEBIT</span>
+                               </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div style={{ textAlign: 'center', padding: '20px', border: '1px dashed #334155', borderRadius: '4px' }}>
-                        <span style={{ color: '#94A3B8', fontSize: '0.85rem', display: 'block', marginBottom: '15px' }}>NO ACTIVE GLOBAL WALLET LINKED.</span>
-                        <button className="reset-btn" style={{ fontSize: '0.85rem', padding: '8px 15px' }} onClick={() => { setNewCardLabel('PRIMARY_PAY_NODE'); setShowMintModal(true); }}>ACTIVATE GLOBAL NODE</button>
-                      </div>
-                    );
-                  })()}
-                </div>
+                      ) : (
+                        <div style={{ textAlign: 'center', padding: '20px', border: '1px dashed #334155', borderRadius: '4px' }}>
+                          <span style={{ color: '#94A3B8', fontSize: '0.85rem', display: 'block', marginBottom: '15px' }}>NO ACTIVE GLOBAL WALLET LINKED.</span>
+                          <button className="reset-btn" style={{ fontSize: '0.85rem', padding: '8px 15px' }} onClick={() => { setNewCardLabel('PRIMARY_PAY_NODE'); setShowMintModal(true); }}>ACTIVATE GLOBAL NODE</button>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
 
                 <div className="masking-tool" style={{ border: '1px solid #111', background: '#050505', width: '100%', maxWidth: '600px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                        <span className="field-label">VAULT CAPACITY (EMAIL/VCC)</span>
+                        <span className="field-label">VAULT CAPACITY (EMAIL ALIAS NODES)</span>
                         <span className="tiger-text">{credits.vcc_used} / {credits.vcc_total}</span>
                     </div>
                     <button className="purchase-btn" disabled={isProcessingPayment} onClick={() => handlePurchaseExpansion('permanent_slot')}>
@@ -1314,41 +1322,43 @@ const handleEmergencyBurn = async () => {
                   <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowPhoneModal(true)}> + GENERATE PHONE ALIAS </button>
                 </div>
 
-                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
-                  <p className="tool-label" style={{ textAlign: 'center', marginBottom: '20px' }}>CREDIT CARD PROTECTION</p>
-                  <div className="card-manager-list">
-                    {cards.filter(c => {
-                       const globalCard = cards.find(gc => gc.label.toUpperCase() === 'PRIMARY_PAY_NODE' || gc.label.toUpperCase().includes('GLOBAL'));
-                       return !globalCard || c.id !== globalCard.id;
-                    }).map((c) => (
-                        <div key={c.id} className="managed-card-row enhanced-card">
-                          <div className="card-row-info">
-                            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
-                                 <span className="card-nickname tiger-text">{c.label.toUpperCase()}</span>
-                                 <button className="kill-text-bold" onClick={() => handleKillCard(c.id)}>TERMINATE</button>
-                            </div>
-                            
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#020202', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', marginBottom: '12px' }} onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("CARD NUMBER COPIED")}}>
-                              <code className="card-digits" style={{ fontSize: '1.15rem', letterSpacing: '2px', color: '#fff', margin: 0, padding: 0 }}>{c.number}</code>
-                              <span style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 'bold' }}>COPY 📋</span>
-                            </div>
+                {false && (
+                  <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
+                    <p className="tool-label" style={{ textAlign: 'center', marginBottom: '20px' }}>CREDIT CARD PROTECTION</p>
+                    <div className="card-manager-list">
+                      {cards.filter(c => {
+                         const globalCard = cards.find(gc => gc.label.toUpperCase() === 'PRIMARY_PAY_NODE' || gc.label.toUpperCase().includes('GLOBAL'));
+                         return !globalCard || c.id !== globalCard.id;
+                      }).map((c) => (
+                          <div key={c.id} className="managed-card-row enhanced-card">
+                            <div className="card-row-info">
+                              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
+                                   <span className="card-nickname tiger-text">{c.label.toUpperCase()}</span>
+                                   <button className="kill-text-bold" onClick={() => handleKillCard(c.id)}>TERMINATE</button>
+                              </div>
+                              
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#020202', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', marginBottom: '12px' }} onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("CARD NUMBER COPIED")}}>
+                                <code className="card-digits" style={{ fontSize: '1.15rem', letterSpacing: '2px', color: '#fff', margin: 0, padding: 0 }}>{c.number}</code>
+                                <span style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 'bold' }}>COPY 📋</span>
+                              </div>
 
-                            <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #111', paddingTop: '10px', marginTop: '10px'}}>
-                                 <div style={{ cursor: 'pointer' }} onClick={() => {navigator.clipboard.writeText(c.expiry || '08/28'); triggerToast("EXPIRY COPIED")}}>
-                                   <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>EXP 📋</span>
-                                   <strong>{c.expiry || '08/28'}</strong>
-                                 </div>
-                                 <div style={{ cursor: 'pointer' }} onClick={() => {navigator.clipboard.writeText(c.cvv || '000'); triggerToast("CVV COPIED")}}>
-                                   <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>CVV 📋</span>
-                                   <strong>{c.cvv || '***'}</strong>
-                                 </div>
+                              <div style={{display: 'flex', gap: '30px', borderTop: '1px solid #111', paddingTop: '10px', marginTop: '10px'}}>
+                                   <div style={{ cursor: 'pointer' }} onClick={() => {navigator.clipboard.writeText(c.expiry || '08/28'); triggerToast("EXPIRY COPIED")}}>
+                                     <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>EXP 📋</span>
+                                     <strong>{c.expiry || '08/28'}</strong>
+                                   </div>
+                                   <div style={{ cursor: 'pointer' }} onClick={() => {navigator.clipboard.writeText(c.cvv || '000'); triggerToast("CVV COPIED")}}>
+                                     <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>CVV 📋</span>
+                                     <strong>{c.cvv || '***'}</strong>
+                                   </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                    ))}
+                      ))}
+                    </div>
+                    <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => { setNewCardLabel(""); setShowMintModal(true); }}> + GENERATE CARD PROTECTION </button>
                   </div>
-                  <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => { setNewCardLabel(""); setShowMintModal(true); }}> + GENERATE CARD PROTECTION </button>
-                </div>
+                )}
 
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #111' }}>
                   <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>DATA BROKER TARGETS</p>
@@ -1491,8 +1501,8 @@ const handleEmergencyBurn = async () => {
                     </div>
                     <div className="price-box">
                       <h3 className="tiger-text">ELITE PRIVACY P-A-A-S</h3>
-                      <div className="price-amount">${billingCycle === 'monthly' ? '24.99' : '19.99'}</div>
-                      <p style={{fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: '20px'}}>Includes 6 Global Slots + Total Purge Access</p>
+                      <div className="price-amount">${billingCycle === 'monthly' ? '19.99' : '15.99'}</div>
+                      <p style={{fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: '20px'}}>Includes 6 Global Slots + Hybrid Automated & Real Analyst Removal + Total Purge Access</p>
                       <button className="main-button" style={{width: '100%'}} onClick={() => setShowCheckout(true)}>PROCEED</button>
                       <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => { setShowPricing(false); setShowLanding(true); }}>CANCEL</button>
                     </div>

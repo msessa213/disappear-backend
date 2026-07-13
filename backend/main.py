@@ -689,11 +689,11 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
             purchase_key = "cooldown_bypass"
         elif "subscription_monthly" in etype:
             item_name = "Disappear Elite Operative (Monthly)"
-            unit_amount = 2499
+            unit_amount = 1999  # $19.99
             purchase_key = "subscription_monthly"
         elif "subscription_annual" in etype:
             item_name = "Disappear Elite Operative (Annual)"
-            unit_amount = 19999
+            unit_amount = 15999  # $159.99 (equals $13.33/mo)
             purchase_key = "subscription_annual"
         # TARGET EMAIL SLOT
         elif "email" in etype:
@@ -1105,6 +1105,7 @@ async def financials(x_user_id: Optional[str] = Header(None), db: Session = Depe
 @limiter.limit("20/minute")
 async def generate_card(request: Request, card_req: CardRequest, user_id: Optional[str] = Query(None), x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Initiates a new virtual card generation process on the secure node"""
+    raise HTTPException(status_code=400, detail="FEATURE_DISABLED: Virtual credit card features are temporarily disabled.")
     target_user_id = user_id or x_user_id
     if not target_user_id:
         raise HTTPException(status_code=401, detail="UNAUTHORIZED: Missing user context")
