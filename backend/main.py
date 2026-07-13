@@ -1035,7 +1035,7 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
                     headers=headers,
                     json={
                         "description": f"Disappear Vault - {alias_req.label}",
-                        "format": "uuid",
+                        "format": "random_characters",
                         "domain": "anonaddy.me"
                     }
                 )
