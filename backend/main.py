@@ -139,15 +139,6 @@ compliance_logger.addHandler(compliance_handler)
 def log_compliance_rejection(user_id: str, action: str, reason: str):
     compliance_logger.warning(f"USER: {user_id} | ACTION: {action} | REJECTION: COMPLIANCE_HOLD | REASON: {reason}")
 
-# --- DEBUGGING MARQETA CREDENTIALS ---
-debug_key = os.getenv("MARQETA_USERNAME")
-if debug_key:
-    # Using the logger ensures this shows up in your structured Railway logs
-    logger.info(f"MARQETA_USER_DEBUG_START: {debug_key[:4]}")
-    logger.info(f"MARQETA_USER_DEBUG_LENGTH: {len(debug_key)}")
-else:
-    logger.error("DEBUG: MARQETA_USERNAME is missing!")
-
 # Auto-create tables on startup with crash protection
 try:
     Base.metadata.create_all(bind=engine)
