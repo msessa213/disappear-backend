@@ -1384,22 +1384,24 @@ const handleEmergencyBurn = async () => {
                   </div>
                 </div>
 
-                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #111' }}>
-                  <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>EXTERNAL FUNDING SOURCES</p>
-                  {paymentMethods.length > 0 ? paymentMethods.map(m => (
-                    <div key={m.id} className="alias-row" style={{ marginBottom: '10px' }}>
-                      <div className="alias-info" style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span className="alias-label tiger-text">{m.brand.toUpperCase()}</span>
-                        <span className="alias-content">**** **** **** {m.last4} (EXP {m.exp_month}/{m.exp_year})</span>
+                {false && (
+                  <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #111' }}>
+                    <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>EXTERNAL FUNDING SOURCES</p>
+                    {paymentMethods.length > 0 ? paymentMethods.map(m => (
+                      <div key={m.id} className="alias-row" style={{ marginBottom: '10px' }}>
+                        <div className="alias-info" style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span className="alias-label tiger-text">{m.brand.toUpperCase()}</span>
+                          <span className="alias-content">**** **** **** {m.last4} (EXP {m.exp_month}/{m.exp_year})</span>
+                        </div>
                       </div>
-                    </div>
-                  )) : (
-                    <div className="terminal-line" style={{textAlign: 'center', opacity: 0.5, marginBottom: '15px'}}>NO FUNDING SOURCES LINKED</div>
-                  )}
-                  <button className="reset-btn" style={{ fontSize: '0.95rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', borderStyle: 'dashed' }} onClick={handleLinkFundingSource} disabled={isProcessingPayment}>
-                    {isProcessingPayment ? "UPLINKING..." : "+ LINK REAL CARD (STRIPE)"}
-                  </button>
-                </div>
+                    )) : (
+                      <div className="terminal-line" style={{textAlign: 'center', opacity: 0.5, marginBottom: '15px'}}>NO FUNDING SOURCES LINKED</div>
+                    )}
+                    <button className="reset-btn" style={{ fontSize: '0.95rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', borderStyle: 'dashed' }} onClick={handleLinkFundingSource} disabled={isProcessingPayment}>
+                      {isProcessingPayment ? "UPLINKING..." : "+ LINK REAL CARD (STRIPE)"}
+                    </button>
+                  </div>
+                )}
 
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #444' }}>
                   <p className="tool-label" style={{ textAlign: 'center' }}>SUBSCRIPTION_MANAGEMENT</p>
