@@ -1120,6 +1120,7 @@ const handleEmergencyBurn = async () => {
                         <li>Click "TERMINATE" to instantly destroy the card and block future charges when no longer needed.</li>
                       </ol>
                     </div>
+                  </>
                 )}
 
                 <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>

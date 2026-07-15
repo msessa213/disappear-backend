@@ -120,8 +120,10 @@ def test_full_integration():
         print(f"Mint Approved Status: {mint_approved_res.status_code}")
         print(f"Mint Approved Response: {mint_approved_res.json()}")
         
-        assert mint_approved_res.status_code in [200, 201, 202], f"Test 4 failed: status code {mint_approved_res.status_code}"
-        print("SUCCESS - Test 4 Passed: APPROVED user correctly minted a VCC.")
+        # Expecting 400 since VCC features are temporarily disabled
+        assert mint_approved_res.status_code == 400, f"Test 4 failed: status code {mint_approved_res.status_code}"
+        assert "FEATURE_DISABLED" in mint_approved_res.json().get("detail", ""), "Test 4 failed: expected FEATURE_DISABLED error"
+        print("SUCCESS - Test 4 Passed: APPROVED user VCC minting correctly returned FEATURE_DISABLED status.")
 
     finally:
         # Clean up database seeds

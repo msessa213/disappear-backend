@@ -186,20 +186,19 @@ origins = [
     "http://localhost:3000",
     "http://localhost:3001",
     "http://localhost:5173",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3001",
+    "http://127.0.0.1:3000", # Local dev
+    "http://127.0.0.1:3001", # Local dev
     "capacitor://localhost",
-    "https://disappearco.com", 
-    "https://disappear-frontend-v2.vercel.app",
-    "https://disappear-online.com",
+    "https://disappearco.com",
     "https://www.disappear-online.com",
     "https://mydisappear.com",
     "https://www.mydisappear.com",
-    "https://disappearco.com",
     "https://www.disappearco.com",
     "https://disappearonline.net",
     "https://onlinedisappear.com",
-    "https://api.disappearco.com"
+    "https://api.disappearco.com",
+    # TODO: Add your frontend's production Railway URL here
+    # "https://your-frontend-app.up.railway.app"
 ]
 
 app.add_middleware(
@@ -1105,7 +1104,6 @@ async def financials(x_user_id: Optional[str] = Header(None), db: Session = Depe
 @limiter.limit("20/minute")
 async def generate_card(request: Request, card_req: CardRequest, user_id: Optional[str] = Query(None), x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Initiates a new virtual card generation process on the secure node"""
-    raise HTTPException(status_code=400, detail="FEATURE_DISABLED: Virtual credit card features are temporarily disabled.")
     target_user_id = user_id or x_user_id
     if not target_user_id:
         raise HTTPException(status_code=401, detail="UNAUTHORIZED: Missing user context")
@@ -1116,6 +1114,8 @@ async def generate_card(request: Request, card_req: CardRequest, user_id: Option
     if profile.aml_flagged:
         log_compliance_rejection(target_user_id, "CARD_MINT", "Profile flagged under AML policy")
         raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: Profile flagged under AML policy.")
+    
+    raise HTTPException(status_code=400, detail="FEATURE_DISABLED: Virtual credit card features are temporarily disabled.")
     bonus = profile.bonus_credits if profile else 0
     max_credits = MAX_IDENTITY_CREDITS + bonus
 

@@ -160,7 +160,7 @@ The workflow deploys the **backend only**. It includes:
 - ✅ Stripe webhook handlers
 - ✅ S3 receipt vaulting
 
-Frontend deployments remain manual (Vercel) until a separate workflow is configured.
+Frontend deployments remain manual (Railway) until a separate workflow is configured.
 
 ---
 
