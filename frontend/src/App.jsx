@@ -262,6 +262,12 @@ function App() {
         setShowCheckout(false);
         setShow2FA(true);
         setShowLegal(null);
+      } else if (hash === '#checkout') {
+        setShowLanding(false);
+        setShowPricing(false);
+        setShowCheckout(true);
+        setShow2FA(false);
+        setShowLegal(null);
       } else if (hash === '' || hash === '#') {
         setShowLegal(null);
         setShowAdmin(false);
@@ -1598,7 +1604,7 @@ const handleEmergencyBurn = async () => {
                       <h3 className="tiger-text">ELITE PRIVACY P-A-A-S</h3>
                       <div className="price-amount">${billingCycle === 'monthly' ? '19.99' : '15.99'}</div>
                       <p style={{fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: '20px'}}>Includes 6 Global Slots + Hybrid Automated & Real Analyst Removal + Total Purge Access</p>
-                      <button className="main-button" style={{width: '100%'}} onClick={() => setShowCheckout(true)}>PROCEED</button>
+                      <button className="main-button" style={{width: '100%'}} onClick={() => window.location.hash = "checkout"}>PROCEED</button>
                       <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => window.location.hash = ""}>CANCEL</button>
                     </div>
                   </div>
