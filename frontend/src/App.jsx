@@ -1095,40 +1095,44 @@ const handleEmergencyBurn = async () => {
                 <h3 className="tiger-text">FAQ</h3>
                 <p className="field-label" style={{marginBottom: '20px'}}>SELECT NODE FOR INTELLIGENCE</p>
 
-                <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'global' ? null : 'global')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
-                    <div className="faq-trigger" style={{color: '#FFD700', fontWeight: 'bold'}}>
-                      {activeFaqNode === 'global' ? '[-] GLOBAL WALLET NODE' : '[+] GLOBAL WALLET NODE'}
-                    </div>
-                    {activeFaqNode === 'global' && (
-                        <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '2px solid #FFD700'}}>
-                            <p><strong>USAGE:</strong> Best for high-trust merchants and in-person Digital Wallet (Apple/Google Pay) usage.</p>
-                            <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION STEPS:</strong>
-                            <ol style={{paddingLeft: '15px'}}>
-                                <li>Retrieve digits from the 'GLOBAL WALLET NODE' module at the top of your dashboard.</li>
-                                <li>Add the 16-digit card number, EXP, and CVV to your smartphone wallet.</li>
-                                <li><strong>CORE ARCHITECTURE:</strong> This is a multi-merchant node. Use it for general recurring trust-based purchases.</li>
-                                <li>Click 'RESET NODE' if you believe merchant processors have logged the card info.</li>
-                            </ol>
+                {false && (
+                  <>
+                    <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'global' ? null : 'global')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
+                        <div className="faq-trigger" style={{color: '#FFD700', fontWeight: 'bold'}}>
+                          {activeFaqNode === 'global' ? '[-] GLOBAL WALLET NODE' : '[+] GLOBAL WALLET NODE'}
                         </div>
-                    )}
-                </div>
+                        {activeFaqNode === 'global' && (
+                            <div className="faq-content fade-in" style={{fontSize: '0.8rem', color: '#94A3B8', marginTop: '10px', paddingLeft: '10px', borderLeft: '2px solid #FFD700'}}>
+                                <p><strong>USAGE:</strong> Best for high-trust merchants and in-person Digital Wallet (Apple/Google Pay) usage.</p>
+                                <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION STEPS:</strong>
+                                <ol style={{paddingLeft: '15px'}}>
+                                    <li>Retrieve digits from the 'GLOBAL WALLET NODE' module at the top of your dashboard.</li>
+                                    <li>Add the 16-digit card number, EXP, and CVV to your smartphone wallet.</li>
+                                    <li><strong>CORE ARCHITECTURE:</strong> This is a multi-merchant node. Use it for general recurring trust-based purchases.</li>
+                                    <li>Click 'RESET NODE' if you believe merchant processors have logged the card info.</li>
+                                </ol>
+                            </div>
+                        )}
+                    </div>
 
-                <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'vcc' ? null : 'vcc')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
-                    <div className="faq-trigger tiger-text">
-                      {activeFaqNode === 'vcc' ? '[-] CREDIT CARD PROTECTION' : '[+] CREDIT CARD PROTECTION'}
-                    </div>
-                    {activeFaqNode === 'vcc' && (
-                        <div className="faq-content fade-in" style={{fontSize: '0.95rem', color: '#cbd5e1', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid var(--tiger-blue)'}}>
-                            <p><strong>USAGE:</strong> Best for individual subscriptions and untrusted merchant endpoints.</p>
-                            <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION STEPS:</strong>
-                            <ol style={{paddingLeft: '15px'}}>
-                                <li>Click 'GENERATE CARD PROTECTION' and label it (e.g., Netflix).</li>
-                                <li>System provides isolated digits for that specific merchant.</li>
-                                <li><strong>THE DIFFERENCE:</strong> Once used, this node "locks" to that merchant. If they are hacked, these digits are worthless anywhere else.</li>
-                            </ol>
+                    <div className="faq-item" onClick={() => setActiveFaqNode(activeFaqNode === 'vcc' ? null : 'vcc')} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
+                        <div className="faq-trigger tiger-text">
+                          {activeFaqNode === 'vcc' ? '[-] CREDIT CARD PROTECTION' : '[+] CREDIT CARD PROTECTION'}
                         </div>
-                    )}
-                </div>
+                        {activeFaqNode === 'vcc' && (
+                            <div className="faq-content fade-in" style={{fontSize: '0.95rem', color: '#cbd5e1', marginTop: '10px', paddingLeft: '10px', borderLeft: '1px solid var(--tiger-blue)'}}>
+                                <p><strong>USAGE:</strong> Best for individual subscriptions and untrusted merchant endpoints.</p>
+                                <strong style={{color: 'white', display: 'block', marginTop: '10px'}}>OPERATION STEPS:</strong>
+                                <ol style={{paddingLeft: '15px'}}>
+                                    <li>Click 'GENERATE CARD PROTECTION' and label it (e.g., Netflix).</li>
+                                    <li>System provides isolated digits for that specific merchant.</li>
+                                    <li><strong>THE DIFFERENCE:</strong> Once used, this node "locks" to that merchant. If they are hacked, these digits are worthless anywhere else.</li>
+                                </ol>
+                            </div>
+                        )}
+                    </div>
+                  </>
+                )}
 
                 <div className="faq-item" onClick={() => {setActiveFaqNode(activeFaqNode === 'email' ? null : 'email')}} style={{cursor: 'pointer', borderBottom: '1px solid #111', padding: '15px 0'}}>
                     <div className="faq-trigger tiger-text">
@@ -1618,7 +1622,7 @@ const handleEmergencyBurn = async () => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                           <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                             <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>✓</span>
-                            <span style={{ fontSize: '0.88rem', color: '#cbd5e1' }}><strong>6 Active Slots:</strong> Provision virtual cards, secure emails, or phone relays.</span>
+                            <span style={{ fontSize: '0.88rem', color: '#cbd5e1' }}><strong>6 Active Slots:</strong> Provision secure emails or phone relays.</span>
                           </div>
                           <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                             <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>✓</span>
@@ -1630,7 +1634,7 @@ const handleEmergencyBurn = async () => {
                           </div>
                           <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                             <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>✓</span>
-                            <span style={{ fontSize: '0.88rem', color: '#cbd5e1' }}><strong>Emergency Burn:</strong> Scorch all virtual cards and message relays instantly.</span>
+                            <span style={{ fontSize: '0.88rem', color: '#cbd5e1' }}><strong>Emergency Burn:</strong> Scorch all email and phone alias relays instantly.</span>
                           </div>
                           <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                             <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>✓</span>
