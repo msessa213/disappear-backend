@@ -1076,6 +1076,15 @@ async def kill_alias(alias_id: str, db: Session = Depends(get_db)):
     """TERMINATE command for a specific PII node"""
     alias = db.query(DBAlias).filter(DBAlias.id == alias_id).first()
     if alias:
+        # If it's a phone alias, release the number from Twilio to save monthly subscription costs
+        if alias.type == "phone" and alias.content:
+            from services.twilio_service import release_phone_number
+            try:
+                cleaned_num = alias.content.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+                release_phone_number(cleaned_num)
+            except Exception as e:
+                logger.error(f"TWILIO_RELEASE_ERROR: Failed to release {alias.content}. Error: {e}")
+
         log = DBPurgeLog(action_type="ALIAS_TERMINATED", node_id=f"{alias.user_id}_{alias_id}")
         db.add(log)
         db.delete(alias)
