@@ -197,6 +197,8 @@ origins = [
     "https://disappearonline.net",
     "https://onlinedisappear.com",
     "https://api.disappearco.com",
+    "https://disapearco.com",
+    "https://www.disapearco.com",
     # TODO: Add your frontend's production Railway URL here
     # "https://your-frontend-app.up.railway.app"
 ]
