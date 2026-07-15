@@ -1595,47 +1595,118 @@ const handleEmergencyBurn = async () => {
                 )}
 
                 {showPricing && !showCheckout && !isScanning && (
-                  <div className="pricing-card fade-in">
-                    <div className="price-box">
-                      <div className="billing-toggle" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', width: '100%', marginBottom: '15px' }}>
-                        <button className={billingCycle === 'monthly' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('monthly')}>Monthly</button>
-                        <button className={billingCycle === 'annual' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('annual')}>Annual</button>
+                  <div style={{ display: 'flex', flexDirection: 'row', gap: '30px', justifyContent: 'center', flexWrap: 'wrap', width: '100%', maxWidth: '950px', margin: '0 auto' }} className="fade-in">
+                    {/* Panel 1: Select Plan */}
+                    <div className="pricing-card" style={{ flex: '1 1 420px', maxWidth: '450px' }}>
+                      <div className="price-box" style={{ width: '100%', margin: '0' }}>
+                        <div className="billing-toggle" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', width: '100%', marginBottom: '15px' }}>
+                          <button className={billingCycle === 'monthly' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('monthly')}>Monthly</button>
+                          <button className={billingCycle === 'annual' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('annual')}>Annual</button>
+                        </div>
+                        <h3 className="tiger-text">ELITE PRIVACY PLAN</h3>
+                        <div className="price-amount">${billingCycle === 'monthly' ? '19.99' : '15.99'}</div>
+                        <p style={{fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: '20px', textAlign: 'center'}}>Cancel or adjust subscription directly inside your dashboard in a single click.</p>
+                        <button className="main-button" style={{width: '100%'}} onClick={() => window.location.hash = "checkout"}>PROCEED</button>
+                        <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => window.location.hash = ""}>CANCEL</button>
                       </div>
-                      <h3 className="tiger-text">ELITE PRIVACY P-A-A-S</h3>
-                      <div className="price-amount">${billingCycle === 'monthly' ? '19.99' : '15.99'}</div>
-                      <p style={{fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: '20px'}}>Includes 6 Global Slots + Hybrid Automated & Real Analyst Removal + Total Purge Access</p>
-                      <button className="main-button" style={{width: '100%'}} onClick={() => window.location.hash = "checkout"}>PROCEED</button>
-                      <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => window.location.hash = ""}>CANCEL</button>
+                    </div>
+
+                    {/* Panel 2: Plan Features */}
+                    <div className="pricing-card" style={{ flex: '1 1 380px', maxWidth: '450px' }}>
+                      <div className="price-box" style={{ width: '100%', margin: '0', alignItems: 'stretch', textAlign: 'left' }}>
+                        <h3 className="tiger-text" style={{ textAlign: 'center', marginBottom: '15px' }}>WHAT'S INCLUDED</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                            <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>✓</span>
+                            <span style={{ fontSize: '0.88rem', color: '#cbd5e1' }}><strong>6 Active Slots:</strong> Provision virtual cards, secure emails, or phone relays.</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                            <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>✓</span>
+                            <span style={{ fontSize: '0.88rem', color: '#cbd5e1' }}><strong>Hybrid Automated Opt-Outs:</strong> Continuous background scans across broker databases.</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                            <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>✓</span>
+                            <span style={{ fontSize: '0.88rem', color: '#cbd5e1' }}><strong>Human Analyst Audits:</strong> Our real privacy analysts enforce removals manually.</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                            <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>✓</span>
+                            <span style={{ fontSize: '0.88rem', color: '#cbd5e1' }}><strong>Emergency Burn:</strong> Scorch all virtual cards and message relays instantly.</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                            <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>✓</span>
+                            <span style={{ fontSize: '0.88rem', color: '#cbd5e1' }}><strong>Standalone Native App:</strong> Full access from Android or mobile client.</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
 
                 {showCheckout && !isScanning && (
-                  <div className="pricing-card fade-in">
-                    <div className="price-box" style={{maxWidth: '450px', width: '100%', margin: '0 auto'}}>
-                      <h3 className="tiger-text">TARGET PROFILE DATA</h3>
-                      <div className="checkout-grid">
-                          <input className="mask-btn" placeholder="First Name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
-                          <input className="mask-btn" placeholder="Middle Name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
-                          <input className="mask-btn full-row" placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
-                          <input className="mask-btn full-row" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
-                          <input className="mask-btn full-row" placeholder="Real Phone Number (For SMS Forwarding)" value={targetProfile.phone} onChange={(e) => setTargetProfile({...targetProfile, phone: e.target.value})} />
-                          <input ref={addressRef} className="mask-btn full-row" placeholder="Street Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
-                          <input className="mask-btn" placeholder="City" value={targetProfile.city} onChange={(e) => setTargetProfile({...targetProfile, city: e.target.value})} />
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                            <input className="mask-btn" placeholder="State" value={targetProfile.state} onChange={(e) => setTargetProfile({...targetProfile, state: e.target.value})} />
-                            <input className="mask-btn" placeholder="ZIP" value={targetProfile.zip} onChange={(e) => setTargetProfile({...targetProfile, zip: e.target.value})} />
+                  <div style={{ display: 'flex', flexDirection: 'row', gap: '30px', justifyContent: 'center', flexWrap: 'wrap', width: '100%', maxWidth: '950px', margin: '0 auto' }} className="fade-in">
+                    {/* Panel 1: Target Profile */}
+                    <div className="pricing-card" style={{ flex: '1 1 420px', maxWidth: '450px' }}>
+                      <div className="price-box" style={{ width: '100%', margin: '0' }}>
+                        <h3 className="tiger-text">TARGET PROFILE DATA</h3>
+                        <div className="checkout-grid">
+                            <input className="mask-btn" placeholder="First Name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
+                            <input className="mask-btn" placeholder="Middle Name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
+                            <input className="mask-btn full-row" placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
+                            <input className="mask-btn full-row" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
+                            <input className="mask-btn full-row" placeholder="Real Phone Number (For SMS Forwarding)" value={targetProfile.phone} onChange={(e) => setTargetProfile({...targetProfile, phone: e.target.value})} />
+                            <input ref={addressRef} className="mask-btn full-row" placeholder="Street Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
+                            <input className="mask-btn" placeholder="City" value={targetProfile.city} onChange={(e) => setTargetProfile({...targetProfile, city: e.target.value})} />
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                              <input className="mask-btn" placeholder="State" value={targetProfile.state} onChange={(e) => setTargetProfile({...targetProfile, state: e.target.value})} />
+                              <input className="mask-btn" placeholder="ZIP" value={targetProfile.zip} onChange={(e) => setTargetProfile({...targetProfile, zip: e.target.value})} />
+                            </div>
+                            <input className="mask-btn full-row" type="text" inputMode="numeric" placeholder="DATE OF BIRTH (MM/DD/YYYY)" value={targetProfile.dob} onChange={handleNumericDateInput} />
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', alignItems: 'flex-start', gap: '10px', marginTop: '15px' }}>
+                          <input type="checkbox" checked={targetProfile.termsAccepted} onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})} />
+                          <label style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>Authorize Full PII Scrub and Burn</label>
+                        </div>
+                        <button className="main-button" style={{ width: '100%', marginTop: '25px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }} onClick={handleFinalPurchase} disabled={!targetProfile.termsAccepted || isMinting}>
+                          {isMinting ? <><span className="cyberpunk-spinner"></span> INITIATING...</> : 'CONFIRM & INITIATE'}
+                        </button>
+                        <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => window.location.hash = "pricing"}>BACK</button>
+                      </div>
+                    </div>
+
+                    {/* Panel 2: Secure Commitments */}
+                    <div className="pricing-card" style={{ flex: '1 1 380px', maxWidth: '450px' }}>
+                      <div className="price-box" style={{ width: '100%', margin: '0', alignItems: 'stretch', textAlign: 'left' }}>
+                        <h3 className="tiger-text" style={{ textAlign: 'center', marginBottom: '15px' }}>SECURITY & PRIVACY COMMITMENTS</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                          <div style={{ background: 'rgba(0, 71, 171, 0.05)', padding: '12px 15px', borderRadius: '12px', borderLeft: '3px solid var(--tiger-blue)' }}>
+                            <h4 style={{ color: 'var(--tiger-blue)', margin: '0 0 5px 0', fontSize: '0.9rem' }}>🔒 Client-Side Encryption</h4>
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: '#cbd5e1', lineHeight: '1.4' }}>
+                              Your profile information is encrypted in transit and at rest. We use a zero-knowledge approach to minimize broker lookup logs.
+                            </p>
                           </div>
-                          <input className="mask-btn full-row" type="text" inputMode="numeric" placeholder="DATE OF BIRTH (MM/DD/YYYY)" value={targetProfile.dob} onChange={handleNumericDateInput} />
+                          
+                          <div style={{ background: 'rgba(0, 71, 171, 0.05)', padding: '12px 15px', borderRadius: '12px', borderLeft: '3px solid var(--tiger-blue)' }}>
+                            <h4 style={{ color: 'var(--tiger-blue)', margin: '0 0 5px 0', fontSize: '0.9rem' }}>📡 180+ Data Broker Databases</h4>
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: '#cbd5e1', lineHeight: '1.4' }}>
+                              We file direct opt-outs with public search registries, marketing lead databases, and background check search tools to remove your PII.
+                            </p>
+                          </div>
+                          
+                          <div style={{ background: 'rgba(0, 71, 171, 0.05)', padding: '12px 15px', borderRadius: '12px', borderLeft: '3px solid var(--tiger-blue)' }}>
+                            <h4 style={{ color: 'var(--tiger-blue)', margin: '0 0 5px 0', fontSize: '0.9rem' }}>⚡ Masked Relays & Phone Lines</h4>
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: '#cbd5e1', lineHeight: '1.4' }}>
+                              Mint dynamic forwarding aliases instantly inside your dashboard. Keep your personal cell number and email completely hidden.
+                            </p>
+                          </div>
+
+                          <div style={{ background: 'rgba(0, 71, 171, 0.05)', padding: '12px 15px', borderRadius: '12px', borderLeft: '3px solid var(--tiger-blue)' }}>
+                            <h4 style={{ color: 'var(--tiger-blue)', margin: '0 0 5px 0', fontSize: '0.9rem' }}>💳 Stripe SSL Protected Payments</h4>
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: '#cbd5e1', lineHeight: '1.4' }}>
+                              All subscriptions are processed via Stripe's encrypted payment network. Cancel directly in your account settings at any time.
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', alignItems: 'flex-start', gap: '10px', marginTop: '15px' }}>
-                        <input type="checkbox" checked={targetProfile.termsAccepted} onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})} />
-                        <label style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>Authorize Full PII Scrub and Burn</label>
-                      </div>
-                      <button className="main-button" style={{ width: '100%', marginTop: '25px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }} onClick={handleFinalPurchase} disabled={!targetProfile.termsAccepted || isMinting}>
-                        {isMinting ? <><span className="cyberpunk-spinner"></span> INITIATING...</> : 'CONFIRM & INITIATE'}
-                      </button>
-                      <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => window.location.hash = "pricing"}>BACK</button>
                     </div>
                   </div>
                 )}
