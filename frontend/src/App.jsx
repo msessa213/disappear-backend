@@ -997,7 +997,14 @@ const handleEmergencyBurn = async () => {
                 triggerToast("PAYMENT NODE OFFLINE");
             }
         } else {
-            triggerToast("PROFILE REGISTRATION FAILED");
+            const errData = await profileRes.json().catch(() => ({}));
+            if (errData.detail === "EMAIL_ALREADY_EXISTS") {
+                triggerToast("ERROR: EMAIL ALREADY REGISTERED");
+            } else if (errData.detail === "PHONE_ALREADY_EXISTS") {
+                triggerToast("ERROR: PHONE NUMBER ALREADY IN USE");
+            } else {
+                triggerToast("PROFILE REGISTRATION FAILED");
+            }
         }
     } catch (err) {
         console.error("Connection Error:", err);

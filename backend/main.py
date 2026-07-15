@@ -1185,6 +1185,25 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
     """Handles raw profile ingestion and cleanly seeds initial tracking slots for all data brokers"""
     try:
         data = await request.json()
+        
+        email_input = data.get("email")
+        phone_input = data.get("phone")
+
+        if email_input:
+            existing_email = db.query(DBProfile).filter(DBProfile.email.ilike(email_input)).first()
+            if existing_email:
+                raise HTTPException(status_code=400, detail="EMAIL_ALREADY_EXISTS")
+
+        if phone_input:
+            clean_phone = "".join(filter(str.isdigit, phone_input))
+            if clean_phone:
+                all_profiles = db.query(DBProfile.phone).all()
+                for p in all_profiles:
+                    if p.phone:
+                        db_clean = "".join(filter(str.isdigit, p.phone))
+                        if db_clean == clean_phone:
+                            raise HTTPException(status_code=400, detail="PHONE_ALREADY_EXISTS")
+
         profile_id = f"user_{random.randint(1000, 9999)}"
         
         # Initialize Stripe Customer
