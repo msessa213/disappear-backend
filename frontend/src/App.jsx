@@ -165,7 +165,7 @@ function App() {
       title = "Disappear Co | Terms of Service";
       description = "Terms and conditions of our Privacy-as-a-Service (PaaS) and automated identity protection protocols.";
       canonical = "https://disappearco.com/#terms";
-    } else if (showLegal === 'aml_policy') {
+    } else if (showLegal === 'aml') {
       title = "Disappear Co | AML & Anti-Fraud Compliance Policy";
       description = "Disappear Co compliance guidelines under AML watchlist requirements and verification screening policies.";
       canonical = "https://disappearco.com/#aml-policy";
@@ -235,6 +235,52 @@ function App() {
     setTwitterTag("twitter:image", "https://disappearco.com/assets/og_shield_preview.png");
 
   }, [showLanding, showPricing, showCheckout, show2FA, showLegal, showAdmin]);
+
+  // --- HASH ROUTING CONTROLLER ---
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash === '#privacy') {
+        setShowLegal('privacy');
+      } else if (hash === '#terms') {
+        setShowLegal('terms');
+      } else if (hash === '#manifesto') {
+        setShowLegal('manifesto');
+      } else if (hash === '#aml-policy' || hash === '#aml') {
+        setShowLegal('aml');
+      } else if (hash === '#admin') {
+        setShowAdmin(true);
+      } else if (hash === '#pricing') {
+        setShowLanding(false);
+        setShowPricing(true);
+        setShowCheckout(false);
+        setShow2FA(false);
+        setShowLegal(null);
+      } else if (hash === '#login') {
+        setShowLanding(false);
+        setShowPricing(false);
+        setShowCheckout(false);
+        setShow2FA(true);
+        setShowLegal(null);
+      } else if (hash === '' || hash === '#') {
+        setShowLegal(null);
+        setShowAdmin(false);
+        // Only return to landing if not logged in
+        const sessionActive = localStorage.getItem("disappear_session") === "active";
+        const activeUserId = localStorage.getItem("disappear_user_id");
+        if (!sessionActive || !activeUserId) {
+          setShowLanding(true);
+          setShowPricing(false);
+          setShow2FA(false);
+          setShowCheckout(false);
+        }
+      }
+    };
+
+    handleHashChange();
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   // --- GOOGLE MAPS PLACES AUTOCOMPLETE ---
   useEffect(() => {
@@ -1582,22 +1628,22 @@ const handleEmergencyBurn = async () => {
 
       {/* --- LEGAL & ADMIN MODALS --- */}
       {showLegal && (
-        <div className="modal-overlay" onClick={() => setShowLegal(null)}>
+        <div className="modal-overlay" onClick={() => window.location.hash = ""}>
           <div className="info-modal-content" onClick={e => e.stopPropagation()}>
             {showLegal === 'manifesto' && <Manifesto />}
             {showLegal === 'privacy' && <Privacy />}
             {showLegal === 'terms' && <Terms />}
             {showLegal === 'aml' && <AmlFraudPolicy />}
-            <button className="reset-btn" style={{marginTop: '20px', width: '100%'}} onClick={() => setShowLegal(null)}>CLOSE</button>
+            <button className="reset-btn" style={{marginTop: '20px', width: '100%'}} onClick={() => window.location.hash = ""}>CLOSE</button>
           </div>
         </div>
       )}
 
       {showAdmin && (
-        <div className="modal-overlay" onClick={() => setShowAdmin(false)}>
+        <div className="modal-overlay" onClick={() => window.location.hash = ""}>
           <div onClick={e => e.stopPropagation()}>
             <AdminDashboard API_BASE_URL={API_BASE_URL} />
-            <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => setShowAdmin(false)}>EXIT COMMAND</button>
+            <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => window.location.hash = ""}>EXIT COMMAND</button>
           </div>
         </div>
       )}
@@ -1651,16 +1697,16 @@ const handleEmergencyBurn = async () => {
           color: '#64748B',
           textAlign: 'center'
       }}>
-          <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => setShowLegal('manifesto')}>MANIFESTO</span>
+          <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "manifesto"}>MANIFESTO</span>
           <span className="footer-divider" style={{ opacity: 0.4 }}>|</span>
-          <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => setShowLegal('privacy')}>PRIVACY</span>
+          <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "privacy"}>PRIVACY</span>
           <span className="footer-divider" style={{ opacity: 0.4 }}>|</span>
-          <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => setShowLegal('terms')}>TERMS</span>
+          <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "terms"}>TERMS</span>
           <span className="footer-divider" style={{ opacity: 0.4 }}>|</span>
-          <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => setShowLegal('aml')}>AML & FRAUD</span>
+          <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "aml-policy"}>AML & FRAUD</span>
           <span className="footer-divider" style={{ opacity: 0.4 }}>|</span>
           <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => setShowSupportModal(true)}>SUPPORT</span>
-          <span className="admin-trigger" style={{ cursor: 'pointer', opacity: 0 }} onClick={() => setShowAdmin(true)}>.</span>
+          <span className="admin-trigger" style={{ cursor: 'pointer', opacity: 0 }} onClick={() => window.location.hash = "admin"}>.</span>
       </footer>
 
       {/* --- GLOBAL ENCRYPTION & PURGE OVERLAY --- */}
