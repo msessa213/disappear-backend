@@ -22,7 +22,8 @@ import './App.css';
  */
 
 // --- DYNAMIC API ROUTING ---
-const PROD_API = "https://disappear-backend-production.up.railway.app"; 
+// IMPORTANT: This should be the final, public URL of your backend on AWS ECS
+const PROD_API = "https://api.disappearco.com";
 const LOCAL_API = "http://127.0.0.1:8000";
 
 // Uses local backend during local development, but forces Production for Native Apps and Live Web
@@ -1098,6 +1099,7 @@ const handleEmergencyBurn = async () => {
                 <p className="field-label" style={{marginBottom: '20px'}}>STEP-BY-STEP NODE INSTRUCTIONS</p>
 
                 {false && (
+                  // VCC feature is disabled
                   <>
                     <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
                       <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>💳 GLOBAL WALLET NODE</p>
@@ -1108,7 +1110,6 @@ const handleEmergencyBurn = async () => {
                         <li>Click "RESET NODE" to instantly burn the old digits and generate a new set if you suspect a breach.</li>
                       </ol>
                     </div>
-
                     <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
                       <p className="field-label" style={{ color: 'white', marginBottom: '5px' }}>💳 CREDIT CARD PROTECTION</p>
                       <ol style={{ fontSize: '0.95rem', lineHeight: '1.4', color: '#cbd5e1', paddingLeft: '20px', margin: 0 }}>
@@ -1119,7 +1120,6 @@ const handleEmergencyBurn = async () => {
                         <li>Click "TERMINATE" to instantly destroy the card and block future charges when no longer needed.</li>
                       </ol>
                     </div>
-                  </>
                 )}
 
                 <div style={{ marginBottom: '20px', borderLeft: '2px solid var(--tiger-blue)', paddingLeft: '15px' }}>
@@ -1226,6 +1226,7 @@ const handleEmergencyBurn = async () => {
                 <h2 className="shield-text">🛡️ SHIELD ACTIVE</h2>
                 
                 {false && (
+                  // VCC feature is disabled
                   <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #FFD700', background: '#050505', position: 'relative' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                       <p className="tool-label" style={{ margin: 0, color: '#FFD700' }}>GLOBAL WALLET NODE</p>
@@ -1340,6 +1341,7 @@ const handleEmergencyBurn = async () => {
                 </div>
 
                 {false && (
+                  // VCC feature is disabled
                   <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
                     <p className="tool-label" style={{ textAlign: 'center', marginBottom: '20px' }}>CREDIT CARD PROTECTION</p>
                     <div className="card-manager-list">
@@ -1402,6 +1404,7 @@ const handleEmergencyBurn = async () => {
                 </div>
 
                 {false && (
+                  // VCC feature is disabled
                   <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #111' }}>
                     <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>EXTERNAL FUNDING SOURCES</p>
                     {paymentMethods.length > 0 ? paymentMethods.map(m => (
