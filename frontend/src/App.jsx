@@ -1595,10 +1595,10 @@ const handleEmergencyBurn = async () => {
                 )}
 
                 {showPricing && !showCheckout && !isScanning && (
-                  <div style={{ display: 'flex', flexDirection: 'row', gap: '30px', justifyContent: 'center', flexWrap: 'wrap', width: '100%', maxWidth: '950px', margin: '0 auto' }} className="fade-in">
+                  <div className="onboarding-panels-container fade-in">
                     {/* Panel 1: Select Plan */}
-                    <div className="pricing-card" style={{ flex: '1 1 420px', maxWidth: '450px' }}>
-                      <div className="price-box" style={{ width: '100%', margin: '0' }}>
+                    <div className="pricing-card">
+                      <div className="price-box">
                         <div className="billing-toggle" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', width: '100%', marginBottom: '15px' }}>
                           <button className={billingCycle === 'monthly' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('monthly')}>Monthly</button>
                           <button className={billingCycle === 'annual' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('annual')}>Annual</button>
@@ -1612,8 +1612,8 @@ const handleEmergencyBurn = async () => {
                     </div>
 
                     {/* Panel 2: Plan Features */}
-                    <div className="pricing-card" style={{ flex: '1 1 380px', maxWidth: '450px' }}>
-                      <div className="price-box" style={{ width: '100%', margin: '0', alignItems: 'stretch', textAlign: 'left' }}>
+                    <div className="pricing-card feature-card">
+                      <div className="price-box" style={{ alignItems: 'stretch', textAlign: 'left' }}>
                         <h3 className="tiger-text" style={{ textAlign: 'center', marginBottom: '15px' }}>WHAT'S INCLUDED</h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                           <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
@@ -1643,10 +1643,10 @@ const handleEmergencyBurn = async () => {
                 )}
 
                 {showCheckout && !isScanning && (
-                  <div style={{ display: 'flex', flexDirection: 'row', gap: '30px', justifyContent: 'center', flexWrap: 'wrap', width: '100%', maxWidth: '950px', margin: '0 auto' }} className="fade-in">
+                  <div className="onboarding-panels-container fade-in">
                     {/* Panel 1: Target Profile */}
-                    <div className="pricing-card" style={{ flex: '1 1 420px', maxWidth: '450px' }}>
-                      <div className="price-box" style={{ width: '100%', margin: '0' }}>
+                    <div className="pricing-card">
+                      <div className="price-box">
                         <h3 className="tiger-text">TARGET PROFILE DATA</h3>
                         <div className="checkout-grid">
                             <input className="mask-btn" placeholder="First Name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
@@ -1674,8 +1674,8 @@ const handleEmergencyBurn = async () => {
                     </div>
 
                     {/* Panel 2: Secure Commitments */}
-                    <div className="pricing-card" style={{ flex: '1 1 380px', maxWidth: '450px' }}>
-                      <div className="price-box" style={{ width: '100%', margin: '0', alignItems: 'stretch', textAlign: 'left' }}>
+                    <div className="pricing-card feature-card">
+                      <div className="price-box" style={{ alignItems: 'stretch', textAlign: 'left' }}>
                         <h3 className="tiger-text" style={{ textAlign: 'center', marginBottom: '15px' }}>SECURITY & PRIVACY COMMITMENTS</h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                           <div style={{ background: 'rgba(0, 71, 171, 0.05)', padding: '12px 15px', borderRadius: '12px', borderLeft: '3px solid var(--tiger-blue)' }}>

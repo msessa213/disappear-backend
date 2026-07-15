@@ -1012,3 +1012,51 @@ input[type="checkbox"] {
 .pac-matched {
   color: var(--tiger-blue) !important;
 }
+
+/* 13. ONBOARDING DOUBLE PANEL SYSTEM */
+.onboarding-panels-container {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 25px !important;
+  justify-content: center !important;
+  align-items: stretch !important;
+  flex-wrap: wrap !important;
+  width: 100% !important;
+  max-width: 950px !important;
+  margin: 0 auto !important;
+}
+
+.onboarding-panels-container .pricing-card {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 420px !important;
+  max-width: 450px !important;
+  min-height: 100% !important;
+}
+
+.onboarding-panels-container .pricing-card.feature-card {
+  flex: 1 1 380px !important;
+}
+
+.onboarding-panels-container .price-box {
+  flex: 1 !important;
+  margin: 0 !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 768px) {
+  .onboarding-panels-container {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 20px !important;
+  }
+  
+  .onboarding-panels-container .pricing-card {
+    width: 100% !important;
+    max-width: 450px !important;
+    flex: 1 1 auto !important;
+  }
+}
