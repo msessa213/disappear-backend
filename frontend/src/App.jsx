@@ -1680,34 +1680,31 @@ const handleEmergencyBurn = async () => {
                     {/* Panel 2: Secure Commitments */}
                     <div className="pricing-card feature-card">
                       <div className="price-box" style={{ alignItems: 'stretch', textAlign: 'left' }}>
-                        <h3 className="tiger-text" style={{ textAlign: 'center', marginBottom: '15px' }}>SECURITY & PRIVACY COMMITMENTS</h3>
+                        <h3 className="tiger-text" style={{ textAlign: 'center', marginBottom: '20px' }}>SECURITY COMMITMENTS</h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                          <div style={{ background: 'rgba(0, 71, 171, 0.05)', padding: '12px 15px', borderRadius: '12px', borderLeft: '3px solid var(--tiger-blue)' }}>
-                            <h4 style={{ color: 'var(--tiger-blue)', margin: '0 0 5px 0', fontSize: '0.9rem' }}>🔒 Client-Side Encryption</h4>
-                            <p style={{ margin: 0, fontSize: '0.8rem', color: '#cbd5e1', lineHeight: '1.4' }}>
-                              Your profile information is encrypted in transit and at rest. We use a zero-knowledge approach to minimize broker lookup logs.
-                            </p>
+                          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                            <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold', fontSize: '1.1rem' }}>✓</span>
+                            <span style={{ fontSize: '0.88rem', color: '#cbd5e1', lineHeight: '1.4' }}>
+                              <strong>Client-Side Encryption:</strong> Profile data is encrypted in transit and at rest with zero-knowledge keys. We store no plaintext PII.
+                            </span>
                           </div>
-                          
-                          <div style={{ background: 'rgba(0, 71, 171, 0.05)', padding: '12px 15px', borderRadius: '12px', borderLeft: '3px solid var(--tiger-blue)' }}>
-                            <h4 style={{ color: 'var(--tiger-blue)', margin: '0 0 5px 0', fontSize: '0.9rem' }}>📡 180+ Data Broker Databases</h4>
-                            <p style={{ margin: 0, fontSize: '0.8rem', color: '#cbd5e1', lineHeight: '1.4' }}>
-                              We file direct opt-outs with public search registries, marketing lead databases, and background check search tools to remove your PII.
-                            </p>
+                          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                            <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold', fontSize: '1.1rem' }}>✓</span>
+                            <span style={{ fontSize: '0.88rem', color: '#cbd5e1', lineHeight: '1.4' }}>
+                              <strong>180+ Broker Removal:</strong> Direct opt-outs filed across public search directories and broker systems.
+                            </span>
                           </div>
-                          
-                          <div style={{ background: 'rgba(0, 71, 171, 0.05)', padding: '12px 15px', borderRadius: '12px', borderLeft: '3px solid var(--tiger-blue)' }}>
-                            <h4 style={{ color: 'var(--tiger-blue)', margin: '0 0 5px 0', fontSize: '0.9rem' }}>⚡ Masked Relays & Phone Lines</h4>
-                            <p style={{ margin: 0, fontSize: '0.8rem', color: '#cbd5e1', lineHeight: '1.4' }}>
-                              Mint dynamic forwarding aliases instantly inside your dashboard. Keep your personal cell number and email completely hidden.
-                            </p>
+                          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                            <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold', fontSize: '1.1rem' }}>✓</span>
+                            <span style={{ fontSize: '0.88rem', color: '#cbd5e1', lineHeight: '1.4' }}>
+                              <strong>Encrypted Routing Aliases:</strong> Provision secure email relays and phone forwarding lines instantly.
+                            </span>
                           </div>
-
-                          <div style={{ background: 'rgba(0, 71, 171, 0.05)', padding: '12px 15px', borderRadius: '12px', borderLeft: '3px solid var(--tiger-blue)' }}>
-                            <h4 style={{ color: 'var(--tiger-blue)', margin: '0 0 5px 0', fontSize: '0.9rem' }}>💳 Stripe SSL Protected Payments</h4>
-                            <p style={{ margin: 0, fontSize: '0.8rem', color: '#cbd5e1', lineHeight: '1.4' }}>
-                              All subscriptions are processed via Stripe's encrypted payment network. Cancel directly in your account settings at any time.
-                            </p>
+                          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                            <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold', fontSize: '1.1rem' }}>✓</span>
+                            <span style={{ fontSize: '0.88rem', color: '#cbd5e1', lineHeight: '1.4' }}>
+                              <strong>Stripe Protected Checkout:</strong> Subscriptions are fully secured via Stripe's encrypted payment network.
+                            </span>
                           </div>
                         </div>
                       </div>
