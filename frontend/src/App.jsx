@@ -1619,7 +1619,7 @@ const handleEmergencyBurn = async () => {
                     <div className="pricing-card feature-card">
                       <div className="price-box" style={{ alignItems: 'stretch', textAlign: 'left' }}>
                         <h3 className="tiger-text" style={{ textAlign: 'center', marginBottom: '15px' }}>WHAT'S INCLUDED</h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', margin: 'auto 0' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
                           <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                             <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>✓</span>
                             <span style={{ fontSize: '0.88rem', color: '#cbd5e1' }}><strong>6 Active Slots:</strong> Provision secure emails or phone relays.</span>
@@ -1681,7 +1681,7 @@ const handleEmergencyBurn = async () => {
                     <div className="pricing-card feature-card">
                       <div className="price-box" style={{ alignItems: 'stretch', textAlign: 'left' }}>
                         <h3 className="tiger-text" style={{ textAlign: 'center', marginBottom: '20px' }}>SECURITY COMMITMENTS</h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', margin: 'auto 0' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
                           <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                             <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold', fontSize: '1.1rem' }}>✓</span>
                             <span style={{ fontSize: '0.88rem', color: '#cbd5e1', lineHeight: '1.4' }}>
