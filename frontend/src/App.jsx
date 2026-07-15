@@ -356,8 +356,24 @@ function App() {
   // PERSISTENCE & PAYMENT SYNC
   useEffect(() => {
     const session = localStorage.getItem("disappear_session");
+    const lastActive = localStorage.getItem("disappear_last_active");
     const query = new URLSearchParams(window.location.search);
     const isNative = Capacitor.isNativePlatform();
+
+    // Check for session timeout (e.g., 30 minutes of inactivity)
+    const TIMEOUT_DURATION = 1800000; // 30 minutes
+    const now = Date.now();
+    let isExpired = false;
+
+    if (session === "active" && lastActive) {
+      const timeSinceLastActive = now - parseInt(lastActive, 10);
+      if (timeSinceLastActive > TIMEOUT_DURATION) {
+        localStorage.removeItem("disappear_session");
+        localStorage.removeItem("disappear_user_id");
+        localStorage.removeItem("disappear_last_active");
+        isExpired = true;
+      }
+    }
 
     // UPDATE: Skip landing page on Native App to show Login/Signup flow
     if (isNative) {
@@ -366,6 +382,7 @@ function App() {
     
     if (query.get("payment") === "success") {
         localStorage.setItem("disappear_session", "active");
+        localStorage.setItem("disappear_last_active", now.toString());
         setShowLanding(false);
         setShowShield(true);
         setProgress(100);
@@ -381,15 +398,21 @@ function App() {
         syncDefenseData();
     }
 
-    if (session === "active") {
+    if (session === "active" && !isExpired) {
+        localStorage.setItem("disappear_last_active", now.toString());
         setShowLanding(false); // Bypass website for active agents
         setShowShield(true);
         setProgress(100);
-    } else if (!isNative) {
-        setTargetProfile({
-            firstName: "", middleName: "", lastName: "", email: "", phone: "",
-            dob: "", address: "", city: "", state: "", zip: "", termsAccepted: false
-        });
+    } else {
+        if (isExpired) {
+            triggerToast("SESSION EXPIRED: SECURITY BLOCK");
+        }
+        if (!isNative) {
+            setTargetProfile({
+                firstName: "", middleName: "", lastName: "", email: "", phone: "",
+                dob: "", address: "", city: "", state: "", zip: "", termsAccepted: false
+            });
+        }
     }
   }, []);
 
@@ -420,6 +443,9 @@ function App() {
     try {
       // 1. Sync Base Dashboard Data
       const activeUserId = localStorage.getItem("disappear_user_id") || "";
+      
+      // Update last active timestamp
+      localStorage.setItem("disappear_last_active", Date.now().toString());
       
       // FIX: Clean up corrupt state from previous errors
       if (activeUserId === "undefined") {
