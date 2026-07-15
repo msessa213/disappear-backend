@@ -72,8 +72,11 @@ export default function AdminDashboard({ API_BASE_URL }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
           {manualTasks.map((task) => (
             <div key={task.task_id} style={{ border: '1px solid #334155', padding: '15px', borderRadius: '8px', background: '#050505' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                <strong style={{ color: 'white' }}>BROKER: {task.broker_name}</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <strong style={{ color: 'white' }}>BROKER: {task.broker_name}</strong>
+                  <span style={{ fontSize: '0.68rem', backgroundColor: '#3b0712', color: '#ff4444', padding: '2px 8px', borderRadius: '4px', border: '1px solid #7f1d1d', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Requires Manual Submission Form</span>
+                </div>
                 <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>{new Date(task.submitted_at).toLocaleDateString()}</span>
               </div>
               
