@@ -1487,6 +1487,71 @@ from payments.jit_gateway import router as jit_gateway_router
 app.include_router(jit_gateway_router)
 
 
+# --- TWILIO INBOUND CALL/SMS WEBHOOKS ---
+@app.post("/twilio/voice")
+async def twilio_incoming_voice(
+    To: str = Form(...),
+    From: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Twilio Webhook for incoming voice calls.
+    Resolves the virtual number to the user's real phone number and returns TwiML to forward it.
+    """
+    logger.info(f"TWILIO_INBOUND_VOICE: Call to {To} from {From}")
+    
+    # Look up the alias in the database
+    alias = db.query(DBAlias).filter(DBAlias.content == To, DBAlias.type == "phone").first()
+    if not alias or not alias.user_id:
+        logger.warning(f"TWILIO_VOICE_REJECT: No alias found for virtual number {To}")
+        twiml = "<Response><Say>The number you have dialed is not in service.</Say></Response>"
+        return Response(content=twiml, media_type="application/xml")
+        
+    # Retrieve user profile to get their real phone number
+    profile = db.query(DBProfile).filter(DBProfile.id == alias.user_id).first()
+    if not profile or not profile.phone:
+        logger.warning(f"TWILIO_VOICE_REJECT: No profile/forwarding number for user {alias.user_id}")
+        twiml = "<Response><Say>The number you have dialed is temporarily unavailable.</Say></Response>"
+        return Response(content=twiml, media_type="application/xml")
+        
+    # Return TwiML to Dial/Forward to their real phone number
+    logger.info(f"TWILIO_VOICE_FORWARD: Forwarding call to {profile.phone}")
+    twiml = f'<Response><Dial>{profile.phone}</Dial></Response>'
+    return Response(content=twiml, media_type="application/xml")
+
+
+@app.post("/twilio/sms")
+async def twilio_incoming_sms(
+    To: str = Form(...),
+    From: str = Form(...),
+    Body: str = Form(""),
+    db: Session = Depends(get_db)
+):
+    """
+    Twilio Webhook for incoming SMS messages.
+    Resolves the virtual number to the user's real phone number and forwards the SMS body.
+    """
+    logger.info(f"TWILIO_INBOUND_SMS: Message to {To} from {From}")
+    
+    # Look up the alias
+    alias = db.query(DBAlias).filter(DBAlias.content == To, DBAlias.type == "phone").first()
+    if not alias or not alias.user_id:
+        logger.warning(f"TWILIO_SMS_REJECT: No alias found for virtual number {To}")
+        return Response(content="<Response/>", media_type="application/xml")
+        
+    # Retrieve user profile
+    profile = db.query(DBProfile).filter(DBProfile.id == alias.user_id).first()
+    if not profile or not profile.phone:
+        logger.warning(f"TWILIO_SMS_REJECT: No forwarding number for user {alias.user_id}")
+        return Response(content="<Response/>", media_type="application/xml")
+        
+    # Return TwiML to forward the message to the user's real phone number
+    logger.info(f"TWILIO_SMS_FORWARD: Forwarding SMS to {profile.phone}")
+    message_content = f"DISAPPEAR SMS [From {From}]: {Body}"
+    twiml = f'<Response><Message to="{profile.phone}">{message_content}</Message></Response>'
+    return Response(content=twiml, media_type="application/xml")
+
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))

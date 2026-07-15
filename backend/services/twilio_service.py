@@ -114,10 +114,24 @@ def provision_phone_number(area_code: str = "800", country_code: str = "US") -> 
             logger.error("TWILIO_PROVISION_FAILURE: No numbers found in country pool.")
             return None
             
+        import os
+        domain = os.getenv("RAILWAY_PUBLIC_DOMAIN") or os.getenv("RAILWAY_STATIC_URL")
+        if domain:
+            base_url = f"https://{domain}" if not domain.startswith("http") else domain
+        else:
+            base_url = "https://disappear-backend-production.up.railway.app"
+            
+        voice_url = f"{base_url}/twilio/voice"
+        sms_url = f"{base_url}/twilio/sms"
+        
         purchased_number = twilio_client.incoming_phone_numbers.create(
-            phone_number=local_numbers[0].phone_number
+            phone_number=local_numbers[0].phone_number,
+            voice_url=voice_url,
+            sms_url=sms_url,
+            voice_method="POST",
+            sms_method="POST"
         )
-        logger.info(f"Twilio phone number {purchased_number.phone_number} provisioned successfully.")
+        logger.info(f"Twilio phone number {purchased_number.phone_number} provisioned successfully with webhooks: voice={voice_url}, sms={sms_url}.")
         return purchased_number.phone_number
     except TwilioRestException as e:
         logger.error(f"TWILIO_PROVISION_FAILURE: Error provisioning number: {e}")
