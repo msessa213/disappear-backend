@@ -1003,9 +1003,9 @@ const handleEmergencyBurn = async () => {
       {showLanding ? (
         <div style={{ position: 'relative', width: '100%', minHeight: '100vh' }}>
           <LandingPage 
-            onEnterVault={() => { setShowLanding(false); setShowPricing(true); }} 
-            onLoginRequest={() => { setShowLanding(false); setShow2FA(true); }}
-            onReadManifesto={() => setShowLegal('manifesto')}
+            onEnterVault={() => window.location.hash = "pricing"} 
+            onLoginRequest={() => window.location.hash = "login"}
+            onReadManifesto={() => window.location.hash = "manifesto"}
           />
           {/* MOBILE DOWNLOAD BRIDGE: Fixed Positioning Fix */}
           {!Capacitor.isNativePlatform() && (
@@ -1557,23 +1557,23 @@ const handleEmergencyBurn = async () => {
                       <p className="field-label">MFA CODE (OPTIONAL)</p>
                       <input className="mask-btn" style={{width: '100%', textAlign: 'center', color: 'white'}} placeholder="******" />
                       <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={verify2FA}>VERIFY IDENTITY</button>
-                      <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => { setShow2FA(false); setShowLanding(true); }}>CANCEL</button>
+                      <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => window.location.hash = ""}>CANCEL</button>
                     </div>
                   </div>
                 )}
 
                 {showPricing && !showCheckout && !isScanning && (
                   <div className="pricing-card fade-in">
-                    <div className="billing-toggle" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px' }}>
-                      <button className={billingCycle === 'monthly' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('monthly')}>Monthly</button>
-                      <button className={billingCycle === 'annual' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('annual')}>Annual</button>
-                    </div>
                     <div className="price-box">
+                      <div className="billing-toggle" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', width: '100%', marginBottom: '15px' }}>
+                        <button className={billingCycle === 'monthly' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('monthly')}>Monthly</button>
+                        <button className={billingCycle === 'annual' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('annual')}>Annual</button>
+                      </div>
                       <h3 className="tiger-text">ELITE PRIVACY P-A-A-S</h3>
                       <div className="price-amount">${billingCycle === 'monthly' ? '19.99' : '15.99'}</div>
                       <p style={{fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: '20px'}}>Includes 6 Global Slots + Hybrid Automated & Real Analyst Removal + Total Purge Access</p>
                       <button className="main-button" style={{width: '100%'}} onClick={() => setShowCheckout(true)}>PROCEED</button>
-                      <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => { setShowPricing(false); setShowLanding(true); }}>CANCEL</button>
+                      <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => window.location.hash = ""}>CANCEL</button>
                     </div>
                   </div>
                 )}
@@ -1603,7 +1603,7 @@ const handleEmergencyBurn = async () => {
                       <button className="main-button" style={{ width: '100%', marginTop: '25px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }} onClick={handleFinalPurchase} disabled={!targetProfile.termsAccepted || isMinting}>
                         {isMinting ? <><span className="cyberpunk-spinner"></span> INITIATING...</> : 'CONFIRM & INITIATE'}
                       </button>
-                      <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => { setShowCheckout(false); setShowPricing(true); }}>BACK</button>
+                      <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => window.location.hash = "pricing"}>BACK</button>
                     </div>
                   </div>
                 )}
