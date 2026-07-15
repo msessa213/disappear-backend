@@ -1619,24 +1619,24 @@ const handleEmergencyBurn = async () => {
                     <div className="pricing-card feature-card">
                       <div className="price-box" style={{ alignItems: 'stretch', textAlign: 'left' }}>
                         <h3 className="tiger-text" style={{ textAlign: 'center', marginBottom: '15px' }}>WHAT'S INCLUDED</h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
-                          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                        <div className="pricing-features-list">
+                          <div>
                             <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>✓</span>
                             <span style={{ fontSize: '0.88rem', color: '#cbd5e1' }}><strong>6 Active Slots:</strong> Provision secure emails or phone relays.</span>
                           </div>
-                          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                          <div>
                             <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>✓</span>
                             <span style={{ fontSize: '0.88rem', color: '#cbd5e1' }}><strong>Hybrid Automated Opt-Outs:</strong> Continuous background scans across broker databases.</span>
                           </div>
-                          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                          <div>
                             <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>✓</span>
                             <span style={{ fontSize: '0.88rem', color: '#cbd5e1' }}><strong>Human Analyst Audits:</strong> Our real privacy analysts enforce removals manually.</span>
                           </div>
-                          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                          <div>
                             <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>✓</span>
                             <span style={{ fontSize: '0.88rem', color: '#cbd5e1' }}><strong>Emergency Burn:</strong> Scorch all email and phone alias relays instantly.</span>
                           </div>
-                          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                          <div>
                             <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>✓</span>
                             <span style={{ fontSize: '0.88rem', color: '#cbd5e1' }}><strong>Standalone Native App:</strong> Full access from Android or mobile client.</span>
                           </div>
@@ -1681,26 +1681,26 @@ const handleEmergencyBurn = async () => {
                     <div className="pricing-card feature-card">
                       <div className="price-box" style={{ alignItems: 'stretch', textAlign: 'left' }}>
                         <h3 className="tiger-text" style={{ textAlign: 'center', marginBottom: '20px' }}>SECURITY COMMITMENTS</h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
-                          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                        <div className="pricing-features-list">
+                          <div>
                             <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold', fontSize: '1.1rem' }}>✓</span>
                             <span style={{ fontSize: '0.88rem', color: '#cbd5e1', lineHeight: '1.4' }}>
                               <strong>Client-Side Encryption:</strong> Profile data is encrypted in transit and at rest with zero-knowledge keys. We store no plaintext PII.
                             </span>
                           </div>
-                          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                          <div>
                             <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold', fontSize: '1.1rem' }}>✓</span>
                             <span style={{ fontSize: '0.88rem', color: '#cbd5e1', lineHeight: '1.4' }}>
                               <strong>180+ Broker Removal:</strong> Direct opt-outs filed across public search directories and broker systems.
                             </span>
                           </div>
-                          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                          <div>
                             <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold', fontSize: '1.1rem' }}>✓</span>
                             <span style={{ fontSize: '0.88rem', color: '#cbd5e1', lineHeight: '1.4' }}>
                               <strong>Encrypted Routing Aliases:</strong> Provision secure email relays and phone forwarding lines instantly.
                             </span>
                           </div>
-                          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                          <div>
                             <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold', fontSize: '1.1rem' }}>✓</span>
                             <span style={{ fontSize: '0.88rem', color: '#cbd5e1', lineHeight: '1.4' }}>
                               <strong>Stripe Protected Checkout:</strong> Subscriptions are fully secured via Stripe's encrypted payment network.

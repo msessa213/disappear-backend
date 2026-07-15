@@ -1060,3 +1060,18 @@ input[type="checkbox"] {
     flex: 1 1 auto !important;
   }
 }
+
+.pricing-features-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  margin-top: 20px !important;
+  width: 100% !important;
+}
+
+.pricing-features-list > div {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 10px !important;
+  align-items: flex-start !important;
+}
