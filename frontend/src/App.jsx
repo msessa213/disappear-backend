@@ -23,9 +23,7 @@ import './App.css';
 
 // --- DYNAMIC API ROUTING ---
 // IMPORTANT: This should be the final, public URL of your backend on AWS ECS
-const PROD_API = window.location.hostname.includes('railway') 
-  ? "https://disappear-backend-production.up.railway.app" 
-  : "https://api.disappearco.com";
+const PROD_API = "https://disappear-backend-production.up.railway.app";
 const LOCAL_API = "http://127.0.0.1:8000";
 
 // Uses local backend during local development, but forces Production for Native Apps and Live Web
