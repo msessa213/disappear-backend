@@ -780,6 +780,7 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
                 "purchase_type": purchase_key,
                 "user_id": user_id
             },
+            "allow_promotion_codes": True,
             "success_url": f"{return_url}?payment=success",
             "cancel_url": f"{return_url}?payment=cancel",
         }
