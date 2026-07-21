@@ -447,24 +447,24 @@ function App() {
 
   const syncDefenseData = useCallback(async () => {
     try {
-      // 1. Sync Base Dashboard Data
       const activeUserId = localStorage.getItem("disappear_user_id") || "";
       
-      // Update last active timestamp
       localStorage.setItem("disappear_last_active", Date.now().toString());
       
-      // FIX: Clean up corrupt state from previous errors
       if (activeUserId === "undefined") {
           localStorage.removeItem("disappear_user_id");
           localStorage.removeItem("disappear_session");
           window.location.reload();
           return;
       }
+      
+      // 1. Consolidated Sync Handshake
       const res = await secureRequest(`${API_BASE_URL}/dashboard/sync?user_id=${activeUserId}&t=${Date.now()}`);
+      if (!res.ok) throw new Error("Sync failed");
       const data = await res.json();
 
+      // 2. Map Profile
       if (data.profile) {
-          // FIXED: Parsing the new decoupled fields from main.py
           setCredits({
               vcc_total: data.profile.vcc_email_total || 6,
               vcc_used: data.profile.used_vcc_email || 0,
@@ -473,50 +473,46 @@ function App() {
           });
       }
 
-      // 2. Sync Filtered Purge History (Replacing the static recent audit)
-      const historyRes = await secureRequest(`${API_BASE_URL}/api/v1/history?days=${historyDays}`);
-      const historyData = await historyRes.json();
-      
-      setAuditLog(prevLog => {
-        const latest = historyData.history?.[0];
-        const oldLatest = prevLog.length > 0 ? prevLog[0] : null;
-        if (latest && (!oldLatest || latest.timestamp !== oldLatest.timestamp)) {
-            pushNotification(`SYSTEM_UPDATE: [${latest.action}]`);
-        }
-        return historyData.history || [];
-      });
-
-      // 3. Sync Financial/Alias Nodes
-      const finRes = await secureRequest(`${API_BASE_URL}/financials/data`);
-      const finData = await finRes.json();
-      setCards(finData.cards || []);
-      const aliasRes = await secureRequest(`${API_BASE_URL}/aliases/data`);
-      const aliasData = await aliasRes.json();
-      const allAliases = aliasData.aliases || [];
-      
-      setEmails(allAliases.filter(a => a.type === 'email'));
-      setPhones(allAliases.filter(a => a.type === 'phone'));
-      
-      // 4. Sync Target Emails
-      await fetchTargetEmails();
-
-      // 5. Sync Linked Funding Sources
-      try {
-        const methodsRes = await secureRequest(`${API_BASE_URL}/payments/methods?user_id=${activeUserId}`);
-        if (methodsRes.ok) {
-          const methodsData = await methodsRes.json();
-          setPaymentMethods(methodsData.methods || []);
-          if (methodsData.methods && methodsData.methods.length > 0 && !selectedFundingSource) {
-            setSelectedFundingSource(methodsData.methods[0].id);
+      // 3. Map Real Purge History
+      if (data.history) {
+        setAuditLog(prevLog => {
+          const latest = data.history[0];
+          const oldLatest = prevLog.length > 0 ? prevLog[0] : null;
+          if (latest && (!oldLatest || latest.timestamp !== oldLatest.timestamp)) {
+              pushNotification(`SYSTEM_UPDATE: [${latest.action}]`);
           }
+          return data.history;
+        });
+      }
+
+      // 4. Map Cards
+      if (data.cards) {
+        setCards(data.cards);
+      }
+
+      // 5. Map Aliases (Emails & Phones)
+      if (data.aliases) {
+        const allAliases = data.aliases;
+        setEmails(allAliases.filter(a => a.type === 'email'));
+        setPhones(allAliases.filter(a => a.type === 'phone'));
+      }
+
+      // 6. Map Target Emails
+      if (data.target_emails) {
+        setTargetEmails(data.target_emails);
+      }
+
+      // 7. Map Payment Methods
+      if (data.payment_methods) {
+        setPaymentMethods(data.payment_methods);
+        if (data.payment_methods.length > 0 && !selectedFundingSource) {
+          setSelectedFundingSource(data.payment_methods[0].id);
         }
-      } catch (e) {
-        console.warn("Failed to sync payment methods");
       }
     } catch (err) { 
         console.warn("Network interrupted. Attempting silent reconnect on next cycle...");
     }
-  }, [pushNotification, historyDays]);
+  }, [pushNotification, selectedFundingSource]);
 
   useEffect(() => {
     let interval;

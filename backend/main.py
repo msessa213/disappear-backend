@@ -625,6 +625,83 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
 
     random.seed(time.time())
 
+    # 2. Real Purge History (Consolidated)
+    from datetime import timedelta
+    cutoff_date = datetime.utcnow() - timedelta(days=30)
+    history = (
+        db.query(DBPurgeLog)
+        .filter(DBPurgeLog.timestamp >= cutoff_date)
+        .order_by(desc(DBPurgeLog.timestamp))
+        .all()
+    )
+    history_list = [
+        {
+            "id": entry.id,
+            "action": entry.action_type,
+            "node": entry.node_id,
+            "timestamp": entry.timestamp.isoformat()
+        } for entry in history
+    ]
+
+    # 3. Virtual Cards (Consolidated)
+    cards = []
+    try:
+        cards_entities = db.query(DBCard).filter(DBCard.user_id == uid).order_by(DBCard.created_at.desc()).all()
+        cards = [{
+            "id": c.id,
+            "user_id": c.user_id,
+            "label": c.label,
+            "number": c.number,
+            "expiry": c.expiry,
+            "cvv": c.cvv,
+            "funding_source": c.funding_source,
+            "created_at": c.created_at.isoformat()
+        } for c in cards_entities]
+    except Exception as e:
+        logger.error(f"Sync Cards Error: {e}")
+
+    # 4. Aliases (Email & Phone - Consolidated)
+    aliases_list = []
+    try:
+        aliases_entities = db.query(DBAlias).filter(DBAlias.user_id == uid).order_by(DBAlias.created_at.desc()).all()
+        aliases_list = [{
+            "id": a.id,
+            "user_id": a.user_id,
+            "label": a.label,
+            "type": a.type,
+            "content": a.content,
+            "created_at": a.created_at.isoformat()
+        } for a in aliases_entities]
+    except Exception as e:
+        logger.error(f"Sync Aliases Error: {e}")
+
+    # 5. Target Emails (Consolidated)
+    target_emails = {"primary": "", "additional": [], "slots": 1, "used": 0}
+    try:
+        current_extra_count = db.query(DBTargetEmail).filter(DBTargetEmail.profile_id == uid).count()
+        allowed_extras = 1 + (profile.extra_email_slots or 0)
+        emails_entities = db.query(DBTargetEmail).filter(DBTargetEmail.profile_id == uid).all()
+        target_emails = {
+            "primary": profile.email,
+            "additional": [{"id": te.id, "email": te.email} for te in emails_entities],
+            "slots": allowed_extras,
+            "used": current_extra_count
+        }
+    except Exception as e:
+        logger.error(f"Sync Target Emails Error: {e}")
+
+    # 6. Payment Methods (Consolidated)
+    payment_methods = []
+    if profile.stripe_customer_id:
+        try:
+            methods = stripe.PaymentMethod.list(
+                customer=profile.stripe_customer_id,
+                type="card",
+            )
+            payment_methods = [{"id": m.id, "brand": m.card.brand, "last4": m.card.last4, "exp_month": m.card.exp_month, "exp_year": m.card.exp_year} for m in methods.data]
+        except Exception as e:
+            logger.error(f"Sync Payment Methods Error: {e}")
+
     return {
         "profile": {
             "email_alias": STABLE_EMAIL,
@@ -641,7 +718,12 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
         },
         "recent_audit": logs,
         "map_nodes": map_nodes,
-        "system_status": "ENCRYPTED_TUNNEL_STABLE"
+        "system_status": "ENCRYPTED_TUNNEL_STABLE",
+        "history": history_list,
+        "cards": cards,
+        "aliases": aliases_list,
+        "target_emails": target_emails,
+        "payment_methods": payment_methods
     }
 
 
