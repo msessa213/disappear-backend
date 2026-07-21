@@ -520,13 +520,44 @@ function App() {
 
   useEffect(() => {
     let interval;
-    if (showShield) {
-      syncDefenseData();
-      interval = setInterval(() => {
+    
+    const startPolling = () => {
+      if (showShield && !document.hidden) {
         syncDefenseData();
-      }, 10000);
+        if (!interval) {
+          interval = setInterval(() => {
+            if (!document.hidden) {
+              syncDefenseData();
+            }
+          }, 10000);
+        }
+      }
+    };
+
+    const stopPolling = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        startPolling();
+      }
+    };
+
+    if (showShield) {
+      startPolling();
+      document.addEventListener("visibilitychange", handleVisibilityChange);
     }
-    return () => clearInterval(interval);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [showShield, syncDefenseData, historyDays, fetchTargetEmails]);
 
   const handlePurchaseExpansion = async (type) => {
