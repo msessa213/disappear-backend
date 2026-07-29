@@ -143,6 +143,12 @@ def log_compliance_rejection(user_id: str, action: str, reason: str):
 
 # Auto-create tables on startup with crash protection
 try:
+    if engine.dialect.name == "postgresql":
+        with engine.begin() as conn:
+            try:
+                conn.execute(text("SET default_transaction_read_only = off;"))
+            except Exception:
+                pass
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables verified/created.")
 except Exception as e:
@@ -157,10 +163,16 @@ def safe_add_column(table: str, column: str, col_type: str):
         stmt = f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {col_type}"
     try:
         with engine.begin() as conn:
+            if not is_sqlite:
+                try:
+                    conn.execute(text("SET default_transaction_read_only = off;"))
+                except Exception:
+                    pass
             conn.execute(text(stmt))
     except Exception as e:
         # Ignore errors if the column already exists
         pass
+
 
 safe_add_column("shield_profiles_v3", "extra_email_slots", "INTEGER DEFAULT 0")
 safe_add_column("shield_assets_v3", "user_id", "VARCHAR")
