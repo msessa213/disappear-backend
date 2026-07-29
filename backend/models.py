@@ -127,3 +127,16 @@ class DBMarqetaEvent(Base):
     token = Column(String, unique=True, index=True)
     type = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
+
+class DBBrokerMatch(Base):
+    __tablename__ = "broker_matches_v1"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, index=True)
+    broker_name = Column(String)
+    record_identifier = Column(String, nullable=True)
+    record_details = Column(String)  # JSON-encoded summary of matched details
+    confidence_score = Column(Integer)  # 0 to 100
+    status = Column(String, default="NEEDS_VERIFICATION")  # AUTO_REMOVED, NEEDS_VERIFICATION, VERIFIED, REJECTED
+    verification_token = Column(String, unique=True, index=True, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

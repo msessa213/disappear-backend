@@ -44,9 +44,11 @@ async def health_status():
 # --- COMPREHENSIVE STARTUP ERROR HANDLING ---
 try:
     # --- IMPORT DATABASE FROM MODELS ---
-    from models import engine, SessionLocal, Base, DBCard, DBAlias, DBProfile, DBTargetEmail, DBScrubLog, DBPurgeLog, DBMarqetaEvent
+    from models import engine, SessionLocal, Base, DBCard, DBAlias, DBProfile, DBTargetEmail, DBScrubLog, DBPurgeLog, DBMarqetaEvent, DBBrokerMatch
     from services.twilio_service import send_sms, make_voice_call, twilio_client
     from services.redaction_service import RedactionService
+    from services.match_engine import MatchEngine
+    from services.notification_service import NotificationService
 
     # --- INITIALIZATION BLOCK ---
     load_dotenv()
@@ -1712,7 +1714,213 @@ async def twilio_incoming_sms(
     return Response(content=twiml, media_type="application/xml")
 
 
+# --- DATA BROKER MATCH EVALUATION & VERIFICATION ENDPOINTS ---
+
+class EvaluateRecordRequest(BaseModel):
+    user_id: str
+    broker_name: str
+    record_identifier: Optional[str] = None
+    record_data: dict
+
+class VerifyMatchRequest(BaseModel):
+    action: str  # "confirm" or "reject"
+
+@app.post("/api/v1/matches/evaluate")
+async def evaluate_broker_record(req: EvaluateRecordRequest, db: Session = Depends(get_db)):
+    """
+    Evaluates a candidate broker record against user profile attributes.
+    Auto-removes high confidence matches and triggers immediate event alert for ambiguous matches.
+    """
+    profile = db.query(DBProfile).filter(DBProfile.id == req.user_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="User profile not found")
+
+    profile_dict = {
+        "first_name": profile.first_name,
+        "last_name": profile.last_name,
+        "middle_name": profile.middle_name,
+        "dob": profile.dob,
+        "address": profile.address,
+        "phone": profile.phone
+    }
+
+    score, breakdown = MatchEngine.calculate_confidence(profile_dict, req.record_data)
+    status = MatchEngine.determine_status(score)
+    
+    verification_token = None
+    alert_info = None
+
+    if status == "NEEDS_VERIFICATION":
+        verification_token = MatchEngine.generate_verification_token()
+        verification_url = f"https://disappear.app/verify-match?token={verification_token}"
+        alert_info = NotificationService.send_ambiguity_alert(
+            user_email=profile.email,
+            broker_name=req.broker_name,
+            verification_url=verification_url,
+            record_summary=breakdown["record_summary"]
+        )
+
+    broker_match = DBBrokerMatch(
+        user_id=profile.id,
+        broker_name=req.broker_name,
+        record_identifier=req.record_identifier,
+        record_details=json.dumps(breakdown),
+        confidence_score=score,
+        status=status,
+        verification_token=verification_token
+    )
+    db.add(broker_match)
+
+    # If confidence is high (AUTO_REMOVED), create scrub log directly
+    if status == "AUTO_REMOVED":
+        scrub_log = DBScrubLog(
+            user_id=profile.id,
+            broker_name=req.broker_name,
+            status="REMOVAL_INITIATED",
+            removal_type="AUTOMATED"
+        )
+        db.add(scrub_log)
+
+    db.commit()
+    db.refresh(broker_match)
+
+    return {
+        "match_id": broker_match.id,
+        "broker_name": req.broker_name,
+        "confidence_score": score,
+        "status": status,
+        "breakdown": breakdown,
+        "alert_triggered": alert_info is not None,
+        "verification_token": verification_token
+    }
+
+@app.get("/api/v1/matches/pending")
+async def get_pending_matches(x_user_id: Optional[str] = Header(None), user_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
+    """
+    Returns list of ambiguous broker records awaiting customer verification.
+    """
+    uid = x_user_id or user_id
+    if not uid:
+        raise HTTPException(status_code=400, detail="Missing user_id")
+    
+    pending = db.query(DBBrokerMatch).filter(
+        DBBrokerMatch.user_id == uid,
+        DBBrokerMatch.status == "NEEDS_VERIFICATION"
+    ).order_by(desc(DBBrokerMatch.created_at)).all()
+
+    res = []
+    for item in pending:
+        details = json.loads(item.record_details) if item.record_details else {}
+        res.append({
+            "id": item.id,
+            "broker_name": item.broker_name,
+            "record_identifier": item.record_identifier,
+            "confidence_score": item.confidence_score,
+            "status": item.status,
+            "created_at": item.created_at.isoformat() if item.created_at else None,
+            "verification_token": item.verification_token,
+            "details": details
+        })
+    return {"pending_matches": res, "count": len(res)}
+
+@app.post("/api/v1/matches/{match_id}/verify")
+async def verify_match(match_id: int, req: VerifyMatchRequest, x_user_id: Optional[str] = Header(None), user_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
+    """
+    Allows user to confirm or reject an ambiguous broker match.
+    """
+    match_item = db.query(DBBrokerMatch).filter(DBBrokerMatch.id == match_id).first()
+    if not match_item:
+        raise HTTPException(status_code=404, detail="Match record not found")
+
+    if req.action.lower() not in ["confirm", "reject"]:
+        raise HTTPException(status_code=400, detail="Action must be 'confirm' or 'reject'")
+
+    if req.action.lower() == "confirm":
+        match_item.status = "VERIFIED"
+        # Trigger removal process
+        scrub_log = DBScrubLog(
+            user_id=match_item.user_id,
+            broker_name=match_item.broker_name,
+            status="REMOVAL_INITIATED",
+            removal_type="USER_VERIFIED"
+        )
+        db.add(scrub_log)
+    else:
+        match_item.status = "REJECTED"
+
+    match_item.updated_at = datetime.utcnow()
+    db.commit()
+
+    return {
+        "match_id": match_item.id,
+        "status": match_item.status,
+        "message": "Match verified and removal initiated." if req.action.lower() == "confirm" else "Match rejected and discarded."
+    }
+
+@app.get("/api/v1/matches/verify-token/{token}")
+async def verify_token(token: str, action: str = Query("confirm"), db: Session = Depends(get_db)):
+    """
+    1-Click email link verification for ambiguous records.
+    """
+    match_item = db.query(DBBrokerMatch).filter(DBBrokerMatch.verification_token == token).first()
+    if not match_item:
+        raise HTTPException(status_code=404, detail="Invalid or expired verification token")
+
+    if action.lower() == "confirm":
+        match_item.status = "VERIFIED"
+        scrub_log = DBScrubLog(
+            user_id=match_item.user_id,
+            broker_name=match_item.broker_name,
+            status="REMOVAL_INITIATED",
+            removal_type="EMAIL_VERIFIED"
+        )
+        db.add(scrub_log)
+    else:
+        match_item.status = "REJECTED"
+
+    match_item.updated_at = datetime.utcnow()
+    db.commit()
+
+    return {
+        "status": "SUCCESS",
+        "broker_name": match_item.broker_name,
+        "action_taken": action.lower(),
+        "new_match_status": match_item.status
+    }
+
+@app.post("/api/v1/notifications/quarterly-summary")
+async def send_quarterly_report(user_id: str, quarter: str = Query("Q3 2026"), db: Session = Depends(get_db)):
+    """
+    Generates and triggers a quarterly executive summary report for the user.
+    """
+    profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="User profile not found")
+
+    removed_count = db.query(DBScrubLog).filter(DBScrubLog.user_id == user_id).count()
+    pending_count = db.query(DBBrokerMatch).filter(
+        DBBrokerMatch.user_id == user_id,
+        DBBrokerMatch.status == "NEEDS_VERIFICATION"
+    ).count()
+
+    stats = {
+        "removed": removed_count,
+        "in_progress": max(0, removed_count // 4),
+        "pending_verification": pending_count
+    }
+
+    user_name = f"{profile.first_name or ''} {profile.last_name or ''}".strip()
+    report = NotificationService.generate_quarterly_summary(
+        user_email=profile.email,
+        user_name=user_name,
+        quarter=quarter,
+        stats=stats
+    )
+
+    return {"status": "SENT", "report": report}
+
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
