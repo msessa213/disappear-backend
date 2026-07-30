@@ -1739,7 +1739,7 @@ const handleEmergencyBurn = async () => {
                           <div>
                             <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold', fontSize: '1.1rem' }}>✓</span>
                             <span style={{ fontSize: '0.88rem', color: '#cbd5e1', lineHeight: '1.4' }}>
-                              <strong>Stripe Protected Checkout:</strong> Subscriptions are fully secured via Stripe's encrypted payment network.
+                              <strong>Protected Checkout:</strong> Subscriptions are fully secured via an encrypted payment network.
                             </span>
                           </div>
                         </div>
