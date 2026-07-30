@@ -1777,6 +1777,41 @@ async def twilio_incoming_sms(
     return Response(content=twiml, media_type="application/xml")
 
 
+@app.get("/api/v1/test-twilio")
+async def test_twilio_connection():
+    """Diagnostic endpoint to test Railway's live Twilio credentials"""
+    from services.twilio_service import twilio_client, settings
+    acct = settings.TWILIO_ACCOUNT_SID or ""
+    key = settings.TWILIO_API_KEY_SID or ""
+    
+    masked_acct = acct[:4] + "..." + acct[-4:] if len(acct) > 8 else acct
+    masked_key = key[:4] + "..." + key[-4:] if len(key) > 8 else key
+
+    if not twilio_client:
+        return {
+            "status": "CLIENT_NOT_INITIALIZED",
+            "account_sid_prefix": masked_acct,
+            "key_sid_prefix": masked_key,
+            "error": "Twilio client is None. Check environment variables in Railway."
+        }
+
+    try:
+        acc_info = twilio_client.api.v2010.accounts(acct).fetch()
+        return {
+            "status": "SUCCESS",
+            "account_name": acc_info.friendly_name,
+            "account_sid": masked_acct,
+            "twilio_active": True
+        }
+    except Exception as e:
+        return {
+            "status": "TWILIO_API_ERROR",
+            "account_sid_prefix": masked_acct,
+            "key_sid_prefix": masked_key,
+            "error_detail": str(e)
+        }
+
+
 # --- DATA BROKER MATCH EVALUATION & VERIFICATION ENDPOINTS ---
 
 class EvaluateRecordRequest(BaseModel):
