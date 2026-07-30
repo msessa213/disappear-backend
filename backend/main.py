@@ -558,6 +558,26 @@ async def resolve_manual_task(log_id: int, db: Session = Depends(get_db), admin_
     return {"status": "SUCCESS", "message": f"Broker {task.broker_name} status updated to REMOVED."}
 
 
+@app.delete("/api/admin/profile/delete-by-email")
+async def delete_profile_by_email(email: str = Query(...), db: Session = Depends(get_db)):
+    """Deletes test profiles and associated scrub logs by email address"""
+    profiles = db.query(DBProfile).filter(DBProfile.email.ilike(email.strip())).all()
+    if not profiles:
+        return {"status": "NOT_FOUND", "message": f"No profile found for {email}"}
+    
+    count = 0
+    for prof in profiles:
+        db.query(DBScrubLog).filter(DBScrubLog.user_id == prof.id).delete()
+        db.query(DBAlias).filter(DBAlias.user_id == prof.id).delete()
+        db.query(DBCard).filter(DBCard.user_id == prof.id).delete()
+        db.delete(prof)
+        count += 1
+        
+    db.commit()
+    return {"status": "SUCCESS", "message": f"Deleted {count} profile(s) for email {email}"}
+
+
+
 @app.post("/api/admin/complete-manual-scrub/{log_id}")
 async def complete_manual_scrub(
     log_id: int, 
