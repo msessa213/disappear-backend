@@ -88,44 +88,48 @@ def make_voice_call(to_phone_number: str, twiml_url: str) -> bool:
 def provision_phone_number(area_code: str = "800", country_code: str = "US") -> str | None:
     """
     Searches for and purchases a new Twilio phone number.
-    Useful for generating new phone aliases for users.
+    Supports local area codes and toll-free codes (800, 888, 877, etc.).
     """
     if not twilio_client:
         logger.error("TWILIO_PROVISION_FAILURE: Twilio client is not available.")
-        # FALLBACK: For development/testing/offline-mode, return a mock number
-        # to prevent 502 Bad Gateway crashes in the UI.
         import random
         mock_number = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
         logger.warning(f"TWILIO_MOCK_FALLBACK: Generated mock number {mock_number}")
         return mock_number
         
     try:
-        local_numbers = twilio_client.available_phone_numbers(country_code).local.list(
-            area_code=area_code,
-            limit=1
-        )
-        if not local_numbers:
-            logger.warning(f"TWILIO_PROVISION_WARNING: No numbers found for area code {area_code}. Trying generic search...")
-            local_numbers = twilio_client.available_phone_numbers(country_code).local.list(
-                limit=1
-            )
+        available_numbers = []
+        is_toll_free = (area_code or "").strip() in ["800", "888", "877", "866", "855", "844", "833"]
+
+        if is_toll_free:
+            try:
+                available_numbers = twilio_client.available_phone_numbers(country_code).toll_free.list(limit=1)
+            except Exception as e:
+                logger.warning(f"Toll-free search failed: {e}")
+
+        if not available_numbers and area_code:
+            try:
+                available_numbers = twilio_client.available_phone_numbers(country_code).local.list(
+                    area_code=area_code,
+                    limit=1
+                )
+            except Exception as e:
+                logger.warning(f"Area code search for {area_code} failed: {e}")
+
+        if not available_numbers:
+            logger.warning(f"No numbers found for area code {area_code}. Trying generic local search...")
+            available_numbers = twilio_client.available_phone_numbers(country_code).local.list(limit=1)
             
-        if not local_numbers:
+        if not available_numbers:
             logger.error("TWILIO_PROVISION_FAILURE: No numbers found in country pool.")
             return None
             
-        import os
-        domain = os.getenv("RAILWAY_PUBLIC_DOMAIN") or os.getenv("RAILWAY_STATIC_URL")
-        if domain:
-            base_url = f"https://{domain}" if not domain.startswith("http") else domain
-        else:
-            base_url = "https://disappear-backend-production.up.railway.app"
-            
+        base_url = "https://disappear-backend-production.up.railway.app"
         voice_url = f"{base_url}/twilio/voice"
         sms_url = f"{base_url}/twilio/sms"
         
         purchased_number = twilio_client.incoming_phone_numbers.create(
-            phone_number=local_numbers[0].phone_number,
+            phone_number=available_numbers[0].phone_number,
             voice_url=voice_url,
             sms_url=sms_url,
             voice_method="POST",
