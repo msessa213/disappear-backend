@@ -1025,17 +1025,19 @@ const handleEmergencyBurn = async () => {
             }
         } else {
             const errData = await profileRes.json().catch(() => ({}));
+            console.error("Profile Save Error Response:", errData);
             if (errData.detail === "EMAIL_ALREADY_EXISTS") {
                 triggerToast("ERROR: EMAIL ALREADY REGISTERED");
             } else if (errData.detail === "PHONE_ALREADY_EXISTS") {
                 triggerToast("ERROR: PHONE NUMBER ALREADY IN USE");
             } else {
-                triggerToast("PROFILE REGISTRATION FAILED");
+                const detailMsg = typeof errData.detail === 'string' ? errData.detail : "PROFILE REGISTRATION FAILED";
+                triggerToast("ERROR: " + detailMsg);
             }
         }
     } catch (err) {
         console.error("Connection Error:", err);
-        triggerToast("NODE OFFLINE");
+        triggerToast("NODE OFFLINE: " + (err.message || ""));
     } finally {
         setIsMinting(false);
     }
