@@ -1687,6 +1687,16 @@ app.include_router(jit_gateway_router)
 
 
 # --- TWILIO INBOUND CALL/SMS WEBHOOKS ---
+def format_to_e164(phone_str: str) -> str:
+    digits = "".join(filter(str.isdigit, phone_str or ""))
+    if len(digits) == 10:
+        return f"+1{digits}"
+    elif len(digits) == 11 and digits.startswith("1"):
+        return f"+{digits}"
+    elif digits:
+        return f"+{digits}"
+    return phone_str or ""
+
 @app.post("/twilio/voice")
 async def twilio_incoming_voice(
     To: str = Form(...),
@@ -1698,9 +1708,17 @@ async def twilio_incoming_voice(
     Resolves the virtual number to the user's real phone number and returns TwiML to forward it.
     """
     logger.info(f"TWILIO_INBOUND_VOICE: Call to {To} from {From}")
+    clean_to = "".join(filter(str.isdigit, To or ""))
     
-    # Look up the alias in the database
-    alias = db.query(DBAlias).filter(DBAlias.content == To, DBAlias.type == "phone").first()
+    # Flexible lookup against phone aliases
+    phone_aliases = db.query(DBAlias).filter(DBAlias.type == "phone").all()
+    alias = None
+    for a in phone_aliases:
+        clean_content = "".join(filter(str.isdigit, a.content or ""))
+        if clean_content and (clean_to == clean_content or clean_to.endswith(clean_content) or clean_content.endswith(clean_to)):
+            alias = a
+            break
+
     if not alias or not alias.user_id:
         logger.warning(f"TWILIO_VOICE_REJECT: No alias found for virtual number {To}")
         twiml = "<Response><Say>The number you have dialed is not in service.</Say></Response>"
@@ -1713,9 +1731,9 @@ async def twilio_incoming_voice(
         twiml = "<Response><Say>The number you have dialed is temporarily unavailable.</Say></Response>"
         return Response(content=twiml, media_type="application/xml")
         
-    # Return TwiML to Dial/Forward to their real phone number
-    logger.info(f"TWILIO_VOICE_FORWARD: Forwarding call to {profile.phone}")
-    twiml = f'<Response><Dial>{profile.phone}</Dial></Response>'
+    forward_phone = format_to_e164(profile.phone)
+    logger.info(f"TWILIO_VOICE_FORWARD: Forwarding call from {From} to real phone {forward_phone}")
+    twiml = f'<Response><Dial>{forward_phone}</Dial></Response>'
     return Response(content=twiml, media_type="application/xml")
 
 
@@ -1731,9 +1749,17 @@ async def twilio_incoming_sms(
     Resolves the virtual number to the user's real phone number and forwards the SMS body.
     """
     logger.info(f"TWILIO_INBOUND_SMS: Message to {To} from {From}")
+    clean_to = "".join(filter(str.isdigit, To or ""))
     
-    # Look up the alias
-    alias = db.query(DBAlias).filter(DBAlias.content == To, DBAlias.type == "phone").first()
+    # Flexible lookup against phone aliases
+    phone_aliases = db.query(DBAlias).filter(DBAlias.type == "phone").all()
+    alias = None
+    for a in phone_aliases:
+        clean_content = "".join(filter(str.isdigit, a.content or ""))
+        if clean_content and (clean_to == clean_content or clean_to.endswith(clean_content) or clean_content.endswith(clean_to)):
+            alias = a
+            break
+
     if not alias or not alias.user_id:
         logger.warning(f"TWILIO_SMS_REJECT: No alias found for virtual number {To}")
         return Response(content="<Response/>", media_type="application/xml")
@@ -1744,10 +1770,10 @@ async def twilio_incoming_sms(
         logger.warning(f"TWILIO_SMS_REJECT: No forwarding number for user {alias.user_id}")
         return Response(content="<Response/>", media_type="application/xml")
         
-    # Return TwiML to forward the message to the user's real phone number
-    logger.info(f"TWILIO_SMS_FORWARD: Forwarding SMS to {profile.phone}")
+    forward_phone = format_to_e164(profile.phone)
+    logger.info(f"TWILIO_SMS_FORWARD: Forwarding SMS from {From} to real phone {forward_phone}")
     message_content = f"DISAPPEAR SMS [From {From}]: {Body}"
-    twiml = f'<Response><Message to="{profile.phone}">{message_content}</Message></Response>'
+    twiml = f'<Response><Message to="{forward_phone}">{message_content}</Message></Response>'
     return Response(content=twiml, media_type="application/xml")
 
 
