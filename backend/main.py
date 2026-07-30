@@ -577,6 +577,49 @@ async def delete_profile_by_email(email: str = Query(...), db: Session = Depends
     return {"status": "SUCCESS", "message": f"Deleted {count} profile(s) for email {email}"}
 
 
+class AssignPhoneRequest(BaseModel):
+    email: str
+    phone_number: str
+    label: Optional[str] = "Primary Virtual Line"
+
+@app.post("/api/admin/profile/assign-phone")
+async def assign_phone_to_profile(req: AssignPhoneRequest, db: Session = Depends(get_db)):
+    """Assigns or links a specific virtual phone number (e.g. +18137558466) to a user account"""
+    prof = db.query(DBProfile).filter(DBProfile.email.ilike(req.email.strip())).first()
+    if not prof:
+        raise HTTPException(status_code=404, detail=f"No user profile found for email {req.email}")
+    
+    clean_num = format_to_e164(req.phone_number)
+    alias_id = f"als_{int(time.time())}_{random.randint(100, 999)}"
+
+    # Check if user already has a phone alias
+    existing_phone_alias = db.query(DBAlias).filter(DBAlias.user_id == prof.id, DBAlias.type == "phone").first()
+    if existing_phone_alias:
+        existing_phone_alias.content = clean_num
+        existing_phone_alias.label = req.label
+        target_alias = existing_phone_alias
+    else:
+        target_alias = DBAlias(
+            id=alias_id,
+            user_id=prof.id,
+            type="phone",
+            label=req.label,
+            content=clean_num
+        )
+        db.add(target_alias)
+
+    db.commit()
+    return {
+        "status": "SUCCESS",
+        "user_id": prof.id,
+        "email": prof.email,
+        "assigned_phone": clean_num,
+        "alias_id": target_alias.id
+    }
+
+
+
+
 
 @app.post("/api/admin/complete-manual-scrub/{log_id}")
 async def complete_manual_scrub(
