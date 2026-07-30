@@ -44,6 +44,11 @@ export const Privacy = () => {
         profile data from our active removal queues.
       </p>
 
+      <h3 style={{ color: 'white', marginTop: '20px' }}>V. MOBILE INFORMATION & SMS COMPLIANCE</h3>
+      <p>
+        No mobile information will be shared with third parties/affiliates for marketing or promotional purposes. All the above categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties. Message frequency varies based on user activity. Message and data rates may apply. Users may opt-out at any time by replying STOP, or request assistance by replying HELP.
+      </p>
+
       <p style={{ marginTop: '30px', fontStyle: 'italic', color: 'var(--tiger-blue)', fontSize: '0.8rem' }}>
         Your data belongs to you. We just provide the exit.
       </p>
