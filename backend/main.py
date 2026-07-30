@@ -186,6 +186,8 @@ safe_add_column("shield_profiles_v3", "phone", "VARCHAR")
 safe_add_column("shield_profiles_v3", "kyc_status", "VARCHAR DEFAULT 'PENDING'")
 safe_add_column("shield_profiles_v3", "aml_flagged", "BOOLEAN DEFAULT FALSE")
 safe_add_column("shield_profiles_v3", "daily_spend_limit", "INTEGER DEFAULT 2000")
+safe_add_column("scrub_logs_v1", "removal_type", "VARCHAR DEFAULT 'AUTOMATED'")
+safe_add_column("scrub_logs_v1", "manual_instruction_url", "VARCHAR")
 
 # --- APP CONFIGURATION ---
 
@@ -1401,10 +1403,13 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
             
         db.commit()
         return {"status": "success", "profile_id": profile_id, "kyc_status": kyc_status, "aml_flagged": aml_flagged}
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
-        logger.error(f"PROFILE_SAVE_ERROR: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to store target profile.")
+        logger.error(f"PROFILE_SAVE_ERROR: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to store target profile: {str(e)}")
 
 
 @app.delete("/financials/kill/{card_id}")
