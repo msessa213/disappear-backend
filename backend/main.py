@@ -1771,6 +1771,29 @@ async def ai_privacy_chat(request: Request, req: AIChatRequest):
             "• **AES-256 Encrypted** vault exports\n"
             "• **Strict KYC/AML** compliance to stop fraudulent abuse."
         )
+    elif any(k in msg for k in ["breach", "breached", "hack", "hacked", "leak", "leaked", "stolen", "compromised", "dark web"]):
+        reply = (
+            "🚨 **What Happens If Your Data Is Breached or Leaked**:\n\n"
+            "1. **Your Real Identity Remains 100% Safe**:\n"
+            "   Because you use Disappear **Email & Phone Aliases**, when a company (like LinkedIn, DoorDash, or online store) suffers a data breach, hackers only get your *burner alias*. Your real personal email, real phone number, and real credit card details remain completely untouched.\n\n"
+            "2. **1-Tap Emergency Burn**:\n"
+            "   If spam or phishing emails start arriving on that breached alias, simply tap **Emergency Burn** in your dashboard. The alias is instantly scorched and deleted, severing the hackers' link to you permanently.\n\n"
+            "3. **Automated Dark Web & Broker Scrubbing**:\n"
+            "   Data brokers buy breached databases. Disappear continuously scans 47+ data broker sites every 30 days to detect and legally purge any re-listed records."
+        )
+    elif any(k in msg for k in ["spam", "robocall", "junk", "telemarketer", "scam", "phishing"]):
+        reply = (
+            "🚫 **How Disappear Stops Spam & Robocalls**:\n\n"
+            "• **Data Broker Purging**: Most spam calls come from data brokers selling your phone number. Disappear wipes your number from 47+ broker directories.\n"
+            "• **Masked Virtual Phone Lines**: Use Disappear phone relays for signups so spam never reaches your personal phone.\n"
+            "• **Instant Line Scorch**: If a virtual line receives spam, burn it in 1 click and replace it with a clean line."
+        )
+    elif any(k in msg for k in ["stalker", "dox", "doxxed", "doxxing", "harass", "safety", "threat", "ex-partner"]):
+        reply = (
+            "🛡️ **Stalker & Doxxing Protection**:\n\n"
+            "• **Complete PII Eradication**: We remove your home address, family member names, phone numbers, and location history from public search engines and 47+ people-search sites.\n"
+            "• **Human Analyst Priority**: High-risk or sensitive removal requests are escalated to our **Human Privacy Analyst Team** to ensure 100% compliance."
+        )
     elif any(k in msg for k in ["cancel", "cancellation", "refund", "guarantee", "stop"]):
         reply = (
             "✅ **100% Risk-Free & Easy Cancellation**:\n\n"
