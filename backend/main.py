@@ -22,6 +22,28 @@ import httpx
 from typing import Any, List, Optional
 from dotenv import load_dotenv
 import re
+import hashlib
+import hmac
+
+def hash_password(password: str) -> str:
+    if not password:
+        return None
+    salt = os.urandom(16)
+    key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
+    return salt.hex() + ":" + key.hex()
+
+def verify_password(password: str, hashed: str) -> bool:
+    if not hashed or not password or ":" not in hashed:
+        return False
+    try:
+        salt_hex, key_hex = hashed.split(":", 1)
+        salt = bytes.fromhex(salt_hex)
+        expected_key = bytes.fromhex(key_hex)
+        key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
+        return hmac.compare_digest(key, expected_key)
+    except Exception as e:
+        logger.error(f"VERIFY_PASSWORD_ERROR: {e}")
+        return False
 
 # --- EARLY FASTAPI INITIALIZATION ---
 app = FastAPI(title="Disappear P-A-A-S Engine")
@@ -186,6 +208,7 @@ safe_add_column("shield_profiles_v3", "phone", "VARCHAR")
 safe_add_column("shield_profiles_v3", "kyc_status", "VARCHAR DEFAULT 'PENDING'")
 safe_add_column("shield_profiles_v3", "aml_flagged", "BOOLEAN DEFAULT FALSE")
 safe_add_column("shield_profiles_v3", "daily_spend_limit", "INTEGER DEFAULT 2000")
+safe_add_column("shield_profiles_v3", "password_hash", "VARCHAR")
 safe_add_column("scrub_logs_v1", "removal_type", "VARCHAR DEFAULT 'AUTOMATED'")
 safe_add_column("scrub_logs_v1", "manual_instruction_url", "VARCHAR")
 
@@ -353,8 +376,8 @@ class AliasRequest(BaseModel):
 
 class LoginRequest(BaseModel):
     email: str
+    password: Optional[str] = None
     code: Optional[str] = None
-
 
 
 class TargetEmailRequest(BaseModel):
@@ -393,10 +416,22 @@ class SMSTestRequest(BaseModel):
 @app.post("/auth/login")
 @limiter.limit("20/minute")
 async def login_agent(request: Request, login_req: LoginRequest, db: Session = Depends(get_db)):
-    """Authenticates an agent via email to sync their specific profile to the app"""
-    profile = db.query(DBProfile).filter(DBProfile.email.ilike(login_req.email)).first()
+    """Authenticates an agent via email and password to sync their specific profile to the app"""
+    profile = db.query(DBProfile).filter(DBProfile.email.ilike(login_req.email.strip())).first()
     if not profile:
         raise HTTPException(status_code=404, detail="DATA_ERROR: AGENT_NOT_FOUND_IN_DATABASE")
+
+    if profile.password_hash:
+        if not login_req.password or not verify_password(login_req.password, profile.password_hash):
+            raise HTTPException(status_code=401, detail="INVALID_CREDENTIALS: INCORRECT_PASSWORD")
+    else:
+        # Legacy profile without password set yet: set password on first login if provided
+        if login_req.password:
+            profile.password_hash = hash_password(login_req.password)
+            db.commit()
+        else:
+            raise HTTPException(status_code=401, detail="PASSWORD_REQUIRED")
+
     return {
         "status": "AUTHORIZED",
         "user_id": profile.id,
@@ -1219,39 +1254,78 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
     alias_id = f"als_{int(time.time())}_{random.randint(100, 999)}"
     
     if alias_req.type.lower() == "email":
-        addy_api_key = os.getenv("ADDY_API_KEY")
-        if not addy_api_key:
-            logger.error("ADDY_IO_ERROR: ADDY_API_KEY is missing from environment variables")
-            raise HTTPException(status_code=500, detail="EMAIL_RELAY_PROVIDER_OFFLINE")
-            
-        try:
-            async with httpx.AsyncClient() as client:
-                headers = {
-                    "Authorization": f"Bearer {addy_api_key}",
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                    "X-Requested-With": "XMLHttpRequest" 
-                }
-                addy_response = await client.post(
-                    "https://app.addy.io/api/v1/aliases",
-                    headers=headers,
-                    json={
+        use_ses_relay = os.getenv("USE_SES_RELAY", "true").lower() in ("true", "1", "yes")
+        content = None
+        if use_ses_relay and os.getenv("AWS_ACCESS_KEY_ID"):
+            try:
+                from services.ses_relay_service import ses_relay_service
+                content = ses_relay_service.generate_alias_address(alias_req.label)
+                logger.info(f"SES_NATIVE_ALIAS_CREATED: {content} for profile {target_user_id}")
+            except Exception as ses_err:
+                logger.error(f"SES_NATIVE_ALIAS_ERROR: {ses_err}")
+
+        if not content:
+            addy_api_key = os.getenv("ADDY_API_KEY")
+            if not addy_api_key:
+                logger.error("ADDY_IO_ERROR: ADDY_API_KEY is missing from environment variables")
+                raise HTTPException(status_code=500, detail="EMAIL_RELAY_PROVIDER_OFFLINE")
+                
+            try:
+                async with httpx.AsyncClient() as client:
+                    headers = {
+                        "Authorization": f"Bearer {addy_api_key}",
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                        "X-Requested-With": "XMLHttpRequest" 
+                    }
+                    
+                    # Check / resolve recipient ID for target user profile email
+                    recipient_id = None
+                    user_email = profile.email if profile and profile.email else None
+                    if user_email:
+                        rec_res = await client.get("https://app.addy.io/api/v1/recipients", headers=headers)
+                        if rec_res.status_code == 200:
+                            recipients_list = rec_res.json().get("data", [])
+                            for r in recipients_list:
+                                if r.get("email", "").lower() == user_email.lower():
+                                    recipient_id = r.get("id")
+                                    break
+                        if not recipient_id:
+                            try:
+                                new_rec = await client.post(
+                                    "https://app.addy.io/api/v1/recipients",
+                                    headers=headers,
+                                    json={"email": user_email}
+                                )
+                                if new_rec.status_code < 400:
+                                    recipient_id = new_rec.json().get("data", {}).get("id")
+                            except Exception as ex:
+                                logger.warning(f"Addy recipient creation skipped: {ex}")
+
+                    alias_payload = {
                         "description": f"Disappear Vault - {alias_req.label}",
                         "format": "random_characters",
                         "domain": "anonaddy.me"
                     }
-                )
-                
-                if addy_response.status_code >= 400:
-                    logger.error(f"ADDY_IO_REJECTED [{addy_response.status_code}]: {addy_response.text}")
-                    raise HTTPException(status_code=502, detail=f"ADDY.IO REJECTED: {addy_response.text}")
+                    if recipient_id:
+                        alias_payload["recipient_ids"] = [recipient_id]
+
+                    addy_response = await client.post(
+                        "https://app.addy.io/api/v1/aliases",
+                        headers=headers,
+                        json=alias_payload
+                    )
                     
-                content = addy_response.json().get("data", {}).get("email")
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"ADDY_IO_MINT_ERROR: {str(e)}")
-            raise HTTPException(status_code=502, detail="EMAIL_RELAY_PROVIDER_OFFLINE")
+                    if addy_response.status_code >= 400:
+                        logger.error(f"ADDY_IO_REJECTED [{addy_response.status_code}]: {addy_response.text}")
+                        raise HTTPException(status_code=502, detail=f"ADDY.IO REJECTED: {addy_response.text}")
+                        
+                    content = addy_response.json().get("data", {}).get("email")
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.error(f"ADDY_IO_MINT_ERROR: {str(e)}")
+                raise HTTPException(status_code=502, detail="EMAIL_RELAY_PROVIDER_OFFLINE")
     else:
         # Actually buy a real number from Twilio!
         from services.twilio_service import provision_phone_number
@@ -1414,6 +1488,22 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
                             raise HTTPException(status_code=400, detail="PHONE_ALREADY_EXISTS")
 
         profile_id = f"user_{random.randint(1000, 9999)}"
+
+        # Automatically register user's email as Addy.io recipient for alias forwarding
+        if email_input:
+            addy_api_key = os.getenv("ADDY_API_KEY")
+            if addy_api_key:
+                try:
+                    async with httpx.AsyncClient() as client:
+                        headers = {
+                            "Authorization": f"Bearer {addy_api_key}",
+                            "Content-Type": "application/json",
+                            "Accept": "application/json",
+                            "X-Requested-With": "XMLHttpRequest" 
+                        }
+                        await client.post("https://app.addy.io/api/v1/recipients", headers=headers, json={"email": email_input})
+                except Exception as ex:
+                    logger.warning(f"Auto Addy recipient registration skipped: {ex}")
         
         # Initialize Stripe Customer
         stripe_customer_id = None
@@ -1438,6 +1528,9 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         kyc_status = "APPROVED" if is_watchlist_clean else "REJECTED"
         aml_flagged = not is_watchlist_clean
 
+        pwd_input = data.get("password")
+        pwd_hash = hash_password(pwd_input) if pwd_input else None
+
         new_profile = DBProfile(
             id=profile_id,
             first_name=data.get("firstName", "Unknown"),
@@ -1447,6 +1540,7 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
             address=data.get("address"),
             dob=data.get("dob"),
             phone=data.get("phone"),
+            password_hash=pwd_hash,
             stripe_customer_id=stripe_customer_id,
             kyc_status=kyc_status,
             aml_flagged=aml_flagged

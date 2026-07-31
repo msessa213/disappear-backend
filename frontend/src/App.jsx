@@ -12,6 +12,7 @@ import { Terms } from './Terms';
 import { AmlFraudPolicy } from './AmlFraudPolicy';
 import AdminDashboard from './AdminDashboard'; 
 import LandingPage from './LandingPage'; // Integration: Authority Website Layer
+import { checkBiometricAvailability, promptBiometricAuth } from './biometricService';
 
 import './App.css';
 
@@ -92,8 +93,14 @@ function App() {
   const [showMintModal, setShowMintModal] = useState(false);
   const [newCardLabel, setNewCardLabel] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [hasBiometrics, setHasBiometrics] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedFundingSource, setSelectedFundingSource] = useState("");
+
+  useEffect(() => {
+    checkBiometricAvailability().then(available => setHasBiometrics(available));
+  }, []);
 
   // --- SUPPORT & FAQ STATES ---
   const [showSupportModal, setShowSupportModal] = useState(false);
@@ -111,7 +118,7 @@ function App() {
   const [phones, setPhones] = useState([]);
 
   const [targetProfile, setTargetProfile] = useState({
-      firstName: "", middleName: "", lastName: "", email: "", phone: "",
+      firstName: "", middleName: "", lastName: "", email: "", password: "", phone: "",
       dob: "", address: "", city: "", state: "", zip: "", termsAccepted: false
   });
 
@@ -820,12 +827,13 @@ const handleEmergencyBurn = async () => {
 
   const verify2FA = async () => {
     if(!loginEmail) { triggerToast("ENTER REGISTERED EMAIL"); return; }
+    if(!loginPassword) { triggerToast("ENTER ACCOUNT PASSWORD"); return; }
     triggerToast("AUTHENTICATING...");
     try {
       const res = await secureRequest(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: loginEmail })
+        body: JSON.stringify({ email: loginEmail, password: loginPassword })
       });
       if (res.ok) {
         const data = await res.json();
@@ -838,10 +846,40 @@ const handleEmergencyBurn = async () => {
         triggerToast(`WELCOME BACK, ${data.first_name.toUpperCase()}`);
         syncDefenseData();
       } else {
-        triggerToast("ACCESS DENIED: AGENT NOT FOUND");
+        const errData = await res.json().catch(() => ({}));
+        if (res.status === 401) {
+          triggerToast("ACCESS DENIED: INCORRECT PASSWORD");
+        } else {
+          triggerToast("ACCESS DENIED: AGENT NOT FOUND");
+        }
       }
     } catch (err) {
        triggerToast("UPLINK FAILURE");
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    try {
+      const verified = await promptBiometricAuth("Authenticate to unlock Disappear Vault");
+      if (verified) {
+        const storedUserId = localStorage.getItem("disappear_user_id");
+        if (storedUserId) {
+          localStorage.setItem("disappear_session", "active");
+          setShow2FA(false); 
+          setShowLanding(false); // Switch to app
+          setShowShield(true); 
+          setProgress(100);
+          triggerToast("BIOMETRICS VERIFIED — VAULT UNLOCKED");
+          syncDefenseData();
+          return;
+        }
+        if (loginEmail && loginPassword) {
+          return verify2FA();
+        }
+        triggerToast("ENTER REGISTERED EMAIL & PASSWORD TO INITIALIZE BIOMETRIC LINK");
+      }
+    } catch (err) {
+      triggerToast("BIOMETRIC AUTH CANCELLED OR FAILED");
     }
   };
 
@@ -969,7 +1007,7 @@ const handleEmergencyBurn = async () => {
   };
 
   const handleFinalPurchase = async () => {
-    if(!targetProfile.firstName || !targetProfile.lastName || !targetProfile.email || !targetProfile.address || !targetProfile.city || !targetProfile.state || !targetProfile.zip) {
+    if(!targetProfile.firstName || !targetProfile.lastName || !targetProfile.email || !targetProfile.password || !targetProfile.address || !targetProfile.city || !targetProfile.state || !targetProfile.zip) {
         triggerToast("REQUIRED FIELDS MISSING");
         return;
     }
@@ -1626,9 +1664,18 @@ const handleEmergencyBurn = async () => {
                       <h3 className="tiger-text">AGENT AUTHENTICATION</h3>
                       <p className="field-label">REGISTERED EMAIL</p>
                       <input className="mask-btn" style={{width: '100%', textAlign: 'center', marginBottom: '10px', color: 'white'}} placeholder="agent@email.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
-                      <p className="field-label">MFA CODE (OPTIONAL)</p>
-                      <input className="mask-btn" style={{width: '100%', textAlign: 'center', color: 'white'}} placeholder="******" />
+                      <p className="field-label">ACCOUNT PASSWORD</p>
+                      <input type="password" className="mask-btn" style={{width: '100%', textAlign: 'center', color: 'white'}} placeholder="••••••••" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
                       <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={verify2FA}>VERIFY IDENTITY</button>
+                      {(hasBiometrics || Capacitor.isNativePlatform()) && (
+                        <button 
+                          className="mask-btn" 
+                          style={{width: '100%', marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderColor: 'var(--tiger-blue)', color: 'var(--tiger-blue)'}} 
+                          onClick={handleBiometricLogin}
+                        >
+                          <span style={{fontSize: '1.2rem'}}>🔒</span> LOG IN WITH FACE ID / BIOMETRICS
+                        </button>
+                      )}
                       <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => window.location.hash = ""}>CANCEL</button>
                     </div>
                   </div>
@@ -1693,6 +1740,7 @@ const handleEmergencyBurn = async () => {
                             <input className="mask-btn" placeholder="Middle Name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
                             <input className="mask-btn full-row" placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
                             <input className="mask-btn full-row" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
+                            <input type="password" className="mask-btn full-row" placeholder="Account Password" value={targetProfile.password} onChange={(e) => setTargetProfile({...targetProfile, password: e.target.value})} />
                             <input className="mask-btn full-row" placeholder="Real Phone Number (For SMS Forwarding)" value={targetProfile.phone} onChange={(e) => setTargetProfile({...targetProfile, phone: e.target.value})} />
                             <input ref={addressRef} className="mask-btn full-row" placeholder="Street Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
                             <input className="mask-btn" placeholder="City" value={targetProfile.city} onChange={(e) => setTargetProfile({...targetProfile, city: e.target.value})} />
