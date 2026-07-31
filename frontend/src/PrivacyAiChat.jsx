@@ -74,31 +74,73 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
 
   return (
     <div style={{ position: 'fixed', bottom: '25px', right: '25px', zIndex: 99999 }}>
-      {/* Floating Toggle Button */}
+      {/* Modern Streamlined Floating Toggle Button */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
+          title="Open AI Privacy Assistant"
           style={{
-            background: 'linear-gradient(135deg, #0047AB, #00D2FF)',
+            background: 'rgba(5, 11, 20, 0.88)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
             color: '#FFFFFF',
-            border: 'none',
-            borderRadius: '30px',
-            padding: '14px 22px',
-            fontSize: '0.92rem',
-            fontWeight: 'bold',
-            letterSpacing: '1px',
+            border: '1px solid rgba(0, 210, 255, 0.4)',
+            borderRadius: '50px',
+            padding: '8px 18px 8px 10px',
+            fontSize: '0.85rem',
+            fontWeight: '600',
+            letterSpacing: '0.8px',
             cursor: 'pointer',
-            boxShadow: '0 0 25px rgba(0, 210, 255, 0.5), 0 10px 20px rgba(0,0,0,0.5)',
+            boxShadow: '0 8px 32px rgba(0, 71, 171, 0.4), inset 0 1px 0 rgba(255,255,255,0.15)',
             display: 'flex',
             alignItems: 'center',
-            gap: '10px',
-            transition: 'all 0.3s ease'
+            gap: '12px',
+            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+            position: 'relative'
           }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1.0)'}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-3px)';
+            e.currentTarget.style.borderColor = 'rgba(0, 210, 255, 0.8)';
+            e.currentTarget.style.boxShadow = '0 12px 35px rgba(0, 210, 255, 0.6)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.borderColor = 'rgba(0, 210, 255, 0.4)';
+            e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 71, 171, 0.4)';
+          }}
         >
-          <span style={{ fontSize: '1.3rem' }}>🤖</span>
-          <span>AI PRIVACY ASSISTANT</span>
+          {/* Sleek Vector Shield Badge */}
+          <div style={{
+            width: '38px',
+            height: '38px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #0047AB, #00D2FF)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 0 14px rgba(0, 210, 255, 0.6)',
+            position: 'relative'
+          }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+            <span style={{
+              position: 'absolute',
+              top: '0px',
+              right: '0px',
+              width: '9px',
+              height: '9px',
+              backgroundColor: '#10B981',
+              borderRadius: '50%',
+              border: '2px solid #050B14'
+            }} />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: '700', color: '#FFFFFF', letterSpacing: '0.5px' }}>AI Privacy Shield</span>
+            <span style={{ fontSize: '0.68rem', color: '#00D2FF', opacity: 0.9 }}>Ask any question</span>
+          </div>
         </button>
       )}
 
