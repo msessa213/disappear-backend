@@ -65,8 +65,9 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
   };
 
   const quickPrompts = [
+    { label: "🏆 Why Disappear vs Others", query: "Why is Disappear better than DeleteMe, Incogni, or Optery?" },
+    { label: "🛡️ How It Works (Step-by-Step)", query: "How does Disappear scrub my data and protect my privacy step by step?" },
     { label: "💳 Pricing & Plans", query: "What are your pricing and plan options?" },
-    { label: "🛡️ How It Works", query: "How does Disappear scrub my data and protect my privacy?" },
     { label: "🔒 Relays & Aliases", query: "How do email and phone alias relays work?" },
     { label: "⚡ Emergency Burn", query: "What is Emergency Burn?" }
   ];

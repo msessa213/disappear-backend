@@ -1701,69 +1701,90 @@ async def generate_purge_receipt(db: Session = Depends(get_db)):
 @app.post("/api/v1/ai-chat")
 @limiter.limit("30/minute")
 async def ai_privacy_chat(request: Request, req: AIChatRequest):
-    """Provides automated AI Privacy & Support answers for pricing, how it works, broker scrubs, and aliases."""
+    """Provides automated AI Privacy & Support answers for pricing, how it works, broker scrubs, competitor comparison, and aliases."""
     msg = req.message.lower().strip()
     
-    if any(k in msg for k in ["price", "pricing", "cost", "how much", "plan", "subscription", "annual", "monthly", "tier", "fee"]):
+    if any(k in msg for k in ["compare", "vs", "versus", "deleteme", "incogni", "optery", "kanary", "better", "competitor", "difference", "why disappear"]):
         reply = (
-            "Disappear offers a simple, transparent **Elite Privacy Plan**:\n\n"
-            "• **Monthly Billing**: $19.99/month\n"
-            "• **Annual Billing**: $15.99/month ($191.88 billed annually - save 20%)\n\n"
-            "**What's Included**:\n"
-            "✓ 6 Active Slots (Email & Phone relays)\n"
-            "✓ Automated background scans across 47+ data broker sites\n"
-            "✓ Human Privacy Analyst manual opt-out enforcement\n"
-            "✓ Emergency Burn (scorch relays in 1 tap)\n"
-            "✓ Mobile App & Face ID / Biometric Security\n"
-            "✓ Easy 1-click cancellation inside your dashboard anytime."
+            "🏆 **Why Disappear is Superior to Competitors (DeleteMe, Incogni, Optery)**:\n\n"
+            "1. **Active Real-Time Defense vs Passive Cleaning**:\n"
+            "   • *Competitors* only try to scrub past leaks. They leave your inbox and phone open to future tracking.\n"
+            "   • *Disappear* provides **6 Active Alias Slots** (Burner Emails & Virtual Phone Lines) to mask your identity for all future signups.\n\n"
+            "2. **Dual-Engine Removal (Automation + Human Analysts)**:\n"
+            "   • *Competitors* rely solely on basic automated bots that get blocked or ignored by aggressive brokers.\n"
+            "   • *Disappear* combines automated legal bots with **Dedicated Human Privacy Analysts** who manually subpoena, phone, and enforce removals on stubborn brokers.\n\n"
+            "3. **Emergency Burn (Panic Scorch Button)**:\n"
+            "   • *Competitors* have ZERO emergency protection.\n"
+            "   • *Disappear* allows you to scorch all active email and phone aliases in 1 tap if compromised.\n\n"
+            "4. **Bank-Grade Hardware & Biometric Security**:\n"
+            "   • Face ID / Touch ID / Fingerprint biometrics, PBKDF2 hashing, and AES-256 encrypted vault exports."
         )
-    elif any(k in msg for k in ["how it works", "how does it work", "how does disappear work", "how it work", "what is disappear", "overview", "what do you do", "features"]):
+    elif any(k in msg for k in ["price", "pricing", "cost", "how much", "plan", "subscription", "annual", "monthly", "tier", "fee"]):
         reply = (
-            "**Disappear** is a complete **Privacy-as-a-Service (PaaS)** system designed to scrub your digital trail and protect your identity:\n\n"
-            "1. **PII Scrubbing**: We scan and remove your personal data (name, home address, phone, relatives) from 47+ data brokers.\n"
-            "2. **Human Analyst Audits**: Our dedicated privacy team manually enforces removals when automated opt-outs are resisted.\n"
-            "3. **Masked Relays**: Provision burner email aliases and virtual phone numbers that forward directly to your device.\n"
-            "4. **Emergency Burn**: If an alias is leaked or spammed, destroy all relays instantly in a single click."
+            "💰 **Disappear Elite Privacy Pricing**:\n\n"
+            "• **Monthly Plan**: $19.99/month\n"
+            "• **Annual Plan**: $15.99/month ($191.88 billed annually — **Save 20%**)\n\n"
+            "**What Every Plan Includes**:\n"
+            "✓ Continuous background scans across 47+ data broker registries\n"
+            "✓ Dedicated Human Privacy Analyst manual opt-out enforcement\n"
+            "✓ 6 Active Alias Slots (Masked Email & Virtual SMS Phone Lines)\n"
+            "✓ Emergency Burn (1-tap panic destruction)\n"
+            "✓ Mobile App + Face ID / Biometric Security\n"
+            "✓ 100% money-back guarantee & 1-click cancellation anytime!"
+        )
+    elif any(k in msg for k in ["how it works", "how does it work", "how does disappear work", "how it work", "what is disappear", "overview", "what do you do", "process", "step by step"]):
+        reply = (
+            "🛡️ **How Disappear Protects Your Identity (Step-by-Step)**:\n\n"
+            "**Step 1: Deep PII Audit & Threat Detection**\n"
+            "Our engine scans 47+ major data broker sites (Whitepages, Spokeo, Radaris, LexisNexis) for your name, phone, home address, and relatives.\n\n"
+            "**Step 2: Dual-Force Removal Engine**\n"
+            "Automated opt-out bots issue legal removal notices, while our **Human Privacy Analysts** manually follow up with resistant brokers until your data is completely wiped.\n\n"
+            "**Step 3: Identity Masking (Active Shield)**\n"
+            "You get 6 active burner email aliases (`xyz@anonaddy.me`) and virtual phone lines with real SMS forwarding. Your real inbox and phone number stay 100% hidden.\n\n"
+            "**Step 4: Continuous 24/7 Monitoring & Emergency Burn**\n"
+            "We re-scan every 30 days to block re-listed records. If any line is spammed, click **Emergency Burn** to scorch it instantly!"
         )
     elif any(k in msg for k in ["broker", "scrub", "remove", "data broker", "whitepages", "spokeo", "beenverified", "opt out", "opt-out", "delete my data"]):
         reply = (
-            "We continuously monitor and purge your information from **47+ major data broker databases** including Whitepages, Spokeo, Radaris, BeenVerified, PeopleFinders, FastPeopleSearch, and LexisNexis.\n\n"
-            "• Automated legal opt-outs run continuously in the background.\n"
-            "• Complex or resistant brokers are handled directly by our **Human Privacy Analyst Team**."
+            "🔍 **Data Broker Removal Power**:\n\n"
+            "Disappear purges your personal information from **47+ major data broker databases**, including:\n"
+            "• Whitepages, Spokeo, Radaris, BeenVerified, PeopleFinders, FastPeopleSearch, LexisNexis, TruthFinder, Intelius, and 38+ more.\n\n"
+            "Unlike other tools that fail on tough brokers, our **Human Analyst Team** manually files legal opt-out documentation until your records disappear."
         )
     elif any(k in msg for k in ["alias", "email alias", "phone alias", "relay", "burner", "virtual phone", "sms", "forward"]):
         reply = (
-            "Disappear gives you **6 Active Relay Slots** to shield your real contact details:\n\n"
-            "• **Email Relays**: Create custom email aliases (e.g. `xyz@anonaddy.me` or native relay) that forward messages to your personal inbox without revealing your real email.\n"
-            "• **Phone Relays**: Masked phone lines with real SMS forwarding directly to your device.\n"
-            "• **Instant Rotation**: Burn or rotate any compromised line in seconds."
+            "🔒 **Active Masking & Relays (6 Active Slots)**:\n\n"
+            "• **Email Relays**: Create custom email aliases (e.g., `shopping_89a@anonaddy.me`) that forward to your real email inbox without revealing your personal address.\n"
+            "• **Phone Relays**: Masked phone lines with real SMS forwarding to your device.\n"
+            "• **Zero Friction**: 1-click creation with zero verification popups once onboarded."
         )
     elif any(k in msg for k in ["burn", "emergency burn", "emergency wipe", "nuke", "destroy"]):
         reply = (
-            "The **Emergency Burn** feature is your panic button. If your identity or contact details are compromised:\n\n"
-            "⚡ In a single tap, Emergency Burn instantly scorches and deletes all active email aliases, phone lines, and virtual cards, severing all tracking links permanently."
+            "⚡ **Emergency Burn (Panic Scorch Button)**:\n\n"
+            "If a website sells your details or an alias gets spammed, 1 tap on **Emergency Burn** instantly scorches and deletes all active email relays, virtual phone lines, and payment cards—severing tracking permanently."
         )
     elif any(k in msg for k in ["security", "password", "biometric", "face id", "fingerprint", "encrypt", "safe", "privacy"]):
         reply = (
-            "Security is built into every layer of Disappear:\n\n"
-            "• **Password Hashing**: PBKDF2-HMAC-SHA256 with 100,000 iterations.\n"
-            "• **Biometric Login**: Face ID, Touch ID, and Fingerprint unlock on mobile.\n"
-            "• **Encrypted Backups**: AES-256 vault exports.\n"
-            "• **Strict KYC/AML Compliance**: Verifies identities to prevent fraudulent abuse."
+            "🔐 **Bank-Grade Vault Security**:\n\n"
+            "• **PBKDF2 Password Hashing** (100,000 SHA-256 iterations)\n"
+            "• **Face ID, Touch ID & Fingerprint** biometric unlock on mobile\n"
+            "• **AES-256 Encrypted** vault exports\n"
+            "• **Strict KYC/AML** compliance to stop fraudulent abuse."
         )
     elif any(k in msg for k in ["cancel", "cancellation", "refund", "guarantee", "stop"]):
         reply = (
-            "You have full control over your subscription. You can adjust or **cancel your subscription anytime with a single click** directly inside your Operative Dashboard under Settings. No hidden fees or hassle."
+            "✅ **100% Risk-Free & Easy Cancellation**:\n\n"
+            "You are never locked in. You can cancel your subscription at any time with a single click inside your dashboard under Settings. No hidden fees, no phone calls required."
         )
     else:
         reply = (
-            "I'm your **Disappear AI Privacy Assistant**! I can answer questions about:\n\n"
-            "• **Pricing & Subscription Plans** ($19.99/mo or $15.99/mo annual)\n"
-            "• **How Data Broker Scrubs Work** (47+ broker databases)\n"
-            "• **Email & Phone Alias Relays** (Masking real details)\n"
-            "• **Emergency Burn** (Instant relay destruction)\n"
-            "• **Account Security & Biometrics**\n\n"
-            "What would you like to know?"
+            "👋 Welcome! I'm your **Disappear AI Privacy Specialist**. Ask me anything:\n\n"
+            "• 🏆 **Why Disappear Beats Competitors** (DeleteMe vs Incogni vs Disappear)\n"
+            "• 🛡️ **How Disappear Protects You** (Step-by-Step)\n"
+            "• 💰 **Pricing & Plan Details** ($19.99/mo or $15.99/mo annual)\n"
+            "• 🔒 **Email Aliases & Phone Relays**\n"
+            "• ⚡ **Emergency Burn Panic Button**\n\n"
+            "How can I help protect your privacy today?"
         )
 
     return {"status": "success", "reply": reply}
