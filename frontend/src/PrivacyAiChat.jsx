@@ -7,7 +7,7 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
   const [messages, setMessages] = useState([
     {
       sender: 'ai',
-      text: "Hello Operative! I am your **Disappear AI Privacy Assistant**. Ask me anything about how we scrub your data, pricing & subscriptions, or masking your email and phone numbers."
+      text: "Hello! I am your **Disappear AI Privacy Specialist**. Ask me any question about privacy protection, data broker scrubs, pricing, or how we compare to other services."
     }
   ]);
 

@@ -1778,13 +1778,13 @@ async def ai_privacy_chat(request: Request, req: AIChatRequest):
         )
     else:
         reply = (
-            "👋 Welcome! I'm your **Disappear AI Privacy Specialist**. Ask me anything:\n\n"
+            "I'm standing by to answer any questions about protecting your identity! Here are popular topics I can help you with:\n\n"
             "• 🏆 **Why Disappear Beats Competitors** (DeleteMe vs Incogni vs Disappear)\n"
             "• 🛡️ **How Disappear Protects You** (Step-by-Step)\n"
             "• 💰 **Pricing & Plan Details** ($19.99/mo or $15.99/mo annual)\n"
             "• 🔒 **Email Aliases & Phone Relays**\n"
             "• ⚡ **Emergency Burn Panic Button**\n\n"
-            "How can I help protect your privacy today?"
+            "What specific question can I answer for you?"
         )
 
     return {"status": "success", "reply": reply}
