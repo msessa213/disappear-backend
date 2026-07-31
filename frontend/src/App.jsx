@@ -1040,6 +1040,7 @@ const handleEmergencyBurn = async () => {
             }
             activeUserId = profileData.profile_id;
             localStorage.setItem("disappear_user_id", activeUserId);
+            triggerToast("PROFILE CREATED — CHECK EMAIL TO AUTHORIZE PRIVACY RELAY");
             
             triggerToast("AUTHORIZING SECURE PAYMENT NODE...");
             try {
