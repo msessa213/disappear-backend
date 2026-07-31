@@ -13,6 +13,7 @@ import { AmlFraudPolicy } from './AmlFraudPolicy';
 import AdminDashboard from './AdminDashboard'; 
 import LandingPage from './LandingPage'; // Integration: Authority Website Layer
 import { checkBiometricAvailability, promptBiometricAuth } from './biometricService';
+import PrivacyAiChat from './PrivacyAiChat';
 
 import './App.css';
 
@@ -1114,35 +1115,6 @@ const handleEmergencyBurn = async () => {
             onLoginRequest={() => window.location.hash = "login"}
             onReadManifesto={() => window.location.hash = "manifesto"}
           />
-          {/* MOBILE DOWNLOAD BRIDGE: Fixed Positioning Fix */}
-          {!Capacitor.isNativePlatform() && (
-            <div style={{ 
-              position: 'fixed', 
-              bottom: '100px', 
-              left: '0', 
-              width: '100%', 
-              display: 'flex', 
-              justifyContent: 'center', 
-              zIndex: 9999,
-              padding: '0 20px'
-            }}>
-              <a 
-                href="https://d3bipqcsrujl11.cloudfront.net/app-debug.apk" 
-                download="Disappear_Shield.apk" 
-                className="main-button" 
-                style={{ 
-                  textDecoration: 'none', 
-                  boxShadow: '0 0 20px rgba(0, 71, 171, 0.6)',
-                  width: '100%',
-                  maxWidth: '300px',
-                  textAlign: 'center',
-                  display: 'block'
-                }}
-              >
-                GET ANDROID APP
-              </a>
-            </div>
-          )}
         </div>
       ) : (
         <>
@@ -1909,6 +1881,9 @@ const handleEmergencyBurn = async () => {
           </div>
         </div>
       )}
+
+      {/* --- FLOATING AI PRIVACY ASSISTANT CHAT WIDGET --- */}
+      <PrivacyAiChat apiBaseUrl={API_BASE_URL} />
     </div>
   );
 }

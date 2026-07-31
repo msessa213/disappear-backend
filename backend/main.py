@@ -410,6 +410,10 @@ class SMSTestRequest(BaseModel):
     to_phone_number: str
     message: str
 
+class AIChatRequest(BaseModel):
+    message: str
+    history: Optional[List[dict]] = None
+
 
 # --- CORE SYSTEM ROUTES ---
 
@@ -1693,6 +1697,77 @@ async def generate_purge_receipt(db: Session = Depends(get_db)):
 
 
 # --- SUPPORT & FAQ ---
+
+@app.post("/api/v1/ai-chat")
+@limiter.limit("30/minute")
+async def ai_privacy_chat(request: Request, req: AIChatRequest):
+    """Provides automated AI Privacy & Support answers for pricing, how it works, broker scrubs, and aliases."""
+    msg = req.message.lower().strip()
+    
+    if any(k in msg for k in ["price", "pricing", "cost", "how much", "plan", "subscription", "annual", "monthly", "tier", "fee"]):
+        reply = (
+            "Disappear offers a simple, transparent **Elite Privacy Plan**:\n\n"
+            "• **Monthly Billing**: $19.99/month\n"
+            "• **Annual Billing**: $15.99/month ($191.88 billed annually - save 20%)\n\n"
+            "**What's Included**:\n"
+            "✓ 6 Active Slots (Email & Phone relays)\n"
+            "✓ Automated background scans across 47+ data broker sites\n"
+            "✓ Human Privacy Analyst manual opt-out enforcement\n"
+            "✓ Emergency Burn (scorch relays in 1 tap)\n"
+            "✓ Mobile App & Face ID / Biometric Security\n"
+            "✓ Easy 1-click cancellation inside your dashboard anytime."
+        )
+    elif any(k in msg for k in ["how it works", "how does it work", "how does disappear work", "how it work", "what is disappear", "overview", "what do you do", "features"]):
+        reply = (
+            "**Disappear** is a complete **Privacy-as-a-Service (PaaS)** system designed to scrub your digital trail and protect your identity:\n\n"
+            "1. **PII Scrubbing**: We scan and remove your personal data (name, home address, phone, relatives) from 47+ data brokers.\n"
+            "2. **Human Analyst Audits**: Our dedicated privacy team manually enforces removals when automated opt-outs are resisted.\n"
+            "3. **Masked Relays**: Provision burner email aliases and virtual phone numbers that forward directly to your device.\n"
+            "4. **Emergency Burn**: If an alias is leaked or spammed, destroy all relays instantly in a single click."
+        )
+    elif any(k in msg for k in ["broker", "scrub", "remove", "data broker", "whitepages", "spokeo", "beenverified", "opt out", "opt-out", "delete my data"]):
+        reply = (
+            "We continuously monitor and purge your information from **47+ major data broker databases** including Whitepages, Spokeo, Radaris, BeenVerified, PeopleFinders, FastPeopleSearch, and LexisNexis.\n\n"
+            "• Automated legal opt-outs run continuously in the background.\n"
+            "• Complex or resistant brokers are handled directly by our **Human Privacy Analyst Team**."
+        )
+    elif any(k in msg for k in ["alias", "email alias", "phone alias", "relay", "burner", "virtual phone", "sms", "forward"]):
+        reply = (
+            "Disappear gives you **6 Active Relay Slots** to shield your real contact details:\n\n"
+            "• **Email Relays**: Create custom email aliases (e.g. `xyz@anonaddy.me` or native relay) that forward messages to your personal inbox without revealing your real email.\n"
+            "• **Phone Relays**: Masked phone lines with real SMS forwarding directly to your device.\n"
+            "• **Instant Rotation**: Burn or rotate any compromised line in seconds."
+        )
+    elif any(k in msg for k in ["burn", "emergency burn", "emergency wipe", "nuke", "destroy"]):
+        reply = (
+            "The **Emergency Burn** feature is your panic button. If your identity or contact details are compromised:\n\n"
+            "⚡ In a single tap, Emergency Burn instantly scorches and deletes all active email aliases, phone lines, and virtual cards, severing all tracking links permanently."
+        )
+    elif any(k in msg for k in ["security", "password", "biometric", "face id", "fingerprint", "encrypt", "safe", "privacy"]):
+        reply = (
+            "Security is built into every layer of Disappear:\n\n"
+            "• **Password Hashing**: PBKDF2-HMAC-SHA256 with 100,000 iterations.\n"
+            "• **Biometric Login**: Face ID, Touch ID, and Fingerprint unlock on mobile.\n"
+            "• **Encrypted Backups**: AES-256 vault exports.\n"
+            "• **Strict KYC/AML Compliance**: Verifies identities to prevent fraudulent abuse."
+        )
+    elif any(k in msg for k in ["cancel", "cancellation", "refund", "guarantee", "stop"]):
+        reply = (
+            "You have full control over your subscription. You can adjust or **cancel your subscription anytime with a single click** directly inside your Operative Dashboard under Settings. No hidden fees or hassle."
+        )
+    else:
+        reply = (
+            "I'm your **Disappear AI Privacy Assistant**! I can answer questions about:\n\n"
+            "• **Pricing & Subscription Plans** ($19.99/mo or $15.99/mo annual)\n"
+            "• **How Data Broker Scrubs Work** (47+ broker databases)\n"
+            "• **Email & Phone Alias Relays** (Masking real details)\n"
+            "• **Emergency Burn** (Instant relay destruction)\n"
+            "• **Account Security & Biometrics**\n\n"
+            "What would you like to know?"
+        )
+
+    return {"status": "success", "reply": reply}
+
 
 @app.get("/support/manual")
 async def get_operation_manual():
