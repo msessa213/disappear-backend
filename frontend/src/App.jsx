@@ -1746,12 +1746,34 @@ const handleEmergencyBurn = async () => {
                 {show2FA && (
                   <div className="pricing-card fade-in">
                     <div className="price-box">
-                      <h3 className="tiger-text">AGENT AUTHENTICATION</h3>
-                      <p className="field-label">REGISTERED EMAIL</p>
-                      <input className="mask-btn" style={{width: '100%', textAlign: 'center', marginBottom: '10px', color: 'white'}} placeholder="agent@email.com" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
-                      <p className="field-label">ACCOUNT PASSWORD</p>
-                      <input type="password" className="mask-btn" style={{width: '100%', textAlign: 'center', color: 'white'}} placeholder="••••••••" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
-                      <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={verify2FA}>VERIFY IDENTITY</button>
+                      <h3 className="tiger-text">CUSTOMER ACCOUNT AUTHENTICATION</h3>
+                      <form onSubmit={(e) => { e.preventDefault(); verify2FA(); }} autoComplete="on" style={{ width: '100%' }}>
+                        <p className="field-label">REGISTERED CUSTOMER EMAIL</p>
+                        <input 
+                          type="email"
+                          name="customer_login_email" 
+                          id="customer_login_email"
+                          autoComplete="username" 
+                          className="mask-btn" 
+                          style={{width: '100%', textAlign: 'center', marginBottom: '10px', color: 'white'}} 
+                          placeholder="customer@email.com" 
+                          value={loginEmail} 
+                          onChange={(e) => setLoginEmail(e.target.value)} 
+                        />
+                        <p className="field-label">ACCOUNT PASSWORD</p>
+                        <input 
+                          type="password" 
+                          name="customer_login_password" 
+                          id="customer_login_password"
+                          autoComplete="current-password" 
+                          className="mask-btn" 
+                          style={{width: '100%', textAlign: 'center', color: 'white'}} 
+                          placeholder="••••••••" 
+                          value={loginPassword} 
+                          onChange={(e) => setLoginPassword(e.target.value)} 
+                        />
+                        <button type="submit" className="main-button" style={{width: '100%', marginTop: '20px'}}>VERIFY IDENTITY</button>
+                      </form>
                       {(hasBiometrics || Capacitor.isNativePlatform()) && (
                         <button 
                           className="mask-btn" 

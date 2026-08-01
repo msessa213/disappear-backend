@@ -150,6 +150,15 @@ export default function AdminDashboard({ API_BASE_URL }) {
           <div style={{ display: 'flex', gap: '8px' }}>
             <input 
               type="password" 
+              name="disappear_ops_admin_secret_key_no_fill"
+              id="disappear_ops_admin_secret_key_no_fill"
+              autoComplete="new-password"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck="false"
+              data-lpignore="true"
+              data-1p-ignore="true"
+              data-form-type="other"
               className="mask-btn" 
               placeholder="Enter Admin Secret Key..." 
               value={adminKey} 
