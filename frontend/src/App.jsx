@@ -119,6 +119,7 @@ function App() {
   const [emails, setEmails] = useState([]);
   const [phones, setPhones] = useState([]);
   const [destinationPhone, setDestinationPhone] = useState("");
+  const [hasLoadedPhone, setHasLoadedPhone] = useState(false);
   const [smsInbox, setSmsInbox] = useState([]);
 
   const [targetProfile, setTargetProfile] = useState({
@@ -542,20 +543,17 @@ function App() {
         }
       }
 
-      // 8. Map Profile Phone Number
-      if (data.profile && data.profile.phone) {
-        setDestinationPhone(data.profile.phone);
+      // 8. Map Profile Phone Number (Initial load only to avoid polling overwrite)
+      if (data.profile && !hasLoadedPhone) {
+        setDestinationPhone(data.profile.phone || "");
+        setHasLoadedPhone(true);
       }
     } catch (err) { 
         console.warn("Network interrupted. Attempting silent reconnect on next cycle...");
     }
-  }, [pushNotification, selectedFundingSource]);
+  }, [pushNotification, selectedFundingSource, hasLoadedPhone]);
 
   const handleSaveForwardingPhone = async () => {
-    if (!destinationPhone.trim()) {
-      triggerToast("ENTER A VALID MOBILE PHONE NUMBER");
-      return;
-    }
     const activeUserId = currentUserId || localStorage.getItem("disappear_user_id");
     if (!activeUserId) return;
 
@@ -567,8 +565,13 @@ function App() {
       });
       const data = await res.json();
       if (res.ok) {
-        if (data.phone) setDestinationPhone(data.phone);
-        triggerToast(`FORWARDING PHONE SAVED: ${data.phone || destinationPhone}`);
+        setDestinationPhone(data.phone || "");
+        setHasLoadedPhone(true);
+        if (data.phone) {
+          triggerToast(`FORWARDING PHONE SAVED: ${data.phone}`);
+        } else {
+          triggerToast("FORWARDING PHONE CLEARED");
+        }
         syncDefenseData();
       } else {
         triggerToast(data.detail || "ERROR SAVING FORWARDING PHONE");

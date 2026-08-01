@@ -2263,12 +2263,15 @@ class PhoneUpdateRequest(BaseModel):
 @app.post("/auth/update-phone")
 async def update_user_phone(req: PhoneUpdateRequest, db: Session = Depends(get_db)):
     """Updates the user's real destination mobile phone number for SMS forwarding"""
-    if not req.user_id or not req.phone:
-        raise HTTPException(status_code=400, detail="user_id and phone are required")
+    if not req.user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
         
-    clean_phone = format_to_e164(req.phone)
-    if not clean_phone:
-        raise HTTPException(status_code=400, detail="INVALID_PHONE_NUMBER: Please provide a valid 10-digit mobile phone number.")
+    raw_phone = (req.phone or "").strip()
+    clean_phone = ""
+    if raw_phone:
+        clean_phone = format_to_e164(raw_phone)
+        if not clean_phone:
+            raise HTTPException(status_code=400, detail="INVALID_PHONE_NUMBER: Please provide a valid 10-digit mobile phone number.")
 
     profiles = db.query(DBProfile).filter(or_(DBProfile.id == req.user_id, DBProfile.email == req.user_id)).all()
     if not profiles:
@@ -2289,7 +2292,7 @@ async def update_user_phone(req: PhoneUpdateRequest, db: Session = Depends(get_d
 
     db.commit()
     
-    logger.info(f"PROFILE_PHONE_UPDATED: Set forwarding phone to {clean_phone} for user {req.user_id}")
+    logger.info(f"PROFILE_PHONE_UPDATED: Set forwarding phone to '{clean_phone}' for user {req.user_id}")
     return {"status": "success", "user_id": req.user_id, "phone": clean_phone}
 
 
