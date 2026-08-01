@@ -581,8 +581,8 @@ BROKER_OPT_OUT_URLS = {
 
 @app.get("/admin/ops/backlog")
 async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = Depends(verify_admin_token)):
-    """Internal utility for staff to pull down targets needing manual opt-out submission forms"""
-    open_tasks = db.query(DBScrubLog).filter(DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"])).all()
+    """Internal utility for staff to pull down targets needing manual opt-out submission forms (Ultra-Fast Bulk Query)"""
+    open_tasks = db.query(DBScrubLog).filter(DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"])).order_by(desc(DBScrubLog.timestamp)).limit(150).all()
     
     # Auto-seed 2 reference target profiles with manual tasks if queue is empty
     if not open_tasks:
@@ -600,12 +600,22 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
         except Exception as ex:
             logger.warning(f"Auto-seed reference tasks error: {ex}")
     
+    # Bulk fetch profiles into dictionary map to prevent N+1 query overhead
+    user_ids = {task.user_id for task in open_tasks if task.user_id}
+    completed_logs = db.query(DBScrubLog).filter(DBScrubLog.status == "REMOVED").order_by(desc(DBScrubLog.timestamp)).limit(50).all()
+    user_ids.update({task.user_id for task in completed_logs if task.user_id})
+
+    profiles_map = {}
+    if user_ids:
+        profiles_list = db.query(DBProfile).filter(DBProfile.id.in_(list(user_ids))).all()
+        profiles_map = {p.id: p for p in profiles_list}
+
+    manual_set = {b.upper() for b in MANUAL_BROKERS}
     automated_backlog = []
     manual_backlog_queue = []
     
     for task in open_tasks:
-        # Cross-reference target profile so employees have PII ready to paste into manual opt-out fields
-        profile = db.query(DBProfile).filter(DBProfile.id == task.user_id).first()
+        profile = profiles_map.get(task.user_id)
         opt_url = BROKER_OPT_OUT_URLS.get(task.broker_name.upper(), f"https://www.google.com/search?q={task.broker_name}+opt+out+form")
         
         task_details = {
@@ -626,16 +636,14 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
             }
         }
         
-        manual_set = {b.upper() for b in MANUAL_BROKERS}
         if task.broker_name.upper() in manual_set or task.removal_type == "MANUAL":
             manual_backlog_queue.append(task_details)
         else:
             automated_backlog.append(task_details)
 
-    completed_logs = db.query(DBScrubLog).filter(DBScrubLog.status == "REMOVED").order_by(desc(DBScrubLog.timestamp)).limit(100).all()
     completed_tasks_list = []
     for task in completed_logs:
-        profile = db.query(DBProfile).filter(DBProfile.id == task.user_id).first()
+        profile = profiles_map.get(task.user_id)
         opt_url = BROKER_OPT_OUT_URLS.get(task.broker_name.upper(), f"https://www.google.com/search?q={task.broker_name}+opt+out+form")
         completed_tasks_list.append({
             "task_id": task.id,
