@@ -579,7 +579,7 @@ BROKER_OPT_OUT_URLS = {
 @app.get("/admin/ops/backlog")
 async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = Depends(verify_admin_token)):
     """Internal utility for staff to pull down targets needing manual opt-out submission forms"""
-    open_tasks = db.query(DBScrubLog).filter(DBScrubLog.status == "PROCESSING").all()
+    open_tasks = db.query(DBScrubLog).filter(DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"])).all()
     
     automated_backlog = []
     manual_backlog_queue = []
@@ -607,7 +607,8 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
             }
         }
         
-        if task.broker_name in MANUAL_BROKERS:
+        manual_set = {b.upper() for b in MANUAL_BROKERS}
+        if task.broker_name.upper() in manual_set or task.removal_type == "MANUAL":
             manual_backlog_queue.append(task_details)
         else:
             automated_backlog.append(task_details)
