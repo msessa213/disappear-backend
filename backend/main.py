@@ -1022,6 +1022,7 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
 
     return {
         "profile": {
+            "phone": profile.phone or "",
             "email_alias": STABLE_EMAIL,
             "phone_alias": STABLE_PHONE,
             "vcc_email_total": vcc_email_capacity,
@@ -2265,16 +2266,25 @@ async def update_user_phone(req: PhoneUpdateRequest, db: Session = Depends(get_d
     if not req.user_id or not req.phone:
         raise HTTPException(status_code=400, detail="user_id and phone are required")
         
-    profile = db.query(DBProfile).filter(DBProfile.id == req.user_id).first()
-    if not profile:
-        profile = DBProfile(id=req.user_id, email=f"{req.user_id}@disappearco.com")
-        db.add(profile)
-        
     clean_phone = format_to_e164(req.phone)
     if not clean_phone:
         raise HTTPException(status_code=400, detail="INVALID_PHONE_NUMBER: Please provide a valid 10-digit mobile phone number.")
+
+    profiles = db.query(DBProfile).filter(or_(DBProfile.id == req.user_id, DBProfile.email == req.user_id)).all()
+    if not profiles:
+        prof = DBProfile(id=req.user_id, email=f"{req.user_id}@disappearco.com", phone=clean_phone)
+        db.add(prof)
+        profiles = [prof]
+    else:
+        for p in profiles:
+            p.phone = clean_phone
         
-    profile.phone = clean_phone
+    # Associate all unassigned phone line aliases in the system with this user
+    aliases = db.query(DBAlias).filter(DBAlias.type == "phone").all()
+    for a in aliases:
+        if not a.user_id or a.user_id in [p.id for p in profiles] or a.user_id == req.user_id:
+            a.user_id = req.user_id
+
     db.commit()
     
     logger.info(f"PROFILE_PHONE_UPDATED: Set forwarding phone to {clean_phone} for user {req.user_id}")

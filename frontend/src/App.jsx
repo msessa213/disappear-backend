@@ -565,10 +565,13 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: activeUserId, phone: destinationPhone })
       });
+      const data = await res.json();
       if (res.ok) {
-        triggerToast("FORWARDING PHONE SAVED SUCCESSFULLY");
+        if (data.phone) setDestinationPhone(data.phone);
+        triggerToast(`FORWARDING PHONE SAVED: ${data.phone || destinationPhone}`);
+        syncDefenseData();
       } else {
-        triggerToast("ERROR SAVING FORWARDING PHONE");
+        triggerToast(data.detail || "ERROR SAVING FORWARDING PHONE");
       }
     } catch (e) {
       triggerToast("NETWORK ERROR SAVING PHONE");
