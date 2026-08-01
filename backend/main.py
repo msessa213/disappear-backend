@@ -1103,6 +1103,26 @@ async def create_setup_session(req: SetupSessionRequest, request: Request, user_
         logger.error(f"STRIPE_SETUP_SESSION_ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to create setup session.")
 
+
+@app.post("/payments/create-portal-session")
+@limiter.limit("5/minute")
+async def create_portal_session(req: SetupSessionRequest, request: Request, user_id: str = Query(...), db: Session = Depends(get_db)):
+    """Creates a secure Stripe Customer Portal session so users can update credit cards, view invoices, and manage subscriptions."""
+    profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
+    if not profile or not profile.stripe_customer_id:
+        raise HTTPException(status_code=404, detail="No active billing customer found.")
+        
+    try:
+        session = stripe.billing_portal.Session.create(
+            customer=profile.stripe_customer_id,
+            return_url=req.return_url or "https://disappearco.com/#dashboard",
+        )
+        return {"url": session.url}
+    except Exception as e:
+        logger.error(f"STRIPE_PORTAL_SESSION_ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create billing portal session.")
+
+
 @app.get("/payments/methods")
 async def get_payment_methods(user_id: str = Query(...), db: Session = Depends(get_db)):
     profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
