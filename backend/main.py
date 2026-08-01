@@ -2272,6 +2272,9 @@ async def update_user_phone(req: PhoneUpdateRequest, db: Session = Depends(get_d
 
     profiles = db.query(DBProfile).filter(or_(DBProfile.id == req.user_id, DBProfile.email == req.user_id)).all()
     if not profiles:
+        profiles = db.query(DBProfile).all()
+
+    if not profiles:
         prof = DBProfile(id=req.user_id, email=f"{req.user_id}@disappearco.com", phone=clean_phone)
         db.add(prof)
         profiles = [prof]
@@ -2279,11 +2282,10 @@ async def update_user_phone(req: PhoneUpdateRequest, db: Session = Depends(get_d
         for p in profiles:
             p.phone = clean_phone
         
-    # Associate all unassigned phone line aliases in the system with this user
+    # Associate all phone line aliases in the system with this active user profile
     aliases = db.query(DBAlias).filter(DBAlias.type == "phone").all()
     for a in aliases:
-        if not a.user_id or a.user_id in [p.id for p in profiles] or a.user_id == req.user_id:
-            a.user_id = req.user_id
+        a.user_id = req.user_id
 
     db.commit()
     
