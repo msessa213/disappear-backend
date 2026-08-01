@@ -1094,31 +1094,43 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
         # RULE: Explicitly check for cooldown/wipe first for 1.99
         if "cooldown" in etype or "wipe" in etype or "emergency" in etype:
             item_name = "Emergency Wipe Protocol (Instant Cooldown Bypass)"
+            item_description = "1 Instant Cooldown Bypass for Vault Re-encryption"
             unit_amount = 199 # $1.99
             purchase_key = "cooldown_bypass"
+            slot_category = "BYPASS_TOKEN"
         elif "subscription_monthly" in etype:
-            item_name = "Disappear Elite Operative (Monthly)"
+            item_name = "Disappear Elite Operative (Monthly Subscription)"
+            item_description = "Full Access to 47+ Data Broker Removals, Email Relays, and Phone Lines"
             unit_amount = 1999  # $19.99
             purchase_key = "subscription_monthly"
+            slot_category = "MONTHLY_SUBSCRIPTION"
         elif "subscription_annual" in etype:
-            item_name = "Disappear Elite Operative (Annual)"
+            item_name = "Disappear Elite Operative (Annual Subscription)"
+            item_description = "Full Access to 47+ Data Broker Removals, Email Relays, and Phone Lines (Billed Annually)"
             unit_amount = 15999  # $159.99 (equals $13.33/mo)
             purchase_key = "subscription_annual"
+            slot_category = "ANNUAL_SUBSCRIPTION"
         # TARGET EMAIL SLOT
         elif "email" in etype:
-            item_name = "Additional Target Email Slot"
+            item_name = "Additional Email Alias Slot (+1 Capacity)"
+            item_description = "1 Additional Encrypted Email Relay Alias Slot"
             unit_amount = 250 # $2.50
             purchase_key = "extra_email_slot"
+            slot_category = "EMAIL_ALIAS_SLOT"
         # PHONE RULE
         elif "phone" in etype:
-            item_name = "Premium Phone Line Expansion"
+            item_name = "Premium Phone Line Expansion (+1 Capacity)"
+            item_description = "1 Additional Encrypted Virtual Phone Line Alias (+1 Line)"
             unit_amount = 595 # $5.95
             purchase_key = "phone_line_bonus"
+            slot_category = "PHONE_LINE_SLOT"
         # DEFAULT/SLOT RULE
         else:
             item_name = "Permanent Shield Slot Expansion (+1 Capacity)"
+            item_description = "1 Additional General Protection Vault Slot (+1 Capacity)"
             unit_amount = 595 # $5.95
             purchase_key = "permanent_slot"
+            slot_category = "GENERAL_VAULT_SLOT"
 
         profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
         if profile:
@@ -1135,7 +1147,10 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
         is_subscription = "subscription" in etype
         price_data = {
             'currency': 'usd',
-            'product_data': {'name': item_name},
+            'product_data': {
+                'name': item_name,
+                'description': item_description
+            },
             'unit_amount': unit_amount,
         }
         if is_subscription:
@@ -1151,6 +1166,7 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
             "mode": "subscription" if is_subscription else "payment",
             "metadata": {
                 "purchase_type": purchase_key,
+                "slot_type": slot_category,
                 "user_id": user_id
             },
             "automatic_tax": {"enabled": True},
