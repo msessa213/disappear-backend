@@ -902,7 +902,10 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
                 user_identifiers.append(f"VIRTUAL_LINE_{clean_ac[-4:]}")
                 user_identifiers.append(clean_ac[-4:])
 
-    purge_filters = []
+    purge_filters = [
+        DBPurgeLog.action_type.like("%SMS_%"),
+        DBPurgeLog.node_id.like("%VIRTUAL_LINE%")
+    ]
     for ident in user_identifiers:
         if ident:
             purge_filters.append(DBPurgeLog.node_id.like(f"%{ident}%"))
@@ -2349,7 +2352,7 @@ async def twilio_incoming_sms(
     logger.info(f"TWILIO_INBOUND_SMS: Message to '{To}' from '{From}' | Body: '{Body}'")
     clean_to = "".join(filter(str.isdigit, To or ""))
     
-    # Flexible lookup against phone aliases
+    # 1. Flexible lookup against phone aliases
     phone_aliases = db.query(DBAlias).filter(DBAlias.type == "phone").all()
     alias = None
     for a in phone_aliases:
@@ -2362,9 +2365,21 @@ async def twilio_incoming_sms(
     if alias and alias.user_id:
         profile = db.query(DBProfile).filter(DBProfile.id == alias.user_id).first()
 
+    # Fallback to any profile in DB that has a valid forwarding phone number
+    if not profile or not format_to_e164(profile.phone):
+        all_profiles = db.query(DBProfile).all()
+        for p in all_profiles:
+            valid_phone = format_to_e164(p.phone)
+            if valid_phone:
+                profile = p
+                if alias:
+                    alias.user_id = p.id
+                    db.commit()
+                break
+
     target_uid = profile.id if profile else (alias.user_id if alias else "GLOBAL")
 
-    # 1. ALWAYS Log to DBPurgeLog FIRST so incoming SMS text is NEVER LOST and appears live in user's Security Audit feed
+    # 2. ALWAYS Log to DBPurgeLog so incoming SMS text appears live in user's Security Audit feed
     try:
         db.add(DBPurgeLog(
             action_type=f"SMS_RECEIVED [From {From}]: {Body}",
@@ -2375,14 +2390,6 @@ async def twilio_incoming_sms(
         logger.warning(f"Failed to log SMS audit event: {ex}")
 
     forward_phone = format_to_e164(profile.phone) if profile and profile.phone else ""
-
-    if not forward_phone:
-        all_profiles = db.query(DBProfile).all()
-        for p in all_profiles:
-            valid_phone = format_to_e164(p.phone)
-            if valid_phone:
-                forward_phone = valid_phone
-                break
 
     if not forward_phone:
         logger.warning(f"TWILIO_SMS_NO_DESTINATION: Captured SMS in Vault but no valid mobile phone configured for virtual line {To}")
