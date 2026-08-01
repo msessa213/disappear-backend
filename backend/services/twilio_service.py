@@ -25,32 +25,40 @@ class TwilioSettings(BaseSettings):
 
 try:
     settings = TwilioSettings()
-    account_sid = settings.TWILIO_ACCOUNT_SID or os.getenv("TWILIO_ACCOUNT_SID")
-    auth_token = settings.TWILIO_AUTH_TOKEN or os.getenv("TWILIO_AUTH_TOKEN")
-    key_sid = settings.TWILIO_API_KEY_SID or os.getenv("TWILIO_API_KEY_SID")
-    key_secret = settings.TWILIO_API_KEY_SECRET or os.getenv("TWILIO_API_KEY_SECRET")
+    account_sid = (settings.TWILIO_ACCOUNT_SID or os.getenv("TWILIO_ACCOUNT_SID") or "").strip()
+    auth_token = (settings.TWILIO_AUTH_TOKEN or os.getenv("TWILIO_AUTH_TOKEN") or "").strip()
+    key_sid = (settings.TWILIO_API_KEY_SID or os.getenv("TWILIO_API_KEY_SID") or "").strip()
+    key_secret = (settings.TWILIO_API_KEY_SECRET or os.getenv("TWILIO_API_KEY_SECRET") or "").strip()
 
-    # Sanitize account_sid if mistakenly set to an SK key SID
-    if account_sid and account_sid.startswith("SK"):
-        account_sid = None
+    if account_sid.startswith("SK"):
+        account_sid = ""
 
     twilio_client = None
-    if account_sid and account_sid.startswith("AC") and auth_token:
-        # Standard Account SID + Auth Token authentication
-        twilio_client = Client(account_sid, auth_token)
-        logger.info("Twilio client initialized using Account SID & Auth Token.")
-    elif key_sid and key_secret:
-        # API Key + Secret authentication (Primary & Reliable)
-        if account_sid and account_sid.startswith("AC"):
-            twilio_client = Client(key_sid, key_secret, account_sid)
-        else:
-            twilio_client = Client(key_sid, key_secret)
-        logger.info("Twilio client initialized using API Key & Secret.")
-    else:
-        logger.warning("TWILIO_WARNING: Missing environment variables. SMS/Voice temporarily disabled.")
-        twilio_client = None
+
+    # Method 1: Try API Key & Secret
+    if key_sid and key_secret:
+        try:
+            client1 = Client(key_sid, key_secret, account_sid) if (account_sid and account_sid.startswith("AC")) else Client(key_sid, key_secret)
+            client1.incoming_phone_numbers.list(limit=1)
+            twilio_client = client1
+            logger.info("Twilio client initialized using API Key & Secret.")
+        except Exception as e1:
+            logger.warning(f"Twilio API Key auth attempt failed: {e1}")
+
+    # Method 2: Fallback to Account SID + Auth Token
+    if not twilio_client and account_sid and auth_token:
+        try:
+            client2 = Client(account_sid, auth_token)
+            client2.incoming_phone_numbers.list(limit=1)
+            twilio_client = client2
+            logger.info("Twilio client initialized using Account SID & Auth Token.")
+        except Exception as e2:
+            logger.warning(f"Twilio Auth Token auth attempt failed: {e2}")
+
+    if not twilio_client:
+        logger.warning("TWILIO_WARNING: Unable to authenticate Twilio client with provided credentials.")
 except Exception as e:
-    logger.error(f"CRITICAL_TWILIO_ERROR: Failed to initialize Twilio client. Error: {e}")
+    logger.error(f"CRITICAL_TWILIO_ERROR: Failed to initialize Twilio client: {e}")
     twilio_client = None
 
 def send_sms(to_phone_number: str, message_body: str, from_phone_number: Optional[str] = None) -> bool:
