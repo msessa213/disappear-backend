@@ -539,6 +539,37 @@ async def test_voice_call(req: CallTestRequest, admin_key: str = Depends(verify_
 
 # --- INTERNAL OPERATION PORTALS FOR EMPLOYEES ---
 
+BROKER_OPT_OUT_URLS = {
+    "LEXISNEXIS": "https://optout.lexisnexis.com/",
+    "BEENVERIFIED": "https://www.beenverified.com/f/optout/search",
+    "TRUTHFINDER": "https://www.truthfinder.com/opt-out/",
+    "INSTANTCHECKMATE": "https://www.instantcheckmate.com/opt-out/",
+    "PEOPLELOOKER": "https://www.peoplelooker.com/f/optout/search",
+    "INTELIUS": "https://www.intelius.com/opt-out/",
+    "ZOOMINFO": "https://www.zoominfo.com/privacy-center/remove/manage",
+    "ROCKETREACH": "https://rocketreach.co/person/opt-out",
+    "LUSHA": "https://www.lusha.com/privacy-center/opt-out/",
+    "APOLLO": "https://www.apollo.io/privacy/opt-out",
+    "COGNISM": "https://www.cognism.com/privacy-policy/opt-out",
+    "SEAMLESSAI": "https://seamless.ai/privacy-policy",
+    "CLEAR": "https://www.clearme.com/privacy-policy",
+    "PIPL": "https://pipl.com/personal-information-removal-request",
+    "EXPERIAN": "https://www.experian.com/privacy/opt-out",
+    "EQUIFAX": "https://www.equifax.com/personal/education/privacy/opt-out/",
+    "TRANSUNION": "https://www.transunion.com/privacy/opt-out",
+    "INNOVIS": "https://www.innovis.com/personal/optOut",
+    "CHEXSYSTEMS": "https://www.chexsystems.com/consumer-services/opt-out",
+    "CORELOGIC": "https://www.corelogic.com/privacy/",
+    "WHITEPAGES": "https://www.whitepages.com/suppression-requests",
+    "SPOKEO": "https://www.spokeo.com/optout",
+    "RADARIS": "https://radaris.com/control/privacy",
+    "FASTPEOPLESEARCH": "https://www.fastpeoplesearch.com/removal",
+    "THATSTHEM": "https://thatsthem.com/optout",
+    "NUWBER": "https://nuwber.com/removal/link",
+    "USSEARCH": "https://www.ussearch.com/opt-out/",
+    "PEOPLEFINDERS": "https://www.peoplefinders.com/opt-out",
+}
+
 @app.get("/admin/ops/backlog")
 async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = Depends(verify_admin_token)):
     """Internal utility for staff to pull down targets needing manual opt-out submission forms"""
@@ -550,10 +581,12 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
     for task in open_tasks:
         # Cross-reference target profile so employees have PII ready to paste into manual opt-out fields
         profile = db.query(DBProfile).filter(DBProfile.id == task.user_id).first()
+        opt_url = BROKER_OPT_OUT_URLS.get(task.broker_name.upper(), f"https://www.google.com/search?q={task.broker_name}+opt+out+form")
         
         task_details = {
             "task_id": task.id,
             "broker_name": task.broker_name,
+            "opt_out_url": opt_url,
             "submitted_at": task.timestamp.isoformat(),
             "target_profile": {
                 "user_id": task.user_id,

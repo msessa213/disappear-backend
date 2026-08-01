@@ -71,30 +71,40 @@ export default function AdminDashboard({ API_BASE_URL }) {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
           {manualTasks.map((task) => (
-            <div key={task.task_id} style={{ border: '1px solid #334155', padding: '15px', borderRadius: '8px', background: '#050505' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div key={task.task_id} style={{ border: '1px solid #334155', padding: '16px', borderRadius: '8px', background: '#05070E' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                  <strong style={{ color: 'white' }}>BROKER: {task.broker_name}</strong>
-                  <span style={{ fontSize: '0.68rem', backgroundColor: '#3b0712', color: '#ff4444', padding: '2px 8px', borderRadius: '4px', border: '1px solid #7f1d1d', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Requires Manual Submission Form</span>
+                  <strong style={{ color: '#00D2FF', fontSize: '1.05rem', letterSpacing: '1px' }}>BROKER: {task.broker_name}</strong>
+                  <span style={{ fontSize: '0.68rem', backgroundColor: '#3b0712', color: '#ff4444', padding: '3px 8px', borderRadius: '4px', border: '1px solid #7f1d1d', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Requires Manual Submission Form</span>
                 </div>
-                <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>{new Date(task.submitted_at).toLocaleDateString()}</span>
+                
+                <a 
+                  href={task.opt_out_url || `https://www.google.com/search?q=${task.broker_name}+opt+out+form`} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="main-button" 
+                  style={{ textDecoration: 'none', padding: '6px 14px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  🔗 LAUNCH OPT-OUT PORTAL
+                </a>
               </div>
               
-              <div style={{ fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '15px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px' }}>
-                <span><strong>TARGET:</strong> {task.target_profile.first_name} {task.target_profile.last_name}</span>
-                <span><strong>DOB:</strong> {task.target_profile.dob}</span>
-                <span><strong>EMAIL:</strong> {task.target_profile.email}</span>
+              <div style={{ fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '15px', background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
+                <div><strong>TARGET NAME:</strong> <span style={{ color: '#FFF' }}>{task.target_profile.first_name} {task.target_profile.middle_name} {task.target_profile.last_name}</span></div>
+                <div><strong>DOB:</strong> <span style={{ color: '#FFF' }}>{task.target_profile.dob}</span></div>
+                <div><strong>EMAIL:</strong> <span style={{ color: '#FFF' }}>{task.target_profile.email}</span></div>
+                <div><strong>ADDRESS:</strong> <span style={{ color: '#FFF' }}>{task.target_profile.address}</span></div>
               </div>
 
               <div style={{ display: 'flex', gap: '10px' }}>
                 <input 
                   className="mask-btn" 
-                  placeholder="Paste URL/Confirmation Link here..." 
+                  placeholder="Paste Removal Confirmation Link / Proof URL..." 
                   style={{ flex: 1 }}
                   value={verifications[task.task_id] || ""}
                   onChange={(e) => setVerifications({...verifications, [task.task_id]: e.target.value})}
                 />
-                <button className="reset-btn" onClick={() => handleResolve(task.task_id)}>MARK COMPLETE</button>
+                <button className="reset-btn" style={{ borderColor: '#10b981', color: '#10b981', fontWeight: 'bold' }} onClick={() => handleResolve(task.task_id)}>MARK COMPLETE</button>
               </div>
             </div>
           ))}
