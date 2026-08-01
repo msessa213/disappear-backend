@@ -158,13 +158,35 @@ def release_phone_number(phone_number: str) -> bool:
             phone_number=phone_number,
             limit=1
         )
-        if not incoming_phone_numbers:
-            logger.error(f"TWILIO_RELEASE_FAILURE: Phone number {phone_number} not found in account.")
+        if incoming_phone_numbers:
+            twilio_client.incoming_phone_numbers(incoming_phone_numbers[0].sid).delete()
+            logger.info(f"Twilio phone number {phone_number} released successfully.")
+            return True
+        else:
+            logger.warning(f"TWILIO_RELEASE_FAILURE: Phone number {phone_number} not found in Twilio account.")
             return False
-            
-        twilio_client.incoming_phone_numbers(incoming_phone_numbers[0].sid).delete()
-        logger.info(f"Twilio phone number {phone_number} released successfully.")
-        return True
     except TwilioRestException as e:
         logger.error(f"TWILIO_RELEASE_FAILURE: Error releasing number {phone_number}: {e}")
         return False
+
+
+def sync_all_twilio_webhooks():
+    """Ensures all active Twilio phone numbers are configured with production SMS and Voice Webhooks."""
+    if not twilio_client:
+        return
+    sms_url = "https://disappear-backend-production.up.railway.app/twilio/sms"
+    voice_url = "https://disappear-backend-production.up.railway.app/twilio/voice"
+
+    try:
+        numbers = twilio_client.incoming_phone_numbers.list(limit=50)
+        for n in numbers:
+            if n.sms_url != sms_url or n.voice_url != voice_url:
+                twilio_client.incoming_phone_numbers(n.sid).update(
+                    sms_url=sms_url,
+                    sms_method="POST",
+                    voice_url=voice_url,
+                    voice_method="POST"
+                )
+                logger.info(f"TWILIO_WEBHOOK_SYNC: Configured {n.phone_number} -> {sms_url}")
+    except Exception as e:
+        logger.warning(f"TWILIO_WEBHOOK_SYNC_NOTICE: {e}")

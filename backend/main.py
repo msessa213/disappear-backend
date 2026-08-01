@@ -173,6 +173,11 @@ try:
                 pass
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables verified/created.")
+    try:
+        from services.twilio_service import sync_all_twilio_webhooks
+        sync_all_twilio_webhooks()
+    except Exception as tw_err:
+        logger.warning(f"Twilio webhook sync skipped on startup: {tw_err}")
 except Exception as e:
     logger.error(f"ALARM: DB Sync Deferred - {e}")
 
