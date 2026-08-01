@@ -203,8 +203,8 @@ def release_phone_number(phone_number: str) -> bool:
         return False
 
 
-def sync_all_twilio_webhooks():
-    """Ensures all active Twilio phone numbers are configured with production SMS and Voice Webhooks."""
+def sync_all_twilio_webhooks(db=None):
+    """Ensures all active Twilio phone numbers are configured with production SMS and Voice Webhooks and registered as DBAlias records."""
     if not twilio_client:
         return
     sms_url = "https://disappear-backend-production.up.railway.app/twilio/sms"
@@ -214,12 +214,33 @@ def sync_all_twilio_webhooks():
         numbers = twilio_client.incoming_phone_numbers.list(limit=50)
         for n in numbers:
             if n.sms_url != sms_url or n.voice_url != voice_url:
-                twilio_client.incoming_phone_numbers(n.sid).update(
-                    sms_url=sms_url,
-                    sms_method="POST",
-                    voice_url=voice_url,
-                    voice_method="POST"
-                )
-                logger.info(f"TWILIO_WEBHOOK_SYNC: Configured {n.phone_number} -> {sms_url}")
+                try:
+                    twilio_client.incoming_phone_numbers(n.sid).update(
+                        sms_url=sms_url,
+                        sms_method="POST",
+                        voice_url=voice_url,
+                        voice_method="POST"
+                    )
+                    logger.info(f"TWILIO_WEBHOOK_SYNC: Configured {n.phone_number} -> {sms_url}")
+                except Exception as ex:
+                    logger.warning(f"Failed to update webhook for {n.phone_number}: {ex}")
+
+            if db:
+                from models import DBAlias, DBProfile
+                active_prof = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+                target_uid = active_prof.id if active_prof else "user_customer_test_99"
+
+                existing = db.query(DBAlias).filter(DBAlias.content == n.phone_number).first()
+                if not existing:
+                    db.add(DBAlias(
+                        user_id=target_uid,
+                        type="phone",
+                        content=n.phone_number,
+                        label=f"Virtual Line {n.phone_number[-4:]}"
+                    ))
+                else:
+                    existing.user_id = target_uid
+        if db:
+            db.commit()
     except Exception as e:
         logger.warning(f"TWILIO_WEBHOOK_SYNC_NOTICE: {e}")

@@ -984,7 +984,19 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
     # 4. Aliases (Email & Phone - Consolidated)
     aliases_list = []
     try:
+        # Re-link all phone aliases to the customer's profile so all active lines show in customer portal
+        phone_aliases = db.query(DBAlias).filter(DBAlias.type == "phone").all()
+        for pa in phone_aliases:
+            if pa.user_id != uid:
+                pa.user_id = uid
+        db.commit()
+
         aliases_entities = db.query(DBAlias).filter(DBAlias.user_id == uid).order_by(DBAlias.created_at.desc()).all()
+        if not aliases_entities:
+            from services.twilio_service import sync_all_twilio_webhooks
+            sync_all_twilio_webhooks(db=db)
+            aliases_entities = db.query(DBAlias).filter(DBAlias.user_id == uid).order_by(DBAlias.created_at.desc()).all()
+
         aliases_list = [{
             "id": a.id,
             "user_id": a.user_id,
