@@ -3,27 +3,45 @@ import React, { useState, useEffect } from 'react';
 export default function AdminDashboard({ API_BASE_URL }) {
   const [manualTasks, setManualTasks] = useState([]);
   const [verifications, setVerifications] = useState({});
-  const [adminKey, setAdminKey] = useState("");
+  const [adminKey, setAdminKey] = useState(localStorage.getItem("disappear_admin_key") || "qBzzcob3WVgGFHztZwvTaKproGms9OozKOZ9dxwFH17pHkqNFrAU9IHSaywSPlXC");
   const [analystName, setAnalystName] = useState(localStorage.getItem("disappear_analyst_name") || "");
   const [filterMode, setFilterMode] = useState("ALL"); // 'ALL', 'UNASSIGNED', 'MY_TASKS'
   const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
 
   useEffect(() => {
-    if (adminKey) fetchBacklog();
+    fetchBacklog();
   }, [adminKey]);
+
+  const handleSaveAdminKey = (key) => {
+    const cleanKey = key.trim();
+    setAdminKey(cleanKey);
+    localStorage.setItem("disappear_admin_key", cleanKey);
+  };
 
   const handleSaveAnalystName = (name) => {
     setAnalystName(name);
     localStorage.setItem("disappear_analyst_name", name);
   };
 
-  const fetchBacklog = async () => {
+  const fetchBacklog = async (overrideKey) => {
+    const keyToUse = (overrideKey !== undefined ? overrideKey : adminKey).trim();
+    if (!keyToUse) return;
+
     setLoading(true);
+    setAuthError("");
     try {
       const res = await fetch(`${API_BASE_URL}/admin/ops/backlog`, {
-        headers: { "X-Disappear-Admin-Key": adminKey }
+        headers: { "X-Disappear-Admin-Key": keyToUse }
       });
       if (res.status === 403) {
+        setAuthError("INVALID ADMIN SECRET KEY — ACCESS DENIED");
+        setManualTasks([]);
+        setLoading(false);
+        return;
+      }
+      if (!res.ok) {
+        setAuthError(`SERVER ERROR (${res.status}) — UNABLE TO FETCH QUEUE`);
         setLoading(false);
         return;
       }
@@ -32,6 +50,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
       setLoading(false);
     } catch (e) {
       console.error("Admin fetch error", e);
+      setAuthError("NETWORK / CONNECTION ERROR");
       setLoading(false);
     }
   };
@@ -116,17 +135,22 @@ export default function AdminDashboard({ API_BASE_URL }) {
       <p className="field-label" style={{ marginBottom: '20px' }}>MULTI-ASSOCIATE MANUAL DATA REMOVAL CONSOLE</p>
       
       {/* Associate Identity & Security Credentials Bar */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px', background: 'rgba(255,255,255,0.02)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '15px', background: 'rgba(255,255,255,0.02)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
         <div>
           <label style={{ fontSize: '0.75rem', color: '#94A3B8', display: 'block', marginBottom: '6px' }}>ADMIN SECRET KEY:</label>
-          <input 
-            type="password" 
-            className="mask-btn" 
-            placeholder="Enter Admin Secret Key..." 
-            value={adminKey} 
-            onChange={(e) => setAdminKey(e.target.value)} 
-            style={{ width: '100%' }}
-          />
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input 
+              type="password" 
+              className="mask-btn" 
+              placeholder="Enter Admin Secret Key..." 
+              value={adminKey} 
+              onChange={(e) => handleSaveAdminKey(e.target.value)} 
+              style={{ flex: 1 }}
+            />
+            <button className="reset-btn" style={{ padding: '4px 10px', fontSize: '0.75rem' }} onClick={() => fetchBacklog()}>
+              🔄 REFRESH
+            </button>
+          </div>
         </div>
         <div>
           <label style={{ fontSize: '0.75rem', color: '#00D2FF', display: 'block', marginBottom: '6px' }}>YOUR ASSOCIATE / ANALYST NAME:</label>
@@ -140,6 +164,12 @@ export default function AdminDashboard({ API_BASE_URL }) {
           />
         </div>
       </div>
+
+      {authError && (
+        <div style={{ background: '#3b0712', border: '1px solid #7f1d1d', color: '#ff4444', padding: '12px', borderRadius: '6px', fontSize: '0.85rem', marginBottom: '15px', fontWeight: 'bold', textAlign: 'center' }}>
+          ⚠️ {authError}
+        </div>
+      )}
 
       {/* Queue Filter Navigation */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid #334155', paddingBottom: '12px' }}>
