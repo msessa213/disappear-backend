@@ -117,6 +117,8 @@ function App() {
   const [aliasAreaCode, setAliasAreaCode] = useState("");
   const [emails, setEmails] = useState([]);
   const [phones, setPhones] = useState([]);
+  const [destinationPhone, setDestinationPhone] = useState("");
+  const [smsInbox, setSmsInbox] = useState([]);
 
   const [targetProfile, setTargetProfile] = useState({
       firstName: "", middleName: "", lastName: "", email: "", password: "", phone: "",
@@ -517,10 +519,53 @@ function App() {
           setSelectedFundingSource(data.payment_methods[0].id);
         }
       }
+
+      // 8. Map Profile Phone Number
+      if (data.profile && data.profile.phone) {
+        setDestinationPhone(data.profile.phone);
+      }
     } catch (err) { 
         console.warn("Network interrupted. Attempting silent reconnect on next cycle...");
     }
   }, [pushNotification, selectedFundingSource]);
+
+  const handleSaveForwardingPhone = async () => {
+    if (!destinationPhone.trim()) {
+      triggerToast("ENTER A VALID MOBILE PHONE NUMBER");
+      return;
+    }
+    const activeUserId = currentUserId || localStorage.getItem("disappear_user_id");
+    if (!activeUserId) return;
+
+    try {
+      const res = await secureRequest(`${API_BASE_URL}/auth/update-phone`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: activeUserId, phone: destinationPhone })
+      });
+      if (res.ok) {
+        triggerToast("FORWARDING PHONE SAVED SUCCESSFULLY");
+      } else {
+        triggerToast("ERROR SAVING FORWARDING PHONE");
+      }
+    } catch (e) {
+      triggerToast("NETWORK ERROR SAVING PHONE");
+    }
+  };
+
+  const fetchSmsInbox = async () => {
+    const activeUserId = currentUserId || localStorage.getItem("disappear_user_id");
+    if (!activeUserId) return;
+    try {
+      const res = await secureRequest(`${API_BASE_URL}/api/v1/sms-inbox/${activeUserId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSmsInbox(data.inbox || []);
+      }
+    } catch (e) {
+      console.error("SMS Inbox error", e);
+    }
+  };
 
   useEffect(() => {
     let interval;
@@ -1461,7 +1506,34 @@ const handleEmergencyBurn = async () => {
                 </div>
 
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
-                  <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>PHONE PROTECTION</p>
+                  <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>PHONE PROTECTION & SMS RELAY</p>
+                  
+                  {/* Destination Forwarding Mobile Phone Setup */}
+                  <div style={{ background: 'rgba(0,210,255,0.03)', border: '1px solid rgba(0,210,255,0.2)', padding: '14px', borderRadius: '8px', marginBottom: '18px', textAlign: 'left' }}>
+                    <label style={{ fontSize: '0.78rem', color: '#00D2FF', display: 'block', marginBottom: '6px', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                      📱 FORWARDING DESTINATION MOBILE NUMBER
+                    </label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input 
+                        className="mask-btn" 
+                        placeholder="e.g. (813) 555-0199"
+                        value={destinationPhone} 
+                        onChange={(e) => setDestinationPhone(e.target.value)} 
+                        style={{ flex: 1, fontSize: '0.9rem' }}
+                      />
+                      <button 
+                        className="main-button" 
+                        style={{ padding: '6px 14px', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
+                        onClick={handleSaveForwardingPhone}
+                      >
+                        💾 SAVE PHONE
+                      </button>
+                    </div>
+                    <p style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: '6px', marginBottom: 0 }}>
+                      Texts sent to your phone aliases will be forwarded directly to this mobile phone number.
+                    </p>
+                  </div>
+
                   <div className="alias-manager-list">
                     {phones.map((p) => (
                       <div key={p.id} className="alias-row" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '15px' }}>
@@ -1476,7 +1548,33 @@ const handleEmergencyBurn = async () => {
                       </div>
                     ))}
                   </div>
-                  <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowPhoneModal(true)}> + GENERATE PHONE ALIAS </button>
+                  <button className="reset-btn" style={{marginTop: '15px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowPhoneModal(true)}> + GENERATE PHONE ALIAS </button>
+
+                  {/* Live In-App SMS Vault Inbox */}
+                  <div style={{ background: '#05070E', border: '1px solid #334155', padding: '15px', borderRadius: '8px', marginTop: '20px', textAlign: 'left' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <span style={{ fontSize: '0.82rem', color: '#10B981', fontWeight: 'bold', letterSpacing: '1px' }}>
+                        📥 INCOMING SMS MESSAGES (LIVE INBOX)
+                      </span>
+                      <button className="reset-btn" style={{ padding: '3px 8px', fontSize: '0.7rem' }} onClick={fetchSmsInbox}>
+                        🔄 REFRESH
+                      </button>
+                    </div>
+                    {smsInbox.length === 0 ? (
+                      <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, textAlign: 'center', padding: '10px' }}>
+                        No incoming text messages received yet. Any SMS sent to your alias will appear here instantly.
+                      </p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto' }}>
+                        {smsInbox.map(sms => (
+                          <div key={sms.id} style={{ background: '#0a0f1d', padding: '8px 12px', borderRadius: '6px', border: '1px solid #1e293b', fontSize: '0.8rem' }}>
+                            <div style={{ color: '#00D2FF', fontWeight: 'bold', fontSize: '0.75rem', marginBottom: '3px' }}>{sms.message}</div>
+                            <div style={{ color: '#94a3b8', fontSize: '0.7rem' }}>{sms.timestamp}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {false && (

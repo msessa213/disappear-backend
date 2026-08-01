@@ -2188,6 +2188,44 @@ async def twilio_incoming_voice(
     return Response(content=twiml, media_type="application/xml")
 
 
+class PhoneUpdateRequest(BaseModel):
+    user_id: str
+    phone: str
+
+@app.post("/auth/update-phone")
+async def update_user_phone(req: PhoneUpdateRequest, db: Session = Depends(get_db)):
+    """Updates the user's real destination mobile phone number for SMS forwarding"""
+    if not req.user_id or not req.phone:
+        raise HTTPException(status_code=400, detail="user_id and phone are required")
+        
+    profile = db.query(DBProfile).filter(DBProfile.id == req.user_id).first()
+    if not profile:
+        profile = DBProfile(id=req.user_id, email=f"{req.user_id}@disappearco.com")
+        db.add(profile)
+        
+    clean_phone = format_to_e164(req.phone)
+    profile.phone = clean_phone
+    db.commit()
+    
+    logger.info(f"PROFILE_PHONE_UPDATED: Set forwarding phone to {clean_phone} for user {req.user_id}")
+    return {"status": "success", "user_id": req.user_id, "phone": clean_phone}
+
+
+@app.get("/api/v1/sms-inbox/{user_id}")
+async def get_user_sms_inbox(user_id: str, db: Session = Depends(get_db)):
+    """Returns recent incoming SMS messages received for the user's virtual phone aliases"""
+    sms_logs = db.query(DBPurgeLog).filter(DBPurgeLog.action_type.like("SMS_%")).order_by(desc(DBPurgeLog.timestamp)).limit(50).all()
+    inbox = []
+    for log in sms_logs:
+        inbox.append({
+            "id": log.id,
+            "timestamp": log.timestamp.isoformat() if log.timestamp else "",
+            "message": log.action_type,
+            "line": log.node_id
+        })
+    return {"status": "success", "inbox": inbox}
+
+
 @app.api_route("/twilio/sms", methods=["GET", "POST"])
 async def twilio_incoming_sms(
     request: Request,
@@ -2198,7 +2236,7 @@ async def twilio_incoming_sms(
 ):
     """
     Twilio Webhook for incoming SMS messages.
-    Resolves the virtual number to the user's real phone number, logs the text to the Live Audit feed,
+    Resolves the virtual number to the user's real phone number, logs the text to the Live Audit feed & In-App Vault,
     and forwards the SMS via REST API & TwiML.
     """
     form_data = {}
@@ -2220,6 +2258,16 @@ async def twilio_incoming_sms(
     logger.info(f"TWILIO_INBOUND_SMS: Message to '{To}' from '{From}' | Body: '{Body}'")
     clean_to = "".join(filter(str.isdigit, To or ""))
     
+    # 1. ALWAYS Log to DBPurgeLog FIRST so incoming SMS text is NEVER LOST and appears live in user's Security Audit feed
+    try:
+        db.add(DBPurgeLog(
+            action_type=f"SMS_RECEIVED [From {From}]: {Body}",
+            node_id=f"VIRTUAL_LINE_{clean_to[-4:] if clean_to else 'SMS'}"
+        ))
+        db.commit()
+    except Exception as ex:
+        logger.warning(f"Failed to log SMS audit event: {ex}")
+
     # Flexible lookup against phone aliases
     phone_aliases = db.query(DBAlias).filter(DBAlias.type == "phone").all()
     alias = None
@@ -2238,22 +2286,12 @@ async def twilio_incoming_sms(
         profile = db.query(DBProfile).filter(DBProfile.phone.isnot(None)).first()
 
     if not profile or not profile.phone:
-        logger.warning(f"TWILIO_SMS_REJECT: No registered profile found for virtual line {To}")
+        logger.warning(f"TWILIO_SMS_NO_DESTINATION: Captured SMS in Vault but no real mobile phone configured for virtual line {To}")
         return Response(content="<Response/>", media_type="application/xml")
         
     forward_phone = format_to_e164(profile.phone)
     message_content = f"DISAPPEAR SMS [From {From}]: {Body}"
     logger.info(f"TWILIO_SMS_FORWARD: Forwarding SMS from {From} via virtual {To} to real phone {forward_phone}")
-
-    # 1. Log to DBPurgeLog so incoming SMS text appears live in user's Security Audit feed
-    try:
-        db.add(DBPurgeLog(
-            action_type=f"SMS_FORWARDED [From {From}]: {Body}",
-            node_id=f"VIRTUAL_LINE_{clean_to[-4:] if clean_to else 'SMS'}"
-        ))
-        db.commit()
-    except Exception as ex:
-        logger.warning(f"Failed to log SMS audit event: {ex}")
     
     from services.twilio_service import send_sms
     # 2. Dispatch SMS via Twilio REST API
