@@ -35,13 +35,14 @@ except Exception as e:
     logger.error(f"CRITICAL_TWILIO_ERROR: Failed to initialize Twilio client. Check environment variables (TWILIO_*). Error: {e}")
     twilio_client = None
 
-def send_sms(to_phone_number: str, message_body: str) -> bool:
+def send_sms(to_phone_number: str, message_body: str, from_phone_number: Optional[str] = None) -> bool:
     """
     Sends an SMS message using the configured Twilio client.
 
     Args:
         to_phone_number: The recipient's phone number in E.164 format (e.g., +15551234567).
         message_body: The content of the message to send.
+        from_phone_number: Optional custom sender phone number (e.g. virtual alias number).
 
     Returns:
         True if the message was sent successfully, False otherwise.
@@ -51,11 +52,12 @@ def send_sms(to_phone_number: str, message_body: str) -> bool:
         return False
 
     try:
-        message = twilio_client.messages.create(body=message_body, from_=settings.TWILIO_PHONE_NUMBER, to=to_phone_number)
-        logger.info(f"Twilio SMS sent successfully to {to_phone_number}. SID: {message.sid}")
+        from_num = from_phone_number or settings.TWILIO_PHONE_NUMBER
+        message = twilio_client.messages.create(body=message_body, from_=from_num, to=to_phone_number)
+        logger.info(f"Twilio SMS sent successfully from {from_num} to {to_phone_number}. SID: {message.sid}")
         return True
     except TwilioRestException as e:
-        logger.error(f"TWILIO_SEND_SMS_FAILURE: Failed to send SMS to {to_phone_number}. Error: {e}")
+        logger.error(f"TWILIO_SEND_SMS_FAILURE: Failed to send SMS from {from_phone_number} to {to_phone_number}. Error: {e}")
         return False
 
 def make_voice_call(to_phone_number: str, twiml_url: str) -> bool:

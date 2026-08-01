@@ -1942,10 +1942,11 @@ def format_to_e164(phone_str: str) -> str:
         return f"+{digits}"
     return phone_str or ""
 
+@app.get("/twilio/voice")
 @app.post("/twilio/voice")
 async def twilio_incoming_voice(
-    To: str = Form(...),
-    From: str = Form(...),
+    To: str = Form(""),
+    From: str = Form(""),
     db: Session = Depends(get_db)
 ):
     """
@@ -1982,16 +1983,17 @@ async def twilio_incoming_voice(
     return Response(content=twiml, media_type="application/xml")
 
 
+@app.get("/twilio/sms")
 @app.post("/twilio/sms")
 async def twilio_incoming_sms(
-    To: str = Form(...),
-    From: str = Form(...),
+    To: str = Form(""),
+    From: str = Form(""),
     Body: str = Form(""),
     db: Session = Depends(get_db)
 ):
     """
     Twilio Webhook for incoming SMS messages.
-    Resolves the virtual number to the user's real phone number and forwards the SMS body.
+    Resolves the virtual number to the user's real phone number and forwards the SMS body via Twilio REST API.
     """
     logger.info(f"TWILIO_INBOUND_SMS: Message to {To} from {From}")
     clean_to = "".join(filter(str.isdigit, To or ""))
@@ -2016,10 +2018,17 @@ async def twilio_incoming_sms(
         return Response(content="<Response/>", media_type="application/xml")
         
     forward_phone = format_to_e164(profile.phone)
-    logger.info(f"TWILIO_SMS_FORWARD: Forwarding SMS from {From} to real phone {forward_phone}")
     message_content = f"DISAPPEAR SMS [From {From}]: {Body}"
-    twiml = f'<Response><Message to="{forward_phone}">{message_content}</Message></Response>'
-    return Response(content=twiml, media_type="application/xml")
+    logger.info(f"TWILIO_SMS_FORWARD: Forwarding SMS from {From} via virtual {To} to real phone {forward_phone}")
+    
+    from services.twilio_service import send_sms
+    # Dispatch SMS via REST API directly to the user's real phone number
+    success = send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=To)
+    if not success:
+        logger.warning("TWILIO_SMS_FORWARD_RETRY: Primary custom sender failed, retrying with master Twilio number")
+        send_sms(to_phone_number=forward_phone, message_body=message_content)
+
+    return Response(content="<Response/>", media_type="application/xml")
 
 
 @app.get("/api/v1/test-twilio")
