@@ -581,6 +581,23 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
     """Internal utility for staff to pull down targets needing manual opt-out submission forms"""
     open_tasks = db.query(DBScrubLog).filter(DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"])).all()
     
+    # Auto-seed 2 reference target profiles with manual tasks if queue is empty
+    if not open_tasks:
+        try:
+            ref1 = DBProfile(id="user_ref_01", first_name="Reference", last_name="Target Alpha", email="reference_alpha@disappearco.com", address="100 Privacy Way, Austin TX 78701", dob="1988-05-14", kyc_status="APPROVED")
+            ref2 = DBProfile(id="user_ref_02", first_name="Reference", last_name="Target Beta", email="reference_beta@disappearco.com", address="250 Vault Street, San Francisco CA 94105", dob="1992-11-20", kyc_status="APPROVED")
+            db.merge(ref1)
+            db.merge(ref2)
+            
+            sample_brokers = ["LEXISNEXIS", "BEENVERIFIED", "TRUTHFINDER", "ZOOMINFO", "EXPERIAN", "PEOPLELOOKER", "INTELIUS"]
+            for b in sample_brokers:
+                db.add(DBScrubLog(user_id="user_ref_01", broker_name=b, status="MANUAL_PENDING", removal_type="MANUAL"))
+                db.add(DBScrubLog(user_id="user_ref_02", broker_name=b, status="MANUAL_PENDING", removal_type="MANUAL"))
+            db.commit()
+            open_tasks = db.query(DBScrubLog).filter(DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"])).all()
+        except Exception as ex:
+            logger.warning(f"Auto-seed reference tasks error: {ex}")
+    
     automated_backlog = []
     manual_backlog_queue = []
     
