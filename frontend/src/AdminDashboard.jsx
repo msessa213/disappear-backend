@@ -139,7 +139,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
   if (loading) return <div style={{color: 'white', textAlign: 'center'}}>ACCESSING CENTRAL COMMAND...</div>;
 
   return (
-    <div className="price-box" style={{ maxWidth: '900px', width: '100%', margin: '0 auto', textAlign: 'left', maxHeight: '85vh', overflowY: 'auto' }}>
+    <div className="price-box" style={{ maxWidth: '1100px', width: '100%', margin: '0 auto', textAlign: 'left', border: '1px solid rgba(0, 210, 255, 0.25)', boxShadow: '0 10px 40px rgba(0,0,0,0.8)' }}>
       <h2 className="tiger-text" style={{ marginBottom: '5px' }}>PRODUCTION OPERATIONS & TASK QUEUE</h2>
       <p className="field-label" style={{ marginBottom: '20px' }}>MULTI-ASSOCIATE MANUAL DATA REMOVAL CONSOLE</p>
       

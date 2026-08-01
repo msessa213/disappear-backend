@@ -1404,7 +1404,24 @@ const handleEmergencyBurn = async () => {
           )}
 
           <main>
-            {showShield ? (
+            {showAdmin ? (
+              /* STANDALONE ADMIN OPERATIONS PORTAL PAGE */
+              <div className="shield-container fade-in" style={{ minHeight: '85vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '20px 15px', width: '100%', maxWidth: '1100px', margin: '0 auto' }}>
+                <div style={{ width: '100%', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <button 
+                    className="reset-btn" 
+                    style={{ padding: '10px 20px', fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} 
+                    onClick={() => { window.location.hash = ""; }}
+                  >
+                    ← BACK TO PUBLIC HOME
+                  </button>
+                  <span style={{ fontSize: '0.8rem', color: '#00D2FF', fontFamily: 'monospace', fontWeight: 'bold', letterSpacing: '1px' }}>
+                    🔒 STANDALONE OPERATIONS PORTAL
+                  </span>
+                </div>
+                <AdminDashboard API_BASE_URL={API_BASE_URL} />
+              </div>
+            ) : showShield ? (
               /* 3. SECURE APPLICATION ENGINE (Restored) */
               <div className="shield-container fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
                 <h2 className="shield-text">🛡️ SHIELD ACTIVE</h2>
@@ -1930,15 +1947,6 @@ const handleEmergencyBurn = async () => {
             {showLegal === 'terms' && <Terms />}
             {showLegal === 'aml' && <AmlFraudPolicy />}
             <button className="reset-btn" style={{marginTop: '20px', width: '100%'}} onClick={() => window.location.hash = ""}>CLOSE</button>
-          </div>
-        </div>
-      )}
-
-      {showAdmin && (
-        <div className="modal-overlay" onClick={() => window.location.hash = ""}>
-          <div onClick={e => e.stopPropagation()}>
-            <AdminDashboard API_BASE_URL={API_BASE_URL} />
-            <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => window.location.hash = ""}>EXIT COMMAND</button>
           </div>
         </div>
       )}
