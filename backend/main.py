@@ -2398,14 +2398,16 @@ async def twilio_incoming_sms(
     message_content = f"DISAPPEAR SMS [From {From}]: {Body}"
     logger.info(f"TWILIO_SMS_FORWARD: Forwarding SMS from {From} via virtual {To} to real phone {forward_phone}")
     
-    from services.twilio_service import send_sms
-    # Dispatch SMS via Twilio REST API directly to the user's real phone number
-    success = send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=To if clean_to else None)
-    if not success:
-        logger.warning("TWILIO_SMS_FORWARD_RETRY: Custom alias sender failed, retrying with master line")
+    # 1. Dispatch SMS via Twilio REST API directly to the user's real phone number
+    try:
+        from services.twilio_service import send_sms
         send_sms(to_phone_number=forward_phone, message_body=message_content)
+    except Exception as ex:
+        logger.warning(f"Twilio REST API SMS dispatch failed: {ex}")
 
-    return Response(content="<Response/>", media_type="application/xml")
+    # 2. Return native Twilio TwiML XML to force carrier-level forwarding directly to the user's real cell phone
+    twiml_response = f'<?xml version="1.0" encoding="UTF-8"?><Response><Message to="{forward_phone}">{message_content}</Message></Response>'
+    return Response(content=twiml_response, media_type="application/xml")
 
 
 @app.get("/api/v1/test-twilio")
