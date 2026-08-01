@@ -727,9 +727,10 @@ async def resolve_manual_task(log_id: int, db: Session = Depends(get_db), admin_
     task.status = "REMOVED"
     task.timestamp = datetime.utcnow()
     
+    target_uid = task.user_id if task and task.user_id else "GLOBAL"
     db.add(DBPurgeLog(
-        action_type="MANUAL_BROKER_RESOLVED_BY_STAFF",
-        node_id=f"TASK_{log_id}_{task.broker_name}"
+        action_type=f"MANUAL_BROKER_RESOLVED [{task.broker_name}]",
+        node_id=f"{target_uid}_OPS_{log_id}"
     ))
     db.commit()
     return {"status": "SUCCESS", "message": f"Broker {task.broker_name} status updated to REMOVED."}
@@ -886,10 +887,17 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
     from datetime import timedelta
     cutoff_date = datetime.utcnow() - timedelta(days=30)
     
-    # Fetch Purge Logs
+    # Fetch Purge Logs strictly belonging to this user
     purge_entries = (
         db.query(DBPurgeLog)
-        .filter(DBPurgeLog.timestamp >= cutoff_date)
+        .filter(
+            DBPurgeLog.timestamp >= cutoff_date,
+            or_(
+                DBPurgeLog.node_id.startswith(f"{uid}_"),
+                DBPurgeLog.node_id == uid,
+                DBPurgeLog.node_id.in_(["SHIELD_SCANNER_01", "GLOBAL_SCRUB_ENGINE"])
+            )
+        )
         .order_by(desc(DBPurgeLog.timestamp))
         .all()
     )
@@ -2258,7 +2266,13 @@ async def update_user_phone(req: PhoneUpdateRequest, db: Session = Depends(get_d
 @app.get("/api/v1/sms-inbox/{user_id}")
 async def get_user_sms_inbox(user_id: str, db: Session = Depends(get_db)):
     """Returns recent incoming SMS messages received for the user's virtual phone aliases"""
-    sms_logs = db.query(DBPurgeLog).filter(DBPurgeLog.action_type.like("SMS_%")).order_by(desc(DBPurgeLog.timestamp)).limit(50).all()
+    sms_logs = db.query(DBPurgeLog).filter(
+        DBPurgeLog.action_type.like("SMS_%"),
+        or_(
+            DBPurgeLog.node_id.startswith(f"{user_id}_"),
+            DBPurgeLog.node_id == user_id
+        )
+    ).order_by(desc(DBPurgeLog.timestamp)).limit(50).all()
     inbox = []
     for log in sms_logs:
         inbox.append({
@@ -2302,16 +2316,6 @@ async def twilio_incoming_sms(
     logger.info(f"TWILIO_INBOUND_SMS: Message to '{To}' from '{From}' | Body: '{Body}'")
     clean_to = "".join(filter(str.isdigit, To or ""))
     
-    # 1. ALWAYS Log to DBPurgeLog FIRST so incoming SMS text is NEVER LOST and appears live in user's Security Audit feed
-    try:
-        db.add(DBPurgeLog(
-            action_type=f"SMS_RECEIVED [From {From}]: {Body}",
-            node_id=f"VIRTUAL_LINE_{clean_to[-4:] if clean_to else 'SMS'}"
-        ))
-        db.commit()
-    except Exception as ex:
-        logger.warning(f"Failed to log SMS audit event: {ex}")
-
     # Flexible lookup against phone aliases
     phone_aliases = db.query(DBAlias).filter(DBAlias.type == "phone").all()
     alias = None
@@ -2324,6 +2328,18 @@ async def twilio_incoming_sms(
     profile = None
     if alias and alias.user_id:
         profile = db.query(DBProfile).filter(DBProfile.id == alias.user_id).first()
+
+    target_uid = profile.id if profile else (alias.user_id if alias else "GLOBAL")
+
+    # 1. ALWAYS Log to DBPurgeLog FIRST so incoming SMS text is NEVER LOST and appears live in user's Security Audit feed
+    try:
+        db.add(DBPurgeLog(
+            action_type=f"SMS_RECEIVED [From {From}]: {Body}",
+            node_id=f"{target_uid}_VIRTUAL_LINE_{clean_to[-4:] if clean_to else 'SMS'}"
+        ))
+        db.commit()
+    except Exception as ex:
+        logger.warning(f"Failed to log SMS audit event: {ex}")
 
     forward_phone = format_to_e164(profile.phone) if profile and profile.phone else ""
 
@@ -2344,7 +2360,10 @@ async def twilio_incoming_sms(
     
     from services.twilio_service import send_sms
     # Dispatch SMS via Twilio REST API directly to the user's real phone number
-    send_sms(to_phone_number=forward_phone, message_body=message_content)
+    success = send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=To if clean_to else None)
+    if not success:
+        logger.warning("TWILIO_SMS_FORWARD_RETRY: Custom alias sender failed, retrying with master line")
+        send_sms(to_phone_number=forward_phone, message_body=message_content)
 
     return Response(content="<Response/>", media_type="application/xml")
 
