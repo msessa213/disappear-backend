@@ -2417,11 +2417,11 @@ async def test_twilio_connection():
         }
 
     try:
-        acc_info = twilio_client.api.v2010.accounts(acct).fetch()
+        numbers = twilio_client.incoming_phone_numbers.list(limit=1)
+        first_num = numbers[0].phone_number if numbers else "None"
         return {
             "status": "SUCCESS",
-            "account_name": acc_info.friendly_name,
-            "account_sid": masked_acct,
+            "active_line": first_num,
             "twilio_active": True
         }
     except Exception as e:

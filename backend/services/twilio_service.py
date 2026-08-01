@@ -14,26 +14,43 @@ class TwilioSettings(BaseSettings):
     pydantic-settings will automatically read from .env files or the environment.
     """
     TWILIO_ACCOUNT_SID: Optional[str] = None
+    TWILIO_AUTH_TOKEN: Optional[str] = None
     TWILIO_API_KEY_SID: Optional[str] = None
     TWILIO_API_KEY_SECRET: Optional[str] = None
     TWILIO_PHONE_NUMBER: Optional[str] = None
 
     class Config:
-        # If you use a .env file, pydantic-settings will load it.
         env_file = ".env"
         extra = "ignore"
 
 try:
     settings = TwilioSettings()
-    if settings.TWILIO_API_KEY_SID and settings.TWILIO_API_KEY_SECRET and settings.TWILIO_ACCOUNT_SID:
-        # Initialize client using API Key and Secret for better security
-        twilio_client = Client(settings.TWILIO_API_KEY_SID, settings.TWILIO_API_KEY_SECRET, settings.TWILIO_ACCOUNT_SID)
-        logger.info("Twilio client initialized successfully.")
+    account_sid = settings.TWILIO_ACCOUNT_SID or os.getenv("TWILIO_ACCOUNT_SID")
+    auth_token = settings.TWILIO_AUTH_TOKEN or os.getenv("TWILIO_AUTH_TOKEN")
+    key_sid = settings.TWILIO_API_KEY_SID or os.getenv("TWILIO_API_KEY_SID")
+    key_secret = settings.TWILIO_API_KEY_SECRET or os.getenv("TWILIO_API_KEY_SECRET")
+
+    # Sanitize account_sid if mistakenly set to an SK key SID
+    if account_sid and account_sid.startswith("SK"):
+        account_sid = None
+
+    twilio_client = None
+    if account_sid and account_sid.startswith("AC") and auth_token:
+        # Standard Account SID + Auth Token authentication
+        twilio_client = Client(account_sid, auth_token)
+        logger.info("Twilio client initialized using Account SID & Auth Token.")
+    elif key_sid and key_secret:
+        # API Key + Secret authentication (Primary & Reliable)
+        if account_sid and account_sid.startswith("AC"):
+            twilio_client = Client(key_sid, key_secret, account_sid)
+        else:
+            twilio_client = Client(key_sid, key_secret)
+        logger.info("Twilio client initialized using API Key & Secret.")
     else:
         logger.warning("TWILIO_WARNING: Missing environment variables. SMS/Voice temporarily disabled.")
         twilio_client = None
 except Exception as e:
-    logger.error(f"CRITICAL_TWILIO_ERROR: Failed to initialize Twilio client. Check environment variables (TWILIO_*). Error: {e}")
+    logger.error(f"CRITICAL_TWILIO_ERROR: Failed to initialize Twilio client. Error: {e}")
     twilio_client = None
 
 def send_sms(to_phone_number: str, message_body: str, from_phone_number: Optional[str] = None) -> bool:
