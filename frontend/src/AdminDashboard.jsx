@@ -9,10 +9,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
   const [filterMode, setFilterMode] = useState("ALL"); // 'ALL', 'UNASSIGNED', 'MY_TASKS', 'COMPLETED'
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState("");
-
-  useEffect(() => {
-    if (adminKey.trim()) fetchBacklog();
-  }, [adminKey]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const handleSaveAnalystName = (name) => {
     setAnalystName(name);
@@ -21,7 +18,10 @@ export default function AdminDashboard({ API_BASE_URL }) {
 
   const fetchBacklog = async (overrideKey) => {
     const keyToUse = (overrideKey !== undefined ? overrideKey : adminKey).trim();
-    if (!keyToUse) return;
+    if (!keyToUse) {
+      setAuthError("PLEASE ENTER YOUR PRODUCTION ADMIN SECRET KEY.");
+      return false;
+    }
 
     setLoading(true);
     setAuthError("");
@@ -34,22 +34,43 @@ export default function AdminDashboard({ API_BASE_URL }) {
         setManualTasks([]);
         setCompletedTasks([]);
         setLoading(false);
-        return;
+        setIsAuthenticated(false);
+        return false;
       }
       if (!res.ok) {
         setAuthError(`SERVER ERROR (${res.status}) — UNABLE TO FETCH QUEUE`);
         setLoading(false);
-        return;
+        return false;
       }
       const data = await res.json();
       setManualTasks(data.manual_processing_required || []);
       setCompletedTasks(data.completed_tasks || []);
       setLoading(false);
+      setIsAuthenticated(true);
+      return true;
     } catch (e) {
       console.error("Admin fetch error", e);
       setAuthError("NETWORK / CONNECTION ERROR");
       setLoading(false);
+      return false;
     }
+  };
+
+  const handleAssociateLogin = async (e) => {
+    if (e) e.preventDefault();
+    if (!analystName.trim()) {
+      setAuthError("PLEASE ENTER YOUR ASSOCIATE / ANALYST NAME.");
+      return;
+    }
+    handleSaveAnalystName(analystName.trim());
+    await fetchBacklog(adminKey);
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setAdminKey("");
+    setManualTasks([]);
+    setCompletedTasks([]);
   };
 
   const handleClaimTask = async (taskId) => {
@@ -136,18 +157,42 @@ export default function AdminDashboard({ API_BASE_URL }) {
     ? completedTasks
     : manualTasks;
 
-  if (loading) return <div style={{color: 'white', textAlign: 'center'}}>ACCESSING CENTRAL COMMAND...</div>;
+  if (loading) return <div style={{color: '#00D2FF', textAlign: 'center', padding: '40px', fontWeight: 'bold'}}>ACCESSING CENTRAL COMMAND...</div>;
 
-  return (
-    <div className="price-box" style={{ maxWidth: '1100px', width: '100%', margin: '0 auto', textAlign: 'left', border: '1px solid rgba(0, 210, 255, 0.25)', boxShadow: '0 10px 40px rgba(0,0,0,0.8)' }}>
-      <h2 className="tiger-text" style={{ marginBottom: '5px' }}>PRODUCTION OPERATIONS & TASK QUEUE</h2>
-      <p className="field-label" style={{ marginBottom: '20px' }}>MULTI-ASSOCIATE MANUAL DATA REMOVAL CONSOLE</p>
-      
-      {/* Associate Identity & Security Credentials Bar */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '15px', background: 'rgba(255,255,255,0.02)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
-        <div>
-          <label style={{ fontSize: '0.75rem', color: '#94A3B8', display: 'block', marginBottom: '6px' }}>ADMIN SECRET KEY:</label>
-          <div style={{ display: 'flex', gap: '8px' }}>
+  if (!isAuthenticated) {
+    return (
+      <div className="price-box" style={{ maxWidth: '550px', width: '100%', margin: '40px auto', textAlign: 'left', border: '1px solid rgba(0, 210, 255, 0.3)', boxShadow: '0 10px 40px rgba(0,0,0,0.9)', padding: '30px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '25px' }}>
+          <h2 className="tiger-text" style={{ fontSize: '1.4rem', marginBottom: '6px' }}>PRODUCTION SUPPORT PORTAL</h2>
+          <p className="field-label" style={{ fontSize: '0.78rem', color: '#94A3B8' }}>ASSOCIATE AUTHENTICATION & REMOVAL CONSOLE</p>
+        </div>
+
+        {authError && (
+          <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#f87171', padding: '12px', borderRadius: '6px', fontSize: '0.82rem', marginBottom: '20px', fontWeight: 'bold', textAlign: 'center' }}>
+            ⚠️ {authError}
+          </div>
+        )}
+
+        <form onSubmit={handleAssociateLogin}>
+          <div style={{ marginBottom: '18px' }}>
+            <label style={{ fontSize: '0.78rem', color: '#00D2FF', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>
+              👤 YOUR ASSOCIATE / ANALYST NAME:
+            </label>
+            <input 
+              type="text" 
+              className="mask-btn" 
+              placeholder="e.g. Sarah M. (Analyst #104)" 
+              value={analystName} 
+              onChange={(e) => handleSaveAnalystName(e.target.value)} 
+              style={{ width: '100%', fontSize: '0.95rem' }}
+              required
+            />
+          </div>
+
+          <div style={{ marginBottom: '25px' }}>
+            <label style={{ fontSize: '0.78rem', color: '#94A3B8', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>
+              🔑 PRODUCTION ADMIN SECRET KEY:
+            </label>
             <input 
               type="password" 
               name="disappear_ops_admin_secret_key_no_fill"
@@ -163,25 +208,47 @@ export default function AdminDashboard({ API_BASE_URL }) {
               placeholder="Enter Admin Secret Key..." 
               value={adminKey} 
               onChange={(e) => setAdminKey(e.target.value)} 
-              style={{ flex: 1 }}
+              style={{ width: '100%', fontSize: '0.95rem' }}
+              required
             />
-            <button className="reset-btn" style={{ padding: '4px 10px', fontSize: '0.75rem' }} onClick={() => fetchBacklog()}>
-              🔄 REFRESH
-            </button>
           </div>
+
+          <button 
+            type="submit" 
+            className="main-button" 
+            style={{ width: '100%', padding: '14px', fontSize: '0.9rem', fontWeight: 'bold' }}
+          >
+            🔓 AUTHENTICATE & OPEN OPERATIONS CONSOLE
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  return (
+    <div className="price-box" style={{ maxWidth: '1100px', width: '100%', margin: '0 auto', textAlign: 'left', border: '1px solid rgba(0, 210, 255, 0.25)', boxShadow: '0 10px 40px rgba(0,0,0,0.8)' }}>
+      {/* Authenticated Associate Header Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', background: 'rgba(0,210,255,0.03)', padding: '12px 18px', borderRadius: '8px', border: '1px solid rgba(0,210,255,0.2)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <span style={{ fontSize: '0.88rem', color: '#00D2FF', fontWeight: 'bold' }}>
+            👤 ASSOCIATE: <span style={{ color: '#fff' }}>{analystName || "Staff Analyst"}</span>
+          </span>
+          <span style={{ fontSize: '0.75rem', background: 'rgba(16,185,129,0.15)', color: '#10b981', padding: '3px 8px', borderRadius: '4px', border: '1px solid rgba(16,185,129,0.3)', fontWeight: 'bold' }}>
+            🟢 AUTHENTICATED
+          </span>
         </div>
-        <div>
-          <label style={{ fontSize: '0.75rem', color: '#00D2FF', display: 'block', marginBottom: '6px' }}>YOUR ASSOCIATE / ANALYST NAME:</label>
-          <input 
-            type="text" 
-            className="mask-btn" 
-            placeholder="e.g. Sarah M. (Analyst #104)" 
-            value={analystName} 
-            onChange={(e) => handleSaveAnalystName(e.target.value)} 
-            style={{ width: '100%', borderColor: '#00D2FF' }}
-          />
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button className="reset-btn" style={{ padding: '5px 12px', fontSize: '0.78rem' }} onClick={() => fetchBacklog()}>
+            🔄 REFRESH QUEUE
+          </button>
+          <button className="kill-text-bold" style={{ padding: '5px 12px', fontSize: '0.78rem' }} onClick={handleLogout}>
+            🔒 LOG OUT
+          </button>
         </div>
       </div>
+
+      <h2 className="tiger-text" style={{ marginBottom: '5px' }}>PRODUCTION OPERATIONS & TASK QUEUE</h2>
+      <p className="field-label" style={{ marginBottom: '20px' }}>MULTI-ASSOCIATE MANUAL DATA REMOVAL CONSOLE</p>
 
       {authError && (
         <div style={{ background: '#3b0712', border: '1px solid #7f1d1d', color: '#ff4444', padding: '12px', borderRadius: '6px', fontSize: '0.85rem', marginBottom: '15px', fontWeight: 'bold', textAlign: 'center' }}>
