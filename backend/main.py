@@ -2181,8 +2181,8 @@ def format_to_e164(phone_str: str) -> str:
     if not phone_str:
         return ""
     digits = "".join(filter(str.isdigit, str(phone_str)))
-    if len(digits) >= 10 and digits[3:6] == "555":
-        # Reject fictional 555 test numbers
+    if "555" in digits or len(digits) < 10:
+        # Filter out fictional 555 numbers and invalid phone lengths
         return ""
     if len(digits) == 10:
         return f"+1{digits}"
