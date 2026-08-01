@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, Request, Response, File, Up
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-from sqlalchemy import desc, text
+from sqlalchemy import desc, text, or_
 from sqlalchemy.orm import Session
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -887,20 +887,36 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
     from datetime import timedelta
     cutoff_date = datetime.utcnow() - timedelta(days=30)
     
-    # Fetch Purge Logs strictly belonging to this user
+    # Collect all user-specific identifiers (user_id, email, phone, and virtual line alias numbers)
+    user_aliases = db.query(DBAlias).filter(DBAlias.user_id == uid).all()
+    user_identifiers = [uid]
+    if profile.email:
+        user_identifiers.append(profile.email)
+    if profile.phone:
+        user_identifiers.append(profile.phone)
+    for a in user_aliases:
+        if a.content:
+            user_identifiers.append(a.content)
+            clean_ac = "".join(filter(str.isdigit, a.content))
+            if clean_ac and len(clean_ac) >= 4:
+                user_identifiers.append(f"VIRTUAL_LINE_{clean_ac[-4:]}")
+                user_identifiers.append(clean_ac[-4:])
+
+    purge_filters = []
+    for ident in user_identifiers:
+        if ident:
+            purge_filters.append(DBPurgeLog.node_id.like(f"%{ident}%"))
+            purge_filters.append(DBPurgeLog.action_type.like(f"%{ident}%"))
+
     purge_entries = (
         db.query(DBPurgeLog)
         .filter(
             DBPurgeLog.timestamp >= cutoff_date,
-            or_(
-                DBPurgeLog.node_id.startswith(f"{uid}_"),
-                DBPurgeLog.node_id == uid,
-                DBPurgeLog.node_id.in_(["SHIELD_SCANNER_01", "GLOBAL_SCRUB_ENGINE"])
-            )
+            or_(*purge_filters) if purge_filters else False
         )
         .order_by(desc(DBPurgeLog.timestamp))
         .all()
-    )
+    ) if purge_filters else []
     
     # Fetch User Scrub Logs (Data Broker Removals)
     scrub_entries = (
@@ -910,34 +926,36 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
         .all()
     )
     
-    # Ensure initial audit logs exist for new accounts
+    # Ensure initial audit logs exist for customer accounts
     if not purge_entries and not scrub_entries:
         try:
-            init_log1 = DBPurgeLog(action_type="PII_THREAT_SCAN_COMPLETED", node_id="SHIELD_SCANNER_01")
-            init_log2 = DBPurgeLog(action_type="DATA_BROKER_REMOVALS_DISPATCHED", node_id="GLOBAL_SCRUB_ENGINE")
-            db.add(init_log1)
-            db.add(init_log2)
+            init_log1 = DBPurgeLog(action_type="PII_THREAT_SCAN_COMPLETED", node_id=f"{uid}_SHIELD_SCANNER")
+            init_log2 = DBPurgeLog(action_type="DATA_BROKER_REMOVALS_DISPATCHED", node_id=f"{uid}_GLOBAL_SCRUB")
+            init_log3 = DBPurgeLog(action_type="ACCOUNT_DEFENSE_ACTIVE", node_id=f"{uid}_VAULT_CORE")
+            db.add_all([init_log1, init_log2, init_log3])
             db.commit()
-            purge_entries = [init_log2, init_log1]
+            purge_entries = [init_log3, init_log2, init_log1]
         except Exception as ex:
             logger.warning(f"Audit log init skipped: {ex}")
 
     history_list = []
     for entry in purge_entries:
+        ts = entry.timestamp.isoformat() if entry.timestamp else datetime.utcnow().isoformat()
         history_list.append({
-            "id": entry.id,
+            "id": entry.id or random.randint(1000, 9999),
             "action": entry.action_type,
             "node": entry.node_id,
-            "timestamp": entry.timestamp.isoformat()
+            "timestamp": ts
         })
 
     for scrub in scrub_entries:
         action_name = f"DATA_REMOVAL [{scrub.status}]: {scrub.broker_name.upper()}"
+        ts = scrub.timestamp.isoformat() if scrub.timestamp else datetime.utcnow().isoformat()
         history_list.append({
             "id": f"scrub_{scrub.id}",
             "action": action_name,
             "node": f"{scrub.removal_type}_REMOVAL_NODE",
-            "timestamp": scrub.timestamp.isoformat()
+            "timestamp": ts
         })
 
     # Sort consolidated audit history by timestamp descending
