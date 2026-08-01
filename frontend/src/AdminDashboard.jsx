@@ -219,7 +219,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
                   </div>
                   
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    {/* Claim / Release Task Buttons */}
+                    {/* Claim / Release / Re-assign Task Controls */}
                     {!task.assigned_analyst ? (
                       <button 
                         className="main-button" 
@@ -231,12 +231,31 @@ export default function AdminDashboard({ API_BASE_URL }) {
                     ) : isAssignedToMe ? (
                       <button 
                         className="reset-btn" 
-                        style={{ padding: '4px 10px', fontSize: '0.75rem', color: '#94a3b8', borderColor: '#475569' }}
+                        style={{ padding: '5px 10px', fontSize: '0.75rem', color: '#fbbf24', borderColor: '#d97706' }}
                         onClick={() => handleUnclaimTask(task.task_id)}
                       >
-                        ↩️ RELEASE TASK
+                        ↩️ UNASSIGN / RELEASE TASK
                       </button>
-                    ) : null}
+                    ) : (
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button 
+                          className="reset-btn" 
+                          style={{ padding: '4px 10px', fontSize: '0.75rem', color: '#ff6b6b', borderColor: '#ef4444' }}
+                          onClick={() => handleUnclaimTask(task.task_id)}
+                          title="Remove currently assigned associate and return task to unassigned queue"
+                        >
+                          ❌ UNASSIGN ASSOCIATE
+                        </button>
+                        <button 
+                          className="reset-btn" 
+                          style={{ padding: '4px 10px', fontSize: '0.75rem', color: '#60a5fa', borderColor: '#3b82f6' }}
+                          onClick={() => handleClaimTask(task.task_id)}
+                          title="Re-assign task directly to yourself"
+                        >
+                          ⚡ RE-ASSIGN TO ME
+                        </button>
+                      </div>
+                    )}
 
                     {/* Launch Broker Removal Portal Link */}
                     <a 
