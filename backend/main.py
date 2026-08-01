@@ -631,12 +631,39 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
             manual_backlog_queue.append(task_details)
         else:
             automated_backlog.append(task_details)
+
+    completed_logs = db.query(DBScrubLog).filter(DBScrubLog.status == "REMOVED").order_by(desc(DBScrubLog.timestamp)).limit(100).all()
+    completed_tasks_list = []
+    for task in completed_logs:
+        profile = db.query(DBProfile).filter(DBProfile.id == task.user_id).first()
+        opt_url = BROKER_OPT_OUT_URLS.get(task.broker_name.upper(), f"https://www.google.com/search?q={task.broker_name}+opt+out+form")
+        completed_tasks_list.append({
+            "task_id": task.id,
+            "broker_name": task.broker_name,
+            "status": "REMOVED",
+            "opt_out_url": opt_url,
+            "assigned_analyst": task.assigned_analyst,
+            "resolved_by": task.resolved_by or task.assigned_analyst or "Staff Analyst",
+            "manual_instruction_url": task.manual_instruction_url,
+            "submitted_at": task.timestamp.isoformat(),
+            "target_profile": {
+                "user_id": task.user_id,
+                "first_name": profile.first_name if profile else "N/A",
+                "middle_name": profile.middle_name if profile else "",
+                "last_name": profile.last_name if profile else "N/A",
+                "email": profile.email if profile else "N/A",
+                "address": profile.address if profile else "N/A",
+                "dob": profile.dob if profile else "N/A"
+            }
+        })
             
     return {
         "manual_queue_count": len(manual_backlog_queue),
         "automated_queue_count": len(automated_backlog),
+        "completed_queue_count": len(completed_tasks_list),
         "manual_processing_required": manual_backlog_queue,
-        "automated_processing_pool": automated_backlog
+        "automated_processing_pool": automated_backlog,
+        "completed_tasks": completed_tasks_list
     }
 
 

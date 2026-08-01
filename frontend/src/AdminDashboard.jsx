@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 
 export default function AdminDashboard({ API_BASE_URL }) {
   const [manualTasks, setManualTasks] = useState([]);
+  const [completedTasks, setCompletedTasks] = useState([]);
   const [verifications, setVerifications] = useState({});
   const [adminKey, setAdminKey] = useState("");
   const [analystName, setAnalystName] = useState(localStorage.getItem("disappear_analyst_name") || "");
-  const [filterMode, setFilterMode] = useState("ALL"); // 'ALL', 'UNASSIGNED', 'MY_TASKS'
+  const [filterMode, setFilterMode] = useState("ALL"); // 'ALL', 'UNASSIGNED', 'MY_TASKS', 'COMPLETED'
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState("");
 
@@ -31,6 +32,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
       if (res.status === 403) {
         setAuthError("INVALID ADMIN SECRET KEY — ACCESS DENIED");
         setManualTasks([]);
+        setCompletedTasks([]);
         setLoading(false);
         return;
       }
@@ -41,6 +43,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
       }
       const data = await res.json();
       setManualTasks(data.manual_processing_required || []);
+      setCompletedTasks(data.completed_tasks || []);
       setLoading(false);
     } catch (e) {
       console.error("Admin fetch error", e);
@@ -104,6 +107,16 @@ export default function AdminDashboard({ API_BASE_URL }) {
       });
       
       if (res.ok) {
+        // Move from manualTasks to completedTasks
+        const resolvedTask = manualTasks.find(t => t.task_id === taskId);
+        if (resolvedTask) {
+          setCompletedTasks(prev => [{
+            ...resolvedTask,
+            status: "REMOVED",
+            resolved_by: activeAnalyst,
+            manual_instruction_url: link
+          }, ...prev]);
+        }
         setManualTasks(prev => prev.filter(t => t.task_id !== taskId));
       }
     } catch (e) {
@@ -119,6 +132,8 @@ export default function AdminDashboard({ API_BASE_URL }) {
     ? unassignedTasks 
     : filterMode === 'MY_TASKS' 
     ? myTasks 
+    : filterMode === 'COMPLETED'
+    ? completedTasks
     : manualTasks;
 
   if (loading) return <div style={{color: 'white', textAlign: 'center'}}>ACCESSING CENTRAL COMMAND...</div>;
@@ -166,48 +181,66 @@ export default function AdminDashboard({ API_BASE_URL }) {
       )}
 
       {/* Queue Filter Navigation */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid #334155', paddingBottom: '12px' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '1px solid #334155', paddingBottom: '12px', flexWrap: 'wrap' }}>
         <button 
           className="reset-btn" 
-          style={{ padding: '8px 16px', fontSize: '0.85rem', borderColor: filterMode === 'ALL' ? '#00D2FF' : '#334155', color: filterMode === 'ALL' ? '#00D2FF' : '#94A3B8' }}
+          style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: filterMode === 'ALL' ? '#00D2FF' : '#334155', color: filterMode === 'ALL' ? '#00D2FF' : '#94A3B8' }}
           onClick={() => setFilterMode('ALL')}
         >
-          ALL QUEUED TASKS ({manualTasks.length})
+          ALL QUEUED ({manualTasks.length})
         </button>
         <button 
           className="reset-btn" 
-          style={{ padding: '8px 16px', fontSize: '0.85rem', borderColor: filterMode === 'UNASSIGNED' ? '#fbbf24' : '#334155', color: filterMode === 'UNASSIGNED' ? '#fbbf24' : '#94A3B8' }}
+          style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: filterMode === 'UNASSIGNED' ? '#fbbf24' : '#334155', color: filterMode === 'UNASSIGNED' ? '#fbbf24' : '#94A3B8' }}
           onClick={() => setFilterMode('UNASSIGNED')}
         >
-          UNASSIGNED QUEUE ({unassignedTasks.length})
+          UNASSIGNED ({unassignedTasks.length})
         </button>
         <button 
           className="reset-btn" 
-          style={{ padding: '8px 16px', fontSize: '0.85rem', borderColor: filterMode === 'MY_TASKS' ? '#10b981' : '#334155', color: filterMode === 'MY_TASKS' ? '#10b981' : '#94A3B8' }}
+          style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: filterMode === 'MY_TASKS' ? '#60a5fa' : '#334155', color: filterMode === 'MY_TASKS' ? '#60a5fa' : '#94A3B8' }}
           onClick={() => setFilterMode('MY_TASKS')}
         >
-          MY CLAIMED TASKS ({myTasks.length})
+          MY CLAIMED ({myTasks.length})
+        </button>
+        <button 
+          className="reset-btn" 
+          style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: filterMode === 'COMPLETED' ? '#10b981' : '#334155', color: filterMode === 'COMPLETED' ? '#10b981' : '#94A3B8' }}
+          onClick={() => setFilterMode('COMPLETED')}
+        >
+          COMPLETED TASKS ({completedTasks.length})
         </button>
       </div>
 
       {displayedTasks.length === 0 ? (
         <p style={{ color: '#10b981', fontFamily: 'Courier New', padding: '20px', textAlign: 'center' }}>
-          {filterMode === 'UNASSIGNED' ? "NO UNASSIGNED TASKS IN QUEUE." : filterMode === 'MY_TASKS' ? "YOU HAVE NO ACTIVE CLAIMED TASKS." : "ALL QUEUES CLEAR."}
+          {filterMode === 'UNASSIGNED' 
+            ? "NO UNASSIGNED TASKS IN QUEUE." 
+            : filterMode === 'MY_TASKS' 
+            ? "YOU HAVE NO ACTIVE CLAIMED TASKS." 
+            : filterMode === 'COMPLETED'
+            ? "NO COMPLETED TASKS RECORDED YET."
+            : "ALL QUEUES CLEAR."}
         </p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
           {displayedTasks.map((task) => {
             const isAssignedToMe = task.assigned_analyst && analystName.trim() && task.assigned_analyst.toLowerCase() === analystName.trim().toLowerCase();
+            const isCompleted = task.status === "REMOVED";
 
             return (
-              <div key={task.task_id} style={{ border: isAssignedToMe ? '1px solid #10b981' : task.assigned_analyst ? '1px solid #3b82f6' : '1px solid #334155', padding: '16px', borderRadius: '8px', background: '#05070E' }}>
+              <div key={task.task_id} style={{ border: isCompleted ? '1px solid #10b981' : isAssignedToMe ? '1px solid #10b981' : task.assigned_analyst ? '1px solid #3b82f6' : '1px solid #334155', padding: '16px', borderRadius: '8px', background: isCompleted ? '#031a10' : '#05070E' }}>
                 
                 {/* Task Header & Associate Status */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                     <strong style={{ color: '#00D2FF', fontSize: '1.05rem', letterSpacing: '1px' }}>BROKER: {task.broker_name}</strong>
                     
-                    {task.assigned_analyst ? (
+                    {isCompleted ? (
+                      <span style={{ fontSize: '0.72rem', backgroundColor: '#064e3b', color: '#34d399', padding: '4px 10px', borderRadius: '4px', border: '1px solid #059669', fontWeight: 'bold' }}>
+                        ✅ REMOVAL COMPLETED BY: {(task.resolved_by || "STAFF ANALYST").toUpperCase()}
+                      </span>
+                    ) : task.assigned_analyst ? (
                       <span style={{ fontSize: '0.72rem', backgroundColor: isAssignedToMe ? '#064e3b' : '#1e3a8a', color: isAssignedToMe ? '#34d399' : '#60a5fa', padding: '4px 10px', borderRadius: '4px', border: `1px solid ${isAssignedToMe ? '#059669' : '#2563eb'}`, fontWeight: 'bold' }}>
                         👤 ASSIGNED TO: {task.assigned_analyst.toUpperCase()}
                       </span>
@@ -220,7 +253,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
                   
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     {/* Claim / Release / Re-assign Task Controls */}
-                    {!task.assigned_analyst ? (
+                    {!isCompleted && (!task.assigned_analyst ? (
                       <button 
                         className="main-button" 
                         style={{ padding: '5px 12px', fontSize: '0.78rem', background: 'linear-gradient(135deg, #d97706, #b45309)' }}
@@ -255,7 +288,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
                           ⚡ RE-ASSIGN TO ME
                         </button>
                       </div>
-                    )}
+                    ))}
 
                     {/* Launch Broker Removal Portal Link */}
                     <a 
@@ -278,19 +311,30 @@ export default function AdminDashboard({ API_BASE_URL }) {
                   <div><strong>ADDRESS:</strong> <span style={{ color: '#FFF' }}>{task.target_profile.address}</span></div>
                 </div>
 
-                {/* Proof Link Input & Resolution Trigger */}
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <input 
-                    className="mask-btn" 
-                    placeholder="Paste Removal Confirmation Link / Proof URL..." 
-                    style={{ flex: 1 }}
-                    value={verifications[task.task_id] || ""}
-                    onChange={(e) => setVerifications({...verifications, [task.task_id]: e.target.value})}
-                  />
-                  <button className="reset-btn" style={{ borderColor: '#10b981', color: '#10b981', fontWeight: 'bold' }} onClick={() => handleResolve(task.task_id)}>
-                    MARK COMPLETE
-                  </button>
-                </div>
+                {/* Proof Link Input or Completed Proof Display */}
+                {isCompleted ? (
+                  <div style={{ fontSize: '0.85rem', color: '#34d399', background: 'rgba(16,185,129,0.08)', padding: '10px 14px', borderRadius: '6px', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span><strong>PROOF / VERIFICATION:</strong> {task.manual_instruction_url || "Confirmed Deleted by Staff Analyst"}</span>
+                    {task.manual_instruction_url && task.manual_instruction_url.startsWith('http') && (
+                      <a href={task.manual_instruction_url} target="_blank" rel="noopener noreferrer" style={{ color: '#34d399', textDecoration: 'underline', fontWeight: 'bold' }}>
+                        VIEW PROOF LINK ↗
+                      </a>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <input 
+                      className="mask-btn" 
+                      placeholder="Paste Removal Confirmation Link / Proof URL..." 
+                      style={{ flex: 1 }}
+                      value={verifications[task.task_id] || ""}
+                      onChange={(e) => setVerifications({...verifications, [task.task_id]: e.target.value})}
+                    />
+                    <button className="reset-btn" style={{ borderColor: '#10b981', color: '#10b981', fontWeight: 'bold' }} onClick={() => handleResolve(task.task_id)}>
+                      MARK COMPLETE
+                    </button>
+                  </div>
+                )}
 
               </div>
             );
