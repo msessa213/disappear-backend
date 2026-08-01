@@ -227,12 +227,14 @@ def sync_all_twilio_webhooks(db=None):
 
             if db:
                 from models import DBAlias, DBProfile
+                import uuid
                 active_prof = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
                 target_uid = active_prof.id if active_prof else "user_customer_test_99"
 
                 existing = db.query(DBAlias).filter(DBAlias.content == n.phone_number).first()
                 if not existing:
                     db.add(DBAlias(
+                        id=f"als_{uuid.uuid4().hex[:12]}",
                         user_id=target_uid,
                         type="phone",
                         content=n.phone_number,
