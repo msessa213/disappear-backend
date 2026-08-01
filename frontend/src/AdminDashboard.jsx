@@ -3,21 +3,15 @@ import React, { useState, useEffect } from 'react';
 export default function AdminDashboard({ API_BASE_URL }) {
   const [manualTasks, setManualTasks] = useState([]);
   const [verifications, setVerifications] = useState({});
-  const [adminKey, setAdminKey] = useState(localStorage.getItem("disappear_admin_key") || "qBzzcob3WVgGFHztZwvTaKproGms9OozKOZ9dxwFH17pHkqNFrAU9IHSaywSPlXC");
+  const [adminKey, setAdminKey] = useState("");
   const [analystName, setAnalystName] = useState(localStorage.getItem("disappear_analyst_name") || "");
   const [filterMode, setFilterMode] = useState("ALL"); // 'ALL', 'UNASSIGNED', 'MY_TASKS'
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState("");
 
   useEffect(() => {
-    fetchBacklog();
+    if (adminKey.trim()) fetchBacklog();
   }, [adminKey]);
-
-  const handleSaveAdminKey = (key) => {
-    const cleanKey = key.trim();
-    setAdminKey(cleanKey);
-    localStorage.setItem("disappear_admin_key", cleanKey);
-  };
 
   const handleSaveAnalystName = (name) => {
     setAnalystName(name);
@@ -144,7 +138,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
               className="mask-btn" 
               placeholder="Enter Admin Secret Key..." 
               value={adminKey} 
-              onChange={(e) => handleSaveAdminKey(e.target.value)} 
+              onChange={(e) => setAdminKey(e.target.value)} 
               style={{ flex: 1 }}
             />
             <button className="reset-btn" style={{ padding: '4px 10px', fontSize: '0.75rem' }} onClick={() => fetchBacklog()}>

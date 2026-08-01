@@ -592,10 +592,9 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
             db.merge(ref1)
             db.merge(ref2)
             
-            sample_brokers = ["LEXISNEXIS", "BEENVERIFIED", "TRUTHFINDER", "ZOOMINFO", "EXPERIAN", "PEOPLELOOKER", "INTELIUS"]
-            for b in sample_brokers:
-                db.add(DBScrubLog(user_id="user_ref_01", broker_name=b, status="MANUAL_PENDING", removal_type="MANUAL"))
-                db.add(DBScrubLog(user_id="user_ref_02", broker_name=b, status="MANUAL_PENDING", removal_type="MANUAL"))
+            # Seed exactly 2 reference tasks (1 for Target Alpha, 1 for Target Beta)
+            db.add(DBScrubLog(user_id="user_ref_01", broker_name="LEXISNEXIS", status="MANUAL_PENDING", removal_type="MANUAL"))
+            db.add(DBScrubLog(user_id="user_ref_02", broker_name="BEENVERIFIED", status="MANUAL_PENDING", removal_type="MANUAL"))
             db.commit()
             open_tasks = db.query(DBScrubLog).filter(DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"])).all()
         except Exception as ex:
