@@ -87,6 +87,7 @@ function App() {
   
   const [showLegal, setShowLegal] = useState(null); 
   const [showAdmin, setShowAdmin] = useState(false);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showKycModal, setShowKycModal] = useState(false);
   const [kycModalReason, setKycModalReason] = useState("");
   const [isEmergencyWipe, setIsEmergencyWipe] = useState(false);
@@ -258,29 +259,50 @@ function App() {
         setShowLegal('manifesto');
       } else if (hash === '#aml-policy' || hash === '#aml') {
         setShowLegal('aml');
+      } else if (hash === '#admin/login') {
+        setShowAdminLogin(true);
+        setShowAdmin(false);
+        setShowLanding(false);
+        setShowPricing(false);
+        setShowCheckout(false);
+        setShow2FA(false);
+        setShowLegal(null);
       } else if (hash === '#admin') {
         setShowAdmin(true);
+        setShowAdminLogin(false);
+        setShowLanding(false);
+        setShowPricing(false);
+        setShowCheckout(false);
+        setShow2FA(false);
+        setShowLegal(null);
       } else if (hash === '#pricing') {
         setShowLanding(false);
         setShowPricing(true);
         setShowCheckout(false);
         setShow2FA(false);
+        setShowAdmin(false);
+        setShowAdminLogin(false);
         setShowLegal(null);
-      } else if (hash === '#login') {
+      } else if (hash === '#login' || hash === '#2fa') {
         setShowLanding(false);
         setShowPricing(false);
         setShowCheckout(false);
         setShow2FA(true);
+        setShowAdmin(false);
+        setShowAdminLogin(false);
         setShowLegal(null);
       } else if (hash === '#checkout') {
         setShowLanding(false);
         setShowPricing(false);
         setShowCheckout(true);
         setShow2FA(false);
+        setShowAdmin(false);
+        setShowAdminLogin(false);
         setShowLegal(null);
       } else if (hash === '' || hash === '#') {
         setShowLegal(null);
         setShowAdmin(false);
+        setShowAdminLogin(false);
         // Only return to landing if not logged in
         const sessionActive = localStorage.getItem("disappear_session") === "active";
         const activeUserId = localStorage.getItem("disappear_user_id");
@@ -1404,7 +1426,7 @@ const handleEmergencyBurn = async () => {
           )}
 
           <main>
-            {showAdmin ? (
+            {(showAdmin || showAdminLogin) ? (
               /* STANDALONE ADMIN OPERATIONS PORTAL PAGE */
               <div className="shield-container fade-in" style={{ minHeight: '85vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '20px 15px', width: '100%', maxWidth: '1100px', margin: '0 auto' }}>
                 <div style={{ width: '100%', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1416,7 +1438,7 @@ const handleEmergencyBurn = async () => {
                     ← BACK TO PUBLIC HOME
                   </button>
                   <span style={{ fontSize: '0.8rem', color: '#00D2FF', fontFamily: 'monospace', fontWeight: 'bold', letterSpacing: '1px' }}>
-                    🔒 STANDALONE OPERATIONS PORTAL
+                    🔒 PRODUCTION SUPPORT PORTAL
                   </span>
                 </div>
                 <AdminDashboard API_BASE_URL={API_BASE_URL} />

@@ -63,7 +63,10 @@ export default function AdminDashboard({ API_BASE_URL }) {
       return;
     }
     handleSaveAnalystName(analystName.trim());
-    await fetchBacklog(adminKey);
+    const ok = await fetchBacklog(adminKey);
+    if (ok) {
+      window.location.hash = "#admin";
+    }
   };
 
   const handleLogout = () => {
@@ -71,6 +74,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
     setAdminKey("");
     setManualTasks([]);
     setCompletedTasks([]);
+    window.location.hash = "#admin/login";
   };
 
   const handleClaimTask = async (taskId) => {
