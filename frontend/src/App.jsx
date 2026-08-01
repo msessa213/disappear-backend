@@ -1097,10 +1097,19 @@ const handleEmergencyBurn = async () => {
 
   const handleManageBilling = async () => {
     triggerToast("UPLINKING TO STRIPE PORTAL...");
+    const activeUserId = localStorage.getItem("disappear_user_id") || "";
     try {
-        const res = await secureRequest(`${API_BASE_URL}/payments/customer-portal`, { method: "POST" });
+        const res = await secureRequest(`${API_BASE_URL}/payments/create-portal-session?user_id=${activeUserId}`, { 
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ return_url: window.location.href })
+        });
         const data = await res.json();
-        if (data.url) window.location.href = data.url;
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          triggerToast(data.detail || "BILLING PORTAL UNAVAILABLE");
+        }
     } catch (err) { triggerToast("PORTAL OFFLINE"); }
   };
 
@@ -1565,13 +1574,18 @@ const handleEmergencyBurn = async () => {
                         <span style={{ color: '#00FF00', fontSize: '0.9rem' }}>[ACTIVE]</span>
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
-                    <button className="reset-btn" style={{ fontSize: '0.95rem', padding: '12px 5px', whiteSpace: 'normal', lineHeight: '1.2', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={handleManageBilling}>
-                      {billingCycle === 'monthly' ? "SWITCH_TO_ANNUAL" : "SWITCH_TO_MONTHLY"}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
+                    <button className="main-button" style={{ fontSize: '0.95rem', padding: '14px 10px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }} onClick={handleManageBilling}>
+                      <span>💳</span> MANAGE BILLING & CREDIT CARD
                     </button>
-                    <button className="reset-btn" style={{ borderColor: '#ff4444', color: '#ff4444', fontSize: '0.95rem', padding: '12px 5px', whiteSpace: 'normal', lineHeight: '1.2', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => { if(window.confirm("CANCEL SUBSCRIPTION? PII shielding will be deactivated at end of cycle.")) handleManageBilling(); }}>
-                      CANCEL_PLAN
-                    </button>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <button className="reset-btn" style={{ fontSize: '0.9rem', padding: '12px 5px', whiteSpace: 'normal', lineHeight: '1.2', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={handleManageBilling}>
+                        {billingCycle === 'monthly' ? "SWITCH TO ANNUAL" : "SWITCH TO MONTHLY"}
+                      </button>
+                      <button className="reset-btn" style={{ borderColor: '#ff4444', color: '#ff4444', fontSize: '0.9rem', padding: '12px 5px', whiteSpace: 'normal', lineHeight: '1.2', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => { if(window.confirm("CANCEL SUBSCRIPTION? PII shielding will be deactivated at end of cycle.")) handleManageBilling(); }}>
+                        CANCEL PLAN
+                      </button>
+                    </div>
                   </div>
                 </div>
 
