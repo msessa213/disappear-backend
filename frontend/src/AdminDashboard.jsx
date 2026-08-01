@@ -11,13 +11,20 @@ export default function AdminDashboard({ API_BASE_URL }) {
   const [authError, setAuthError] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  const cleanHeaderKey = (val) => {
+    if (!val) return "";
+    // Remove non-ASCII characters, smart quotes, zero-width spaces, and non-printable characters
+    return String(val).trim().replace(/[^\x20-\x7E]/g, "");
+  };
+
   const handleSaveAnalystName = (name) => {
     setAnalystName(name);
     localStorage.setItem("disappear_analyst_name", name);
   };
 
   const fetchBacklog = async (overrideKey) => {
-    const keyToUse = (overrideKey !== undefined ? overrideKey : adminKey).trim();
+    const rawKey = overrideKey !== undefined ? overrideKey : adminKey;
+    const keyToUse = cleanHeaderKey(rawKey);
     if (!keyToUse) {
       setAuthError("PLEASE ENTER YOUR PRODUCTION ADMIN SECRET KEY.");
       return false;
@@ -88,7 +95,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "X-Disappear-Admin-Key": adminKey
+          "X-Disappear-Admin-Key": cleanHeaderKey(adminKey)
         },
         body: JSON.stringify({ analyst_name: activeAnalyst })
       });
@@ -104,7 +111,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
     try {
       const res = await fetch(`${API_BASE_URL}/admin/ops/unclaim/${taskId}`, {
         method: "POST",
-        headers: { "X-Disappear-Admin-Key": adminKey }
+        headers: { "X-Disappear-Admin-Key": cleanHeaderKey(adminKey) }
       });
       if (res.ok) {
         setManualTasks(prev => prev.map(t => t.task_id === taskId ? { ...t, assigned_analyst: null } : t));
@@ -122,7 +129,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "X-Disappear-Admin-Key": adminKey
+          "X-Disappear-Admin-Key": cleanHeaderKey(adminKey)
         },
         body: JSON.stringify({ 
           verification_link: link, 
