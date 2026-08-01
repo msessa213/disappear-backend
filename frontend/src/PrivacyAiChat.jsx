@@ -73,7 +73,7 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
   ];
 
   return (
-    <div style={{ position: 'fixed', bottom: '25px', right: '25px', zIndex: 99999 }}>
+    <div className="privacy-ai-chat-container">
       {/* Modern Streamlined Floating Toggle Button */}
       {!isOpen && (
         <button

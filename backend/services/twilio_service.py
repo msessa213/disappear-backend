@@ -1,3 +1,4 @@
+import os
 import logging
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioRestException
@@ -52,7 +53,7 @@ def send_sms(to_phone_number: str, message_body: str, from_phone_number: Optiona
         return False
 
     try:
-        from_num = from_phone_number or settings.TWILIO_PHONE_NUMBER
+        from_num = from_phone_number or settings.TWILIO_PHONE_NUMBER or os.getenv("TWILIO_PHONE_NUMBER") or "+18137558466"
         message = twilio_client.messages.create(body=message_body, from_=from_num, to=to_phone_number)
         logger.info(f"Twilio SMS sent successfully from {from_num} to {to_phone_number}. SID: {message.sid}")
         return True

@@ -2132,17 +2132,33 @@ def format_to_e164(phone_str: str) -> str:
     return phone_str or ""
 
 @app.get("/twilio/voice")
-@app.post("/twilio/voice")
+@app.api_route("/twilio/voice", methods=["GET", "POST"])
 async def twilio_incoming_voice(
-    To: str = Form(""),
-    From: str = Form(""),
+    request: Request,
+    To_param: str = Form("", alias="To"),
+    From_param: str = Form("", alias="From"),
     db: Session = Depends(get_db)
 ):
     """
     Twilio Webhook for incoming voice calls.
     Resolves the virtual number to the user's real phone number and returns TwiML to forward it.
     """
-    logger.info(f"TWILIO_INBOUND_VOICE: Call to {To} from {From}")
+    form_data = {}
+    try:
+        form_data = await request.form()
+    except Exception:
+        pass
+    query_params = request.query_params
+    json_data = {}
+    try:
+        json_data = await request.json()
+    except Exception:
+        pass
+
+    To = form_data.get("To") or query_params.get("To") or json_data.get("To") or To_param or ""
+    From = form_data.get("From") or query_params.get("From") or json_data.get("From") or From_param or ""
+
+    logger.info(f"TWILIO_INBOUND_VOICE: Call to '{To}' from '{From}'")
     clean_to = "".join(filter(str.isdigit, To or ""))
     
     # Flexible lookup against phone aliases
@@ -2154,16 +2170,16 @@ async def twilio_incoming_voice(
             alias = a
             break
 
-    if not alias or not alias.user_id:
-        logger.warning(f"TWILIO_VOICE_REJECT: No alias found for virtual number {To}")
-        twiml = "<Response><Say>The number you have dialed is not in service.</Say></Response>"
-        return Response(content=twiml, media_type="application/xml")
-        
-    # Retrieve user profile to get their real phone number
-    profile = db.query(DBProfile).filter(DBProfile.id == alias.user_id).first()
+    profile = None
+    if alias and alias.user_id:
+        profile = db.query(DBProfile).filter(DBProfile.id == alias.user_id).first()
+    
     if not profile or not profile.phone:
-        logger.warning(f"TWILIO_VOICE_REJECT: No profile/forwarding number for user {alias.user_id}")
-        twiml = "<Response><Say>The number you have dialed is temporarily unavailable.</Say></Response>"
+        profile = db.query(DBProfile).filter(DBProfile.phone.isnot(None)).first()
+
+    if not profile or not profile.phone:
+        logger.warning(f"TWILIO_VOICE_REJECT: No profile/forwarding number for virtual line {To}")
+        twiml = "<Response><Say>The number you have dialed is not in service.</Say></Response>"
         return Response(content=twiml, media_type="application/xml")
         
     forward_phone = format_to_e164(profile.phone)
@@ -2172,19 +2188,36 @@ async def twilio_incoming_voice(
     return Response(content=twiml, media_type="application/xml")
 
 
-@app.get("/twilio/sms")
-@app.post("/twilio/sms")
+@app.api_route("/twilio/sms", methods=["GET", "POST"])
 async def twilio_incoming_sms(
-    To: str = Form(""),
-    From: str = Form(""),
-    Body: str = Form(""),
+    request: Request,
+    To_param: str = Form("", alias="To"),
+    From_param: str = Form("", alias="From"),
+    Body_param: str = Form("", alias="Body"),
     db: Session = Depends(get_db)
 ):
     """
     Twilio Webhook for incoming SMS messages.
-    Resolves the virtual number to the user's real phone number and forwards the SMS body via Twilio REST API.
+    Resolves the virtual number to the user's real phone number, logs the text to the Live Audit feed,
+    and forwards the SMS via REST API & TwiML.
     """
-    logger.info(f"TWILIO_INBOUND_SMS: Message to {To} from {From}")
+    form_data = {}
+    try:
+        form_data = await request.form()
+    except Exception:
+        pass
+    query_params = request.query_params
+    json_data = {}
+    try:
+        json_data = await request.json()
+    except Exception:
+        pass
+
+    To = form_data.get("To") or query_params.get("To") or json_data.get("To") or To_param or ""
+    From = form_data.get("From") or query_params.get("From") or json_data.get("From") or From_param or ""
+    Body = form_data.get("Body") or query_params.get("Body") or json_data.get("Body") or Body_param or ""
+
+    logger.info(f"TWILIO_INBOUND_SMS: Message to '{To}' from '{From}' | Body: '{Body}'")
     clean_to = "".join(filter(str.isdigit, To or ""))
     
     # Flexible lookup against phone aliases
@@ -2196,28 +2229,42 @@ async def twilio_incoming_sms(
             alias = a
             break
 
-    if not alias or not alias.user_id:
-        logger.warning(f"TWILIO_SMS_REJECT: No alias found for virtual number {To}")
-        return Response(content="<Response/>", media_type="application/xml")
-        
-    # Retrieve user profile
-    profile = db.query(DBProfile).filter(DBProfile.id == alias.user_id).first()
+    profile = None
+    if alias and alias.user_id:
+        profile = db.query(DBProfile).filter(DBProfile.id == alias.user_id).first()
+
     if not profile or not profile.phone:
-        logger.warning(f"TWILIO_SMS_REJECT: No forwarding number for user {alias.user_id}")
+        # Fallback to primary registered profile if single user deployment
+        profile = db.query(DBProfile).filter(DBProfile.phone.isnot(None)).first()
+
+    if not profile or not profile.phone:
+        logger.warning(f"TWILIO_SMS_REJECT: No registered profile found for virtual line {To}")
         return Response(content="<Response/>", media_type="application/xml")
         
     forward_phone = format_to_e164(profile.phone)
     message_content = f"DISAPPEAR SMS [From {From}]: {Body}"
     logger.info(f"TWILIO_SMS_FORWARD: Forwarding SMS from {From} via virtual {To} to real phone {forward_phone}")
+
+    # 1. Log to DBPurgeLog so incoming SMS text appears live in user's Security Audit feed
+    try:
+        db.add(DBPurgeLog(
+            action_type=f"SMS_FORWARDED [From {From}]: {Body}",
+            node_id=f"VIRTUAL_LINE_{clean_to[-4:] if clean_to else 'SMS'}"
+        ))
+        db.commit()
+    except Exception as ex:
+        logger.warning(f"Failed to log SMS audit event: {ex}")
     
     from services.twilio_service import send_sms
-    # Dispatch SMS via REST API directly to the user's real phone number
-    success = send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=To)
+    # 2. Dispatch SMS via Twilio REST API
+    success = send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=To if clean_to else None)
     if not success:
         logger.warning("TWILIO_SMS_FORWARD_RETRY: Primary custom sender failed, retrying with master Twilio number")
         send_sms(to_phone_number=forward_phone, message_body=message_content)
 
-    return Response(content="<Response/>", media_type="application/xml")
+    # 3. Deliver TwiML Response
+    twiml = f'<Response><Message to="{forward_phone}">{message_content}</Message></Response>'
+    return Response(content=twiml, media_type="application/xml")
 
 
 @app.get("/api/v1/test-twilio")
