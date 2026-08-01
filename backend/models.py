@@ -113,6 +113,8 @@ class DBScrubLog(Base):
     status = Column(String)
     removal_type = Column(String, default="AUTOMATED") # NEW: AUTOMATED or MANUAL
     manual_instruction_url = Column(String, nullable=True) # NEW
+    assigned_analyst = Column(String, nullable=True) # NEW: Analyst Name currently working on task
+    resolved_by = Column(String, nullable=True) # NEW: Analyst Name who completed task
     timestamp = Column(DateTime, default=datetime.utcnow)
 
 class DBPurgeLog(Base):

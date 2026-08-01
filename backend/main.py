@@ -211,6 +211,8 @@ safe_add_column("shield_profiles_v3", "daily_spend_limit", "INTEGER DEFAULT 2000
 safe_add_column("shield_profiles_v3", "password_hash", "VARCHAR")
 safe_add_column("scrub_logs_v1", "removal_type", "VARCHAR DEFAULT 'AUTOMATED'")
 safe_add_column("scrub_logs_v1", "manual_instruction_url", "VARCHAR")
+safe_add_column("scrub_logs_v1", "assigned_analyst", "VARCHAR")
+safe_add_column("scrub_logs_v1", "resolved_by", "VARCHAR")
 
 # --- APP CONFIGURATION ---
 
@@ -404,6 +406,10 @@ class SetupSessionRequest(BaseModel):
 class AdminVerificationRequest(BaseModel):
     verification_link: Optional[str] = None
     notes: Optional[str] = None
+    analyst_name: Optional[str] = None
+
+class ClaimTaskRequest(BaseModel):
+    analyst_name: str
 
 # NEW: SMS Test Schema
 class SMSTestRequest(BaseModel):
@@ -587,6 +593,8 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
             "task_id": task.id,
             "broker_name": task.broker_name,
             "opt_out_url": opt_url,
+            "assigned_analyst": task.assigned_analyst,
+            "resolved_by": task.resolved_by,
             "submitted_at": task.timestamp.isoformat(),
             "target_profile": {
                 "user_id": task.user_id,
@@ -610,6 +618,43 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
         "manual_processing_required": manual_backlog_queue,
         "automated_processing_pool": automated_backlog
     }
+
+
+@app.post("/admin/ops/claim/{log_id}")
+async def claim_manual_task(
+    log_id: int, 
+    req: ClaimTaskRequest, 
+    db: Session = Depends(get_db), 
+    admin_key: str = Depends(verify_admin_token)
+):
+    """Claim a manual removal task so other team members know who is working on it"""
+    task = db.query(DBScrubLog).filter(DBScrubLog.id == log_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task signature not located.")
+        
+    task.assigned_analyst = req.analyst_name
+    db.add(task)
+    db.commit()
+    logger.info(f"TASK_CLAIMED: Task {log_id} ({task.broker_name}) claimed by {req.analyst_name}")
+    return {"status": "SUCCESS", "message": f"Task claimed by {req.analyst_name}", "assigned_analyst": req.analyst_name}
+
+
+@app.post("/admin/ops/unclaim/{log_id}")
+async def unclaim_manual_task(
+    log_id: int, 
+    db: Session = Depends(get_db), 
+    admin_key: str = Depends(verify_admin_token)
+):
+    """Unclaim a manual removal task back to the unassigned queue"""
+    task = db.query(DBScrubLog).filter(DBScrubLog.id == log_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task signature not located.")
+        
+    task.assigned_analyst = None
+    db.add(task)
+    db.commit()
+    logger.info(f"TASK_UNCLAIMED: Task {log_id} returned to queue")
+    return {"status": "SUCCESS", "message": "Task returned to unassigned queue"}
 
 
 @app.post("/admin/ops/resolve/{log_id}")
@@ -708,6 +753,7 @@ async def complete_manual_scrub(
     task.status = "REMOVED"
     if req.verification_link:
         task.manual_instruction_url = req.verification_link
+    task.resolved_by = req.analyst_name or task.assigned_analyst or "Staff Analyst"
     task.timestamp = datetime.utcnow()
     
     # Build audit trail
