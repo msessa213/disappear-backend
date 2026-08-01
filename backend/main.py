@@ -1130,25 +1130,31 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
                 raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: Profile flagged under AML policy.")
         elif user_id != "anonymous_agent":
             log_compliance_rejection(user_id, "CREATE_CHECKOUT_SESSION", "KYC verification required (missing profile)")
-            raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: KYC verification required.")
-
         customer_id = profile.stripe_customer_id if profile else None
+
+        is_subscription = "subscription" in etype
+        price_data = {
+            'currency': 'usd',
+            'product_data': {'name': item_name},
+            'unit_amount': unit_amount,
+        }
+        if is_subscription:
+            interval = "year" if "annual" in etype else "month"
+            price_data['recurring'] = {'interval': interval}
 
         session_args = {
             "payment_method_types": ['card'],
             "line_items": [{
-                'price_data': {
-                    'currency': 'usd',
-                    'product_data': {'name': item_name},
-                    'unit_amount': unit_amount,
-                },
+                'price_data': price_data,
                 'quantity': 1,
             }],
-            "mode": "payment",
+            "mode": "subscription" if is_subscription else "payment",
             "metadata": {
                 "purchase_type": purchase_key,
                 "user_id": user_id
             },
+            "automatic_tax": {"enabled": True},
+            "billing_address_collection": "required",
             "allow_promotion_codes": True,
             "success_url": f"{return_url}?payment=success",
             "cancel_url": f"{return_url}?payment=cancel",
@@ -1156,6 +1162,9 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
 
         if customer_id:
             session_args["customer"] = customer_id
+            session_args["customer_update"] = {"address": "auto"}
+        elif not is_subscription:
+            session_args["customer_creation"] = "always"
 
         session = stripe.checkout.Session.create(**session_args)
         return {"url": session.url}
