@@ -57,8 +57,11 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
     <div className="landing-wrapper fade-in">
       {/* --- GLOBAL NAVIGATION --- */}
       <nav className="landing-navbar">
-        <div className="logo-group">
+        <div className="logo-group" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
           <span className="tiger-text" style={{ fontWeight: '900', letterSpacing: '2px' }}>DISAPPEAR</span>
+          <span style={{ fontSize: '0.68rem', color: '#00D2FF', letterSpacing: '0.5px', marginTop: '2px', fontWeight: 'bold' }}>
+            BROUGHT TO YOU BY DFS 213 LLC
+          </span>
         </div>
         <div className="nav-actions">
           <button className="login-btn-nav" onClick={onLoginRequest}>ACCESS VAULT</button>
@@ -74,7 +77,7 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
             <h1 className="elite-header site-hero-text">STAY<br />VIGILANT.</h1>
             <p className="hero-description">
               Your identity is a target. In 2026, data brokers weaponize your PII for profit. 
-              <strong> Disappear</strong> is the tactical identity security counter-measure built to scorch your digital trail and replace exposure with synthetic privacy.
+              <strong> Disappear</strong> is the tactical identity security counter-measure brought to you by <strong>DFS 213 LLC</strong> to scorch your digital trail and replace exposure with synthetic privacy.
             </p>
             <div className="hero-cta-group" style={{ marginTop: '30px' }}>
               <button className="main-button" onClick={onEnterVault}>INITIATE IDENTITY SCRUB</button>

@@ -2031,6 +2031,9 @@ const handleEmergencyBurn = async () => {
           color: '#64748B',
           textAlign: 'center'
       }}>
+          <div style={{ width: '100%', marginBottom: '6px', fontSize: '0.78rem', color: '#94A3B8', letterSpacing: '0.5px' }}>
+            DISAPPEAR IS BROUGHT TO YOU BY <strong style={{ color: '#00D2FF' }}>DFS 213 LLC</strong>
+          </div>
           <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "manifesto"}>MANIFESTO</span>
           <span className="footer-divider" style={{ opacity: 0.4 }}>|</span>
           <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "privacy"}>PRIVACY</span>
