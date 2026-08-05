@@ -2103,31 +2103,22 @@ const handleEmergencyBurn = async () => {
         </div>
       )}
 
-      <footer className="home-footer" style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '15px',
-          padding: '25px 15px',
-          width: '100%',
-          fontSize: '0.75rem',
-          color: '#64748B',
-          textAlign: 'center'
-      }}>
-          <div style={{ width: '100%', marginBottom: '6px', fontSize: '0.78rem', color: '#94A3B8', letterSpacing: '0.5px' }}>
-            DISAPPEAR IS BROUGHT TO YOU BY <strong style={{ color: '#00D2FF' }}>DFS 213 LLC</strong>
+      <footer className="home-footer">
+          <div style={{ width: '100%', marginBottom: '8px', fontSize: '0.82rem', color: '#94A3B8', letterSpacing: '0.5px', textAlign: 'center' }}>
+            DISAPPEAR IS BROUGHT TO YOU BY <strong style={{ color: '#00D2FF', letterSpacing: '1px' }}>DFS 213 LLC</strong>
           </div>
-          <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "manifesto"}>MANIFESTO</span>
-          <span className="footer-divider" style={{ opacity: 0.4 }}>|</span>
-          <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "privacy"}>PRIVACY</span>
-          <span className="footer-divider" style={{ opacity: 0.4 }}>|</span>
-          <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "terms"}>TERMS</span>
-          <span className="footer-divider" style={{ opacity: 0.4 }}>|</span>
-          <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "aml-policy"}>AML & FRAUD</span>
-          <span className="footer-divider" style={{ opacity: 0.4 }}>|</span>
-          <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "support"}>SUPPORT</span>
-          <span className="admin-trigger" style={{ cursor: 'pointer', opacity: 0 }} onClick={() => window.location.hash = "admin"}>.</span>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+            <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "manifesto"}>MANIFESTO</span>
+            <span className="footer-divider" style={{ opacity: 0.4, color: '#64748B' }}>|</span>
+            <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "privacy"}>PRIVACY</span>
+            <span className="footer-divider" style={{ opacity: 0.4, color: '#64748B' }}>|</span>
+            <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "terms"}>TERMS</span>
+            <span className="footer-divider" style={{ opacity: 0.4, color: '#64748B' }}>|</span>
+            <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "aml-policy"}>AML & FRAUD</span>
+            <span className="footer-divider" style={{ opacity: 0.4, color: '#64748B' }}>|</span>
+            <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "support"}>SUPPORT</span>
+            <span className="admin-trigger" style={{ cursor: 'pointer', opacity: 0 }} onClick={() => window.location.hash = "admin"}>.</span>
+          </div>
       </footer>
 
       {/* --- GLOBAL ENCRYPTION & PURGE OVERLAY --- */}

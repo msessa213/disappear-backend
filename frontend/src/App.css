@@ -334,23 +334,24 @@ input[type="checkbox"] {
 
 /* 7. GUARANTEED FOOTER */
 .home-footer {
-  position: fixed !important;
-  bottom: 0 !important;
-  left: 0 !important;
+  position: relative !important;
   width: 100% !important;
-  height: 70px !important;
+  min-height: 80px !important;
+  height: auto !important;
+  padding: 20px 15px !important;
   background-color: #000000 !important;
   border-top: 1px solid #1e293b !important;
   display: flex !important;
+  flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 15px !important;
+  gap: 12px !important;
   z-index: 9999 !important;
 }
 
 .home-footer span {
   color: var(--tiger-blue) !important;
-  font-size: 0.75rem !important;
+  font-size: 0.8rem !important;
   font-weight: bold !important;
   text-decoration: underline !important;
   cursor: pointer !important;
@@ -545,13 +546,13 @@ input[type="checkbox"] {
   }
 
   .home-footer {
-    height: 80px !important;
+    height: auto !important;
     flex-direction: column;
-    gap: 5px !important;
+    gap: 8px !important;
   }
 
   .footer-divider {
-    display: none !important;
+    display: inline-block !important;
   }
 }
 
