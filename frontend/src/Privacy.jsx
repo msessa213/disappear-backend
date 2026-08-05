@@ -9,7 +9,7 @@ export const Privacy = () => {
       
       <h3 style={{ color: 'white', marginTop: '20px' }}>I. DATA MINIMIZATION & ZERO-KNOWLEDGE</h3>
       <p>
-        Disappear operates on a "Zero-Knowledge" trajectory. We only collect the 
+        Disappear is a tactical privacy service brought to you by <strong>DFS 213 LLC</strong> ("Company", "we", "us", or "our"). We operate on a strict "Zero-Knowledge" trajectory. We only collect the 
         absolute minimum amount of data required to provide our privacy services. 
         Once your "Target Profile" is ingested for scrubbing, the raw data is 
         encrypted and sequestered from the active application layer.

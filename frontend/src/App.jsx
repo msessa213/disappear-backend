@@ -181,6 +181,10 @@ function App() {
       title = "Disappear | AML & Anti-Fraud Compliance Policy";
       description = "Disappear compliance guidelines under AML watchlist requirements and verification screening policies.";
       canonical = "https://disappearco.com/#aml-policy";
+    } else if (showLegal === 'support') {
+      title = "Disappear | Customer Support & Operations Uplink";
+      description = "Transmit support inquiries and issues to the DFS 213 LLC operations team.";
+      canonical = "https://disappearco.com/#support";
     } else if (showAdmin) {
       title = "Disappear | Central Operations Command";
       description = "Administrative portal for manual removal tasks and security operations.";
@@ -254,12 +258,44 @@ function App() {
       const hash = window.location.hash;
       if (hash === '#privacy') {
         setShowLegal('privacy');
+        setShowLanding(false);
+        setShowPricing(false);
+        setShowCheckout(false);
+        setShow2FA(false);
+        setShowAdmin(false);
+        setShowAdminLogin(false);
       } else if (hash === '#terms') {
         setShowLegal('terms');
+        setShowLanding(false);
+        setShowPricing(false);
+        setShowCheckout(false);
+        setShow2FA(false);
+        setShowAdmin(false);
+        setShowAdminLogin(false);
       } else if (hash === '#manifesto') {
         setShowLegal('manifesto');
+        setShowLanding(false);
+        setShowPricing(false);
+        setShowCheckout(false);
+        setShow2FA(false);
+        setShowAdmin(false);
+        setShowAdminLogin(false);
       } else if (hash === '#aml-policy' || hash === '#aml') {
         setShowLegal('aml');
+        setShowLanding(false);
+        setShowPricing(false);
+        setShowCheckout(false);
+        setShow2FA(false);
+        setShowAdmin(false);
+        setShowAdminLogin(false);
+      } else if (hash === '#support') {
+        setShowLegal('support');
+        setShowLanding(false);
+        setShowPricing(false);
+        setShowCheckout(false);
+        setShow2FA(false);
+        setShowAdmin(false);
+        setShowAdminLogin(false);
       } else if (hash === '#admin/login') {
         setShowAdminLogin(true);
         setShowAdmin(false);
@@ -1452,6 +1488,65 @@ const handleEmergencyBurn = async () => {
                 </div>
                 <AdminDashboard API_BASE_URL={API_BASE_URL} />
               </div>
+            ) : showLegal ? (
+              /* STANDALONE LEGAL & DEDICATED WEBPAGE VIEW */
+              <div className="shield-container fade-in" style={{ minHeight: '85vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '30px 15px', width: '100%', maxWidth: '900px', margin: '0 auto' }}>
+                <div style={{ width: '100%', marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                  <button 
+                    className="reset-btn" 
+                    style={{ padding: '10px 20px', fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} 
+                    onClick={() => { window.location.hash = ""; }}
+                  >
+                    ← BACK TO HOME
+                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                    <span className="tiger-text" style={{ fontSize: '0.95rem', fontWeight: '900', letterSpacing: '2px' }}>DISAPPEAR</span>
+                    <span style={{ fontSize: '0.65rem', color: '#00D2FF', letterSpacing: '0.5px', fontWeight: 'bold' }}>BROUGHT TO YOU BY DFS 213 LLC</span>
+                  </div>
+                </div>
+
+                <div className="price-box" style={{ width: '100%', textAlign: 'left', background: 'rgba(5, 5, 5, 0.95)', border: '1px solid rgba(0, 210, 255, 0.25)', padding: '35px', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.8)' }}>
+                  {showLegal === 'manifesto' && <Manifesto />}
+                  {showLegal === 'privacy' && <Privacy />}
+                  {showLegal === 'terms' && <Terms />}
+                  {showLegal === 'aml' && <AmlFraudPolicy />}
+                  {showLegal === 'support' && (
+                    <div className="legal-document">
+                      <h2 className="tiger-text">SUPPORT UPLINK & HELP CENTER</h2>
+                      <p><em>DFS 213 LLC — Customer Operations & Support Transmission</em></p>
+                      <p style={{ marginTop: '15px', lineHeight: '1.5' }}>
+                        Need assistance with your data broker removal, phone alias forwarding, or identity vault? 
+                        Select your issue category below to transmit a ticket directly to our operations team.
+                      </p>
+
+                      <div style={{ marginTop: '25px' }}>
+                        <p className="field-label">ISSUE CATEGORY</p>
+                        <select className="mask-btn" style={{width: '100%', background: '#000', color: 'white', marginBottom: '15px'}} value={supportData.subject} onChange={(e) => setSupportData({...supportData, subject: e.target.value})}>
+                          <option value="PAYMENT_ERR">PAYMENT_ISSUE</option>
+                          <option value="NODE_ERR">NODE_FAILURE</option>
+                          <option value="PURGE_ERR">PURGE_TIMEOUT</option>
+                          <option value="OTHER">OTHER_INQUIRY</option>
+                        </select>
+                        <p className="field-label">INQUIRY / ANOMALY DESCRIPTION</p>
+                        <textarea className="mask-btn" style={{width: '100%', height: '120px', color: 'white', textAlign: 'left', paddingTop: '10px'}} placeholder="Describe your request or question in detail..." value={supportData.message} onChange={(e) => setSupportData({...supportData, message: e.target.value})} />
+                        <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={handleSendTicket}>TRANSMIT TICKET</button>
+                      </div>
+
+                      <div style={{ marginTop: '35px', borderTop: '1px solid #222', paddingTop: '20px', fontSize: '0.85rem', color: '#94A3B8' }}>
+                        <p style={{ margin: '4px 0' }}><strong>CORPORATE ENTITY:</strong> DFS 213 LLC</p>
+                        <p style={{ margin: '4px 0' }}><strong>EMAIL SUPPORT:</strong> support@disappearco.com</p>
+                        <p style={{ margin: '4px 0' }}><strong>RESPONSE TIME:</strong> Tickets are processed within 24 business hours.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ marginTop: '25px', width: '100%', textAlign: 'center' }}>
+                  <button className="main-button" style={{ padding: '12px 30px', fontSize: '0.85rem' }} onClick={() => { window.location.hash = ""; }}>
+                    ← RETURN TO HOME
+                  </button>
+                </div>
+              </div>
             ) : showShield ? (
               /* 3. SECURE APPLICATION ENGINE (Restored) */
               <div className="shield-container fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
@@ -1969,18 +2064,7 @@ const handleEmergencyBurn = async () => {
         </>
       )}
 
-      {/* --- LEGAL & ADMIN MODALS --- */}
-      {showLegal && (
-        <div className="modal-overlay" onClick={() => window.location.hash = ""}>
-          <div className="info-modal-content" onClick={e => e.stopPropagation()}>
-            {showLegal === 'manifesto' && <Manifesto />}
-            {showLegal === 'privacy' && <Privacy />}
-            {showLegal === 'terms' && <Terms />}
-            {showLegal === 'aml' && <AmlFraudPolicy />}
-            <button className="reset-btn" style={{marginTop: '20px', width: '100%'}} onClick={() => window.location.hash = ""}>CLOSE</button>
-          </div>
-        </div>
-      )}
+
 
       {/* --- KYC COMPLIANCE MODAL --- */}
       {showKycModal && (
@@ -2042,7 +2126,7 @@ const handleEmergencyBurn = async () => {
           <span className="footer-divider" style={{ opacity: 0.4 }}>|</span>
           <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "aml-policy"}>AML & FRAUD</span>
           <span className="footer-divider" style={{ opacity: 0.4 }}>|</span>
-          <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => setShowSupportModal(true)}>SUPPORT</span>
+          <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "support"}>SUPPORT</span>
           <span className="admin-trigger" style={{ cursor: 'pointer', opacity: 0 }} onClick={() => window.location.hash = "admin"}>.</span>
       </footer>
 

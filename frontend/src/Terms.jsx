@@ -10,7 +10,7 @@ export const Terms = () => {
 
       <h3 style={{ color: 'white', marginTop: '20px' }}>1. THE DIGITAL HAZMAT SUITE</h3>
       <p>
-        Disappear provides a software interface for virtual payment aliases, 
+        Disappear is a software platform operated by <strong>DFS 213 LLC</strong> providing a unified interface for virtual payment aliases, 
         <strong> Burnable Email Nodes</strong>, and <strong>Encrypted Phone Aliases</strong>. 
         These tools are designed to provide a "Digital Hazmat Suit" for your 
         identity. Financial services are provided via regulated banking partners 

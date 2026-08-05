@@ -22,7 +22,7 @@ export const Manifesto = () => {
       </p>
       
       <p>
-        Our mission is to provide you with a "Digital Hazmat Suit." By using Disappear, 
+        Our mission at <strong>DFS 213 LLC</strong> is to provide you with a "Digital Hazmat Suit." By using Disappear, 
         you are severing the link between your physical person and your online transactions. 
         We provide the tools to navigate the digital world without leaving a footprint.
       </p>

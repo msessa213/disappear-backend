@@ -9,7 +9,7 @@ export const AmlFraudPolicy = () => {
 
       <h3 style={{ color: 'white', marginTop: '20px' }}>I. ANTI-MONEY LAUNDERING (AML) COMPLIANCE</h3>
       <p>
-        Disappear is committed to the highest standards of financial integrity and compliance. 
+        <strong>DFS 213 LLC</strong> and Disappear are committed to the highest standards of financial integrity and compliance. 
         While our service provides digital privacy shields, burnable aliases, and virtual payment 
         cards, we strictly prohibit the use of our services to facilitate, disguise, or execute 
         money laundering, terrorist financing, or sanction evasion. 
