@@ -47,5 +47,7 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Disappear requires Face ID to securely authenticate and decrypt your privacy vault.</string>
 </dict>
 </plist>

@@ -1,0 +1,53 @@
+name: Build & Release iOS (Capacitor)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-14
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Frontend Dependencies & Build Web Assets
+        run: |
+          cd frontend
+          npm ci || npm install
+          npm run build
+
+      - name: Sync Capacitor iOS Project
+        run: |
+          cd frontend
+          npx cap sync ios
+
+      - name: Select Xcode Version
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+          xcodebuild -version
+
+      - name: Build iOS Workspace (Archive & Export)
+        run: |
+          cd frontend/ios/App
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            clean build
+
+      - name: Upload iOS Xcode Derived Data Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Disappear-iOS-Xcode-Build
+          path: frontend/ios/App/build/Build/Products/Release-iphoneos/App.app

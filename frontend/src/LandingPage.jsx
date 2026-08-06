@@ -209,18 +209,28 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
 
       {/* --- MOBILE UPLINK SECTION --- */}
       <section className="mobile-uplink" style={{ padding: '60px 20px', textAlign: 'center', borderTop: '1px solid #111', background: 'rgba(0, 71, 171, 0.03)' }}>
-        <span className="mono-label" style={{ display: 'block', marginBottom: '10px', fontSize: '0.85rem', letterSpacing: '3px' }}>[!] NATIVE CLIENT UPLINK</span>
-        <p className="hero-description" style={{ fontSize: '1rem', marginBottom: '25px', maxWidth: '500px', margin: '0 auto 25px' }}>
-          Download the standalone Disappear Android app client for direct-to-device identity management.
+        <span className="mono-label" style={{ display: 'block', marginBottom: '10px', fontSize: '0.85rem', letterSpacing: '3px' }}>[!] NATIVE MOBILE CLIENT UPLINKS</span>
+        <p className="hero-description" style={{ fontSize: '1rem', marginBottom: '25px', maxWidth: '550px', margin: '0 auto 25px' }}>
+          Download the standalone Disappear mobile app for direct-to-device identity management and biometric vault protection.
         </p>
-        <a 
-          href="https://d3bipqcsrujl11.cloudfront.net/app-debug.apk?v=1.2.0" 
-          download="Disappear_Shield_v1.2.0.apk"
-          className="main-button" 
-          style={{ textDecoration: 'none' }}
-        >
-          Get Android App (v1.2.0)
-        </a>
+        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <a 
+            href="https://d3bipqcsrujl11.cloudfront.net/app-debug.apk?v=1.2.0" 
+            download="Disappear_Shield_v1.2.0.apk"
+            className="main-button" 
+            style={{ textDecoration: 'none', minWidth: '200px' }}
+          >
+            🤖 Get Android App (v1.2.0)
+          </a>
+          <a 
+            href="#ios-download" 
+            onClick={(e) => { e.preventDefault(); alert("Apple iOS TestFlight & App Store access will launch automatically once Apple Developer Program verification completes."); }}
+            className="main-button" 
+            style={{ textDecoration: 'none', minWidth: '200px', background: 'linear-gradient(135deg, #111 0%, #222 100%)', border: '1px solid #00D2FF' }}
+          >
+            🍎 Get iPhone / iOS App
+          </a>
+        </div>
       </section>
 
       {/* --- LOGIN GATEWAY --- */}
