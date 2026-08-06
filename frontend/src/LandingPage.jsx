@@ -214,12 +214,12 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
           Download the standalone Disappear Android app client for direct-to-device identity management.
         </p>
         <a 
-          href="https://d3bipqcsrujl11.cloudfront.net/app-debug.apk" 
-          download="Disappear_Shield.apk"
+          href="https://d3bipqcsrujl11.cloudfront.net/app-debug.apk?v=1.2.0" 
+          download="Disappear_Shield_v1.2.0.apk"
           className="main-button" 
           style={{ textDecoration: 'none' }}
         >
-          Get Android App
+          Get Android App (v1.2.0)
         </a>
       </section>
 
