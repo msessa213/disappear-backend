@@ -954,23 +954,32 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
             purge_filters.append(DBPurgeLog.node_id.like(f"%{ident}%"))
             purge_filters.append(DBPurgeLog.action_type.like(f"%{ident}%"))
 
-    purge_entries = (
-        db.query(DBPurgeLog)
-        .filter(
-            DBPurgeLog.timestamp >= cutoff_date,
-            or_(*purge_filters) if purge_filters else False
-        )
-        .order_by(desc(DBPurgeLog.timestamp))
-        .all()
-    ) if purge_filters else []
-    
+    purge_entries = []
+    try:
+        if purge_filters:
+            purge_entries = (
+                db.query(DBPurgeLog)
+                .filter(
+                    DBPurgeLog.timestamp >= cutoff_date,
+                    or_(*purge_filters)
+                )
+                .order_by(desc(DBPurgeLog.timestamp))
+                .all()
+            )
+    except Exception as p_err:
+        logger.warning(f"Purge log query skipped: {p_err}")
+
     # Fetch User Scrub Logs (Data Broker Removals)
-    scrub_entries = (
-        db.query(DBScrubLog)
-        .filter(DBScrubLog.user_id == uid, DBScrubLog.timestamp >= cutoff_date)
-        .order_by(desc(DBScrubLog.timestamp))
-        .all()
-    )
+    scrub_entries = []
+    try:
+        scrub_entries = (
+            db.query(DBScrubLog)
+            .filter(DBScrubLog.user_id == uid, DBScrubLog.timestamp >= cutoff_date)
+            .order_by(desc(DBScrubLog.timestamp))
+            .all()
+        )
+    except Exception as s_err:
+        logger.warning(f"Scrub log query skipped: {s_err}")
     
     # Ensure initial audit logs exist for customer accounts
     if not purge_entries and not scrub_entries:
