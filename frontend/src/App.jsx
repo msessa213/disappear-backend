@@ -1950,8 +1950,8 @@ const handleEmergencyBurn = async () => {
                 </div>
 
                 {/* --- UPDATED: LIVE SECURITY AUDIT (HISTORY VIEW) --- */}
-                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px' }}>
-                  <p className="tool-label" style={{ textAlign: 'center' }}>LIVE SECURITY AUDIT</p>
+                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
+                  <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>LIVE SECURITY AUDIT</p>
                   
                   {/* History Filter Toggles */}
                   <div className="billing-toggle" style={{ display: 'flex', gap: '5px', marginBottom: '15px' }}>
@@ -1959,30 +1959,43 @@ const handleEmergencyBurn = async () => {
                       <button 
                         key={d}
                         className={historyDays === d ? 'mask-btn active-toggle' : 'mask-btn'} 
-                        style={{ flex: 1, fontSize: '0.9rem' }} 
+                        style={{ flex: 1, fontSize: '0.85rem', padding: '10px 0' }} 
                         onClick={() => setHistoryDays(d)}
                       >
-                        {d}_DAYS
+                        {d} DAYS
                       </button>
                     ))}
                   </div>
 
-                  <div className="audit-list" style={{ maxHeight: '200px', overflowY: 'auto', background: '#000', padding: '10px' }}>
+                  <div className="audit-list" style={{ maxHeight: '220px', overflowY: 'auto', background: '#05070D', border: '1px solid rgba(0,210,255,0.2)', borderRadius: '8px', padding: '10px' }}>
                     {auditLog.length > 0 ? auditLog.map((log, i) => (
-                      <div key={`audit-${log.timestamp}-${i}`} className="audit-row" style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #111', padding: '10px 0' }}>
-                        <span className="audit-broker tiger-text">[{new Date(log.timestamp).toLocaleDateString()}]</span>
-                        <span className="audit-action" style={{fontSize: '0.9rem'}}>{log.action}</span>
-                        <span style={{fontSize: '0.85rem', color: '#94A3B8'}}>{log.node?.slice(-6)}</span>
+                      <div key={`audit-${log.timestamp}-${i}`} style={{ background: '#0a0f1d', border: '1px solid #1e293b', borderRadius: '6px', padding: '10px 12px', marginBottom: '8px', textAlign: 'left' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap', gap: '5px' }}>
+                          <span style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold' }}>
+                            📅 {new Date(log.timestamp).toLocaleDateString()} {new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          </span>
+                          <span style={{ fontSize: '0.68rem', color: '#94A3B8', background: '#111827', padding: '2px 6px', borderRadius: '4px', border: '1px solid #1F2937' }}>
+                            NODE: {log.node?.slice(-12) || 'VAULT_CORE'}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: '#FFFFFF', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ color: '#10B981', fontWeight: 'bold' }}>✓</span>
+                          <span>{log.action}</span>
+                        </div>
                       </div>
                     )) : (
-                      <div className="terminal-line" style={{textAlign: 'center', opacity: 0.5}}>NO_RECORDS_IN_WINDOW</div>
+                      <div className="terminal-line" style={{textAlign: 'center', opacity: 0.5, padding: '15px'}}>NO_RECORDS_IN_WINDOW</div>
                     )}
                   </div>
                   
-                  {/* Backup: PDF logic still exists for vaulting but UI encourages live view */}
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '15px', width: '100%' }}>
-                    <button className="pdf-btn" style={{ flex: 1, opacity: 0.8, fontSize: '0.85rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => handleDownloadPDF(false)} disabled={isGenerating}>EXPORT_AUDIT_PDF</button>
-                    <button className="reset-btn" style={{ flex: 1, opacity: 0.8, fontSize: '0.85rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center', borderColor: 'var(--tiger-blue)', color: 'var(--tiger-blue)' }} onClick={handleExportJSON}>EXPORT_SECURE_BACKUP</button>
+                  {/* Audit Action Buttons */}
+                  <div className="flex-responsive-row" style={{ gap: '10px', marginTop: '15px' }}>
+                    <button className="pdf-btn" style={{ flex: 1, fontSize: '0.82rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center', whiteSpace: 'nowrap' }} onClick={() => handleDownloadPDF(false)} disabled={isGenerating}>
+                      📄 EXPORT AUDIT PDF
+                    </button>
+                    <button className="reset-btn" style={{ flex: 1, fontSize: '0.82rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center', borderColor: 'var(--tiger-blue)', color: 'var(--tiger-blue)', whiteSpace: 'nowrap' }} onClick={handleExportJSON}>
+                      💾 EXPORT SECURE BACKUP
+                    </button>
                   </div>
                 </div>
 
