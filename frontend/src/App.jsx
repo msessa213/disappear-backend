@@ -1839,19 +1839,38 @@ const handleEmergencyBurn = async () => {
                 )}
 
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #444' }}>
-                  <p className="tool-label" style={{ textAlign: 'center' }}>SUBSCRIPTION_MANAGEMENT</p>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                    <div>
-                        <span style={{ fontSize: '0.85rem', color: '#cbd5e1', display: 'block' }}>CURRENT_PLAN</span>
-                        <strong className="tiger-text">ELITE_OPERATIVE_{billingCycle.toUpperCase()}</strong>
+                  <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>SUBSCRIPTION MANAGEMENT</p>
+                  
+                  {/* Status Header Container */}
+                  <div style={{ 
+                    background: '#05070D', 
+                    border: '1px solid rgba(0, 210, 255, 0.25)', 
+                    padding: '14px 16px', 
+                    borderRadius: '10px', 
+                    marginBottom: '15px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '10px',
+                    width: '100%',
+                    boxSizing: 'border-box'
+                  }}>
+                    <div style={{ textAlign: 'left' }}>
+                      <span style={{ fontSize: '0.72rem', color: '#94A3B8', display: 'block', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold', marginBottom: '3px' }}>CURRENT SUBSCRIPTION PLAN</span>
+                      <strong className="tiger-text" style={{ fontSize: '0.92rem', wordBreak: 'break-word' }}>ELITE OPERATIVE ({billingCycle.toUpperCase()})</strong>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                        <span style={{ fontSize: '0.85rem', color: '#cbd5e1', display: 'block' }}>STATUS</span>
-                        <span style={{ color: '#00FF00', fontSize: '0.9rem' }}>[ACTIVE]</span>
+                    <div style={{ textAlign: 'left', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', padding: '5px 12px', borderRadius: '8px', flexShrink: 0 }}>
+                      <span style={{ fontSize: '0.68rem', color: '#94A3B8', display: 'block', textTransform: 'uppercase', fontWeight: 'bold' }}>STATUS</span>
+                      <span style={{ color: '#10B981', fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981' }}></span>
+                        ACTIVE
+                      </span>
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
-                    <button className="main-button" style={{ fontSize: '0.95rem', padding: '14px 10px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }} onClick={handleManageBilling}>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+                    <button className="main-button" style={{ fontSize: '0.95rem', padding: '14px 10px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', width: '100%' }} onClick={handleManageBilling}>
                       <span>💳</span> MANAGE BILLING & CREDIT CARD
                     </button>
                     <div className="flex-responsive-row" style={{ gap: '10px' }}>
