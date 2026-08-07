@@ -1664,23 +1664,30 @@ const handleEmergencyBurn = async () => {
                     </button>
                 </div>
                 
-                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
+                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative', border: '1px solid var(--tiger-blue)' }}>
                   <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>EMAIL PROTECTION</p>
-                  <div className="alias-manager-list">
+                  <div className="alias-manager-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
                     {emails.map((e) => (
-                      <div key={e.id} className="alias-row" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '15px' }}>
-                        <div className="alias-info" style={{ width: '100%', wordBreak: 'break-all', marginBottom: '10px' }}>
-                            <span className="alias-label tiger-text" style={{ display: 'block', marginBottom: '5px' }}>{e.label.toUpperCase()}</span>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: '#0a0a0a', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', marginTop: '5px' }} onClick={() => {navigator.clipboard.writeText(e.content); triggerToast("EMAIL COPIED")}}>
-                              <span className="alias-content" style={{ fontSize: '1rem', color: '#fff', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '10px', flex: 1 }}>{e.content}</span>
-                              <span style={{ fontSize: '0.8rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold', flexShrink: 0 }}>COPY 📋</span>
-                            </div>
+                      <div key={e.id} style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.25)', padding: '14px 16px', borderRadius: '10px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                            ALIAS: {e.label.toUpperCase()}
+                          </span>
+                          <button className="kill-text-bold" style={{ padding: '3px 8px', fontSize: '0.7rem' }} onClick={() => handleKillAlias(e.id)}>TERMINATE ✖</button>
                         </div>
-                        <button className="kill-text-bold" onClick={() => handleKillAlias(e.id)}>TERMINATE</button>
+                        <div 
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0A0A0A', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', width: '100%', boxSizing: 'border-box' }} 
+                          onClick={() => {navigator.clipboard.writeText(e.content); triggerToast("EMAIL COPIED")}}
+                        >
+                          <span style={{ fontSize: '0.88rem', color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
+                            {e.content}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 'bold', flexShrink: 0, marginLeft: '8px', whiteSpace: 'nowrap' }}>COPY 📋</span>
+                        </div>
                       </div>
                     ))}
                   </div>
-                  <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowEmailModal(true)}> + GENERATE EMAIL ALIAS </button>
+                  <button className="reset-btn" style={{marginTop: '15px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowEmailModal(true)}> + GENERATE EMAIL ALIAS </button>
                 </div>
 
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
