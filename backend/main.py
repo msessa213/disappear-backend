@@ -1018,7 +1018,7 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
             "number": c.number,
             "expiry": c.expiry,
             "cvv": c.cvv,
-            "funding_source": c.funding_source,
+            "funding_source": getattr(c, 'funding_source_id', '') or "",
             "created_at": c.created_at.isoformat()
         } for c in cards_entities]
     except Exception as e:
