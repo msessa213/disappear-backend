@@ -24,13 +24,15 @@ import './App.css';
  */
 
 // --- DYNAMIC API ROUTING ---
-// IMPORTANT: This should be the final, public URL of your backend on AWS ECS
 const PROD_API = "https://disappear-backend-production.up.railway.app";
 const LOCAL_API = "http://127.0.0.1:8000";
 
-// Uses local backend during local development, but forces Production for Native Apps and Live Web
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_BASE_URL = (isLocal && !Capacitor.isNativePlatform()) ? LOCAL_API : PROD_API;
+// Only use LOCAL_API if explicitly running on local Vite dev server (port 5173)
+const isExplicitLocalDev = typeof window !== 'undefined' && 
+  (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') && 
+  window.location.port === '5173';
+
+const API_BASE_URL = isExplicitLocalDev ? LOCAL_API : PROD_API;
 
 function App() {
   // --- SECURE BRIDGE LOGIC ---
@@ -1270,9 +1272,13 @@ const handleEmergencyBurn = async () => {
         <>
           {/* 2. CORE APP HEADER */}
           <div className="progress-bar-container">
-            <div className="progress-bar-fill" style={{ width: `${progress}%` }}></div>
+            <div className="progress-bar-fill" style={{ width: `${showShield ? 100 : 50}%` }}></div>
             <span className="secure-connection-text">
-              {showShield ? `SHIELD ACTIVE | ELITE OPERATIVE` : `INITIALIZING SHIELD: ${progress}%`}
+              {showShield 
+                ? `🛡️ SHIELD ACTIVE | ELITE OPERATIVE` 
+                : show2FA 
+                  ? `🔒 SECURE AUTHENTICATION GATEWAY` 
+                  : `🛡️ DISAPPEAR PRIVACY NETWORK`}
             </span>
           </div>
 
