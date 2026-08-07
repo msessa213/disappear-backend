@@ -1105,6 +1105,8 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
         "free_months_redeemed": profile.free_months_redeemed or 0
     }
 
+    payment_methods = []
+
     return {
         "profile": {
             "phone": profile.phone or "",
