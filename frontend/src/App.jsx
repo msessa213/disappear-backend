@@ -1712,17 +1712,24 @@ const handleEmergencyBurn = async () => {
                     </p>
                   </div>
 
-                  <div className="alias-manager-list">
+                  <div className="alias-manager-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
                     {phones.map((p) => (
-                      <div key={p.id} className="alias-row" style={{ flexDirection: 'column', alignItems: 'flex-start', padding: '15px' }}>
-                        <div className="alias-info" style={{ width: '100%', wordBreak: 'break-all', marginBottom: '10px' }}>
-                            <span className="alias-label tiger-text" style={{ display: 'block', marginBottom: '5px' }}>{p.label.toUpperCase()}</span>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: '#0a0a0a', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', marginTop: '5px' }} onClick={() => {navigator.clipboard.writeText(p.content); triggerToast("PHONE COPIED")}}>
-                              <span className="alias-content" style={{ fontSize: '1rem', color: '#fff', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '10px', flex: 1 }}>{p.content}</span>
-                              <span style={{ fontSize: '0.8rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold', flexShrink: 0 }}>COPY 📋</span>
-                            </div>
+                      <div key={p.id} style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.25)', padding: '14px 16px', borderRadius: '10px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                            ALIAS: {p.label.toUpperCase()}
+                          </span>
+                          <button className="kill-text-bold" onClick={() => handleKillAlias(p.id)}>TERMINATE ✖</button>
                         </div>
-                        <button className="kill-text-bold" onClick={() => handleKillAlias(p.id)}>TERMINATE</button>
+                        <div 
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0A0A0A', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', width: '100%', boxSizing: 'border-box' }} 
+                          onClick={() => {navigator.clipboard.writeText(p.content); triggerToast("PHONE COPIED")}}
+                        >
+                          <span style={{ fontSize: '1.05rem', color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold', wordBreak: 'break-all', flex: 1, marginRight: '10px' }}>
+                            {p.content}
+                          </span>
+                          <span style={{ fontSize: '0.8rem', color: '#10B981', fontWeight: 'bold', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>COPY 📋</span>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1794,26 +1801,44 @@ const handleEmergencyBurn = async () => {
                   </div>
                 )}
 
-                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #111' }}>
+                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
                   <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>DATA BROKER TARGETS</p>
                   
-                  <div className="alias-row" style={{ marginBottom: '10px' }}>
-                    <div className="alias-info"><span className="alias-label" style={{color: '#10b981'}}>PRIMARY</span><span className="alias-content">{targetEmails.primary || "Awaiting Sync..."}</span></div>
+                  {/* Primary Target Email */}
+                  <div style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.25)', padding: '14px 16px', borderRadius: '10px', marginBottom: '12px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 'bold', display: 'block', marginBottom: '6px', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                      PRIMARY TARGET EMAIL
+                    </span>
+                    <div style={{ fontSize: '0.95rem', color: '#FFFFFF', fontWeight: 'bold', wordBreak: 'break-all', fontFamily: 'monospace', background: '#0A0A0A', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', width: '100%', boxSizing: 'border-box' }}>
+                      {targetEmails.primary || "Awaiting Sync..."}
+                    </div>
                   </div>
                   
-                  {targetEmails.additional.map(e => (
-                    <div key={e.id} className="alias-row" style={{ marginBottom: '10px' }}>
-                      <div className="alias-info"><span className="alias-label tiger-text">SECONDARY</span><span className="alias-content">{e.email}</span></div>
-                      <button className="kill-text-bold" onClick={async () => { await secureRequest(`${API_BASE_URL}/profile/emails/${e.id}`, {method: 'DELETE'}); fetchTargetEmails(); }}>REMOVE</button>
+                  {/* Secondary Target Emails */}
+                  {targetEmails.additional.map((e, idx) => (
+                    <div key={e.id} style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.2)', padding: '14px 16px', borderRadius: '10px', marginBottom: '12px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                          SECONDARY TARGET EMAIL #{idx + 1}
+                        </span>
+                        <button className="kill-text-bold" onClick={async () => { await secureRequest(`${API_BASE_URL}/profile/emails/${e.id}`, {method: 'DELETE'}); fetchTargetEmails(); }}>
+                          REMOVE ✖
+                        </button>
+                      </div>
+                      <div style={{ fontSize: '0.95rem', color: '#FFFFFF', fontWeight: 'bold', wordBreak: 'break-all', fontFamily: 'monospace', background: '#0A0A0A', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', width: '100%', boxSizing: 'border-box' }}>
+                        {e.email}
+                      </div>
                     </div>
                   ))}
                   
                   <div className="flex-responsive-row" style={{ marginTop: '15px' }}>
-                    <input className="mask-btn" style={{flex: 1, color: 'white', textAlign: 'center'}} placeholder="Add secondary email to scrub..." value={newTargetEmail} onChange={e => setNewTargetEmail(e.target.value)} />
-                    <button className="reset-btn" style={{ fontSize: '0.85rem', padding: '12px 15px', display: 'flex', justifyContent: 'center', alignItems: 'center', whiteSpace: 'nowrap' }} onClick={handleAddTargetEmail}>ADD TARGET</button>
+                    <input className="mask-btn" style={{flex: 1, color: 'white', textAlign: 'left', paddingLeft: '14px'}} placeholder="Enter secondary email to scrub..." value={newTargetEmail} onChange={e => setNewTargetEmail(e.target.value)} />
+                    <button className="main-button" style={{ fontSize: '0.85rem', padding: '12px 18px', display: 'flex', justifyContent: 'center', alignItems: 'center', whiteSpace: 'nowrap' }} onClick={handleAddTargetEmail}>
+                      + ADD TARGET
+                    </button>
                   </div>
                   
-                  <div style={{ fontSize: '0.95rem', color: '#cbd5e1', textAlign: 'center', marginTop: '10px' }}>
+                  <div style={{ fontSize: '0.82rem', color: '#94A3B8', textAlign: 'center', marginTop: '12px', fontWeight: 'bold' }}>
                     EXTRA EMAIL SLOTS USED: {targetEmails.used} / {targetEmails.slots}
                   </div>
                 </div>
