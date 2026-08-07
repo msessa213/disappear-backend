@@ -1719,16 +1719,16 @@ const handleEmergencyBurn = async () => {
                           <span style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
                             ALIAS: {p.label.toUpperCase()}
                           </span>
-                          <button className="kill-text-bold" onClick={() => handleKillAlias(p.id)}>TERMINATE ✖</button>
+                          <button className="kill-text-bold" style={{ padding: '3px 8px', fontSize: '0.7rem' }} onClick={() => handleKillAlias(p.id)}>TERMINATE ✖</button>
                         </div>
                         <div 
                           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0A0A0A', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', width: '100%', boxSizing: 'border-box' }} 
                           onClick={() => {navigator.clipboard.writeText(p.content); triggerToast("PHONE COPIED")}}
                         >
-                          <span style={{ fontSize: '1.05rem', color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold', wordBreak: 'break-all', flex: 1, marginRight: '10px' }}>
+                          <span style={{ fontSize: '0.88rem', color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
                             {p.content}
                           </span>
-                          <span style={{ fontSize: '0.8rem', color: '#10B981', fontWeight: 'bold', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>COPY 📋</span>
+                          <span style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 'bold', flexShrink: 0, marginLeft: '8px', whiteSpace: 'nowrap' }}>COPY 📋</span>
                         </div>
                       </div>
                     ))}
@@ -1806,27 +1806,44 @@ const handleEmergencyBurn = async () => {
                   
                   {/* Primary Target Email */}
                   <div style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.25)', padding: '14px 16px', borderRadius: '10px', marginBottom: '12px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
-                    <span style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 'bold', display: 'block', marginBottom: '6px', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                      PRIMARY TARGET EMAIL
-                    </span>
-                    <div style={{ fontSize: '0.95rem', color: '#FFFFFF', fontWeight: 'bold', wordBreak: 'break-all', fontFamily: 'monospace', background: '#0A0A0A', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', width: '100%', boxSizing: 'border-box' }}>
-                      {targetEmails.primary || "Awaiting Sync..."}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                        PRIMARY TARGET EMAIL
+                      </span>
+                      <span style={{ fontSize: '0.68rem', color: '#10B981', background: 'rgba(16,185,129,0.12)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(16,185,129,0.3)', fontWeight: 'bold' }}>
+                        PRIMARY 🔒
+                      </span>
+                    </div>
+                    <div 
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0A0A0A', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', width: '100%', boxSizing: 'border-box' }}
+                      onClick={() => { if(targetEmails.primary) { navigator.clipboard.writeText(targetEmails.primary); triggerToast("EMAIL COPIED"); } }}
+                    >
+                      <span style={{ fontSize: '0.88rem', color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
+                        {targetEmails.primary || "Awaiting Sync..."}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 'bold', flexShrink: 0, marginLeft: '8px', whiteSpace: 'nowrap' }}>COPY 📋</span>
                     </div>
                   </div>
                   
                   {/* Secondary Target Emails */}
                   {targetEmails.additional.map((e, idx) => (
-                    <div key={e.id} style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.2)', padding: '14px 16px', borderRadius: '10px', marginBottom: '12px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <div key={e.id} style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.25)', padding: '14px 16px', borderRadius: '10px', marginBottom: '12px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                         <span style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
                           SECONDARY TARGET EMAIL #{idx + 1}
                         </span>
-                        <button className="kill-text-bold" onClick={async () => { await secureRequest(`${API_BASE_URL}/profile/emails/${e.id}`, {method: 'DELETE'}); fetchTargetEmails(); }}>
+                        <button className="kill-text-bold" style={{ padding: '3px 8px', fontSize: '0.7rem' }} onClick={async () => { await secureRequest(`${API_BASE_URL}/profile/emails/${e.id}`, {method: 'DELETE'}); fetchTargetEmails(); }}>
                           REMOVE ✖
                         </button>
                       </div>
-                      <div style={{ fontSize: '0.95rem', color: '#FFFFFF', fontWeight: 'bold', wordBreak: 'break-all', fontFamily: 'monospace', background: '#0A0A0A', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', width: '100%', boxSizing: 'border-box' }}>
-                        {e.email}
+                      <div 
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0A0A0A', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', width: '100%', boxSizing: 'border-box' }}
+                        onClick={() => { navigator.clipboard.writeText(e.email); triggerToast("EMAIL COPIED"); }}
+                      >
+                        <span style={{ fontSize: '0.88rem', color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
+                          {e.email}
+                        </span>
+                        <span style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 'bold', flexShrink: 0, marginLeft: '8px', whiteSpace: 'nowrap' }}>COPY 📋</span>
                       </div>
                     </div>
                   ))}
