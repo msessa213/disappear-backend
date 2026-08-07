@@ -841,9 +841,15 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
     target_user_id = user_id or x_user_id
     
     if target_user_id:
-        profile = db.query(DBProfile).filter(DBProfile.id == target_user_id).first()
+        try:
+            profile = db.query(DBProfile).filter(DBProfile.id == target_user_id).first()
+        except Exception:
+            profile = None
     else:
-        profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+        try:
+            profile = db.query(DBProfile).first()
+        except Exception:
+            profile = None
 
     if not profile:
         return {
