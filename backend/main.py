@@ -307,7 +307,7 @@ def verify_admin_token(x_disappear_admin_key: Optional[str] = Header(None)):
 
 # --- PROFIT PROTECTION CONSTANTS ---
 
-MAX_IDENTITY_CREDITS = 6
+MAX_IDENTITY_CREDITS = 5
 BASE_PHONE_LIMIT = 2
 COOLDOWN_HOURS = 12 # Reduced from 24 to 12
 
@@ -1613,7 +1613,7 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
     req_type = alias_req.type.lower()
     
     if req_type == "email":
-        max_email_slots = 10 + bonus
+        max_email_slots = MAX_IDENTITY_CREDITS + bonus
         current_emails = db.query(DBAlias).filter(DBAlias.user_id == target_user_id, DBAlias.type == "email").count()
         if current_emails >= max_email_slots:
             raise HTTPException(status_code=403, detail="IDENTITY_LIMIT_REACHED")
