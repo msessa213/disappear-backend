@@ -3,10 +3,14 @@
   "appName": "Disappear",
   "webDir": "dist",
   "server": {
-    "androidScheme": "http",
+    "androidScheme": "https",
     "cleartext": true,
     "allowNavigation": [
-      "api.disappearco.com"
+      "disappear-backend-production.up.railway.app",
+      "*.up.railway.app",
+      "disappearco.com",
+      "*.disappearco.com",
+      "d3bipqcsrujl11.cloudfront.net"
     ]
   },
   "android": {
