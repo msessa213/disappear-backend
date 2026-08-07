@@ -1691,7 +1691,7 @@ const handleEmergencyBurn = async () => {
                     <label style={{ fontSize: '0.78rem', color: '#00D2FF', display: 'block', marginBottom: '6px', fontWeight: 'bold', letterSpacing: '0.5px' }}>
                       📱 FORWARDING DESTINATION MOBILE NUMBER
                     </label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div className="flex-responsive-row">
                       <input 
                         className="mask-btn" 
                         placeholder="e.g. (813) 555-0199"
@@ -1701,7 +1701,7 @@ const handleEmergencyBurn = async () => {
                       />
                       <button 
                         className="main-button" 
-                        style={{ padding: '6px 14px', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
+                        style={{ padding: '12px 14px', fontSize: '0.82rem', whiteSpace: 'nowrap', minWidth: '120px' }}
                         onClick={handleSaveForwardingPhone}
                       >
                         💾 SAVE PHONE
@@ -1808,9 +1808,9 @@ const handleEmergencyBurn = async () => {
                     </div>
                   ))}
                   
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+                  <div className="flex-responsive-row" style={{ marginTop: '15px' }}>
                     <input className="mask-btn" style={{flex: 1, color: 'white', textAlign: 'center'}} placeholder="Add secondary email to scrub..." value={newTargetEmail} onChange={e => setNewTargetEmail(e.target.value)} />
-                    <button className="reset-btn" style={{ fontSize: '0.95rem', padding: '0 15px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={handleAddTargetEmail}>ADD TARGET</button>
+                    <button className="reset-btn" style={{ fontSize: '0.85rem', padding: '12px 15px', display: 'flex', justifyContent: 'center', alignItems: 'center', whiteSpace: 'nowrap' }} onClick={handleAddTargetEmail}>ADD TARGET</button>
                   </div>
                   
                   <div style={{ fontSize: '0.95rem', color: '#cbd5e1', textAlign: 'center', marginTop: '10px' }}>
@@ -1854,11 +1854,11 @@ const handleEmergencyBurn = async () => {
                     <button className="main-button" style={{ fontSize: '0.95rem', padding: '14px 10px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }} onClick={handleManageBilling}>
                       <span>💳</span> MANAGE BILLING & CREDIT CARD
                     </button>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                      <button className="reset-btn" style={{ fontSize: '0.9rem', padding: '12px 5px', whiteSpace: 'normal', lineHeight: '1.2', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={handleManageBilling}>
+                    <div className="flex-responsive-row" style={{ gap: '10px' }}>
+                      <button className="reset-btn" style={{ flex: 1, fontSize: '0.85rem', padding: '12px 5px', whiteSpace: 'normal', lineHeight: '1.2', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={handleManageBilling}>
                         {billingCycle === 'monthly' ? "SWITCH TO ANNUAL" : "SWITCH TO MONTHLY"}
                       </button>
-                      <button className="reset-btn" style={{ borderColor: '#ff4444', color: '#ff4444', fontSize: '0.9rem', padding: '12px 5px', whiteSpace: 'normal', lineHeight: '1.2', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => { if(window.confirm("CANCEL SUBSCRIPTION? PII shielding will be deactivated at end of cycle.")) handleManageBilling(); }}>
+                      <button className="reset-btn" style={{ flex: 1, borderColor: '#ff4444', color: '#ff4444', fontSize: '0.85rem', padding: '12px 5px', whiteSpace: 'normal', lineHeight: '1.2', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => { if(window.confirm("CANCEL SUBSCRIPTION? PII shielding will be deactivated at end of cycle.")) handleManageBilling(); }}>
                         CANCEL PLAN
                       </button>
                     </div>
@@ -1867,7 +1867,7 @@ const handleEmergencyBurn = async () => {
 
                 {/* --- REFERRAL MILESTONE REWARD WIDGET --- */}
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #00D2FF', background: 'linear-gradient(135deg, rgba(0,71,171,0.08) 0%, rgba(5,11,20,0.95) 100%)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '8px' }}>
                     <p className="tool-label tiger-text" style={{ margin: 0, fontSize: '0.95rem' }}>🎁 REFERRAL MILESTONE REWARDS</p>
                     <span style={{ fontSize: '0.78rem', color: '#10B981', background: 'rgba(16,185,129,0.15)', padding: '4px 10px', borderRadius: '12px', border: '1px solid rgba(16,185,129,0.3)', fontWeight: 'bold' }}>
                       {referralData.free_months_earned} FREE MONTHS UNLOCKED
@@ -1880,7 +1880,7 @@ const handleEmergencyBurn = async () => {
 
                   {/* Milestone Progress Bar */}
                   <div style={{ background: '#05070D', border: '1px solid rgba(0,210,255,0.3)', borderRadius: '8px', padding: '15px', marginBottom: '15px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '8px', fontWeight: 'bold' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '8px', fontWeight: 'bold', flexWrap: 'wrap', gap: '5px' }}>
                       <span style={{ color: '#00D2FF' }}>MILESTONE PROGRESS: {referralData.count % 5}/5 REFERRALS</span>
                       <span style={{ color: '#94A3B8' }}>{referralData.next_milestone_needed} MORE NEEDED</span>
                     </div>
@@ -1889,7 +1889,7 @@ const handleEmergencyBurn = async () => {
                       <div style={{ width: `${referralData.progress_pct}%`, height: '100%', background: 'linear-gradient(90deg, #0047AB, #00D2FF)', borderRadius: '5px', transition: 'width 0.4s ease' }}></div>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', fontSize: '0.75rem', color: '#64748B' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', fontSize: '0.75rem', color: '#64748B', flexWrap: 'wrap', gap: '5px' }}>
                       <span>Total Successful Referrals: <strong>{referralData.count}</strong></span>
                       <span>Milestone Target: <strong>Every 5 Subscribers</strong></span>
                     </div>
@@ -1897,7 +1897,7 @@ const handleEmergencyBurn = async () => {
 
                   {/* Shareable Link Box */}
                   <p className="field-label" style={{ textAlign: 'left', marginBottom: '6px' }}>YOUR UNIQUE REFERRAL LINK</p>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div className="flex-responsive-row">
                     <input 
                       type="text" 
                       readOnly 
@@ -1907,7 +1907,7 @@ const handleEmergencyBurn = async () => {
                     />
                     <button 
                       className="main-button" 
-                      style={{ padding: '0 16px', fontSize: '0.82rem', whiteSpace: 'nowrap' }} 
+                      style={{ padding: '12px 16px', fontSize: '0.82rem', whiteSpace: 'nowrap', minWidth: '110px' }} 
                       onClick={() => {
                         const linkToCopy = referralData.link || `https://disappearco.com/?ref=${referralData.code}`;
                         navigator.clipboard.writeText(linkToCopy);

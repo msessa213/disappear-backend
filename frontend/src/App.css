@@ -560,15 +560,23 @@ input[type="checkbox"] {
   }
 }
 
-/* 12. SIGNUP/LOGIN SCREEN - BUTTON & BOX ALIGNMENT FIX */
-.onboarding-flow div[style*="display: flex"] {
-  align-items: flex-start !important; 
-  gap: 100px !important; 
+/* 12. MOBILE CARD & INPUT ALIGNMENT FIX */
+.flex-responsive-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  align-items: center;
 }
 
-.onboarding-flow div[style*="display: flex"] div[style*="display: flex"] {
-  gap: 10px !important; 
-  flex-direction: column !important; 
+@media (max-width: 580px) {
+  .flex-responsive-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .flex-responsive-row input,
+  .flex-responsive-row button {
+    width: 100% !important;
+  }
 }
 
 .secure-connection-text {
