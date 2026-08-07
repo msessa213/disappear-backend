@@ -450,11 +450,6 @@ function App() {
       }
     }
 
-    // UPDATE: Skip landing page on Native App to show Login/Signup flow
-    if (isNative) {
-        setShowLanding(false);
-    }
-    
     if (query.get("payment") === "success") {
         localStorage.setItem("disappear_session", "active");
         localStorage.setItem("disappear_last_active", now.toString());
@@ -482,7 +477,12 @@ function App() {
         if (isExpired) {
             triggerToast("SESSION EXPIRED: SECURITY BLOCK");
         }
-        if (!isNative) {
+        if (isNative) {
+            // On mobile native app when not logged in, route directly to Login/Authentication screen
+            setShowLanding(false);
+            setShow2FA(true);
+        } else {
+            setShowLanding(true);
             setTargetProfile({
                 firstName: "", middleName: "", lastName: "", email: "", phone: "",
                 dob: "", address: "", city: "", state: "", zip: "", termsAccepted: false
