@@ -214,6 +214,11 @@ safe_add_column("shield_profiles_v3", "kyc_status", "VARCHAR DEFAULT 'PENDING'")
 safe_add_column("shield_profiles_v3", "aml_flagged", "BOOLEAN DEFAULT FALSE")
 safe_add_column("shield_profiles_v3", "daily_spend_limit", "INTEGER DEFAULT 2000")
 safe_add_column("shield_profiles_v3", "password_hash", "VARCHAR")
+safe_add_column("shield_profiles_v3", "referral_code", "VARCHAR")
+safe_add_column("shield_profiles_v3", "referred_by", "VARCHAR")
+safe_add_column("shield_profiles_v3", "referral_count", "INTEGER DEFAULT 0")
+safe_add_column("shield_profiles_v3", "free_months_earned", "INTEGER DEFAULT 0")
+safe_add_column("shield_profiles_v3", "free_months_redeemed", "INTEGER DEFAULT 0")
 safe_add_column("scrub_logs_v1", "removal_type", "VARCHAR DEFAULT 'AUTOMATED'")
 safe_add_column("scrub_logs_v1", "manual_instruction_url", "VARCHAR")
 safe_add_column("scrub_logs_v1", "assigned_analyst", "VARCHAR")
@@ -1023,17 +1028,25 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
     except Exception as e:
         logger.error(f"Sync Target Emails Error: {e}")
 
-    # 6. Payment Methods (Consolidated)
-    payment_methods = []
-    if profile.stripe_customer_id:
-        try:
-            methods = stripe.PaymentMethod.list(
-                customer=profile.stripe_customer_id,
-                type="card",
-            )
-            payment_methods = [{"id": m.id, "brand": m.card.brand, "last4": m.card.last4, "exp_month": m.card.exp_month, "exp_year": m.card.exp_year} for m in methods.data]
-        except Exception as e:
-            logger.error(f"Sync Payment Methods Error: {e}")
+    # 7. Referral Milestone Reward System
+    if not profile.referral_code:
+        import uuid
+        profile.referral_code = f"REF{uuid.uuid4().hex[:8].upper()}"
+        db.commit()
+
+    ref_count = profile.referral_count or 0
+    next_needed = 5 - (ref_count % 5)
+    progress_pct = round(((ref_count % 5) / 5.0) * 100, 1)
+
+    referrals_data = {
+        "code": profile.referral_code,
+        "link": f"https://disappearco.com/?ref={profile.referral_code}",
+        "count": ref_count,
+        "next_milestone_needed": next_needed,
+        "progress_pct": progress_pct,
+        "free_months_earned": profile.free_months_earned or 0,
+        "free_months_redeemed": profile.free_months_redeemed or 0
+    }
 
     return {
         "profile": {
@@ -1057,7 +1070,8 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
         "cards": cards,
         "aliases": aliases_list,
         "target_emails": target_emails,
-        "payment_methods": payment_methods
+        "payment_methods": payment_methods,
+        "referrals": referrals_data
     }
 
 
@@ -1137,6 +1151,7 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
         
         user_id = body.get("user_id", "anonymous_agent")
         return_url = body.get("return_url", "https://disappearco.com")
+        referred_by = body.get("referred_by") or body.get("referral_code")
 
         # RULE: Explicitly check for cooldown/wipe first for 1.99
         if "cooldown" in etype or "wipe" in etype or "emergency" in etype:
@@ -1181,6 +1196,9 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
 
         profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
         if profile:
+            if referred_by and not profile.referred_by:
+                profile.referred_by = str(referred_by).strip().upper()
+                db.commit()
             if profile.kyc_status != "APPROVED":
                 log_compliance_rejection(user_id, "CREATE_CHECKOUT_SESSION", f"KYC status: {profile.kyc_status}")
                 raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: KYC verification pending or rejected.")
@@ -1286,6 +1304,55 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
             elif purchase_type in ["subscription_monthly", "subscription_annual"]:
                 action = "SUBSCRIPTION_ACTIVATED"
                 logger.info(f"DB_UPDATE: Subscription activated for {profile.id}")
+
+                # --- REFERRAL MILESTONE REWARD LOGIC ---
+                if profile.referred_by:
+                    ref_code = profile.referred_by.strip().upper()
+                    referrer = db.query(DBProfile).filter(DBProfile.referral_code == ref_code).first()
+                    if not referrer:
+                        referrer = db.query(DBProfile).filter(DBProfile.id == profile.referred_by).first()
+
+                    if referrer and referrer.id != profile.id:
+                        already_credited = db.query(DBPurgeLog).filter(
+                            DBPurgeLog.action_type == "REFERRAL_CREDITED",
+                            DBPurgeLog.node_id == f"REFERRED_{profile.id}"
+                        ).first()
+
+                        if not already_credited:
+                            db.add(DBPurgeLog(
+                                action_type="REFERRAL_CREDITED",
+                                node_id=f"REFERRED_{profile.id}",
+                                timestamp=datetime.utcnow()
+                            ))
+
+                            referrer.referral_count = (referrer.referral_count or 0) + 1
+                            logger.info(f"REFERRAL_SUCCESS: Referrer '{referrer.id}' count incremented to {referrer.referral_count} from referred signup '{profile.id}'")
+
+                            # Milestone threshold check: Every 5 successful referrals unlocks 1 free month
+                            if referrer.referral_count % 5 == 0:
+                                referrer.free_months_earned = (referrer.free_months_earned or 0) + 1
+                                logger.info(f"REFERRAL_MILESTONE: Referrer '{referrer.id}' reached {referrer.referral_count} referrals! Earned 1 free month (Total: {referrer.free_months_earned})")
+
+                                # Apply Stripe balance transaction reward ($19.99 credit = 1 free billing cycle)
+                                if referrer.stripe_customer_id:
+                                    try:
+                                        stripe.Customer.create_balance_transaction(
+                                            referrer.stripe_customer_id,
+                                            amount=-1999,  # $19.99 credit applied to Stripe customer profile
+                                            currency="usd",
+                                            description="1 Free Month Service Reward (5 Successful Referrals Milestone)"
+                                        )
+                                        logger.info(f"STRIPE_REWARD_APPLIED: $19.99 credit balance transaction applied to referrer Stripe Customer {referrer.stripe_customer_id}")
+                                    except Exception as st_err:
+                                        logger.error(f"STRIPE_REWARD_ERROR: Failed to apply balance credit to {referrer.stripe_customer_id}: {st_err}")
+
+                                db.add(DBPurgeLog(
+                                    action_type="REFERRAL_MILESTONE_UNLOCKED",
+                                    node_id=f"REFERRER_{referrer.id}_REWARD_{referrer.free_months_earned}",
+                                    timestamp=datetime.utcnow()
+                                ))
+
+                            db.add(referrer)
                 
             else:
                 action = "COOLDOWN_BYPASS_PURCHASED"
@@ -1785,6 +1852,10 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         pwd_input = data.get("password")
         pwd_hash = hash_password(pwd_input) if pwd_input else None
 
+        import uuid
+        my_ref_code = f"REF{uuid.uuid4().hex[:8].upper()}"
+        ref_by_input = (data.get("referred_by") or data.get("referral_code") or "").strip().upper()
+
         new_profile = DBProfile(
             id=profile_id,
             first_name=data.get("firstName", "Unknown"),
@@ -1797,7 +1868,9 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
             password_hash=pwd_hash,
             stripe_customer_id=stripe_customer_id,
             kyc_status=kyc_status,
-            aml_flagged=aml_flagged
+            aml_flagged=aml_flagged,
+            referral_code=my_ref_code,
+            referred_by=ref_by_input if ref_by_input else None
         )
         db.add(new_profile)
         

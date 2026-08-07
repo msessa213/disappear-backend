@@ -96,6 +96,11 @@ class DBProfile(Base):
     aml_flagged = Column(Boolean, default=False)
     daily_spend_limit = Column(Integer, default=2000)
     password_hash = Column(String, nullable=True)
+    referral_code = Column(String, unique=True, index=True, nullable=True)
+    referred_by = Column(String, index=True, nullable=True)
+    referral_count = Column(Integer, default=0)
+    free_months_earned = Column(Integer, default=0)
+    free_months_redeemed = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class DBTargetEmail(Base):

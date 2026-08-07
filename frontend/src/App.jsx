@@ -139,6 +139,15 @@ function App() {
   
   const [targetEmails, setTargetEmails] = useState({ primary: "", additional: [], slots: 1, used: 0 });
   const [newTargetEmail, setNewTargetEmail] = useState("");
+  const [referralData, setReferralData] = useState({
+    code: "",
+    link: "",
+    count: 0,
+    next_milestone_needed: 5,
+    progress_pct: 0,
+    free_months_earned: 0,
+    free_months_redeemed: 0
+  });
   
   const addressRef = useRef(null);
   const [googleLoaded, setGoogleLoaded] = useState(false);
@@ -435,6 +444,11 @@ function App() {
     const query = new URLSearchParams(window.location.search);
     const isNative = Capacitor.isNativePlatform();
 
+    const refCode = query.get("ref");
+    if (refCode) {
+      localStorage.setItem("disappear_ref_code", refCode.trim());
+    }
+
     // Check for session timeout (e.g., 30 minutes of inactivity)
     const TIMEOUT_DURATION = 1800000; // 30 minutes
     const now = Date.now();
@@ -583,6 +597,11 @@ function App() {
       if (data.profile && !hasLoadedPhone) {
         setDestinationPhone(data.profile.phone || "");
         setHasLoadedPhone(true);
+      }
+
+      // 9. Map Referral Milestone Data
+      if (data.referrals) {
+        setReferralData(data.referrals);
       }
     } catch (err) { 
         console.warn("Network interrupted. Attempting silent reconnect on next cycle...");
@@ -1128,9 +1147,11 @@ const handleEmergencyBurn = async () => {
 
     setIsMinting(true);
     try {
+        const storedRefCode = localStorage.getItem("disappear_ref_code") || "";
         // Combine the address components so the backend database doesn't need to change
         const payload = {
             ...targetProfile,
+            referred_by: storedRefCode,
             address: `${targetProfile.address}, ${targetProfile.city}, ${targetProfile.state} ${targetProfile.zip}`
         };
         
@@ -1163,6 +1184,7 @@ const handleEmergencyBurn = async () => {
                     body: JSON.stringify({ 
                         expansion_type: "subscription_" + billingCycle,
                         user_id: activeUserId,
+                        referred_by: storedRefCode,
                         return_url: window.location.origin
                     })
                 });
@@ -1827,6 +1849,60 @@ const handleEmergencyBurn = async () => {
                         CANCEL PLAN
                       </button>
                     </div>
+                  </div>
+                </div>
+
+                {/* --- REFERRAL MILESTONE REWARD WIDGET --- */}
+                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #00D2FF', background: 'linear-gradient(135deg, rgba(0,71,171,0.08) 0%, rgba(5,11,20,0.95) 100%)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                    <p className="tool-label tiger-text" style={{ margin: 0, fontSize: '0.95rem' }}>🎁 REFERRAL MILESTONE REWARDS</p>
+                    <span style={{ fontSize: '0.78rem', color: '#10B981', background: 'rgba(16,185,129,0.15)', padding: '4px 10px', borderRadius: '12px', border: '1px solid rgba(16,185,129,0.3)', fontWeight: 'bold' }}>
+                      {referralData.free_months_earned} FREE MONTHS UNLOCKED
+                    </span>
+                  </div>
+
+                  <p style={{ fontSize: '0.85rem', color: '#CBD5E1', marginBottom: '15px', lineHeight: '1.4' }}>
+                    Earn <strong>1 FREE MONTH</strong> of Disappear for every <strong>5 referred users</strong> who subscribe. Rewards automatically apply a 100% credit to your next Stripe billing cycle.
+                  </p>
+
+                  {/* Milestone Progress Bar */}
+                  <div style={{ background: '#05070D', border: '1px solid rgba(0,210,255,0.3)', borderRadius: '8px', padding: '15px', marginBottom: '15px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '8px', fontWeight: 'bold' }}>
+                      <span style={{ color: '#00D2FF' }}>MILESTONE PROGRESS: {referralData.count % 5}/5 REFERRALS</span>
+                      <span style={{ color: '#94A3B8' }}>{referralData.next_milestone_needed} MORE NEEDED</span>
+                    </div>
+                    
+                    <div style={{ width: '100%', height: '10px', background: '#111827', borderRadius: '5px', overflow: 'hidden', border: '1px solid #1F2937' }}>
+                      <div style={{ width: `${referralData.progress_pct}%`, height: '100%', background: 'linear-gradient(90deg, #0047AB, #00D2FF)', borderRadius: '5px', transition: 'width 0.4s ease' }}></div>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', fontSize: '0.75rem', color: '#64748B' }}>
+                      <span>Total Successful Referrals: <strong>{referralData.count}</strong></span>
+                      <span>Milestone Target: <strong>Every 5 Subscribers</strong></span>
+                    </div>
+                  </div>
+
+                  {/* Shareable Link Box */}
+                  <p className="field-label" style={{ textAlign: 'left', marginBottom: '6px' }}>YOUR UNIQUE REFERRAL LINK</p>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input 
+                      type="text" 
+                      readOnly 
+                      value={referralData.link || (referralData.code ? `https://disappearco.com/?ref=${referralData.code}` : "Generating link...")} 
+                      className="mask-btn" 
+                      style={{ flex: 1, fontSize: '0.82rem', background: '#000', color: '#FFFFFF', textAlign: 'left', paddingLeft: '12px', border: '1px solid rgba(0,210,255,0.3)' }} 
+                    />
+                    <button 
+                      className="main-button" 
+                      style={{ padding: '0 16px', fontSize: '0.82rem', whiteSpace: 'nowrap' }} 
+                      onClick={() => {
+                        const linkToCopy = referralData.link || `https://disappearco.com/?ref=${referralData.code}`;
+                        navigator.clipboard.writeText(linkToCopy);
+                        triggerToast("REFERRAL LINK COPIED TO CLIPBOARD 📋");
+                      }}
+                    >
+                      COPY LINK 📋
+                    </button>
                   </div>
                 </div>
 
