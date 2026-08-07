@@ -1887,18 +1887,22 @@ const handleEmergencyBurn = async () => {
               /* 4. ONBOARDING & LOGIN FLOW (MOBILE OPTIMIZED) */
               <div className="onboarding-flow">
                 {show2FA && (
-                  <div className="pricing-card fade-in">
-                    <div className="price-box">
-                      <h3 className="tiger-text">CUSTOMER ACCOUNT AUTHENTICATION</h3>
+                  <div className="pricing-card fade-in" style={{ maxWidth: '450px', margin: '0 auto', width: '100%' }}>
+                    <div className="price-box" style={{ padding: '30px 25px' }}>
+                      <div className="billing-toggle" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', width: '100%', marginBottom: '20px' }}>
+                        <button className="mask-btn active-toggle" style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>SIGN IN</button>
+                        <button className="mask-btn" style={{ fontSize: '0.85rem' }} onClick={() => { window.location.hash = "pricing"; }}>CREATE ACCOUNT</button>
+                      </div>
+                      <h3 className="tiger-text" style={{ fontSize: '1.1rem', marginBottom: '15px', textAlign: 'center' }}>SIGN IN TO DISAPPEAR</h3>
                       <form onSubmit={(e) => { e.preventDefault(); verify2FA(); }} autoComplete="on" style={{ width: '100%' }}>
-                        <p className="field-label">REGISTERED CUSTOMER EMAIL</p>
+                        <p className="field-label">REGISTERED ACCOUNT EMAIL</p>
                         <input 
                           type="email"
                           name="customer_login_email" 
                           id="customer_login_email"
                           autoComplete="username" 
                           className="mask-btn" 
-                          style={{width: '100%', textAlign: 'center', marginBottom: '10px', color: 'white'}} 
+                          style={{width: '100%', textAlign: 'center', marginBottom: '15px', color: 'white'}} 
                           placeholder="customer@email.com" 
                           value={loginEmail} 
                           onChange={(e) => setLoginEmail(e.target.value)} 
@@ -1910,23 +1914,25 @@ const handleEmergencyBurn = async () => {
                           id="customer_login_password"
                           autoComplete="current-password" 
                           className="mask-btn" 
-                          style={{width: '100%', textAlign: 'center', color: 'white'}} 
+                          style={{width: '100%', textAlign: 'center', color: 'white', marginBottom: '15px'}} 
                           placeholder="••••••••" 
                           value={loginPassword} 
                           onChange={(e) => setLoginPassword(e.target.value)} 
                         />
-                        <button type="submit" className="main-button" style={{width: '100%', marginTop: '20px'}}>VERIFY IDENTITY</button>
+                        <button type="submit" className="main-button" style={{width: '100%', marginTop: '10px'}}>SIGN IN</button>
                       </form>
                       {(hasBiometrics || Capacitor.isNativePlatform()) && (
                         <button 
                           className="mask-btn" 
-                          style={{width: '100%', marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderColor: 'var(--tiger-blue)', color: 'var(--tiger-blue)'}} 
+                          style={{width: '100%', marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderColor: '#00D2FF', color: '#00D2FF', fontWeight: 'bold'}} 
                           onClick={handleBiometricLogin}
                         >
-                          <span style={{fontSize: '1.2rem'}}>🔒</span> LOG IN WITH FACE ID / BIOMETRICS
+                          <span style={{fontSize: '1.2rem'}}>🔒</span> SIGN IN WITH FACE ID / BIOMETRICS
                         </button>
                       )}
-                      <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => window.location.hash = ""}>CANCEL</button>
+                      <button className="reset-btn" style={{width: '100%', marginTop: '15px', fontSize: '0.85rem', color: '#cbd5e1'}} onClick={() => { window.location.hash = "pricing"; }}>
+                        NEW OPERATIVE? CREATE AN ACCOUNT
+                      </button>
                     </div>
                   </div>
                 )}
