@@ -1019,7 +1019,7 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
             "expiry": c.expiry,
             "cvv": c.cvv,
             "funding_source": getattr(c, 'funding_source_id', '') or "",
-            "created_at": c.created_at.isoformat()
+            "created_at": c.created_at.isoformat() if getattr(c, 'created_at', None) else datetime.utcnow().isoformat()
         } for c in cards_entities]
     except Exception as e:
         logger.error(f"Sync Cards Error: {e}")
@@ -1027,18 +1027,24 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
     # 4. Aliases (Email & Phone - Consolidated)
     aliases_list = []
     try:
-        # Re-link all phone aliases to the customer's profile so all active lines show in customer portal
-        phone_aliases = db.query(DBAlias).filter(DBAlias.type == "phone").all()
-        for pa in phone_aliases:
-            if pa.user_id != uid:
-                pa.user_id = uid
-        db.commit()
+        try:
+            phone_aliases = db.query(DBAlias).filter(DBAlias.type == "phone").all()
+            for pa in phone_aliases:
+                if pa.user_id != uid:
+                    pa.user_id = uid
+            db.commit()
+        except Exception as pa_err:
+            db.rollback()
+            logger.warning(f"Phone alias user re-link skipped: {pa_err}")
 
         aliases_entities = db.query(DBAlias).filter(DBAlias.user_id == uid).order_by(DBAlias.created_at.desc()).all()
         if not aliases_entities:
-            from services.twilio_service import sync_all_twilio_webhooks
-            sync_all_twilio_webhooks(db=db)
-            aliases_entities = db.query(DBAlias).filter(DBAlias.user_id == uid).order_by(DBAlias.created_at.desc()).all()
+            try:
+                from services.twilio_service import sync_all_twilio_webhooks
+                sync_all_twilio_webhooks(db=db)
+                aliases_entities = db.query(DBAlias).filter(DBAlias.user_id == uid).order_by(DBAlias.created_at.desc()).all()
+            except Exception as tw_err:
+                logger.warning(f"Twilio sync skipped: {tw_err}")
 
         aliases_list = [{
             "id": a.id,
@@ -1046,7 +1052,7 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
             "label": a.label,
             "type": a.type,
             "content": a.content,
-            "created_at": a.created_at.isoformat()
+            "created_at": a.created_at.isoformat() if getattr(a, 'created_at', None) else datetime.utcnow().isoformat()
         } for a in aliases_entities]
     except Exception as e:
         logger.error(f"Sync Aliases Error: {e}")
