@@ -353,10 +353,17 @@ function App() {
         const sessionActive = localStorage.getItem("disappear_session") === "active";
         const activeUserId = localStorage.getItem("disappear_user_id");
         if (!sessionActive || !activeUserId) {
-          setShowLanding(true);
-          setShowPricing(false);
-          setShow2FA(false);
-          setShowCheckout(false);
+          if (Capacitor.isNativePlatform()) {
+            setShowLanding(false);
+            setShow2FA(true);
+            setShowPricing(false);
+            setShowCheckout(false);
+          } else {
+            setShowLanding(true);
+            setShowPricing(false);
+            setShow2FA(false);
+            setShowCheckout(false);
+          }
         }
       }
     };
@@ -1962,7 +1969,7 @@ const handleEmergencyBurn = async () => {
             ) : (
               /* 4. ONBOARDING & LOGIN FLOW (MOBILE OPTIMIZED) */
               <div className="onboarding-flow">
-                {show2FA && (
+                {(show2FA || (!showPricing && !showCheckout && !isScanning)) && (
                   <div className="pricing-card fade-in" style={{ maxWidth: '450px', margin: '0 auto', width: '100%' }}>
                     <div className="price-box" style={{ padding: '30px 25px' }}>
                       <div className="billing-toggle" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', width: '100%', marginBottom: '20px' }}>
