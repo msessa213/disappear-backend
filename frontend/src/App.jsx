@@ -797,25 +797,7 @@ function App() {
         body: JSON.stringify({ type, label: aliasLabel, area_code: aliasAreaCode })
       });
 
-      // TRIGGER POPUP TO BUY MORE SLOTS IF AT MAX
-      if (res.status === 403) { 
-        setIsEncrypting(false); 
-        const upgrade = window.confirm("IDENTITY CAPACITY FULL: All protection nodes active. \n\nAdd a Permanent Vault Slot for $5.95?");
-        if (upgrade) handlePurchaseExpansion("permanent_slot");
-        return; 
-      }
-      
-      // EMERGENCY BYPASS LOGIC
-      if (res.status === 429) { 
-        setIsEncrypting(false);
-        const confirmBypass = window.confirm(
-          "EMERGENCY PROTOCOL: Node cooling down (12h window). \n\nInitiate Emergency Protocol Wipe for $1.99?"
-        );
-        if (confirmBypass) {
-          handlePurchaseExpansion("cooldown_bypass");
-        }
-        return; 
-      }
+      const errData = await res.json().catch(() => ({}));
 
       if (res.ok) {
         syncDefenseData();
@@ -824,8 +806,11 @@ function App() {
         setShowEmailModal(false);
         setShowPhoneModal(false);
         triggerToast(`${type.toUpperCase()} SECURED`);
-      } else if (res.status !== 403 && res.status !== 429) {
-        const errData = await res.json().catch(() => ({}));
+      } else if (res.status === 403 && (errData.detail === "IDENTITY_LIMIT_REACHED" || errData.detail === "PHONE_CAPACITY_REACHED")) {
+        setIsEncrypting(false);
+        const upgrade = window.confirm("IDENTITY CAPACITY FULL: All protection slots in use.\n\nAdd an extra Permanent Vault Slot for $5.95?");
+        if (upgrade) handlePurchaseExpansion(type === "phone" ? "phone" : "permanent_slot");
+      } else {
         triggerToast(errData.detail || "MINT FAILURE: EXTERNAL API ERROR");
       }
     } catch (err) { triggerToast("CONNECTION ERROR"); }
