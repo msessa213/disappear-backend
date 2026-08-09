@@ -520,7 +520,7 @@ input[type="checkbox"] {
 /* 11. MOBILE RESPONSIVE OVERRIDES */
 @media (max-width: 768px) {
   .app-container {
-    padding: 60px 15px 120px 15px;
+    padding: 60px 15px 220px 15px !important;
   }
 
   .brand-name {

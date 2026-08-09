@@ -2033,9 +2033,26 @@ const handleEmergencyBurn = async () => {
                   </div>
                 </div>
 
-                <div style={{display: 'flex', flexDirection: 'column', gap: '15px', width: '100%', maxWidth: '400px', marginTop: '40px'}}>
-                  <button className="reset-btn" style={{ fontSize: '1rem', padding: '12px 10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => {localStorage.clear(); window.location.reload();}}>LOGOUT SECURELY</button>
-                  <button className="burn-all-btn" style={{ fontSize: '1rem', padding: '12px 10px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={handleEmergencyBurn}>INITIATE EMERGENCY BURN</button>
+                {/* --- SESSION & SECURITY CONTROLS CARD --- */}
+                <div className="masking-tool" style={{ 
+                  width: '100%', 
+                  maxWidth: '600px', 
+                  marginTop: '25px', 
+                  marginBottom: '50px',
+                  padding: '20px',
+                  border: '1px solid rgba(255, 77, 0, 0.3)',
+                  background: 'rgba(5, 7, 13, 0.95)',
+                  borderRadius: '12px'
+                }}>
+                  <p className="tool-label" style={{ textAlign: 'center', color: '#FF4D00', marginBottom: '15px' }}>SESSION & SECURITY CONTROLS</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
+                    <button className="reset-btn" style={{ fontSize: '0.95rem', padding: '14px 10px', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }} onClick={() => {localStorage.clear(); window.location.reload();}}>
+                      🚪 LOGOUT SECURELY
+                    </button>
+                    <button className="burn-all-btn" style={{ fontSize: '0.95rem', padding: '14px 10px', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }} onClick={handleEmergencyBurn}>
+                      🔥 INITIATE EMERGENCY BURN
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
