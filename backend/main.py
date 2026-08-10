@@ -814,7 +814,7 @@ BROKER_OPT_OUT_URLS = {
     "TRANSUNION": "https://www.transunion.com/privacy/opt-out",
     "INNOVIS": "https://www.innovis.com/personal/optOut",
     "CHEXSYSTEMS": "https://www.chexsystems.com/consumer-services/opt-out",
-    "CORELOGIC": "https://www.corelogic.com/privacy/",
+    "CORELOGIC": "https://cotality.com/legal/b2b-client-privacy-form",
     "CLEAR": "https://www.clearme.com/privacy-policy",
     "PIPL": "https://pipl.com/personal-information-removal-request",
     "USAINFO": "https://www.usainfo.com/optout",
