@@ -33,6 +33,30 @@ export default function AdminDashboard({ API_BASE_URL }) {
     }
   };
 
+  const [editingListingUrls, setEditingListingUrls] = useState({});
+
+  const handleSaveListingUrl = async (taskId) => {
+    const newUrl = editingListingUrls[taskId];
+    if (!newUrl || !newUrl.trim()) return;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/ops/update-listing-url/${taskId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Disappear-Admin-Key": cleanHeaderKey(adminKey)
+        },
+        body: JSON.stringify({ target_listing_url: newUrl.trim() })
+      });
+      if (res.ok) {
+        alert("Target Listing URL saved successfully!");
+        fetchBacklog(adminKey);
+      }
+    } catch (e) {
+      console.error("Save listing URL error", e);
+    }
+  };
+
   const cleanHeaderKey = (val) => {
     if (!val) return "";
     return String(val).trim().replace(/[^\x20-\x7E]/g, "");
@@ -643,7 +667,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
                 </div>
 
                 {/* Target Listing URL & Listing Finder Section */}
-                <div style={{ fontSize: '0.82rem', color: '#cbd5e1', marginBottom: '15px', background: 'rgba(0, 210, 255, 0.05)', padding: '12px 14px', borderRadius: '6px', border: '1px solid rgba(0, 210, 255, 0.2)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '0.82rem', color: '#cbd5e1', marginBottom: '15px', background: 'rgba(0, 210, 255, 0.05)', padding: '12px 14px', borderRadius: '6px', border: '1px solid rgba(0, 210, 255, 0.2)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                     <div style={{ flex: 1, minWidth: '240px' }}>
                       <strong style={{ color: '#00D2FF', letterSpacing: '0.5px' }}>🎯 BROKER TARGET LISTING URL / FINDER:</strong>
@@ -672,6 +696,25 @@ export default function AdminDashboard({ API_BASE_URL }) {
                       </a>
                     </div>
                   </div>
+
+                  {!isCompleted && (
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <input 
+                        className="mask-btn" 
+                        placeholder="Paste exact profile listing URL (e.g. Whitepages wpId=...)..." 
+                        style={{ flex: 1, height: '32px', fontSize: '0.78rem', boxSizing: 'border-box', margin: 0 }}
+                        value={editingListingUrls[task.task_id] !== undefined ? editingListingUrls[task.task_id] : (task.target_listing_url || "")}
+                        onChange={(e) => setEditingListingUrls({...editingListingUrls, [task.task_id]: e.target.value})}
+                      />
+                      <button 
+                        className="main-button" 
+                        style={{ height: '32px', padding: '0 12px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0, whiteSpace: 'nowrap' }}
+                        onClick={() => handleSaveListingUrl(task.task_id)}
+                      >
+                        💾 SAVE CUSTOM LISTING URL
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Proof Link Input or Completed Proof Display */}

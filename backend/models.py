@@ -120,6 +120,7 @@ class DBScrubLog(Base):
     manual_instruction_url = Column(String, nullable=True) # NEW
     assigned_analyst = Column(String, nullable=True) # NEW: Analyst Name currently working on task
     resolved_by = Column(String, nullable=True) # NEW: Analyst Name who completed task
+    target_listing_url = Column(String, nullable=True) # Specific broker listing page URL
     timestamp = Column(DateTime, default=datetime.utcnow)
 
 class DBPurgeLog(Base):

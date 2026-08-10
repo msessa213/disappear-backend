@@ -295,6 +295,7 @@ safe_add_column("scrub_logs_v1", "removal_type", "VARCHAR DEFAULT 'AUTOMATED'")
 safe_add_column("scrub_logs_v1", "manual_instruction_url", "VARCHAR")
 safe_add_column("scrub_logs_v1", "assigned_analyst", "VARCHAR")
 safe_add_column("scrub_logs_v1", "resolved_by", "VARCHAR")
+safe_add_column("scrub_logs_v1", "target_listing_url", "VARCHAR")
 
 # --- APP CONFIGURATION ---
 
@@ -647,6 +648,9 @@ class ValidateCouponRequest(BaseModel):
     code: str
     original_price: Optional[float] = 9.99
 
+class UpdateListingUrlRequest(BaseModel):
+    target_listing_url: str
+
 
 
 # --- CORE SYSTEM ROUTES ---
@@ -953,7 +957,9 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
         b_name = task.broker_name.upper()
         b_domain = domain_map.get(b_name, f"{b_name.lower().replace('_', '')}.com")
 
-        if b_name == "WHITEPAGES":
+        if getattr(task, "target_listing_url", None):
+            listing_url = task.target_listing_url
+        elif b_name == "WHITEPAGES":
             listing_url = f"https://www.whitepages.com/name/{fn}-{ln}"
         elif b_name == "SPOKEO":
             listing_url = f"https://www.spokeo.com/{fn}-{ln}"
@@ -1072,6 +1078,25 @@ async def unclaim_manual_task(
     db.commit()
     logger.info(f"TASK_UNCLAIMED: Task {log_id} returned to queue")
     return {"status": "SUCCESS", "message": "Task returned to unassigned queue"}
+
+
+@app.post("/admin/ops/update-listing-url/{log_id}")
+async def update_target_listing_url(
+    log_id: int, 
+    req: UpdateListingUrlRequest, 
+    db: Session = Depends(get_db), 
+    admin_key: str = Depends(verify_admin_token)
+):
+    """Allows staff analysts to save the exact broker profile listing page URL for a task"""
+    task = db.query(DBScrubLog).filter(DBScrubLog.id == log_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task signature not located.")
+        
+    task.target_listing_url = req.target_listing_url.strip()
+    db.add(task)
+    db.commit()
+    logger.info(f"LISTING_URL_UPDATED: Task {log_id} ({task.broker_name}) listing URL updated to {task.target_listing_url}")
+    return {"status": "SUCCESS", "message": "Target listing URL updated.", "target_listing_url": task.target_listing_url}
 
 
 @app.post("/admin/ops/verify/{log_id}")
