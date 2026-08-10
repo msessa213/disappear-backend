@@ -221,7 +221,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
     const activeAnalyst = analystName.trim() || "STAFF_ANALYST";
 
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/ops/verify/${taskId}`, {
+      let res = await fetch(`${API_BASE_URL}/admin/ops/verify/${taskId}`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -233,6 +233,21 @@ export default function AdminDashboard({ API_BASE_URL }) {
           analyst_name: activeAnalyst
         })
       });
+
+      if (!res.ok) {
+        res = await fetch(`${API_BASE_URL}/admin/ops/resolve/${taskId}`, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "X-Disappear-Admin-Key": cleanHeaderKey(adminKey)
+          },
+          body: JSON.stringify({ 
+            verification_link: proofUrl,
+            notes: "Manual Opt-Out Form Submitted & Confirmed by Analyst",
+            analyst_name: activeAnalyst
+          })
+        });
+      }
 
       if (res.ok) {
         alert(`Task #${taskId} successfully marked COMPLETE and verified!`);

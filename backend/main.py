@@ -1026,8 +1026,7 @@ async def unclaim_manual_task(
 
 
 @app.post("/admin/ops/verify/{log_id}")
-@app.post("/admin/ops/resolve/{log_id}")
-async def resolve_manual_task(
+async def verify_manual_task(
     log_id: int, 
     req: Optional[AdminVerificationRequest] = None,
     db: Session = Depends(get_db), 
@@ -1060,6 +1059,15 @@ async def resolve_manual_task(
         "resolved_by": task.resolved_by,
         "verification_link": task.manual_instruction_url
     }
+
+@app.post("/admin/ops/resolve/{log_id}")
+async def resolve_manual_task(
+    log_id: int, 
+    req: Optional[AdminVerificationRequest] = None,
+    db: Session = Depends(get_db), 
+    admin_key: str = Depends(verify_admin_token)
+):
+    return await verify_manual_task(log_id=log_id, req=req, db=db, admin_key=admin_key)
 
 
 @app.delete("/api/admin/profile/delete-by-email")
