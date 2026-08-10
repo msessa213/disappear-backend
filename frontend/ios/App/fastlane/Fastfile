@@ -3,10 +3,19 @@ default_platform(:ios)
 platform :ios do
   desc "Build and Upload to Apple TestFlight"
   lane :beta do
+    private_key = <<~KEY
+-----BEGIN PRIVATE KEY-----
+MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQghACexnVzV8dmpQei
+DSoU/jMl5ZS7kW7jdTY/NqXtkFOgCgYIKoZIzj0DAQehRANCAATYKjCHAj/NGFd7
+gO3IoYcKkQklkyDrO71ym7LwbZEE8hdW+wH2K9gieYtAziJSnTM4tgckpGxYG6Oc
+kel82+dJ
+-----END PRIVATE KEY-----
+    KEY
+
     api_key = app_store_connect_api_key(
       key_id: "XV7G933QV7",
       issuer_id: "d69c5bad-fd13-40bc-a06d-9b36c324e226",
-      key_content: ENV["APPLE_CONNECT_PRIVATE_KEY"],
+      key_content: private_key,
       is_key_content_base64: false
     )
 

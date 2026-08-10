@@ -38,8 +38,6 @@ jobs:
           gem install fastlane --no-document
 
       - name: Build and Upload to TestFlight via Fastlane
-        env:
-          APPLE_CONNECT_PRIVATE_KEY: ${{ secrets.APPLE_CONNECT_PRIVATE_KEY }}
         run: |
           cd frontend/ios/App
           fastlane beta || echo "Fastlane step finished"
