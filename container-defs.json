@@ -16,7 +16,7 @@
                         },
                         {
                             "name":  "DATABASE_URL",
-                            "value":  "postgresql://postgres:qBzzcob3WVgGFHztZwvTaKproGms9OozKOZ9dxwFH17pHkqNFrAU9IHSaywSPlXC@junction.proxy.rlwy.net:47938/railway"
+                            "value":  "postgresql://postgres.chymgteinnczqfjqknan:Chase-246-Purge@aws-1-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require"
                         },
                         {
                             "name":  "STRIPE_SECRET_KEY",
