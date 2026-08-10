@@ -20,6 +20,19 @@ export default function AdminDashboard({ API_BASE_URL }) {
   const [newDuration, setNewDuration] = useState("permanent");
   const [couponStatusMsg, setCouponStatusMsg] = useState("");
 
+  const [copiedTaskId, setCopiedTaskId] = useState(null);
+
+  const handleCopyListingUrl = (taskId, url) => {
+    if (!url) return;
+    try {
+      navigator.clipboard.writeText(url);
+      setCopiedTaskId(taskId);
+      setTimeout(() => setCopiedTaskId(null), 2500);
+    } catch (e) {
+      console.error("Copy error", e);
+    }
+  };
+
   const cleanHeaderKey = (val) => {
     if (!val) return "";
     return String(val).trim().replace(/[^\x20-\x7E]/g, "");
@@ -622,11 +635,43 @@ export default function AdminDashboard({ API_BASE_URL }) {
                 </div>
                 
                 {/* Target Customer PII Details Card */}
-                <div style={{ fontSize: '0.88rem', color: '#cbd5e1', marginBottom: '15px', background: 'rgba(255,255,255,0.03)', padding: '14px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+                <div style={{ fontSize: '0.88rem', color: '#cbd5e1', marginBottom: '12px', background: 'rgba(255,255,255,0.03)', padding: '14px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
                   <div><strong style={{ color: '#00D2FF' }}>CUSTOMER NAME:</strong> <br/><span style={{ color: '#FFF', fontSize: '1rem', fontWeight: 'bold' }}>{task.target_profile.first_name} {task.target_profile.middle_name} {task.target_profile.last_name}</span></div>
                   <div><strong style={{ color: '#00D2FF' }}>EMAIL ADDRESS:</strong> <br/><span style={{ color: '#FFF' }}>{task.target_profile.email}</span></div>
                   <div><strong style={{ color: '#00D2FF' }}>DATE OF BIRTH:</strong> <br/><span style={{ color: '#FFF' }}>{task.target_profile.dob}</span></div>
                   <div><strong style={{ color: '#00D2FF' }}>STREET ADDRESS:</strong> <br/><span style={{ color: '#FFF' }}>{task.target_profile.address}</span></div>
+                </div>
+
+                {/* Target Listing URL & Listing Finder Section */}
+                <div style={{ fontSize: '0.82rem', color: '#cbd5e1', marginBottom: '15px', background: 'rgba(0, 210, 255, 0.05)', padding: '12px 14px', borderRadius: '6px', border: '1px solid rgba(0, 210, 255, 0.2)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                    <div style={{ flex: 1, minWidth: '240px' }}>
+                      <strong style={{ color: '#00D2FF', letterSpacing: '0.5px' }}>🎯 BROKER TARGET LISTING URL / FINDER:</strong>
+                      <div style={{ color: '#FFF', wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '0.85rem', marginTop: '4px' }}>
+                        {task.target_listing_url || task.opt_out_url}
+                      </div>
+                    </div>
+                    
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <button 
+                        className="reset-btn" 
+                        style={{ height: '32px', padding: '0 12px', fontSize: '0.75rem', color: copiedTaskId === task.task_id ? '#34d399' : '#00D2FF', borderColor: copiedTaskId === task.task_id ? '#10b981' : '#00D2FF', display: 'inline-flex', alignItems: 'center', gap: '4px', boxSizing: 'border-box', margin: 0 }}
+                        onClick={() => handleCopyListingUrl(task.task_id, task.target_listing_url || task.opt_out_url)}
+                      >
+                        {copiedTaskId === task.task_id ? "✅ COPIED!" : "📋 COPY LISTING URL"}
+                      </button>
+
+                      <a 
+                        href={task.google_listing_url || task.target_listing_url || task.opt_out_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="reset-btn" 
+                        style={{ height: '32px', padding: '0 12px', fontSize: '0.75rem', color: '#fbbf24', borderColor: '#d97706', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', boxSizing: 'border-box', margin: 0 }}
+                      >
+                        🔍 SEARCH LISTING ON GOOGLE ↗
+                      </a>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Proof Link Input or Completed Proof Display */}
