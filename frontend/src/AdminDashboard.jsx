@@ -560,10 +560,10 @@ export default function AdminDashboard({ API_BASE_URL }) {
                       <button 
                         className="main-button" 
                         style={{ height: '34px', padding: '0 14px', fontSize: '0.78rem', background: 'linear-gradient(135deg, #d97706, #b45309)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0 }}
-                        onClick={() => handleClaimAndLaunch(task)}
-                        title="Claim this task for yourself and open the broker removal portal"
+                        onClick={() => handleClaimTask(task.task_id)}
+                        title="Claim this task for yourself"
                       >
-                        ⚡ CLAIM & LAUNCH PORTAL
+                        🎯 CLAIM TASK
                       </button>
                     ) : isAssignedToMe ? (
                       <button 
@@ -601,7 +601,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
                       className="main-button" 
                       style={{ textDecoration: 'none', height: '34px', padding: '0 14px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box', margin: 0 }}
                     >
-                      🔗 LAUNCH PORTAL ↗
+                      🔗 LAUNCH PORTAL
                     </a>
                   </div>
                 </div>
