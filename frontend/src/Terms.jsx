@@ -60,7 +60,7 @@ export const Terms = () => {
         <li><strong>Message Frequency:</strong> Message frequency varies depending on your account activity and security alerts.</li>
         <li><strong>Cost:</strong> Message and data rates may apply depending on your mobile carrier plan.</li>
         <li><strong>Opt-Out Instructions:</strong> You may cancel or opt-out of SMS notifications at any time by replying <strong>STOP</strong> to any text message. Upon sending STOP, you will receive a single confirmation text and no further automated messages will be sent.</li>
-        <li><strong>Customer Support:</strong> Reply <strong>HELP</strong> for assistance, or contact our support team directly at <strong>michael.sessa@disappearco.com</strong>.</li>
+        <li><strong>Customer Support:</strong> Reply <strong>HELP</strong> for assistance, or contact our support team directly at <strong>customer.service@disappearco.com</strong>.</li>
         <li><strong>Carriers:</strong> Wireless carriers are not liable for delayed or undelivered messages.</li>
       </ul>
 
