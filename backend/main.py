@@ -801,7 +801,9 @@ BROKER_OPT_OUT_URLS = {
     "THATSTHEM": "https://thatsthem.com/optout",
     "NUWBER": "https://nuwber.com/removal/link",
     "USSEARCH": "https://www.ussearch.com/opt-out/",
-    "PEOPLEFINDERS": "https://www.peoplefinders.com/opt-out",
+    "PEOPLEFINDERS": "https://www.peoplefinders.com/opt-out"
+}
+
 # --- COUPON & PROMO CODE API ENDPOINTS ---
 
 @app.get("/admin/coupons")
