@@ -341,23 +341,23 @@ export default function AdminDashboard({ API_BASE_URL }) {
         )}
 
         {/* Create Coupon Form */}
-        <form onSubmit={handleCreateCoupon} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', alignItems: 'end', marginBottom: '20px', background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <div>
-            <label style={{ fontSize: '0.75rem', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>COUPON CODE</label>
+        <form onSubmit={handleCreateCoupon} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '15px', alignItems: 'flex-start', marginBottom: '20px', background: 'rgba(0,0,0,0.3)', padding: '16px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <label style={{ fontSize: '0.75rem', color: '#94A3B8', marginBottom: '6px', fontWeight: 'bold' }}>COUPON CODE</label>
             <input 
               className="mask-btn" 
               placeholder="e.g. TACTICAL50" 
-              style={{ width: '100%', textTransform: 'uppercase' }}
+              style={{ width: '100%', textTransform: 'uppercase', height: '42px', boxSizing: 'border-box', margin: 0 }}
               value={newCouponCode}
               onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())}
             />
           </div>
 
-          <div>
-            <label style={{ fontSize: '0.75rem', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>DISCOUNT TYPE</label>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <label style={{ fontSize: '0.75rem', color: '#94A3B8', marginBottom: '6px', fontWeight: 'bold' }}>DISCOUNT TYPE</label>
             <select 
               className="mask-btn" 
-              style={{ width: '100%', color: '#FFF', background: '#0D1117' }}
+              style={{ width: '100%', color: '#FFF', background: '#0D1117', height: '42px', boxSizing: 'border-box', margin: 0 }}
               value={newDiscountType}
               onChange={(e) => setNewDiscountType(e.target.value)}
             >
@@ -366,24 +366,24 @@ export default function AdminDashboard({ API_BASE_URL }) {
             </select>
           </div>
 
-          <div>
-            <label style={{ fontSize: '0.75rem', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>DISCOUNT VALUE</label>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <label style={{ fontSize: '0.75rem', color: '#94A3B8', marginBottom: '6px', fontWeight: 'bold' }}>DISCOUNT VALUE</label>
             <input 
               type="number"
               step="0.01"
               className="mask-btn" 
               placeholder="e.g. 50 or 5.95" 
-              style={{ width: '100%' }}
+              style={{ width: '100%', height: '42px', boxSizing: 'border-box', margin: 0 }}
               value={newDiscountValue}
               onChange={(e) => setNewDiscountValue(e.target.value)}
             />
           </div>
 
-          <div>
-            <label style={{ fontSize: '0.75rem', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>DURATION</label>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <label style={{ fontSize: '0.75rem', color: '#94A3B8', marginBottom: '6px', fontWeight: 'bold' }}>DURATION</label>
             <select 
               className="mask-btn" 
-              style={{ width: '100%', color: '#FFF', background: '#0D1117' }}
+              style={{ width: '100%', color: '#FFF', background: '#0D1117', height: '42px', boxSizing: 'border-box', margin: 0 }}
               value={newDuration}
               onChange={(e) => setNewDuration(e.target.value)}
             >
@@ -392,9 +392,16 @@ export default function AdminDashboard({ API_BASE_URL }) {
             </select>
           </div>
 
-          <button type="submit" className="main-button" style={{ height: '42px', width: '100%' }}>
-            ➕ CREATE COUPON
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <label style={{ fontSize: '0.75rem', color: 'transparent', marginBottom: '6px', userSelect: 'none' }}>ACTION</label>
+            <button 
+              type="submit" 
+              className="main-button" 
+              style={{ height: '42px', width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: 0, padding: '0 16px', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
+            >
+              ➕ CREATE COUPON
+            </button>
+          </div>
         </form>
 
         {/* Existing Coupons Table */}
@@ -442,10 +449,10 @@ export default function AdminDashboard({ API_BASE_URL }) {
       </div>
 
       {/* Navigation Filter Tabs */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
         <button 
           className={filterMode === 'ALL' ? "main-button" : "reset-btn"}
-          style={{ padding: '8px 16px', fontSize: '0.82rem' }}
+          style={{ height: '38px', padding: '0 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0 }}
           onClick={() => setFilterMode('ALL')}
         >
           📋 ALL PENDING ({manualTasks.length})
@@ -453,7 +460,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
 
         <button 
           className={filterMode === 'UNASSIGNED' ? "main-button" : "reset-btn"}
-          style={{ padding: '8px 16px', fontSize: '0.82rem', borderColor: unassignedCount > 0 ? '#fbbf24' : undefined }}
+          style={{ height: '38px', padding: '0 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0, borderColor: unassignedCount > 0 ? '#fbbf24' : undefined }}
           onClick={() => setFilterMode('UNASSIGNED')}
         >
           ⚠️ UNASSIGNED ({unassignedCount})
@@ -461,7 +468,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
 
         <button 
           className={filterMode === 'MY_TASKS' ? "main-button" : "reset-btn"}
-          style={{ padding: '8px 16px', fontSize: '0.82rem' }}
+          style={{ height: '38px', padding: '0 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0 }}
           onClick={() => setFilterMode('MY_TASKS')}
         >
           👤 MY CLAIMED TASKS ({myTasksCount})
@@ -469,7 +476,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
 
         <button 
           className={filterMode === 'COMPLETED' ? "main-button" : "reset-btn"}
-          style={{ padding: '8px 16px', fontSize: '0.82rem', borderColor: '#10b981' }}
+          style={{ height: '38px', padding: '0 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0, borderColor: '#10b981' }}
           onClick={() => setFilterMode('COMPLETED')}
         >
           ✅ COMPLETED VERIFICATIONS ({completedTasks.length})
@@ -519,7 +526,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
                     {!isCompleted && (!task.assigned_analyst ? (
                       <button 
                         className="main-button" 
-                        style={{ padding: '5px 12px', fontSize: '0.78rem', background: 'linear-gradient(135deg, #d97706, #b45309)' }}
+                        style={{ height: '34px', padding: '0 14px', fontSize: '0.78rem', background: 'linear-gradient(135deg, #d97706, #b45309)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0 }}
                         onClick={() => handleClaimTask(task.task_id)}
                       >
                         🎯 CLAIM TASK
@@ -527,16 +534,16 @@ export default function AdminDashboard({ API_BASE_URL }) {
                     ) : isAssignedToMe ? (
                       <button 
                         className="reset-btn" 
-                        style={{ padding: '5px 10px', fontSize: '0.75rem', color: '#fbbf24', borderColor: '#d97706' }}
+                        style={{ height: '34px', padding: '0 12px', fontSize: '0.75rem', color: '#fbbf24', borderColor: '#d97706', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0 }}
                         onClick={() => handleUnclaimTask(task.task_id)}
                       >
                         ↩️ UNASSIGN / RELEASE TASK
                       </button>
                     ) : (
-                      <div style={{ display: 'flex', gap: '6px' }}>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                         <button 
                           className="reset-btn" 
-                          style={{ padding: '4px 10px', fontSize: '0.75rem', color: '#ff6b6b', borderColor: '#ef4444' }}
+                          style={{ height: '34px', padding: '0 10px', fontSize: '0.75rem', color: '#ff6b6b', borderColor: '#ef4444', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0 }}
                           onClick={() => handleUnclaimTask(task.task_id)}
                           title="Remove currently assigned associate and return task to unassigned queue"
                         >
@@ -544,7 +551,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
                         </button>
                         <button 
                           className="reset-btn" 
-                          style={{ padding: '4px 10px', fontSize: '0.75rem', color: '#60a5fa', borderColor: '#3b82f6' }}
+                          style={{ height: '34px', padding: '0 10px', fontSize: '0.75rem', color: '#60a5fa', borderColor: '#3b82f6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0 }}
                           onClick={() => handleClaimTask(task.task_id)}
                           title="Re-assign task directly to yourself"
                         >
@@ -558,7 +565,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
                       target="_blank" 
                       rel="noopener noreferrer" 
                       className="main-button" 
-                      style={{ textDecoration: 'none', padding: '6px 14px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                      style={{ textDecoration: 'none', height: '34px', padding: '0 14px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box', margin: 0 }}
                     >
                       🔗 LAUNCH PORTAL
                     </a>
@@ -584,15 +591,15 @@ export default function AdminDashboard({ API_BASE_URL }) {
                     )}
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', gap: '10px' }}>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch' }}>
                     <input 
                       className="mask-btn" 
                       placeholder="Paste Removal Confirmation Link / Proof URL..." 
-                      style={{ flex: 1 }}
+                      style={{ flex: 1, height: '42px', boxSizing: 'border-box', margin: 0 }}
                       value={verifications[task.task_id] || ""}
                       onChange={(e) => setVerifications({...verifications, [task.task_id]: e.target.value})}
                     />
-                    <button className="reset-btn" style={{ borderColor: '#10b981', color: '#10b981', fontWeight: 'bold' }} onClick={() => handleResolve(task.task_id)}>
+                    <button className="reset-btn" style={{ borderColor: '#10b981', color: '#10b981', fontWeight: 'bold', height: '42px', padding: '0 16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0, whiteSpace: 'nowrap' }} onClick={() => handleResolve(task.task_id)}>
                       MARK COMPLETE
                     </button>
                   </div>

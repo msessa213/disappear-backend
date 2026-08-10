@@ -2221,18 +2221,18 @@ const handleEmergencyBurn = async () => {
                         {/* PROMO / COUPON CODE SECTION */}
                         <div style={{ marginTop: '18px', background: 'rgba(0, 71, 171, 0.08)', padding: '14px', borderRadius: '6px', border: '1px solid rgba(0, 210, 255, 0.2)' }}>
                           <label style={{ fontSize: '0.78rem', color: '#00D2FF', letterSpacing: '1px', display: 'block', marginBottom: '6px' }}>🎟️ PROMO / COUPON CODE</label>
-                          <div style={{ display: 'flex', gap: '8px' }}>
+                          <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch' }}>
                             <input 
                               className="mask-btn" 
                               placeholder="Enter Promo Code (e.g. TACTICAL50)" 
-                              style={{ flex: 1, textTransform: 'uppercase' }}
+                              style={{ flex: 1, textTransform: 'uppercase', height: '44px', boxSizing: 'border-box', margin: 0 }}
                               value={couponInput}
                               onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                             />
                             <button 
                               type="button"
                               className="main-button" 
-                              style={{ padding: '0 16px', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
+                              style={{ height: '44px', padding: '0 20px', fontSize: '0.85rem', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0 }}
                               onClick={handleApplyCoupon}
                               disabled={isValidatingCoupon || !couponInput.trim()}
                             >
