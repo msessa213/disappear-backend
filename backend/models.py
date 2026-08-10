@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from sqlalchemy import create_engine, Column, String, DateTime, Integer, text, Boolean
+from sqlalchemy import create_engine, Column, String, DateTime, Integer, text, Boolean, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -147,4 +147,15 @@ class DBBrokerMatch(Base):
     status = Column(String, default="NEEDS_VERIFICATION")  # AUTO_REMOVED, NEEDS_VERIFICATION, VERIFIED, REJECTED
     verification_token = Column(String, unique=True, index=True, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class DBCoupon(Base):
+    __tablename__ = "coupons_v1"
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String, unique=True, index=True)
+    discount_type = Column(String) # "percent" or "amount"
+    discount_value = Column(Float) # e.g. 50.0 or 5.95
+    duration = Column(String) # "permanent" or "one_month"
+    active = Column(Boolean, default=True)
+    usage_count = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)

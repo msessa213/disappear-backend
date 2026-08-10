@@ -11,9 +11,16 @@ export default function AdminDashboard({ API_BASE_URL }) {
   const [authError, setAuthError] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // --- COUPON MANAGEMENT STATES ---
+  const [coupons, setCoupons] = useState([]);
+  const [newCouponCode, setNewCouponCode] = useState("");
+  const [newDiscountType, setNewDiscountType] = useState("percent"); // 'percent' or 'amount'
+  const [newDiscountValue, setNewDiscountValue] = useState("");
+  const [newDuration, setNewDuration] = useState("permanent"); // 'permanent' or 'one_month'
+  const [couponStatusMsg, setCouponStatusMsg] = useState("");
+
   const cleanHeaderKey = (val) => {
     if (!val) return "";
-    // Remove non-ASCII characters, smart quotes, zero-width spaces, and non-printable characters
     return String(val).trim().replace(/[^\x20-\x7E]/g, "");
   };
 
@@ -54,12 +61,91 @@ export default function AdminDashboard({ API_BASE_URL }) {
       setCompletedTasks(data.completed_tasks || []);
       setLoading(false);
       setIsAuthenticated(true);
+
+      // Also fetch coupons
+      fetchCoupons(keyToUse);
+
       return true;
     } catch (e) {
       console.error("Admin fetch error", e);
       setAuthError("NETWORK / CONNECTION ERROR");
       setLoading(false);
       return false;
+    }
+  };
+
+  const fetchCoupons = async (keyToUse) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/coupons`, {
+        headers: { "X-Disappear-Admin-Key": keyToUse }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCoupons(data || []);
+      }
+    } catch (e) {
+      console.error("Error fetching coupons", e);
+    }
+  };
+
+  const handleCreateCoupon = async (e) => {
+    if (e) e.preventDefault();
+    setCouponStatusMsg("");
+
+    const codeClean = newCouponCode.trim().toUpperCase();
+    if (!codeClean) {
+      setCouponStatusMsg("❌ COUPON CODE CANNOT BE EMPTY.");
+      return;
+    }
+
+    const val = parseFloat(newDiscountValue);
+    if (isNaN(val) || val <= 0) {
+      setCouponStatusMsg("❌ PLEASE ENTER A VALID DISCOUNT VALUE GREATER THAN 0.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/coupons`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Disappear-Admin-Key": cleanHeaderKey(adminKey)
+        },
+        body: JSON.stringify({
+          code: codeClean,
+          discount_type: newDiscountType,
+          discount_value: val,
+          duration: newDuration
+        })
+      });
+
+      if (res.ok) {
+        setCouponStatusMsg(`✅ COUPON '${codeClean}' CREATED SUCCESSFULLY!`);
+        setNewCouponCode("");
+        setNewDiscountValue("");
+        fetchCoupons(cleanHeaderKey(adminKey));
+      } else {
+        const errData = await res.json();
+        setCouponStatusMsg(`❌ ERROR: ${errData.detail || 'FAILED TO CREATE COUPON'}`);
+      }
+    } catch (e) {
+      console.error("Create coupon error", e);
+      setCouponStatusMsg("❌ NETWORK ERROR CREATING COUPON.");
+    }
+  };
+
+  const handleDeleteCoupon = async (couponId) => {
+    if (!window.confirm("Deactivate this coupon code?")) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/coupons/${couponId}`, {
+        method: "DELETE",
+        headers: { "X-Disappear-Admin-Key": cleanHeaderKey(adminKey) }
+      });
+      if (res.ok) {
+        fetchCoupons(cleanHeaderKey(adminKey));
+      }
+    } catch (e) {
+      console.error("Delete coupon error", e);
     }
   };
 
@@ -100,10 +186,12 @@ export default function AdminDashboard({ API_BASE_URL }) {
         body: JSON.stringify({ analyst_name: activeAnalyst })
       });
       if (res.ok) {
-        setManualTasks(prev => prev.map(t => t.task_id === taskId ? { ...t, assigned_analyst: activeAnalyst } : t));
+        fetchBacklog(adminKey);
+      } else {
+        alert("Unable to claim task.");
       }
     } catch (e) {
-      alert("Failed to claim task.");
+      console.error("Claim error", e);
     }
   };
 
@@ -111,191 +199,280 @@ export default function AdminDashboard({ API_BASE_URL }) {
     try {
       const res = await fetch(`${API_BASE_URL}/admin/ops/unclaim/${taskId}`, {
         method: "POST",
-        headers: { "X-Disappear-Admin-Key": cleanHeaderKey(adminKey) }
+        headers: { 
+          "X-Disappear-Admin-Key": cleanHeaderKey(adminKey)
+        }
       });
       if (res.ok) {
-        setManualTasks(prev => prev.map(t => t.task_id === taskId ? { ...t, assigned_analyst: null } : t));
+        fetchBacklog(adminKey);
       }
     } catch (e) {
-      alert("Failed to release task.");
+      console.error("Unclaim error", e);
     }
   };
 
   const handleResolve = async (taskId) => {
-    const link = verifications[taskId] || "";
-    const activeAnalyst = analystName.trim() || "Staff Analyst";
+    const proofUrl = verifications[taskId] || "";
+    const activeAnalyst = analystName.trim() || "STAFF_ANALYST";
+
     try {
-      const res = await fetch(`${API_BASE_URL}/api/admin/complete-manual-scrub/${taskId}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/ops/verify/${taskId}`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
           "X-Disappear-Admin-Key": cleanHeaderKey(adminKey)
         },
         body: JSON.stringify({ 
-          verification_link: link, 
-          notes: `Processed via Operations Console by ${activeAnalyst}`,
+          verification_link: proofUrl,
+          notes: "Manual Opt-Out Form Submitted & Confirmed by Analyst",
           analyst_name: activeAnalyst
         })
       });
-      
+
       if (res.ok) {
-        // Move from manualTasks to completedTasks
-        const resolvedTask = manualTasks.find(t => t.task_id === taskId);
-        if (resolvedTask) {
-          setCompletedTasks(prev => [{
-            ...resolvedTask,
-            status: "REMOVED",
-            resolved_by: activeAnalyst,
-            manual_instruction_url: link
-          }, ...prev]);
-        }
-        setManualTasks(prev => prev.filter(t => t.task_id !== taskId));
+        alert(`Task #${taskId} successfully marked COMPLETE and verified!`);
+        fetchBacklog(adminKey);
+      } else {
+        alert("Error verifying task completion.");
       }
     } catch (e) {
-      alert("Error resolving task.");
+      console.error("Resolve error", e);
     }
   };
 
-  // Filter Tasks
-  const unassignedTasks = manualTasks.filter(t => !t.assigned_analyst);
-  const myTasks = manualTasks.filter(t => t.assigned_analyst && t.assigned_analyst.toLowerCase() === analystName.trim().toLowerCase());
-  
-  const displayedTasks = filterMode === 'UNASSIGNED' 
-    ? unassignedTasks 
-    : filterMode === 'MY_TASKS' 
-    ? myTasks 
-    : filterMode === 'COMPLETED'
-    ? completedTasks
-    : manualTasks;
+  // Filter task list
+  const getFilteredTasks = () => {
+    if (filterMode === 'UNASSIGNED') {
+      return manualTasks.filter(t => !t.assigned_analyst);
+    }
+    if (filterMode === 'MY_TASKS') {
+      return manualTasks.filter(t => t.assigned_analyst && analystName.trim() && t.assigned_analyst.toLowerCase() === analystName.trim().toLowerCase());
+    }
+    if (filterMode === 'COMPLETED') {
+      return completedTasks;
+    }
+    return manualTasks; // ALL active tasks
+  };
 
-  if (loading) return <div style={{color: '#00D2FF', textAlign: 'center', padding: '40px', fontWeight: 'bold'}}>ACCESSING CENTRAL COMMAND...</div>;
+  const displayedTasks = getFilteredTasks();
+  const unassignedCount = manualTasks.filter(t => !t.assigned_analyst).length;
+  const myTasksCount = manualTasks.filter(t => t.assigned_analyst && analystName.trim() && t.assigned_analyst.toLowerCase() === analystName.trim().toLowerCase()).length;
 
   if (!isAuthenticated) {
     return (
-      <div className="price-box" style={{ maxWidth: '550px', width: '100%', margin: '40px auto', textAlign: 'left', border: '1px solid rgba(0, 210, 255, 0.3)', boxShadow: '0 10px 40px rgba(0,0,0,0.9)', padding: '30px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '25px' }}>
-          <h2 className="tiger-text" style={{ fontSize: '1.4rem', marginBottom: '6px' }}>PRODUCTION SUPPORT PORTAL</h2>
-          <p className="field-label" style={{ fontSize: '0.78rem', color: '#94A3B8' }}>ASSOCIATE AUTHENTICATION & REMOVAL CONSOLE</p>
+      <div className="app-container" style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+        <div className="pricing-card" style={{ maxWidth: '480px', width: '100%', border: '1px solid #00D2FF' }}>
+          <h2 className="tiger-text" style={{ textAlign: 'center', marginBottom: '10px' }}>CENTRAL COMMAND ACCESS</h2>
+          <p style={{ color: '#94A3B8', fontSize: '0.85rem', textAlign: 'center', marginBottom: '25px' }}>
+            OPERATIONS ANALYST & COUPON MANAGEMENT PORTAL
+          </p>
+
+          {authError && (
+            <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#ff6b6b', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', marginBottom: '20px', textAlign: 'center' }}>
+              {authError}
+            </div>
+          )}
+
+          <form onSubmit={handleAssociateLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div>
+              <label style={{ fontSize: '0.78rem', color: '#00D2FF', letterSpacing: '1px', display: 'block', marginBottom: '5px' }}>ANALYST / ASSOCIATE NAME</label>
+              <input 
+                className="mask-btn" 
+                placeholder="e.g. Analyst_Alpha" 
+                style={{ width: '100%' }}
+                value={analystName}
+                onChange={(e) => setAnalystName(e.target.value)}
+                required
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.78rem', color: '#00D2FF', letterSpacing: '1px', display: 'block', marginBottom: '5px' }}>PRODUCTION ADMIN SECRET KEY</label>
+              <input 
+                type="password"
+                className="mask-btn" 
+                placeholder="Enter Admin Key..." 
+                style={{ width: '100%' }}
+                value={adminKey}
+                onChange={(e) => setAdminKey(e.target.value)}
+                required
+              />
+            </div>
+
+            <button type="submit" className="main-button" style={{ width: '100%', marginTop: '10px' }} disabled={loading}>
+              {loading ? "AUTHENTICATING..." : "AUTHENTICATE & ENTER PORTAL"}
+            </button>
+          </form>
         </div>
-
-        {authError && (
-          <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#f87171', padding: '12px', borderRadius: '6px', fontSize: '0.82rem', marginBottom: '20px', fontWeight: 'bold', textAlign: 'center' }}>
-            ⚠️ {authError}
-          </div>
-        )}
-
-        <form onSubmit={handleAssociateLogin}>
-          <div style={{ marginBottom: '18px' }}>
-            <label style={{ fontSize: '0.78rem', color: '#00D2FF', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>
-              👤 YOUR ASSOCIATE / ANALYST NAME:
-            </label>
-            <input 
-              type="text" 
-              className="mask-btn" 
-              placeholder="e.g. Sarah M. (Analyst #104)" 
-              value={analystName} 
-              onChange={(e) => handleSaveAnalystName(e.target.value)} 
-              style={{ width: '100%', fontSize: '0.95rem' }}
-              required
-            />
-          </div>
-
-          <div style={{ marginBottom: '25px' }}>
-            <label style={{ fontSize: '0.78rem', color: '#94A3B8', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>
-              🔑 PRODUCTION ADMIN SECRET KEY:
-            </label>
-            <input 
-              type="password" 
-              name="disappear_ops_admin_secret_key_no_fill"
-              id="disappear_ops_admin_secret_key_no_fill"
-              autoComplete="new-password"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck="false"
-              data-lpignore="true"
-              data-1p-ignore="true"
-              data-form-type="other"
-              className="mask-btn" 
-              placeholder="Enter Admin Secret Key..." 
-              value={adminKey} 
-              onChange={(e) => setAdminKey(e.target.value)} 
-              style={{ width: '100%', fontSize: '0.95rem' }}
-              required
-            />
-          </div>
-
-          <button 
-            type="submit" 
-            className="main-button" 
-            style={{ width: '100%', padding: '14px', fontSize: '0.9rem', fontWeight: 'bold' }}
-          >
-            🔓 AUTHENTICATE & OPEN OPERATIONS CONSOLE
-          </button>
-        </form>
       </div>
     );
   }
 
   return (
-    <div className="price-box" style={{ maxWidth: '1100px', width: '100%', margin: '0 auto', textAlign: 'left', border: '1px solid rgba(0, 210, 255, 0.25)', boxShadow: '0 10px 40px rgba(0,0,0,0.8)' }}>
-      {/* Authenticated Associate Header Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', background: 'rgba(0,210,255,0.03)', padding: '12px 18px', borderRadius: '8px', border: '1px solid rgba(0,210,255,0.2)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <span style={{ fontSize: '0.88rem', color: '#00D2FF', fontWeight: 'bold' }}>
-            👤 ASSOCIATE: <span style={{ color: '#fff' }}>{analystName || "Staff Analyst"}</span>
-          </span>
-          <span style={{ fontSize: '0.75rem', background: 'rgba(16,185,129,0.15)', color: '#10b981', padding: '3px 8px', borderRadius: '4px', border: '1px solid rgba(16,185,129,0.3)', fontWeight: 'bold' }}>
-            🟢 AUTHENTICATED
+    <div className="app-container" style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+      
+      {/* Top Header Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', paddingBottom: '15px', borderBottom: '1px solid rgba(0, 210, 255, 0.2)', flexWrap: 'wrap', gap: '15px' }}>
+        <div>
+          <h2 className="tiger-text" style={{ margin: 0 }}>OPERATIONS COMMAND</h2>
+          <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>
+            LOGGED IN AS: <strong style={{ color: '#00D2FF' }}>{analystName.toUpperCase()}</strong>
           </span>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="reset-btn" style={{ padding: '5px 12px', fontSize: '0.78rem' }} onClick={() => fetchBacklog()}>
-            🔄 REFRESH QUEUE
+
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button className="main-button" style={{ padding: '8px 16px', fontSize: '0.8rem' }} onClick={() => fetchBacklog(adminKey)}>
+            🔄 REFRESH
           </button>
-          <button className="kill-text-bold" style={{ padding: '5px 12px', fontSize: '0.78rem' }} onClick={handleLogout}>
-            🔒 LOG OUT
+          <button className="reset-btn" style={{ padding: '8px 16px', fontSize: '0.8rem' }} onClick={handleLogout}>
+            🚪 LOGOUT
           </button>
         </div>
       </div>
 
-      <h2 className="tiger-text" style={{ marginBottom: '5px' }}>PRODUCTION OPERATIONS & TASK QUEUE</h2>
-      <p className="field-label" style={{ marginBottom: '20px' }}>MULTI-ASSOCIATE MANUAL DATA REMOVAL CONSOLE</p>
+      {/* --- COUPON MANAGEMENT PANEL --- */}
+      <div className="pricing-card" style={{ marginBottom: '30px', border: '1px solid var(--tiger-blue)' }}>
+        <h3 className="tiger-text" style={{ marginBottom: '15px' }}>🎟️ COUPON & PROMO CODE MANAGEMENT</h3>
+        
+        {couponStatusMsg && (
+          <div style={{ padding: '10px 14px', borderRadius: '6px', fontSize: '0.85rem', marginBottom: '15px', background: couponStatusMsg.startsWith('✅') ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', border: `1px solid ${couponStatusMsg.startsWith('✅') ? '#10b981' : '#ef4444'}`, color: couponStatusMsg.startsWith('✅') ? '#34d399' : '#ff6b6b' }}>
+            {couponStatusMsg}
+          </div>
+        )}
 
-      {authError && (
-        <div style={{ background: '#3b0712', border: '1px solid #7f1d1d', color: '#ff4444', padding: '12px', borderRadius: '6px', fontSize: '0.85rem', marginBottom: '15px', fontWeight: 'bold', textAlign: 'center' }}>
-          ⚠️ {authError}
-        </div>
-      )}
+        {/* Create Coupon Form */}
+        <form onSubmit={handleCreateCoupon} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', alignItems: 'end', marginBottom: '20px', background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div>
+            <label style={{ fontSize: '0.75rem', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>COUPON CODE</label>
+            <input 
+              className="mask-btn" 
+              placeholder="e.g. TACTICAL50" 
+              style={{ width: '100%', textTransform: 'uppercase' }}
+              value={newCouponCode}
+              onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())}
+            />
+          </div>
 
-      {/* Queue Filter Navigation */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '1px solid #334155', paddingBottom: '12px', flexWrap: 'wrap' }}>
+          <div>
+            <label style={{ fontSize: '0.75rem', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>DISCOUNT TYPE</label>
+            <select 
+              className="mask-btn" 
+              style={{ width: '100%', color: '#FFF', background: '#0D1117' }}
+              value={newDiscountType}
+              onChange={(e) => setNewDiscountType(e.target.value)}
+            >
+              <option value="percent">Percentage (%) Off</option>
+              <option value="amount">Fixed Dollar ($) Off</option>
+            </select>
+          </div>
+
+          <div>
+            <label style={{ fontSize: '0.75rem', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>DISCOUNT VALUE</label>
+            <input 
+              type="number"
+              step="0.01"
+              className="mask-btn" 
+              placeholder="e.g. 50 or 5.95" 
+              style={{ width: '100%' }}
+              value={newDiscountValue}
+              onChange={(e) => setNewDiscountValue(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label style={{ fontSize: '0.75rem', color: '#94A3B8', display: 'block', marginBottom: '4px' }}>DURATION</label>
+            <select 
+              className="mask-btn" 
+              style={{ width: '100%', color: '#FFF', background: '#0D1117' }}
+              value={newDuration}
+              onChange={(e) => setNewDuration(e.target.value)}
+            >
+              <option value="permanent">Permanent (Every Month)</option>
+              <option value="one_month">1-Month Promo Discount</option>
+            </select>
+          </div>
+
+          <button type="submit" className="main-button" style={{ height: '42px', width: '100%' }}>
+            ➕ CREATE COUPON
+          </button>
+        </form>
+
+        {/* Existing Coupons Table */}
+        <h4 style={{ color: '#00D2FF', fontSize: '0.9rem', marginBottom: '10px' }}>ACTIVE COUPONS</h4>
+        {coupons.filter(c => c.active).length === 0 ? (
+          <p style={{ color: '#64748B', fontSize: '0.85rem', fontStyle: 'italic' }}>No active coupons created yet.</p>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(0,210,255,0.3)', color: '#94A3B8' }}>
+                  <th style={{ padding: '8px' }}>CODE</th>
+                  <th style={{ padding: '8px' }}>DISCOUNT</th>
+                  <th style={{ padding: '8px' }}>DURATION</th>
+                  <th style={{ padding: '8px' }}>STATUS</th>
+                  <th style={{ padding: '8px', textAlign: 'right' }}>ACTION</th>
+                </tr>
+              </thead>
+              <tbody>
+                {coupons.filter(c => c.active).map(c => (
+                  <tr key={c.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <td style={{ padding: '8px', color: '#00D2FF', fontWeight: 'bold' }}>{c.code}</td>
+                    <td style={{ padding: '8px', color: '#FFF' }}>
+                      {c.discount_type === 'percent' ? `${c.discount_value}% OFF` : `$${c.discount_value.toFixed(2)} OFF`}
+                    </td>
+                    <td style={{ padding: '8px', color: c.duration === 'permanent' ? '#34d399' : '#fbbf24' }}>
+                      {c.duration === 'permanent' ? '♾️ Permanent (Every Month)' : '⏳ 1-Month Promo'}
+                    </td>
+                    <td style={{ padding: '8px', color: '#34d399' }}>ACTIVE</td>
+                    <td style={{ padding: '8px', textAlign: 'right' }}>
+                      <button 
+                        className="reset-btn" 
+                        style={{ padding: '3px 8px', fontSize: '0.75rem', color: '#ff6b6b', borderColor: '#ef4444' }}
+                        onClick={() => handleDeleteCoupon(c.id)}
+                      >
+                        ❌ DELETE
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Navigation Filter Tabs */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
         <button 
-          className="reset-btn" 
-          style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: filterMode === 'ALL' ? '#00D2FF' : '#334155', color: filterMode === 'ALL' ? '#00D2FF' : '#94A3B8' }}
+          className={filterMode === 'ALL' ? "main-button" : "reset-btn"}
+          style={{ padding: '8px 16px', fontSize: '0.82rem' }}
           onClick={() => setFilterMode('ALL')}
         >
-          ALL QUEUED ({manualTasks.length})
+          📋 ALL PENDING ({manualTasks.length})
         </button>
+
         <button 
-          className="reset-btn" 
-          style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: filterMode === 'UNASSIGNED' ? '#fbbf24' : '#334155', color: filterMode === 'UNASSIGNED' ? '#fbbf24' : '#94A3B8' }}
+          className={filterMode === 'UNASSIGNED' ? "main-button" : "reset-btn"}
+          style={{ padding: '8px 16px', fontSize: '0.82rem', borderColor: unassignedCount > 0 ? '#fbbf24' : undefined }}
           onClick={() => setFilterMode('UNASSIGNED')}
         >
-          UNASSIGNED ({unassignedTasks.length})
+          ⚠️ UNASSIGNED ({unassignedCount})
         </button>
+
         <button 
-          className="reset-btn" 
-          style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: filterMode === 'MY_TASKS' ? '#60a5fa' : '#334155', color: filterMode === 'MY_TASKS' ? '#60a5fa' : '#94A3B8' }}
+          className={filterMode === 'MY_TASKS' ? "main-button" : "reset-btn"}
+          style={{ padding: '8px 16px', fontSize: '0.82rem' }}
           onClick={() => setFilterMode('MY_TASKS')}
         >
-          MY CLAIMED ({myTasks.length})
+          👤 MY CLAIMED TASKS ({myTasksCount})
         </button>
+
         <button 
-          className="reset-btn" 
-          style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: filterMode === 'COMPLETED' ? '#10b981' : '#334155', color: filterMode === 'COMPLETED' ? '#10b981' : '#94A3B8' }}
+          className={filterMode === 'COMPLETED' ? "main-button" : "reset-btn"}
+          style={{ padding: '8px 16px', fontSize: '0.82rem', borderColor: '#10b981' }}
           onClick={() => setFilterMode('COMPLETED')}
         >
-          COMPLETED TASKS ({completedTasks.length})
+          ✅ COMPLETED VERIFICATIONS ({completedTasks.length})
         </button>
       </div>
 
@@ -339,7 +516,6 @@ export default function AdminDashboard({ API_BASE_URL }) {
                   </div>
                   
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    {/* Claim / Release / Re-assign Task Controls */}
                     {!isCompleted && (!task.assigned_analyst ? (
                       <button 
                         className="main-button" 
@@ -377,7 +553,6 @@ export default function AdminDashboard({ API_BASE_URL }) {
                       </div>
                     ))}
 
-                    {/* Launch Broker Removal Portal Link */}
                     <a 
                       href={task.opt_out_url || `https://www.google.com/search?q=${task.broker_name}+opt+out+form`} 
                       target="_blank" 

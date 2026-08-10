@@ -130,6 +130,36 @@ function App() {
   });
 
   const [billingCycle, setBillingCycle] = useState("monthly");
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponMsg, setCouponMsg] = useState("");
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+
+  const handleApplyCoupon = async () => {
+    if (!couponInput.trim()) return;
+    setIsValidatingCoupon(true);
+    setCouponMsg("");
+    try {
+      const basePrice = billingCycle === 'annual' ? 7.95 : 9.99;
+      const res = await fetch(`${API_BASE_URL}/coupons/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponInput.trim().toUpperCase(), original_price: basePrice })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAppliedCoupon(data);
+        setCouponMsg(`✔ COUPON APPLIED: ${data.summary}`);
+      } else {
+        setAppliedCoupon(null);
+        setCouponMsg("❌ INVALID OR EXPIRED PROMO CODE");
+      }
+    } catch (e) {
+      setCouponMsg("❌ ERROR VALIDATING COUPON");
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  };
   
   // UPDATED: Decoupled capacities
   const [credits, setCredits] = useState({ vcc_total: 6, vcc_used: 0, phone_total: 2, phone_used: 0 });
@@ -2188,8 +2218,36 @@ const handleEmergencyBurn = async () => {
                             By providing your phone number and checking this box, you agree to receive automated transactional SMS notifications, security alerts, and identity status updates from Disappearco (DFS 213 LLC). Consent is not a condition of purchase. Message frequency varies based on account activity. Message and data rates may apply. Reply <strong>STOP</strong> to cancel or <strong>HELP</strong> for assistance. View our <a href="#privacy" onClick={(e) => { e.preventDefault(); setShowLegal('privacy'); }} style={{ color: '#00D2FF', textDecoration: 'underline' }}>Privacy Policy</a> and <a href="#terms" onClick={(e) => { e.preventDefault(); setShowLegal('terms'); }} style={{ color: '#00D2FF', textDecoration: 'underline' }}>Terms of Service</a>.
                           </label>
                         </div>
+                        {/* PROMO / COUPON CODE SECTION */}
+                        <div style={{ marginTop: '18px', background: 'rgba(0, 71, 171, 0.08)', padding: '14px', borderRadius: '6px', border: '1px solid rgba(0, 210, 255, 0.2)' }}>
+                          <label style={{ fontSize: '0.78rem', color: '#00D2FF', letterSpacing: '1px', display: 'block', marginBottom: '6px' }}>🎟️ PROMO / COUPON CODE</label>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <input 
+                              className="mask-btn" 
+                              placeholder="Enter Promo Code (e.g. TACTICAL50)" 
+                              style={{ flex: 1, textTransform: 'uppercase' }}
+                              value={couponInput}
+                              onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                            />
+                            <button 
+                              type="button"
+                              className="main-button" 
+                              style={{ padding: '0 16px', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
+                              onClick={handleApplyCoupon}
+                              disabled={isValidatingCoupon || !couponInput.trim()}
+                            >
+                              {isValidatingCoupon ? "CHECKING..." : "APPLY"}
+                            </button>
+                          </div>
+                          {couponMsg && (
+                            <div style={{ marginTop: '8px', fontSize: '0.8rem', color: couponMsg.startsWith('✔') ? '#34d399' : '#ff6b6b', fontWeight: 'bold' }}>
+                              {couponMsg}
+                            </div>
+                          )}
+                        </div>
+
                         <button className="main-button" style={{ width: '100%', marginTop: '25px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }} onClick={handleFinalPurchase} disabled={!targetProfile.termsAccepted || !targetProfile.smsConsentAccepted || isMinting}>
-                          {isMinting ? <><span className="cyberpunk-spinner"></span> INITIATING...</> : 'CONFIRM & INITIATE'}
+                          {isMinting ? <><span className="cyberpunk-spinner"></span> INITIATING...</> : appliedCoupon ? `CONFIRM & INITIATE ($${appliedCoupon.final_price.toFixed(2)}/mo)` : 'CONFIRM & INITIATE'}
                         </button>
                         <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => window.location.hash = "pricing"}>BACK</button>
                       </div>

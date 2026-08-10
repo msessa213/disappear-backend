@@ -215,12 +215,12 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
         </p>
         <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <a 
-            href="https://d3bipqcsrujl11.cloudfront.net/app-debug.apk?v=1.3.3" 
-            download="Disappear_Shield_v1.3.3.apk"
+            href="https://d3bipqcsrujl11.cloudfront.net/app-debug.apk?v=1.3.5" 
+            download="Disappear_Shield_v1.3.5.apk"
             className="main-button" 
             style={{ textDecoration: 'none', minWidth: '200px' }}
           >
-            🤖 Get Android App (v1.3.3)
+            🤖 Get Android App (v1.3.5)
           </a>
           <a 
             href="#ios-download" 

@@ -66,7 +66,7 @@ async def health_status():
 # --- COMPREHENSIVE STARTUP ERROR HANDLING ---
 try:
     # --- IMPORT DATABASE FROM MODELS ---
-    from models import engine, SessionLocal, Base, DBCard, DBAlias, DBProfile, DBTargetEmail, DBScrubLog, DBPurgeLog, DBMarqetaEvent, DBBrokerMatch
+    from models import engine, SessionLocal, Base, DBCard, DBAlias, DBProfile, DBTargetEmail, DBScrubLog, DBPurgeLog, DBMarqetaEvent, DBBrokerMatch, DBCoupon
     from services.twilio_service import send_sms, make_voice_call, twilio_client
     from services.redaction_service import RedactionService
     from services.match_engine import MatchEngine
@@ -637,6 +637,17 @@ class AIChatRequest(BaseModel):
     message: str
     history: Optional[List[dict]] = None
 
+class CreateCouponRequest(BaseModel):
+    code: str
+    discount_type: str # "percent" or "amount"
+    discount_value: float # e.g. 50.0 or 5.95
+    duration: str # "permanent" or "one_month"
+
+class ValidateCouponRequest(BaseModel):
+    code: str
+    original_price: Optional[float] = 9.99
+
+
 
 # --- CORE SYSTEM ROUTES ---
 
@@ -791,7 +802,87 @@ BROKER_OPT_OUT_URLS = {
     "NUWBER": "https://nuwber.com/removal/link",
     "USSEARCH": "https://www.ussearch.com/opt-out/",
     "PEOPLEFINDERS": "https://www.peoplefinders.com/opt-out",
-}
+# --- COUPON & PROMO CODE API ENDPOINTS ---
+
+@app.get("/admin/coupons")
+async def list_admin_coupons(db: Session = Depends(get_db), admin_key: str = Depends(verify_admin_token)):
+    """List all coupons for admin management"""
+    coupons = db.query(DBCoupon).order_by(desc(DBCoupon.created_at)).all()
+    return coupons
+
+@app.post("/admin/coupons")
+async def create_admin_coupon(req: CreateCouponRequest, db: Session = Depends(get_db), admin_key: str = Depends(verify_admin_token)):
+    """Create a new promotional or permanent coupon code"""
+    code_clean = req.code.strip().upper()
+    if not code_clean:
+        raise HTTPException(status_code=400, detail="COUPON_CODE_REQUIRED")
+    
+    existing = db.query(DBCoupon).filter(DBCoupon.code == code_clean).first()
+    if existing:
+        if not existing.active:
+            existing.active = True
+            existing.discount_type = req.discount_type
+            existing.discount_value = req.discount_value
+            existing.duration = req.duration
+            db.commit()
+            db.refresh(existing)
+            return existing
+        raise HTTPException(status_code=400, detail="COUPON_CODE_ALREADY_EXISTS")
+    
+    new_coupon = DBCoupon(
+        code=code_clean,
+        discount_type=req.discount_type,
+        discount_value=req.discount_value,
+        duration=req.duration,
+        active=True,
+        usage_count=0
+    )
+    db.add(new_coupon)
+    db.commit()
+    db.refresh(new_coupon)
+    return new_coupon
+
+@app.delete("/admin/coupons/{coupon_id}")
+async def delete_admin_coupon(coupon_id: int, db: Session = Depends(get_db), admin_key: str = Depends(verify_admin_token)):
+    """Deactivate or remove a coupon code"""
+    coupon = db.query(DBCoupon).filter(DBCoupon.id == coupon_id).first()
+    if not coupon:
+        raise HTTPException(status_code=404, detail="COUPON_NOT_FOUND")
+    coupon.active = False
+    db.commit()
+    return {"status": "DELETED", "id": coupon_id}
+
+@app.post("/coupons/validate")
+async def validate_customer_coupon(req: ValidateCouponRequest, db: Session = Depends(get_db)):
+    """Validates a coupon code entered by a customer during checkout"""
+    code_clean = req.code.strip().upper()
+    coupon = db.query(DBCoupon).filter(DBCoupon.code == code_clean, DBCoupon.active == True).first()
+    if not coupon:
+        raise HTTPException(status_code=404, detail="INVALID_OR_EXPIRED_COUPON")
+    
+    original = req.original_price if req.original_price else 9.99
+    discount_amount = 0.0
+    if coupon.discount_type == "percent":
+        discount_amount = round((original * (coupon.discount_value / 100.0)), 2)
+    else:
+        discount_amount = round(coupon.discount_value, 2)
+    
+    final_price = max(0.0, round(original - discount_amount, 2))
+    
+    duration_label = "Permanent Recurring Discount" if coupon.duration == "permanent" else "1-Month Promotional Discount"
+    discount_label = f"{coupon.discount_value}% OFF" if coupon.discount_type == "percent" else f"${coupon.discount_value:.2f} OFF"
+
+    return {
+        "valid": True,
+        "code": coupon.code,
+        "discount_type": coupon.discount_type,
+        "discount_value": coupon.discount_value,
+        "duration": coupon.duration,
+        "discount_amount": discount_amount,
+        "final_price": final_price,
+        "summary": f"{discount_label} ({duration_label})"
+    }
+
 
 @app.get("/admin/ops/backlog")
 async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = Depends(verify_admin_token)):
