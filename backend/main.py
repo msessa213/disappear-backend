@@ -894,7 +894,6 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
         .join(DBProfile, DBScrubLog.user_id == DBProfile.id)
         .filter(DBProfile.kyc_status == "APPROVED", DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"]))
         .order_by(desc(DBScrubLog.timestamp))
-        .limit(300)
         .all()
     )
     
