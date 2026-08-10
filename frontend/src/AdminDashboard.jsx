@@ -7,6 +7,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
   const [adminKey, setAdminKey] = useState("");
   const [analystName, setAnalystName] = useState(localStorage.getItem("disappear_analyst_name") || "");
   const [filterMode, setFilterMode] = useState("ALL"); // 'ALL', 'UNASSIGNED', 'MY_TASKS', 'COMPLETED'
+  const [searchQuery, setSearchQuery] = useState(""); // Live search query
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -14,9 +15,9 @@ export default function AdminDashboard({ API_BASE_URL }) {
   // --- COUPON MANAGEMENT STATES ---
   const [coupons, setCoupons] = useState([]);
   const [newCouponCode, setNewCouponCode] = useState("");
-  const [newDiscountType, setNewDiscountType] = useState("percent"); // 'percent' or 'amount'
+  const [newDiscountType, setNewDiscountType] = useState("percent");
   const [newDiscountValue, setNewDiscountValue] = useState("");
-  const [newDuration, setNewDuration] = useState("permanent"); // 'permanent' or 'one_month'
+  const [newDuration, setNewDuration] = useState("permanent");
   const [couponStatusMsg, setCouponStatusMsg] = useState("");
 
   const cleanHeaderKey = (val) => {
@@ -62,9 +63,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
       setLoading(false);
       setIsAuthenticated(true);
 
-      // Also fetch coupons
       fetchCoupons(keyToUse);
-
       return true;
     } catch (e) {
       console.error("Admin fetch error", e);
@@ -195,6 +194,12 @@ export default function AdminDashboard({ API_BASE_URL }) {
     }
   };
 
+  const handleClaimAndLaunch = async (task) => {
+    await handleClaimTask(task.task_id);
+    const targetUrl = task.opt_out_url || `https://www.google.com/search?q=${task.broker_name}+opt+out+form`;
+    window.open(targetUrl, '_blank');
+  };
+
   const handleUnclaimTask = async (taskId) => {
     try {
       const res = await fetch(`${API_BASE_URL}/admin/ops/unclaim/${taskId}`, {
@@ -240,18 +245,28 @@ export default function AdminDashboard({ API_BASE_URL }) {
     }
   };
 
-  // Filter task list
+  // Filter & Search task list
   const getFilteredTasks = () => {
+    let tasks = manualTasks;
     if (filterMode === 'UNASSIGNED') {
-      return manualTasks.filter(t => !t.assigned_analyst);
+      tasks = manualTasks.filter(t => !t.assigned_analyst);
+    } else if (filterMode === 'MY_TASKS') {
+      tasks = manualTasks.filter(t => t.assigned_analyst && analystName.trim() && t.assigned_analyst.toLowerCase() === analystName.trim().toLowerCase());
+    } else if (filterMode === 'COMPLETED') {
+      tasks = completedTasks;
     }
-    if (filterMode === 'MY_TASKS') {
-      return manualTasks.filter(t => t.assigned_analyst && analystName.trim() && t.assigned_analyst.toLowerCase() === analystName.trim().toLowerCase());
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      tasks = tasks.filter(t => {
+        const brokerMatch = t.broker_name && t.broker_name.toLowerCase().includes(q);
+        const nameMatch = t.target_profile && `${t.target_profile.first_name} ${t.target_profile.last_name}`.toLowerCase().includes(q);
+        const emailMatch = t.target_profile && t.target_profile.email && t.target_profile.email.toLowerCase().includes(q);
+        return brokerMatch || nameMatch || emailMatch;
+      });
     }
-    if (filterMode === 'COMPLETED') {
-      return completedTasks;
-    }
-    return manualTasks; // ALL active tasks
+
+    return tasks;
   };
 
   const displayedTasks = getFilteredTasks();
@@ -321,10 +336,10 @@ export default function AdminDashboard({ API_BASE_URL }) {
         </div>
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <button className="main-button" style={{ padding: '8px 16px', fontSize: '0.8rem' }} onClick={() => fetchBacklog(adminKey)}>
-            🔄 REFRESH
+          <button className="main-button" style={{ height: '38px', padding: '0 16px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => fetchBacklog(adminKey)}>
+            🔄 REFRESH QUEUE
           </button>
-          <button className="reset-btn" style={{ padding: '8px 16px', fontSize: '0.8rem' }} onClick={handleLogout}>
+          <button className="reset-btn" style={{ height: '38px', padding: '0 16px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} onClick={handleLogout}>
             🚪 LOGOUT
           </button>
         </div>
@@ -448,50 +463,68 @@ export default function AdminDashboard({ API_BASE_URL }) {
         )}
       </div>
 
-      {/* Navigation Filter Tabs */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
-        <button 
-          className={filterMode === 'ALL' ? "main-button" : "reset-btn"}
-          style={{ height: '38px', padding: '0 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0 }}
-          onClick={() => setFilterMode('ALL')}
-        >
-          📋 ALL PENDING ({manualTasks.length})
-        </button>
+      {/* --- LIVE SEARCH & FILTER CONTROL BAR --- */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '15px', marginBottom: '20px', flexWrap: 'wrap' }}>
+        
+        {/* Navigation Filter Tabs */}
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <button 
+            className={filterMode === 'ALL' ? "main-button" : "reset-btn"}
+            style={{ height: '38px', padding: '0 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0 }}
+            onClick={() => setFilterMode('ALL')}
+          >
+            📋 ALL PENDING ({manualTasks.length})
+          </button>
 
-        <button 
-          className={filterMode === 'UNASSIGNED' ? "main-button" : "reset-btn"}
-          style={{ height: '38px', padding: '0 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0, borderColor: unassignedCount > 0 ? '#fbbf24' : undefined }}
-          onClick={() => setFilterMode('UNASSIGNED')}
-        >
-          ⚠️ UNASSIGNED ({unassignedCount})
-        </button>
+          <button 
+            className={filterMode === 'UNASSIGNED' ? "main-button" : "reset-btn"}
+            style={{ height: '38px', padding: '0 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0, borderColor: unassignedCount > 0 ? '#fbbf24' : undefined }}
+            onClick={() => setFilterMode('UNASSIGNED')}
+          >
+            ⚠️ UNASSIGNED ({unassignedCount})
+          </button>
 
-        <button 
-          className={filterMode === 'MY_TASKS' ? "main-button" : "reset-btn"}
-          style={{ height: '38px', padding: '0 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0 }}
-          onClick={() => setFilterMode('MY_TASKS')}
-        >
-          👤 MY CLAIMED TASKS ({myTasksCount})
-        </button>
+          <button 
+            className={filterMode === 'MY_TASKS' ? "main-button" : "reset-btn"}
+            style={{ height: '38px', padding: '0 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0 }}
+            onClick={() => setFilterMode('MY_TASKS')}
+          >
+            👤 MY CLAIMED ({myTasksCount})
+          </button>
 
-        <button 
-          className={filterMode === 'COMPLETED' ? "main-button" : "reset-btn"}
-          style={{ height: '38px', padding: '0 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0, borderColor: '#10b981' }}
-          onClick={() => setFilterMode('COMPLETED')}
-        >
-          ✅ COMPLETED VERIFICATIONS ({completedTasks.length})
-        </button>
+          <button 
+            className={filterMode === 'COMPLETED' ? "main-button" : "reset-btn"}
+            style={{ height: '38px', padding: '0 16px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0, borderColor: '#10b981' }}
+            onClick={() => setFilterMode('COMPLETED')}
+          >
+            ✅ COMPLETED ({completedTasks.length})
+          </button>
+        </div>
+
+        {/* Live Search Input */}
+        <div style={{ minWidth: '260px', flex: 1, maxWidth: '400px' }}>
+          <input 
+            className="mask-btn" 
+            placeholder="🔍 Search Customer, Email, or Broker..." 
+            style={{ width: '100%', height: '38px', boxSizing: 'border-box', margin: 0, fontSize: '0.82rem' }}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
       </div>
 
       {displayedTasks.length === 0 ? (
-        <p style={{ color: '#10b981', fontFamily: 'Courier New', padding: '20px', textAlign: 'center' }}>
-          {filterMode === 'UNASSIGNED' 
+        <p style={{ color: '#10b981', fontFamily: 'Courier New', padding: '30px', textAlign: 'center', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+          {searchQuery 
+            ? `NO TASKS MATCHING SEARCH QUERY '${searchQuery.toUpperCase()}'.`
+            : filterMode === 'UNASSIGNED' 
             ? "NO UNASSIGNED TASKS IN QUEUE." 
             : filterMode === 'MY_TASKS' 
             ? "YOU HAVE NO ACTIVE CLAIMED TASKS." 
             : filterMode === 'COMPLETED'
             ? "NO COMPLETED TASKS RECORDED YET."
-            : "ALL QUEUES CLEAR."}
+            : "ALL QUEUES CLEAR — NO PENDING REMOVAL TASKS."}
         </p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
@@ -500,24 +533,24 @@ export default function AdminDashboard({ API_BASE_URL }) {
             const isCompleted = task.status === "REMOVED";
 
             return (
-              <div key={task.task_id} style={{ border: isCompleted ? '1px solid #10b981' : isAssignedToMe ? '1px solid #10b981' : task.assigned_analyst ? '1px solid #3b82f6' : '1px solid #334155', padding: '16px', borderRadius: '8px', background: isCompleted ? '#031a10' : '#05070E' }}>
+              <div key={task.task_id} style={{ border: isCompleted ? '1px solid #10b981' : isAssignedToMe ? '1px solid #10b981' : task.assigned_analyst ? '1px solid #3b82f6' : '1px solid #d97706', padding: '18px', borderRadius: '8px', background: isCompleted ? '#031a10' : '#05070E' }}>
                 
                 {/* Task Header & Associate Status */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                    <strong style={{ color: '#00D2FF', fontSize: '1.05rem', letterSpacing: '1px' }}>BROKER: {task.broker_name}</strong>
+                    <strong style={{ color: '#00D2FF', fontSize: '1.1rem', letterSpacing: '1px' }}>BROKER: {task.broker_name}</strong>
                     
                     {isCompleted ? (
-                      <span style={{ fontSize: '0.72rem', backgroundColor: '#064e3b', color: '#34d399', padding: '4px 10px', borderRadius: '4px', border: '1px solid #059669', fontWeight: 'bold' }}>
+                      <span style={{ fontSize: '0.75rem', backgroundColor: '#064e3b', color: '#34d399', padding: '4px 10px', borderRadius: '4px', border: '1px solid #059669', fontWeight: 'bold' }}>
                         ✅ REMOVAL COMPLETED BY: {(task.resolved_by || "STAFF ANALYST").toUpperCase()}
                       </span>
                     ) : task.assigned_analyst ? (
-                      <span style={{ fontSize: '0.72rem', backgroundColor: isAssignedToMe ? '#064e3b' : '#1e3a8a', color: isAssignedToMe ? '#34d399' : '#60a5fa', padding: '4px 10px', borderRadius: '4px', border: `1px solid ${isAssignedToMe ? '#059669' : '#2563eb'}`, fontWeight: 'bold' }}>
+                      <span style={{ fontSize: '0.75rem', backgroundColor: isAssignedToMe ? '#064e3b' : '#1e3a8a', color: isAssignedToMe ? '#34d399' : '#60a5fa', padding: '4px 10px', borderRadius: '4px', border: `1px solid ${isAssignedToMe ? '#059669' : '#2563eb'}`, fontWeight: 'bold' }}>
                         👤 ASSIGNED TO: {task.assigned_analyst.toUpperCase()}
                       </span>
                     ) : (
-                      <span style={{ fontSize: '0.72rem', backgroundColor: '#451a03', color: '#fbbf24', padding: '4px 10px', borderRadius: '4px', border: '1px solid #d97706', fontWeight: 'bold' }}>
-                        ⚠️ UNASSIGNED
+                      <span style={{ fontSize: '0.75rem', backgroundColor: '#451a03', color: '#fbbf24', padding: '4px 10px', borderRadius: '4px', border: '1px solid #d97706', fontWeight: 'bold' }}>
+                        ⚠️ UNASSIGNED TASK
                       </span>
                     )}
                   </div>
@@ -527,9 +560,10 @@ export default function AdminDashboard({ API_BASE_URL }) {
                       <button 
                         className="main-button" 
                         style={{ height: '34px', padding: '0 14px', fontSize: '0.78rem', background: 'linear-gradient(135deg, #d97706, #b45309)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0 }}
-                        onClick={() => handleClaimTask(task.task_id)}
+                        onClick={() => handleClaimAndLaunch(task)}
+                        title="Claim this task for yourself and open the broker removal portal"
                       >
-                        🎯 CLAIM TASK
+                        ⚡ CLAIM & LAUNCH PORTAL
                       </button>
                     ) : isAssignedToMe ? (
                       <button 
@@ -567,17 +601,17 @@ export default function AdminDashboard({ API_BASE_URL }) {
                       className="main-button" 
                       style={{ textDecoration: 'none', height: '34px', padding: '0 14px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box', margin: 0 }}
                     >
-                      🔗 LAUNCH PORTAL
+                      🔗 LAUNCH PORTAL ↗
                     </a>
                   </div>
                 </div>
                 
                 {/* Target Customer PII Details Card */}
-                <div style={{ fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '15px', background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
-                  <div><strong>TARGET NAME:</strong> <span style={{ color: '#FFF' }}>{task.target_profile.first_name} {task.target_profile.middle_name} {task.target_profile.last_name}</span></div>
-                  <div><strong>DOB:</strong> <span style={{ color: '#FFF' }}>{task.target_profile.dob}</span></div>
-                  <div><strong>EMAIL:</strong> <span style={{ color: '#FFF' }}>{task.target_profile.email}</span></div>
-                  <div><strong>ADDRESS:</strong> <span style={{ color: '#FFF' }}>{task.target_profile.address}</span></div>
+                <div style={{ fontSize: '0.88rem', color: '#cbd5e1', marginBottom: '15px', background: 'rgba(255,255,255,0.03)', padding: '14px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.08)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+                  <div><strong style={{ color: '#00D2FF' }}>CUSTOMER NAME:</strong> <br/><span style={{ color: '#FFF', fontSize: '1rem', fontWeight: 'bold' }}>{task.target_profile.first_name} {task.target_profile.middle_name} {task.target_profile.last_name}</span></div>
+                  <div><strong style={{ color: '#00D2FF' }}>EMAIL ADDRESS:</strong> <br/><span style={{ color: '#FFF' }}>{task.target_profile.email}</span></div>
+                  <div><strong style={{ color: '#00D2FF' }}>DATE OF BIRTH:</strong> <br/><span style={{ color: '#FFF' }}>{task.target_profile.dob}</span></div>
+                  <div><strong style={{ color: '#00D2FF' }}>STREET ADDRESS:</strong> <br/><span style={{ color: '#FFF' }}>{task.target_profile.address}</span></div>
                 </div>
 
                 {/* Proof Link Input or Completed Proof Display */}
@@ -599,7 +633,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
                       value={verifications[task.task_id] || ""}
                       onChange={(e) => setVerifications({...verifications, [task.task_id]: e.target.value})}
                     />
-                    <button className="reset-btn" style={{ borderColor: '#10b981', color: '#10b981', fontWeight: 'bold', height: '42px', padding: '0 16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0, whiteSpace: 'nowrap' }} onClick={() => handleResolve(task.task_id)}>
+                    <button className="reset-btn" style={{ borderColor: '#10b981', color: '#10b981', fontWeight: 'bold', height: '42px', padding: '0 18px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0, whiteSpace: 'nowrap' }} onClick={() => handleResolve(task.task_id)}>
                       MARK COMPLETE
                     </button>
                   </div>

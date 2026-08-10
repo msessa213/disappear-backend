@@ -189,7 +189,7 @@ def run_automated_data_broker_scrubber():
         try:
             db = SessionLocal()
             try:
-                profiles = db.query(DBProfile).all()
+                profiles = db.query(DBProfile).filter(DBProfile.kyc_status == "APPROVED").all()
                 for prof in profiles:
                     uid = prof.id
                     # 1. Seed any missing brokers
@@ -889,7 +889,14 @@ async def validate_customer_coupon(req: ValidateCouponRequest, db: Session = Dep
 @app.get("/admin/ops/backlog")
 async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = Depends(verify_admin_token)):
     """Internal utility for staff to pull down targets needing manual opt-out submission forms (Ultra-Fast Bulk Query)"""
-    open_tasks = db.query(DBScrubLog).filter(DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"])).order_by(desc(DBScrubLog.timestamp)).limit(150).all()
+    open_tasks = (
+        db.query(DBScrubLog)
+        .join(DBProfile, DBScrubLog.user_id == DBProfile.id)
+        .filter(DBProfile.kyc_status == "APPROVED", DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"]))
+        .order_by(desc(DBScrubLog.timestamp))
+        .limit(300)
+        .all()
+    )
     
     # Auto-seed 2 reference target profiles with manual tasks if queue is empty
     if not open_tasks:
@@ -1707,9 +1714,24 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
                 logger.info(f"DB_UPDATE: Phone line bonus added for {profile.id}")
                 db.add(profile)
                 
-            elif purchase_type in ["subscription_monthly", "subscription_annual"]:
+            elif purchase_type in ["subscription_monthly", "subscription_annual"] or session.get("mode") == "subscription":
                 action = "SUBSCRIPTION_ACTIVATED"
-                logger.info(f"DB_UPDATE: Subscription activated for {profile.id}")
+                profile.kyc_status = "APPROVED"
+                logger.info(f"DB_UPDATE: Subscription activated for paid profile {profile.id}")
+                db.add(profile)
+
+                # Seed 525 broker removal logs ONLY now that customer has paid
+                existing_scrubs = db.query(DBScrubLog).filter(DBScrubLog.user_id == profile.id).count()
+                if existing_scrubs == 0:
+                    for broker in BROKERS:
+                        is_auto = broker in AUTOMATED_BROKERS
+                        db.add(DBScrubLog(
+                            user_id=profile.id,
+                            broker_name=broker,
+                            status="PROCESSING" if is_auto else "MANUAL_PENDING",
+                            removal_type="AUTOMATED" if is_auto else "MANUAL",
+                            timestamp=datetime.utcnow()
+                        ))
 
                 # --- REFERRAL MILESTONE REWARD LOGIC ---
                 if profile.referred_by:
@@ -1771,7 +1793,23 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
             ))
             db.commit()
             logger.info("DB_COMMIT: Webhook process finalized.")
-            
+
+    elif event["type"] in ["customer.subscription.deleted", "invoice.payment_failed"]:
+        obj = event['data']['object']
+        customer_id = obj.get("customer")
+        if customer_id:
+            profile = db.query(DBProfile).filter(DBProfile.stripe_customer_id == customer_id).first()
+            if profile:
+                profile.kyc_status = "UNPAID"
+                db.add(profile)
+                # Delete or pause open tasks for unpaid profiles
+                db.query(DBScrubLog).filter(
+                    DBScrubLog.user_id == profile.id,
+                    DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"])
+                ).delete(synchronize_session=False)
+                db.commit()
+                logger.info(f"UNPAID_DEACTIVATED: Revoked access and paused removals for unpaid/cancelled user {profile.id}")
+
     return {"status": "success"}
 
 
@@ -1951,8 +1989,7 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
             log_compliance_rejection(target_user_id, "ALIAS_MINT", "Profile flagged under AML policy")
             raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: Profile flagged under AML policy.")
         if profile.kyc_status != "APPROVED":
-            profile.kyc_status = "APPROVED"
-            db.commit()
+            raise HTTPException(status_code=402, detail="ACTIVE_SUBSCRIPTION_REQUIRED: Active paid subscription required to access alias features.")
 
     bonus = profile.bonus_credits if profile else 0
     phone_bonus = profile.phone_line_bonus if profile else 0
@@ -2227,7 +2264,7 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
             is_watchlist_clean = False
             log_compliance_rejection(profile_id, "PROFILE_CREATION", f"Failed AML Watchlist screening for name: {first_name_upper} {last_name_upper}")
             
-        kyc_status = "APPROVED" if is_watchlist_clean else "REJECTED"
+        kyc_status = "UNPAID" if is_watchlist_clean else "REJECTED"
         aml_flagged = not is_watchlist_clean
 
         pwd_input = data.get("password")
@@ -2255,17 +2292,7 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         )
         db.add(new_profile)
         
-        # Populate initial processing tracking logs for user stats
-        for broker in BROKERS:
-            is_auto = broker in AUTOMATED_BROKERS
-            db.add(DBScrubLog(
-                user_id=profile_id,
-                broker_name=broker,
-                status="PROCESSING" if is_auto else "MANUAL_PENDING",
-                removal_type="AUTOMATED" if is_auto else "MANUAL",
-                timestamp=datetime.utcnow()
-            ))
-            
+        # NOTE: Scrub logs are ONLY seeded upon confirmed Stripe payment (checkout.session.completed)
         db.commit()
         return {"status": "success", "profile_id": profile_id, "kyc_status": kyc_status, "aml_flagged": aml_flagged}
     except HTTPException:
