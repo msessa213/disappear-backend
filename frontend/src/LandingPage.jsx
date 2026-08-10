@@ -233,11 +233,27 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
         </div>
       </section>
 
-      {/* --- LOGIN GATEWAY --- */}
-      <section className="login-gateway" style={{ padding: '80px 20px', borderTop: '1px solid #111' }}>
+      {/* --- LOGIN GATEWAY & LEGAL FOOTER --- */}
+      <section className="login-gateway" style={{ padding: '60px 20px 30px', borderTop: '1px solid #111' }}>
         <p className="login-prompt" style={{ color: '#94A3B8', marginBottom: '10px' }}>EXISTING OPERATIVE?</p>
         <button className="login-btn-nav" style={{ padding: '15px 30px' }} onClick={onLoginRequest}>DECRYPT VAULT ACCESS</button>
       </section>
+
+      {/* --- FOOTER COMPLIANCE LINKS --- */}
+      <footer style={{ padding: '30px 20px 50px', borderTop: '1px solid rgba(255,255,255,0.05)', background: '#05070a', textAlign: 'center' }}>
+        <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '15px', fontSize: '0.85rem' }}>
+          <a href="#checkout" onClick={(e) => { e.preventDefault(); window.location.hash = 'checkout'; }} style={{ color: '#00D2FF', textDecoration: 'none' }}>Checkout & Opt-In</a>
+          <span style={{ color: '#334155' }}>|</span>
+          <a href="#privacy" onClick={(e) => { e.preventDefault(); window.location.hash = 'privacy'; }} style={{ color: '#00D2FF', textDecoration: 'none' }}>Privacy Policy</a>
+          <span style={{ color: '#334155' }}>|</span>
+          <a href="#terms" onClick={(e) => { e.preventDefault(); window.location.hash = 'terms'; }} style={{ color: '#00D2FF', textDecoration: 'none' }}>Terms of Service</a>
+          <span style={{ color: '#334155' }}>|</span>
+          <a href="#aml-policy" onClick={(e) => { e.preventDefault(); window.location.hash = 'aml-policy'; }} style={{ color: '#00D2FF', textDecoration: 'none' }}>AML Policy</a>
+        </div>
+        <p style={{ color: '#64748B', fontSize: '0.78rem', margin: 0 }}>
+          © 2026 Disappearco. Disappear is brought to you by <strong>DFS 213 LLC</strong>. All rights reserved.
+        </p>
+      </footer>
     </div>
   );
 }

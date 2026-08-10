@@ -52,11 +52,21 @@ export const Terms = () => {
         evasion of lawful debt.
       </p>
 
+      <h3 style={{ color: 'white', marginTop: '20px' }}>6. SMS & MOBILE MESSAGING TERMS</h3>
+      <p style={{ background: 'rgba(0, 210, 255, 0.05)', padding: '15px', borderLeft: '4px solid #00D2FF', borderRadius: '4px', lineHeight: '1.6' }}>
+        <strong>SMS Messaging Program:</strong> By opting into SMS notifications from Disappear (DFS 213 LLC), you consent to receive automated transactional text messages, security alerts, multi-factor authentication codes, and account status updates to the mobile number provided.
+      </p>
+      <ul style={{ color: '#cbd5e1', paddingLeft: '20px', marginTop: '10px', lineHeight: '1.6' }}>
+        <li><strong>Message Frequency:</strong> Message frequency varies depending on your account activity and security alerts.</li>
+        <li><strong>Cost:</strong> Message and data rates may apply depending on your mobile carrier plan.</li>
+        <li><strong>Opt-Out Instructions:</strong> You may cancel or opt-out of SMS notifications at any time by replying <strong>STOP</strong> to any text message. Upon sending STOP, you will receive a single confirmation text and no further automated messages will be sent.</li>
+        <li><strong>Customer Support:</strong> Reply <strong>HELP</strong> for assistance, or contact our support team directly at <strong>michael.sessa@disappearco.com</strong>.</li>
+        <li><strong>Carriers:</strong> Wireless carriers are not liable for delayed or undelivered messages.</li>
+      </ul>
+
       <p style={{ marginTop: '30px', fontStyle: 'italic', color: 'var(--tiger-blue)', fontSize: '0.8rem' }}>
         Stay hidden. Stay secure. Disappear.
       </p>
     </div>
   );
 };
-
-// IMPORTANT: Do NOT include "export default Terms" at the bottom anymore.

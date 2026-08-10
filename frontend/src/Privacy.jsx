@@ -44,9 +44,12 @@ export const Privacy = () => {
         profile data from our active removal queues.
       </p>
 
-      <h3 style={{ color: 'white', marginTop: '20px' }}>V. MOBILE INFORMATION & SMS COMPLIANCE</h3>
-      <p>
-        No mobile information will be shared with third parties/affiliates for marketing or promotional purposes. All the above categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties. Message frequency varies based on user activity. Message and data rates may apply. Users may opt-out at any time by replying STOP, or request assistance by replying HELP.
+      <h3 style={{ color: 'white', marginTop: '20px' }}>V. MOBILE INFORMATION & SMS CONSENT PRIVACY</h3>
+      <p style={{ background: 'rgba(0, 210, 255, 0.05)', padding: '15px', borderLeft: '4px solid #00D2FF', borderRadius: '4px', lineHeight: '1.6' }}>
+        <strong>Mandatory Disclosure:</strong> No mobile information will be shared with third parties/affiliates for marketing or promotional purposes. All the above categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties.
+      </p>
+      <p style={{ marginTop: '10px' }}>
+        When you opt-in to receive SMS notifications from Disappear (DFS 213 LLC), your phone number is strictly used to deliver security alerts, transactional updates, authentication codes, and customer support messages. Message frequency varies based on your account activity. Message and data rates may apply. You may opt-out at any time by replying <strong>STOP</strong> to any message, or request assistance by replying <strong>HELP</strong>.
       </p>
 
       <p style={{ marginTop: '30px', fontStyle: 'italic', color: 'var(--tiger-blue)', fontSize: '0.8rem' }}>
@@ -55,5 +58,3 @@ export const Privacy = () => {
     </div>
   );
 };
-
-// IMPORTANT: Do NOT include "export default Privacy" at the bottom anymore.

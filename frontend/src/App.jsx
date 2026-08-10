@@ -126,7 +126,7 @@ function App() {
 
   const [targetProfile, setTargetProfile] = useState({
       firstName: "", middleName: "", lastName: "", email: "", password: "", phone: "",
-      dob: "", address: "", city: "", state: "", zip: "", termsAccepted: false
+      dob: "", address: "", city: "", state: "", zip: "", termsAccepted: false, smsConsentAccepted: false
   });
 
   const [billingCycle, setBillingCycle] = useState("monthly");
@@ -2179,10 +2179,16 @@ const handleEmergencyBurn = async () => {
                             <input className="mask-btn full-row" type="text" inputMode="numeric" placeholder="DATE OF BIRTH (MM/DD/YYYY)" value={targetProfile.dob} onChange={handleNumericDateInput} />
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', alignItems: 'flex-start', gap: '10px', marginTop: '15px' }}>
-                          <input type="checkbox" checked={targetProfile.termsAccepted} onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})} />
-                          <label style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>Authorize Full PII Scrub and Burn</label>
+                          <input type="checkbox" id="termsAcceptedCheckbox" checked={targetProfile.termsAccepted} onChange={(e) => setTargetProfile({...targetProfile, termsAccepted: e.target.checked})} />
+                          <label htmlFor="termsAcceptedCheckbox" style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>Authorize Full PII Scrub and Burn</label>
                         </div>
-                        <button className="main-button" style={{ width: '100%', marginTop: '25px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }} onClick={handleFinalPurchase} disabled={!targetProfile.termsAccepted || isMinting}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', alignItems: 'flex-start', gap: '10px', marginTop: '12px', background: 'rgba(0, 0, 0, 0.35)', padding: '12px', borderRadius: '6px', border: '1px solid rgba(0, 210, 255, 0.25)' }}>
+                          <input type="checkbox" id="smsConsentCheckbox" checked={targetProfile.smsConsentAccepted || false} onChange={(e) => setTargetProfile({...targetProfile, smsConsentAccepted: e.target.checked})} />
+                          <label htmlFor="smsConsentCheckbox" style={{ fontSize: '0.8rem', color: '#cbd5e1', lineHeight: '1.45', textAlign: 'left' }}>
+                            By providing your phone number and checking this box, you agree to receive automated transactional SMS notifications, security alerts, and identity status updates from Disappearco (DFS 213 LLC). Consent is not a condition of purchase. Message frequency varies based on account activity. Message and data rates may apply. Reply <strong>STOP</strong> to cancel or <strong>HELP</strong> for assistance. View our <a href="#privacy" onClick={(e) => { e.preventDefault(); setShowLegal('privacy'); }} style={{ color: '#00D2FF', textDecoration: 'underline' }}>Privacy Policy</a> and <a href="#terms" onClick={(e) => { e.preventDefault(); setShowLegal('terms'); }} style={{ color: '#00D2FF', textDecoration: 'underline' }}>Terms of Service</a>.
+                          </label>
+                        </div>
+                        <button className="main-button" style={{ width: '100%', marginTop: '25px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }} onClick={handleFinalPurchase} disabled={!targetProfile.termsAccepted || !targetProfile.smsConsentAccepted || isMinting}>
                           {isMinting ? <><span className="cyberpunk-spinner"></span> INITIATING...</> : 'CONFIRM & INITIATE'}
                         </button>
                         <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => window.location.hash = "pricing"}>BACK</button>
