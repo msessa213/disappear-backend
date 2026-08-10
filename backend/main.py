@@ -1025,15 +1025,28 @@ async def unclaim_manual_task(
     return {"status": "SUCCESS", "message": "Task returned to unassigned queue"}
 
 
+@app.post("/admin/ops/verify/{log_id}")
 @app.post("/admin/ops/resolve/{log_id}")
-async def resolve_manual_task(log_id: int, db: Session = Depends(get_db), admin_key: str = Depends(verify_admin_token)):
-    """Staff execution terminal: Marks a manual data broker extraction completely finalized"""
+async def resolve_manual_task(
+    log_id: int, 
+    req: Optional[AdminVerificationRequest] = None,
+    db: Session = Depends(get_db), 
+    admin_key: str = Depends(verify_admin_token)
+):
+    """Staff execution terminal: Marks a manual data broker extraction completely finalized with proof link and analyst name"""
     task = db.query(DBScrubLog).filter(DBScrubLog.id == log_id).first()
     if not task:
-        raise HTTPException(status_code=404, detail="Task signature not located in active ledger.")
+        raise HTTPException(status_code=404, detail=f"Task signature #{log_id} not located in active ledger.")
         
     task.status = "REMOVED"
     task.timestamp = datetime.utcnow()
+
+    if req:
+        if req.verification_link:
+            task.manual_instruction_url = req.verification_link
+        if req.analyst_name:
+            task.resolved_by = req.analyst_name
+            task.assigned_analyst = req.analyst_name
     
     target_uid = task.user_id if task and task.user_id else "GLOBAL"
     db.add(DBPurgeLog(
@@ -1041,7 +1054,12 @@ async def resolve_manual_task(log_id: int, db: Session = Depends(get_db), admin_
         node_id=f"{target_uid}_OPS_{log_id}"
     ))
     db.commit()
-    return {"status": "SUCCESS", "message": f"Broker {task.broker_name} status updated to REMOVED."}
+    return {
+        "status": "SUCCESS", 
+        "message": f"Broker {task.broker_name} status updated to REMOVED.",
+        "resolved_by": task.resolved_by,
+        "verification_link": task.manual_instruction_url
+    }
 
 
 @app.delete("/api/admin/profile/delete-by-email")
