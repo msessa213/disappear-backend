@@ -973,6 +973,15 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
         "USSEARCH": "ussearch.com"
     }
 
+    PEOPLE_SEARCH_BROKERS = {
+        "WHITEPAGES", "BEENVERIFIED", "SPOKEO", "RADARIS", "TRUTHFINDER", 
+        "INSTANTCHECKMATE", "PEOPLELOOKER", "SEARCHPEOPLEFREE", "SMARTBACKGROUNDCHECKS", 
+        "FASTPEOPLESEARCH", "THATSTHEM", "TRUEPEOPLESEARCH", "USSEARCH", "ZABASEARCH", 
+        "PEOPLEFINDERS", "NUWBER", "CLUSTRMAPS", "USAINFO", "PRIVATEEYE", "PUBLICRECORDSNOW", 
+        "VERIFIEDPEOPLE", "VERIPAGES", "SPYDIALER", "CHECKPEOPLE", "ADVANCEDBACKGROUNDCHECKS", 
+        "PEOPLEBYNAME"
+    }
+
     for task in open_tasks:
         profile = profiles_map.get(task.user_id)
         opt_url = BROKER_OPT_OUT_URLS.get(task.broker_name.upper(), f"https://www.google.com/search?q={task.broker_name}+opt+out+form")
@@ -984,30 +993,35 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
 
         if getattr(task, "target_listing_url", None):
             listing_url = task.target_listing_url
-        elif b_name == "WHITEPAGES":
-            listing_url = f"https://www.whitepages.com/name/{fn}-{ln}"
-        elif b_name == "SPOKEO":
-            listing_url = f"https://www.spokeo.com/{fn}-{ln}"
-        elif b_name == "BEENVERIFIED":
-            listing_url = f"https://www.beenverified.com/people/{fn}-{ln}"
-        elif b_name == "RADARIS":
-            listing_url = f"https://radaris.com/p/{fn}/{ln}"
-        elif b_name == "TRUTHFINDER":
-            listing_url = f"https://www.truthfinder.com/results/?firstName={fn}&lastName={ln}"
-        elif b_name == "INSTANTCHECKMATE":
-            listing_url = f"https://www.instantcheckmate.com/people/{fn}-{ln}"
-        elif b_name == "PEOPLELOOKER":
-            listing_url = f"https://www.peoplelooker.com/people/{fn}-{ln}"
-        elif b_name == "SEARCHPEOPLEFREE":
-            listing_url = f"https://www.searchpeoplefree.com/find/{fn}-{ln}"
-        elif b_name == "SMARTBACKGROUNDCHECKS":
-            listing_url = f"https://www.smartbackgroundchecks.com/people/{fn}-{ln}"
-        elif b_name == "FASTPEOPLESEARCH":
-            listing_url = f"https://www.fastpeoplesearch.com/name/{fn}-{ln}"
+            google_listing_url = f"https://www.google.com/search?q=site:{b_domain}+\"{fn}+{ln}\""
+        elif b_name in PEOPLE_SEARCH_BROKERS:
+            if b_name == "WHITEPAGES":
+                listing_url = f"https://www.whitepages.com/name/{fn}-{ln}"
+            elif b_name == "SPOKEO":
+                listing_url = f"https://www.spokeo.com/{fn}-{ln}"
+            elif b_name == "BEENVERIFIED":
+                listing_url = f"https://www.beenverified.com/people/{fn}-{ln}"
+            elif b_name == "RADARIS":
+                listing_url = f"https://radaris.com/p/{fn}/{ln}"
+            elif b_name == "TRUTHFINDER":
+                listing_url = f"https://www.truthfinder.com/results/?firstName={fn}&lastName={ln}"
+            elif b_name == "INSTANTCHECKMATE":
+                listing_url = f"https://www.instantcheckmate.com/people/{fn}-{ln}"
+            elif b_name == "PEOPLELOOKER":
+                listing_url = f"https://www.peoplelooker.com/people/{fn}-{ln}"
+            elif b_name == "SEARCHPEOPLEFREE":
+                listing_url = f"https://www.searchpeoplefree.com/find/{fn}-{ln}"
+            elif b_name == "SMARTBACKGROUNDCHECKS":
+                listing_url = f"https://www.smartbackgroundchecks.com/people/{fn}-{ln}"
+            elif b_name == "FASTPEOPLESEARCH":
+                listing_url = f"https://www.fastpeoplesearch.com/name/{fn}-{ln}"
+            else:
+                listing_url = f"https://www.google.com/search?q=site:{b_domain}+\"{fn}+{ln}\""
+            
+            google_listing_url = f"https://www.google.com/search?q=site:{b_domain}+\"{fn}+{ln}\""
         else:
-            listing_url = f"https://www.google.com/search?q=site:{b_domain}+\"{fn}+{ln}\""
-
-        google_listing_url = f"https://www.google.com/search?q=site:{b_domain}+\"{fn}+{ln}\""
+            listing_url = None
+            google_listing_url = None
 
         task_details = {
             "task_id": task.id,

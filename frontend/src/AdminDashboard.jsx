@@ -682,40 +682,53 @@ export default function AdminDashboard({ API_BASE_URL }) {
 
                 {/* Target Listing URL & Listing Finder Section */}
                 <div style={{ fontSize: '0.82rem', color: '#cbd5e1', marginBottom: '15px', background: 'rgba(0, 210, 255, 0.05)', padding: '12px 14px', borderRadius: '6px', border: '1px solid rgba(0, 210, 255, 0.2)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                    <div style={{ flex: 1, minWidth: '240px' }}>
-                      <strong style={{ color: '#00D2FF', letterSpacing: '0.5px' }}>🎯 BROKER TARGET LISTING URL / FINDER:</strong>
-                      <div style={{ color: '#FFF', wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '0.85rem', marginTop: '4px' }}>
-                        {task.target_listing_url || task.opt_out_url}
+                  {task.target_listing_url ? (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                      <div style={{ flex: 1, minWidth: '240px' }}>
+                        <strong style={{ color: '#00D2FF', letterSpacing: '0.5px' }}>🎯 BROKER TARGET LISTING URL / FINDER:</strong>
+                        <div style={{ color: '#FFF', wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '0.85rem', marginTop: '4px' }}>
+                          {task.target_listing_url}
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <button 
+                          className="reset-btn" 
+                          style={{ height: '32px', padding: '0 12px', fontSize: '0.75rem', color: copiedTaskId === task.task_id ? '#34d399' : '#00D2FF', borderColor: copiedTaskId === task.task_id ? '#10b981' : '#00D2FF', display: 'inline-flex', alignItems: 'center', gap: '4px', boxSizing: 'border-box', margin: 0 }}
+                          onClick={() => handleCopyListingUrl(task.task_id, task.target_listing_url)}
+                        >
+                          {copiedTaskId === task.task_id ? "✅ COPIED!" : "📋 COPY LISTING URL"}
+                        </button>
+
+                        {task.google_listing_url && (
+                          <a 
+                            href={task.google_listing_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="reset-btn" 
+                            style={{ height: '32px', padding: '0 12px', fontSize: '0.75rem', color: '#fbbf24', borderColor: '#d97706', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', boxSizing: 'border-box', margin: 0 }}
+                          >
+                            🔍 SEARCH LISTING ON GOOGLE ↗
+                          </a>
+                        )}
                       </div>
                     </div>
-                    
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <button 
-                        className="reset-btn" 
-                        style={{ height: '32px', padding: '0 12px', fontSize: '0.75rem', color: copiedTaskId === task.task_id ? '#34d399' : '#00D2FF', borderColor: copiedTaskId === task.task_id ? '#10b981' : '#00D2FF', display: 'inline-flex', alignItems: 'center', gap: '4px', boxSizing: 'border-box', margin: 0 }}
-                        onClick={() => handleCopyListingUrl(task.task_id, task.target_listing_url || task.opt_out_url)}
-                      >
-                        {copiedTaskId === task.task_id ? "✅ COPIED!" : "📋 COPY LISTING URL"}
-                      </button>
-
-                      <a 
-                        href={task.google_listing_url || task.target_listing_url || task.opt_out_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="reset-btn" 
-                        style={{ height: '32px', padding: '0 12px', fontSize: '0.75rem', color: '#fbbf24', borderColor: '#d97706', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', boxSizing: 'border-box', margin: 0 }}
-                      >
-                        🔍 SEARCH LISTING ON GOOGLE ↗
-                      </a>
+                  ) : (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                      <div>
+                        <strong style={{ color: '#94A3B8', letterSpacing: '0.5px' }}>🏢 ENTERPRISE / FINANCIAL DATA BROKER:</strong>
+                        <div style={{ color: '#94A3B8', fontSize: '0.82rem', marginTop: '2px', fontStyle: 'italic' }}>
+                          This broker processes opt-outs via legal PII database removal (no public consumer web listing exists). Use '🌐 LAUNCH OPT-OUT FORM' above to submit.
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {!isCompleted && (
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                       <input 
                         className="mask-btn" 
-                        placeholder="Paste exact profile listing URL (e.g. Whitepages wpId=...)..." 
+                        placeholder="Paste exact profile listing URL if found (e.g. Whitepages wpId=...)..." 
                         style={{ flex: 1, height: '32px', fontSize: '0.78rem', boxSizing: 'border-box', margin: 0 }}
                         value={editingListingUrls[task.task_id] !== undefined ? editingListingUrls[task.task_id] : (task.target_listing_url || "")}
                         onChange={(e) => setEditingListingUrls({...editingListingUrls, [task.task_id]: e.target.value})}
