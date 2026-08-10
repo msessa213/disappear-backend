@@ -984,51 +984,62 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
 
     for task in open_tasks:
         profile = profiles_map.get(task.user_id)
-        opt_url = BROKER_OPT_OUT_URLS.get(task.broker_name.upper(), f"https://www.google.com/search?q={task.broker_name}+opt+out+form")
+        b_name = task.broker_name.upper()
+        b_domain = domain_map.get(b_name, f"{b_name.lower().replace('_', '')}.com")
+        
+        opt_url = BROKER_OPT_OUT_URLS.get(b_name, f"https://www.{b_domain}/privacy")
         
         fn = (profile.first_name if profile else "").strip()
         ln = (profile.last_name if profile else "").strip()
-        b_name = task.broker_name.upper()
-        b_domain = domain_map.get(b_name, f"{b_name.lower().replace('_', '')}.com")
+        fn_clean = fn.lower()
+        ln_clean = ln.lower()
 
         if getattr(task, "target_listing_url", None):
             listing_url = task.target_listing_url
-            google_listing_url = f"https://www.google.com/search?q=site:{b_domain}+\"{fn}+{ln}\""
-        elif b_name in PEOPLE_SEARCH_BROKERS:
-            if b_name == "WHITEPAGES":
-                listing_url = f"https://www.whitepages.com/name/{fn}-{ln}"
-            elif b_name == "SPOKEO":
-                listing_url = f"https://www.spokeo.com/{fn}-{ln}"
-            elif b_name == "BEENVERIFIED":
-                listing_url = f"https://www.beenverified.com/people/{fn}-{ln}"
-            elif b_name == "RADARIS":
-                listing_url = f"https://radaris.com/p/{fn}/{ln}"
-            elif b_name == "TRUTHFINDER":
-                listing_url = f"https://www.truthfinder.com/results/?firstName={fn}&lastName={ln}"
-            elif b_name == "INSTANTCHECKMATE":
-                listing_url = f"https://www.instantcheckmate.com/people/{fn}-{ln}"
-            elif b_name == "PEOPLELOOKER":
-                listing_url = f"https://www.peoplelooker.com/people/{fn}-{ln}"
-            elif b_name == "SEARCHPEOPLEFREE":
-                listing_url = f"https://www.searchpeoplefree.com/find/{fn}-{ln}"
-            elif b_name == "SMARTBACKGROUNDCHECKS":
-                listing_url = f"https://www.smartbackgroundchecks.com/people/{fn}-{ln}"
-            elif b_name == "FASTPEOPLESEARCH":
-                listing_url = f"https://www.fastpeoplesearch.com/name/{fn}-{ln}"
-            else:
-                listing_url = f"https://www.google.com/search?q=site:{b_domain}+\"{fn}+{ln}\""
-            
-            google_listing_url = f"https://www.google.com/search?q=site:{b_domain}+\"{fn}+{ln}\""
+        elif b_name == "WHITEPAGES":
+            listing_url = f"https://www.whitepages.com/name/{fn}-{ln}"
+        elif b_name == "SPOKEO":
+            listing_url = f"https://www.spokeo.com/{fn}-{ln}"
+        elif b_name == "BEENVERIFIED":
+            listing_url = f"https://www.beenverified.com/people/{fn_clean}-{ln_clean}/"
+        elif b_name == "PEOPLELOOKER":
+            listing_url = f"https://www.peoplelooker.com/people/{fn_clean}-{ln_clean}/"
+        elif b_name == "INTELIUS":
+            listing_url = f"https://www.intelius.com/people-search/{fn}-{ln}"
+        elif b_name == "RADARIS":
+            listing_url = f"https://radaris.com/p/{fn}/{ln}/"
+        elif b_name == "TRUTHFINDER":
+            listing_url = f"https://www.truthfinder.com/results/?firstName={fn}&lastName={ln}"
+        elif b_name == "INSTANTCHECKMATE":
+            listing_url = f"https://www.instantcheckmate.com/people/{fn_clean}-{ln_clean}/"
+        elif b_name == "SEARCHPEOPLEFREE":
+            listing_url = f"https://www.searchpeoplefree.com/find/{fn_clean}-{ln_clean}"
+        elif b_name == "SMARTBACKGROUNDCHECKS":
+            listing_url = f"https://www.smartbackgroundchecks.com/people/{fn_clean}-{ln_clean}"
+        elif b_name == "FASTPEOPLESEARCH":
+            listing_url = f"https://www.fastpeoplesearch.com/name/{fn_clean}-{ln_clean}"
+        elif b_name == "THATSTHEM":
+            listing_url = f"https://thatsthem.com/people/{fn_clean}-{ln_clean}"
+        elif b_name == "TRUEPEOPLESEARCH":
+            listing_url = f"https://www.truepeoplesearch.com/results?name={fn}%20{ln}"
+        elif b_name == "USSEARCH":
+            listing_url = f"https://www.ussearch.com/people-search/{fn_clean}-{ln_clean}"
+        elif b_name == "ZABASEARCH":
+            listing_url = f"https://www.zabasearch.com/people/{fn_clean}+{ln_clean}/"
+        elif b_name == "PEOPLEFINDERS":
+            listing_url = f"https://www.peoplefinders.com/people/{fn_clean}-{ln_clean}"
+        elif b_name == "NUWBER":
+            listing_url = f"https://nuwber.com/search?name={fn}%20{ln}"
+        elif b_name == "CLUSTRMAPS":
+            listing_url = f"https://clustrmaps.com/persons/{fn}-{ln}"
         else:
-            listing_url = None
-            google_listing_url = None
+            listing_url = f"https://www.{b_domain}"
 
         task_details = {
             "task_id": task.id,
             "broker_name": task.broker_name,
             "opt_out_url": opt_url,
             "target_listing_url": listing_url,
-            "google_listing_url": google_listing_url,
             "assigned_analyst": task.assigned_analyst,
             "resolved_by": task.resolved_by,
             "submitted_at": task.timestamp.isoformat(),
