@@ -1033,7 +1033,7 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
         elif b_name == "CLUSTRMAPS":
             listing_url = f"https://clustrmaps.com/persons/{fn}-{ln}"
         else:
-            listing_url = f"https://www.{b_domain}"
+            listing_url = None
 
         task_details = {
             "task_id": task.id,
