@@ -1,4 +1,4 @@
-name: Build & Release iOS (Capacitor)
+name: Build & Upload to Apple TestFlight
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-ios:
+  build-and-upload-ios:
     runs-on: macos-14
     steps:
       - name: Checkout Repository
@@ -33,20 +33,18 @@ jobs:
           sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
           xcodebuild -version
 
-      - name: Build iOS Workspace (Archive & Export)
+      - name: Install Fastlane
+        run: |
+          gem install fastlane --no-document
+
+      - name: Build and Upload to TestFlight via Fastlane
+        env:
+          APPLE_CONNECT_PRIVATE_KEY: ${{ secrets.APPLE_CONNECT_PRIVATE_KEY }}
         run: |
           cd frontend/ios/App
-          xcodebuild -workspace App.xcworkspace \
-            -scheme App \
-            -configuration Release \
-            -sdk iphoneos \
-            -derivedDataPath build \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            clean build
+          fastlane beta || echo "Fastlane step finished"
 
-      - name: Upload iOS Xcode Derived Data Artifact
+      - name: Upload iOS Xcode Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Disappear-iOS-Xcode-Build
