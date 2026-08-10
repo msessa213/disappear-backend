@@ -651,10 +651,24 @@ export default function AdminDashboard({ API_BASE_URL }) {
                       target="_blank" 
                       rel="noopener noreferrer" 
                       className="main-button" 
-                      style={{ textDecoration: 'none', height: '34px', padding: '0 14px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box', margin: 0 }}
+                      style={{ textDecoration: 'none', height: '34px', padding: '0 14px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box', margin: 0 }}
+                      title="Open direct broker data removal form"
                     >
-                      🔗 LAUNCH PORTAL
+                      🌐 LAUNCH OPT-OUT FORM
                     </a>
+
+                    {task.target_listing_url && (
+                      <a 
+                        href={task.target_listing_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="reset-btn" 
+                        style={{ textDecoration: 'none', height: '34px', padding: '0 12px', fontSize: '0.78rem', color: '#00D2FF', borderColor: '#00D2FF', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box', margin: 0 }}
+                        title="Open customer's exact broker profile listing page"
+                      >
+                        🎯 LAUNCH TARGET LISTING
+                      </a>
+                    )}
                   </div>
                 </div>
                 
