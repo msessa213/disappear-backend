@@ -1584,7 +1584,7 @@ const handleEmergencyBurn = async () => {
 
                       <div style={{ marginTop: '35px', borderTop: '1px solid #222', paddingTop: '20px', fontSize: '0.85rem', color: '#94A3B8' }}>
                         <p style={{ margin: '4px 0' }}><strong>CORPORATE ENTITY:</strong> DFS 213 LLC</p>
-                        <p style={{ margin: '4px 0' }}><strong>EMAIL SUPPORT:</strong> support@disappearco.com</p>
+                        <p style={{ margin: '4px 0' }}><strong>EMAIL SUPPORT:</strong> customer.service@disappearco.com</p>
                         <p style={{ margin: '4px 0' }}><strong>RESPONSE TIME:</strong> Tickets are processed within 24 business hours.</p>
                       </div>
                     </div>
