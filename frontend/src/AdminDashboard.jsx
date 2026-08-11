@@ -657,7 +657,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
                       🌐 LAUNCH OPT-OUT FORM
                     </a>
 
-                    {task.target_listing_url && !task.target_listing_url.includes('google.com/search') && (
+                    {task.target_listing_url && (
                       <a 
                         href={task.target_listing_url} 
                         target="_blank" 
@@ -685,8 +685,19 @@ export default function AdminDashboard({ API_BASE_URL }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                     <div style={{ flex: 1, minWidth: '240px' }}>
                       <strong style={{ color: '#00D2FF', letterSpacing: '0.5px' }}>🎯 BROKER TARGET LISTING PAGE URL:</strong>
-                      <div style={{ color: '#FFF', wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '0.85rem', marginTop: '4px' }}>
-                        {task.target_listing_url || "No direct profile listing URL saved yet."}
+                      <div style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '0.85rem', marginTop: '4px' }}>
+                        {task.target_listing_url ? (
+                          <a 
+                            href={task.target_listing_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            style={{ color: '#38bdf8', textDecoration: 'underline', fontWeight: 'bold' }}
+                          >
+                            {task.target_listing_url} ↗
+                          </a>
+                        ) : (
+                          <span style={{ color: '#94A3B8' }}>No direct profile listing URL saved yet.</span>
+                        )}
                       </div>
                     </div>
                     
