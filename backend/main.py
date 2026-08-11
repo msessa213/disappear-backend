@@ -792,7 +792,6 @@ BROKER_OPT_OUT_URLS = {
     "THATSTHEM": "https://thatsthem.com/optout",
     "TRUEPEOPLESEARCH": "https://www.truepeoplesearch.com/removal",
     "USSEARCH": "https://www.ussearch.com/opt-out/",
-    "ZABASEARCH": "https://www.zabasearch.com/opt-out/",
     "PEOPLEFINDERS": "https://www.peoplefinders.com/opt-out",
     "NUWBER": "https://nuwber.com/removal/link",
     "CLUSTRMAPS": "https://clustrmaps.com/bl/opt-out",
@@ -1011,8 +1010,8 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
     PEOPLE_SEARCH_BROKERS = {
         "WHITEPAGES", "BEENVERIFIED", "SPOKEO", "RADARIS", "TRUTHFINDER", 
         "INSTANTCHECKMATE", "PEOPLELOOKER", "SEARCHPEOPLEFREE", "SMARTBACKGROUNDCHECKS", 
-        "FASTPEOPLESEARCH", "THATSTHEM", "TRUEPEOPLESEARCH", "USSEARCH", "ZABASEARCH", 
-        "PEOPLEFINDERS", "NUWBER", "CLUSTRMAPS", "USAINFO", "PRIVATEEYE", "PUBLICRECORDSNOW", 
+        "FASTPEOPLESEARCH", "THATSTHEM", "TRUEPEOPLESEARCH", "USSEARCH", 
+        "PEOPLEFINDERS", "NUWBER", "CLUSTRMAPS", "PRIVATEEYE", "PUBLICRECORDSNOW", 
         "VERIFIEDPEOPLE", "VERIPAGES", "SPYDIALER", "CHECKPEOPLE", "ADVANCEDBACKGROUNDCHECKS", 
         "PEOPLEBYNAME"
     }
@@ -1022,7 +1021,7 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
         b_name = task.broker_name.upper()
         b_domain = domain_map.get(b_name, f"{b_name.lower().replace('_', '')}.com")
         
-        opt_url = BROKER_OPT_OUT_URLS.get(b_name, f"https://www.{b_domain}/privacy")
+        opt_url = BROKER_OPT_OUT_URLS.get(b_name, f"https://www.google.com/search?q={b_name}+opt+out+form")
         
         fn = (profile.first_name if profile else "").strip()
         ln = (profile.last_name if profile else "").strip()
