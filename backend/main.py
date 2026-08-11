@@ -815,7 +815,7 @@ BROKER_OPT_OUT_URLS = {
     "INNOVIS": "https://www.innovis.com/personal/optOut",
     "CHEXSYSTEMS": "https://www.chexsystems.com/consumer-services/opt-out",
     "CORELOGIC": "https://cotality.com/legal/b2b-client-privacy-form",
-    "CLEAR": "https://www.clearme.com/privacy-policy",
+    "CLEAR": "https://privacy.clearme.com/",
     "PIPL": "https://pipl.com/personal-information-removal-request",
     "USAINFO": "https://www.usainfo.com/optout",
     "PRIVATEEYE": "https://www.privateeye.com/optout",
@@ -915,18 +915,57 @@ async def validate_customer_coupon(req: ValidateCouponRequest, db: Session = Dep
     }
 
 
+def parse_address_location(address_str: str):
+    """Extract city, state abbreviation, and state full name from address string"""
+    if not address_str:
+        return "", "", ""
+    
+    us_states = {
+        "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas", "CA": "California",
+        "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware", "FL": "Florida", "GA": "Georgia",
+        "HI": "Hawaii", "ID": "Idaho", "IL": "Illinois", "IN": "Indiana", "IA": "Iowa",
+        "KS": "Kansas", "KY": "Kentucky", "LA": "Louisiana", "ME": "Maine", "MD": "Maryland",
+        "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota", "MS": "Mississippi", "MO": "Missouri",
+        "MT": "Montana", "NE": "Nebraska", "NV": "Nevada", "NH": "New Hampshire", "NJ": "New Jersey",
+        "NM": "New Mexico", "NY": "New York", "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio",
+        "OK": "Oklahoma", "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina",
+        "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah", "VT": "Vermont",
+        "VA": "Virginia", "WA": "Washington", "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming"
+    }
+    
+    state_abbr = ""
+    state_name = ""
+    city = ""
+
+    upper_addr = address_str.upper()
+    for st_code, st_full in us_states.items():
+        if f" {st_code} " in f" {upper_addr} " or upper_addr.endswith(f" {st_code}") or f", {st_code}" in upper_addr or f" {st_code}," in upper_addr:
+            state_abbr = st_code
+            state_name = st_full
+            break
+        elif st_full.upper() in upper_addr:
+            state_abbr = st_code
+            state_name = st_full
+            break
+
+    parts = [p.strip() for p in address_str.split(",")]
+    if len(parts) >= 2:
+        possible_city = parts[-2].strip()
+        city = "".join([c for c in possible_city if c.isalpha() or c == ' ']).strip()
+
+    return city, state_abbr, state_name
+
+
 @app.get("/admin/ops/backlog")
 async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = Depends(verify_admin_token)):
-    """Internal utility for staff to pull down targets needing manual opt-out submission forms (Ultra-Fast Bulk Query)"""
-    open_tasks = (
-        db.query(DBScrubLog)
-        .join(DBProfile, DBScrubLog.user_id == DBProfile.id)
-        .filter(DBProfile.kyc_status == "APPROVED", DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"]))
-        .order_by(desc(DBScrubLog.timestamp))
-        .all()
-    )
+    """Retrieves list of pending manual & automated data removal tasks for paid APPROVED accounts"""
+    open_tasks = db.query(DBScrubLog).join(
+        DBProfile, DBScrubLog.user_id == DBProfile.id
+    ).filter(
+        DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"]),
+        DBProfile.kyc_status == "APPROVED"
+    ).order_by(desc(DBScrubLog.timestamp)).all()
     
-    # Auto-seed 2 reference target profiles with manual tasks if queue is empty
     if not open_tasks:
         try:
             ref1 = DBProfile(id="user_ref_01", first_name="Reference", last_name="Target Alpha", email="reference_alpha@disappearco.com", address="100 Privacy Way, Austin TX 78701", dob="1988-05-14", kyc_status="APPROVED")
@@ -934,7 +973,6 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
             db.merge(ref1)
             db.merge(ref2)
             
-            # Seed exactly 2 reference tasks (1 for Target Alpha, 1 for Target Beta)
             db.add(DBScrubLog(user_id="user_ref_01", broker_name="LEXISNEXIS", status="MANUAL_PENDING", removal_type="MANUAL"))
             db.add(DBScrubLog(user_id="user_ref_02", broker_name="BEENVERIFIED", status="MANUAL_PENDING", removal_type="MANUAL"))
             db.commit()
@@ -942,7 +980,6 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
         except Exception as ex:
             logger.warning(f"Auto-seed reference tasks error: {ex}")
     
-    # Bulk fetch profiles into dictionary map to prevent N+1 query overhead
     user_ids = {task.user_id for task in open_tasks if task.user_id}
     completed_logs = db.query(DBScrubLog).filter(DBScrubLog.status == "REMOVED").order_by(desc(DBScrubLog.timestamp)).limit(50).all()
     user_ids.update({task.user_id for task in completed_logs if task.user_id})
@@ -994,44 +1031,48 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
         fn_clean = fn.lower()
         ln_clean = ln.lower()
 
+        city, st_abbr, st_name = parse_address_location(profile.address if profile else "")
+        city_slug = city.lower().replace(" ", "-") if city else ""
+        st_clean = st_abbr.lower()
+
         if getattr(task, "target_listing_url", None):
             listing_url = task.target_listing_url
         elif b_name == "WHITEPAGES":
-            listing_url = f"https://www.whitepages.com/name/{fn}-{ln}"
+            listing_url = f"https://www.whitepages.com/name/{fn}-{ln}/{city_slug}-{st_abbr}" if (city_slug and st_abbr) else f"https://www.whitepages.com/name/{fn}-{ln}/{st_abbr}" if st_abbr else f"https://www.whitepages.com/name/{fn}-{ln}"
         elif b_name == "SPOKEO":
-            listing_url = f"https://www.spokeo.com/{fn}-{ln}"
+            listing_url = f"https://www.spokeo.com/{fn}-{ln}/{st_name.replace(' ', '-')}" if st_name else f"https://www.spokeo.com/{fn}-{ln}"
         elif b_name == "BEENVERIFIED":
-            listing_url = f"https://www.beenverified.com/people/{fn_clean}-{ln_clean}/"
+            listing_url = f"https://www.beenverified.com/people/{fn_clean}-{ln_clean}/{st_clean}" if st_clean else f"https://www.beenverified.com/people/{fn_clean}-{ln_clean}/"
         elif b_name == "PEOPLELOOKER":
-            listing_url = f"https://www.peoplelooker.com/people/{fn_clean}-{ln_clean}/"
+            listing_url = f"https://www.peoplelooker.com/people/{fn_clean}-{ln_clean}/{st_clean}" if st_clean else f"https://www.peoplelooker.com/people/{fn_clean}-{ln_clean}/"
         elif b_name == "INTELIUS":
-            listing_url = f"https://www.intelius.com/people-search/{fn}-{ln}"
+            listing_url = f"https://www.intelius.com/people-search/{fn}-{ln}/{st_abbr}" if st_abbr else f"https://www.intelius.com/people-search/{fn}-{ln}"
         elif b_name == "RADARIS":
-            listing_url = f"https://radaris.com/p/{fn}/{ln}/"
+            listing_url = f"https://radaris.com/p/{fn}/{ln}/{st_clean}" if st_clean else f"https://radaris.com/p/{fn}/{ln}/"
         elif b_name == "TRUTHFINDER":
-            listing_url = f"https://www.truthfinder.com/results/?firstName={fn}&lastName={ln}"
+            listing_url = f"https://www.truthfinder.com/results/?firstName={fn}&lastName={ln}&state={st_abbr}" if st_abbr else f"https://www.truthfinder.com/results/?firstName={fn}&lastName={ln}"
         elif b_name == "INSTANTCHECKMATE":
-            listing_url = f"https://www.instantcheckmate.com/people/{fn_clean}-{ln_clean}/"
+            listing_url = f"https://www.instantcheckmate.com/people/{fn_clean}-{ln_clean}/{st_clean}" if st_clean else f"https://www.instantcheckmate.com/people/{fn_clean}-{ln_clean}/"
         elif b_name == "SEARCHPEOPLEFREE":
-            listing_url = f"https://www.searchpeoplefree.com/find/{fn_clean}-{ln_clean}"
+            listing_url = f"https://www.searchpeoplefree.com/find/{fn_clean}-{ln_clean}/{st_clean}" if st_clean else f"https://www.searchpeoplefree.com/find/{fn_clean}-{ln_clean}"
         elif b_name == "SMARTBACKGROUNDCHECKS":
-            listing_url = f"https://www.smartbackgroundchecks.com/people/{fn_clean}-{ln_clean}"
+            listing_url = f"https://www.smartbackgroundchecks.com/people/{fn_clean}-{ln_clean}/{st_clean}" if st_clean else f"https://www.smartbackgroundchecks.com/people/{fn_clean}-{ln_clean}"
         elif b_name == "FASTPEOPLESEARCH":
-            listing_url = f"https://www.fastpeoplesearch.com/name/{fn_clean}-{ln_clean}"
+            listing_url = f"https://www.fastpeoplesearch.com/name/{fn_clean}-{ln_clean}_{city_slug}-{st_clean}" if (city_slug and st_clean) else f"https://www.fastpeoplesearch.com/name/{fn_clean}-{ln_clean}"
         elif b_name == "THATSTHEM":
-            listing_url = f"https://thatsthem.com/people/{fn_clean}-{ln_clean}"
+            listing_url = f"https://thatsthem.com/people/{fn_clean}-{ln_clean}/{st_clean}" if st_clean else f"https://thatsthem.com/people/{fn_clean}-{ln_clean}"
         elif b_name == "TRUEPEOPLESEARCH":
-            listing_url = f"https://www.truepeoplesearch.com/results?name={fn}%20{ln}"
+            listing_url = f"https://www.truepeoplesearch.com/results?name={fn}%20{ln}&citystatezip={st_abbr}" if st_abbr else f"https://www.truepeoplesearch.com/results?name={fn}%20{ln}"
         elif b_name == "USSEARCH":
-            listing_url = f"https://www.ussearch.com/people-search/{fn_clean}-{ln_clean}"
+            listing_url = f"https://www.ussearch.com/people-search/{fn_clean}-{ln_clean}/{st_clean}" if st_clean else f"https://www.ussearch.com/people-search/{fn_clean}-{ln_clean}"
         elif b_name == "ZABASEARCH":
-            listing_url = f"https://www.zabasearch.com/people/{fn_clean}+{ln_clean}/"
+            listing_url = f"https://www.zabasearch.com/people/{fn_clean}+{ln_clean}/{st_clean}" if st_clean else f"https://www.zabasearch.com/people/{fn_clean}+{ln_clean}/"
         elif b_name == "PEOPLEFINDERS":
-            listing_url = f"https://www.peoplefinders.com/people/{fn_clean}-{ln_clean}"
+            listing_url = f"https://www.peoplefinders.com/people/{fn_clean}-{ln_clean}/{st_clean}" if st_clean else f"https://www.peoplefinders.com/people/{fn_clean}-{ln_clean}"
         elif b_name == "NUWBER":
-            listing_url = f"https://nuwber.com/search?name={fn}%20{ln}"
+            listing_url = f"https://nuwber.com/search?name={fn}%20{ln}&state={st_abbr}" if st_abbr else f"https://nuwber.com/search?name={fn}%20{ln}"
         elif b_name == "CLUSTRMAPS":
-            listing_url = f"https://clustrmaps.com/persons/{fn}-{ln}"
+            listing_url = f"https://clustrmaps.com/persons/{fn}-{ln}/{st_abbr}" if st_abbr else f"https://clustrmaps.com/persons/{fn}-{ln}"
         else:
             listing_url = None
 
