@@ -322,19 +322,22 @@ origins = [
     "https://onlinedisappear.com",
     "https://api.disappearco.com",
     "https://disapearco.com",
-    "https://www.disapearco.com",
-    # TODO: Add your frontend's production Railway URL here
-    # "https://your-frontend-app.up.railway.app"
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origin_regex=r".*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
+
+@app.options("/{full_path:path}")
+async def options_handler(full_path: str):
+    """Fallback OPTIONS preflight handler for CORS compatibility"""
+    return Response(status_code=200)
 
 
 
