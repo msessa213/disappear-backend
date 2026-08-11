@@ -647,7 +647,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
                     ))}
 
                     <a 
-                      href={task.opt_out_url || `https://www.google.com/search?q=${task.broker_name}+opt+out+form`} 
+                      href={task.opt_out_url || `https://www.${task.broker_name ? task.broker_name.toLowerCase().replace(/_/g, '') : 'broker'}.com/optout`} 
                       target="_blank" 
                       rel="noopener noreferrer" 
                       className="main-button" 

@@ -1078,7 +1078,9 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
     completed_tasks_list = []
     for task in completed_logs:
         profile = profiles_map.get(task.user_id)
-        opt_url = BROKER_OPT_OUT_URLS.get(task.broker_name.upper(), f"https://www.google.com/search?q={task.broker_name}+opt+out+form")
+        b_name_comp = task.broker_name.upper()
+        b_dom_comp = domain_map.get(b_name_comp, f"{b_name_comp.lower().replace('_', '')}.com")
+        opt_url = BROKER_OPT_OUT_URLS.get(b_name_comp, f"https://www.{b_dom_comp}/privacy")
         completed_tasks_list.append({
             "task_id": task.id,
             "broker_name": task.broker_name,
