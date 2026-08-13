@@ -609,24 +609,24 @@ function App() {
       }
 
       // 3. Map Real Purge History & Auto-Populate SMS Inbox
-      if (data.history) {
+      if (Array.isArray(data.history)) {
         setAuditLog(prevLog => {
           const latest = data.history[0];
-          const oldLatest = prevLog.length > 0 ? prevLog[0] : null;
-          if (latest && (!oldLatest || latest.timestamp !== oldLatest.timestamp)) {
+          const oldLatest = prevLog && prevLog.length > 0 ? prevLog[0] : null;
+          if (latest && typeof latest.action === 'string' && (!oldLatest || latest.timestamp !== oldLatest.timestamp)) {
               pushNotification(`SYSTEM_UPDATE: [${latest.action}]`);
           }
           return data.history;
         });
 
-        // Auto-populate SMS Inbox directly from live Audit Log history
+        // Auto-populate SMS Inbox directly from live Audit Log history safely
         const smsFromHistory = data.history
-          .filter(item => item.action && (item.action.startsWith("SMS_") || item.action.includes("SMS")))
+          .filter(item => item && typeof item.action === 'string' && item.action.includes("SMS"))
           .map(item => ({
-            id: item.id,
-            timestamp: item.timestamp,
-            message: item.action.replace(/^SMS_RECEIVED\s*/, "").replace(/^SMS_SENT\s*/, "OUTBOUND: "),
-            line: item.node
+            id: item.id || `sms_${Math.random()}`,
+            timestamp: item.timestamp || "",
+            message: (item.action || "").replace(/^SMS_RECEIVED\s*/, "").replace(/^SMS_SENT\s*/, "OUTBOUND: "),
+            line: item.node || "VIRTUAL_LINE"
           }));
         if (smsFromHistory.length > 0) {
           setSmsInbox(smsFromHistory);
@@ -1086,11 +1086,12 @@ const handleEmergencyBurn = async () => {
         const data = await res.json();
         localStorage.setItem("disappear_session", "active");
         localStorage.setItem("disappear_user_id", data.user_id);
+        setCurrentUserId(data.user_id);
         setShow2FA(false); 
         setShowLanding(false); // Switch to app
         setShowShield(true); 
         setProgress(100);
-        triggerToast(`WELCOME BACK, ${data.first_name.toUpperCase()}`);
+        triggerToast(`WELCOME BACK, ${(data.first_name || 'AGENT').toUpperCase()}`);
         syncDefenseData();
       } else {
         const errData = await res.json().catch(() => ({}));

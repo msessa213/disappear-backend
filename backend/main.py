@@ -487,9 +487,23 @@ class UpdateListingUrlRequest(BaseModel):
 @limiter.limit("20/minute")
 async def login_agent(request: Request, login_req: LoginRequest, db: Session = Depends(get_db)):
     """Authenticates an agent via email and password to sync their specific profile to the app"""
-    profile = db.query(DBProfile).filter(DBProfile.email.ilike(login_req.email.strip())).first()
+    clean_email = login_req.email.strip().lower()
+    profile = db.query(DBProfile).filter(DBProfile.email.ilike(clean_email)).first()
     if not profile:
-        raise HTTPException(status_code=404, detail="DATA_ERROR: AGENT_NOT_FOUND_IN_DATABASE")
+        # Auto-provision profile on first login so registration/login is seamless
+        import uuid
+        new_id = f"user_{uuid.uuid4().hex[:12]}"
+        pwd_hash = hash_password(login_req.password) if login_req.password else ""
+        profile = DBProfile(
+            id=new_id,
+            email=clean_email,
+            first_name="Agent",
+            last_name="Operative",
+            password_hash=pwd_hash
+        )
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
 
     if profile.password_hash:
         if not login_req.password or not verify_password(login_req.password, profile.password_hash):
