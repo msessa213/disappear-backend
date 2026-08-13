@@ -728,17 +728,20 @@ function App() {
 
     if (!rawTo) {
       triggerToast("⚠️ PLEASE ENTER A RECIPIENT PHONE NUMBER");
+      setIsSendingSms(false);
       return;
     }
 
     const digitsOnly = rawTo.replace(/\D/g, "");
     if (digitsOnly.length < 10) {
       triggerToast("⚠️ PLEASE ENTER A VALID 10-DIGIT PHONE NUMBER");
+      setIsSendingSms(false);
       return;
     }
 
     if (!body) {
       triggerToast("⚠️ PLEASE TYPE A MESSAGE BODY TO SEND");
+      setIsSendingSms(false);
       return;
     }
 
@@ -746,6 +749,12 @@ function App() {
 
     setIsSendingSms(true);
     triggerToast("⏳ DISPATCHING SMS...");
+
+    // Safety fallback timer to automatically unlock button after 6 seconds
+    const autoUnlock = setTimeout(() => {
+      setIsSendingSms(false);
+    }, 6000);
+
     const activeUserId = currentUserId || localStorage.getItem("disappear_user_id") || "user_customer_test_99";
     try {
       const res = await secureRequest(`${API_BASE_URL}/api/v1/send-sms`, {
@@ -768,6 +777,7 @@ function App() {
       console.error("SMS send error:", e);
       triggerToast("NETWORK ERROR SENDING SMS");
     } finally {
+      clearTimeout(autoUnlock);
       setIsSendingSms(false);
     }
   };
@@ -1889,11 +1899,13 @@ const handleEmergencyBurn = async () => {
                         />
                         <button
                           className="main-button"
-                          style={{ padding: '5px 12px', fontSize: '0.75rem', width: '100%' }}
-                          onClick={() => handleSendSmsReply(replyRecipient, replyBody)}
-                          disabled={isSendingSms}
+                          style={{ padding: '5px 12px', fontSize: '0.75rem', width: '100%', opacity: isSendingSms ? 0.7 : 1 }}
+                          onClick={() => {
+                            if (isSendingSms) setIsSendingSms(false);
+                            handleSendSmsReply(replyRecipient, replyBody);
+                          }}
                         >
-                          {isSendingSms ? "SENDING..." : "📤 SEND SMS"}
+                          {isSendingSms ? "⏳ DISPATCHING... (CLICK TO RETRY)" : "📤 SEND SMS"}
                         </button>
                       </div>
                     )}
@@ -1948,11 +1960,13 @@ const handleEmergencyBurn = async () => {
                                   />
                                   <button
                                     className="main-button"
-                                    style={{ padding: '4px 12px', fontSize: '0.72rem', width: '100%' }}
-                                    onClick={() => handleSendSmsReply(replyRecipient, replyBody)}
-                                    disabled={isSendingSms}
+                                    style={{ padding: '4px 12px', fontSize: '0.72rem', width: '100%', opacity: isSendingSms ? 0.7 : 1 }}
+                                    onClick={() => {
+                                      if (isSendingSms) setIsSendingSms(false);
+                                      handleSendSmsReply(replyRecipient, replyBody);
+                                    }}
                                   >
-                                    {isSendingSms ? "SENDING..." : "📤 SEND REPLY"}
+                                    {isSendingSms ? "⏳ DISPATCHING... (CLICK TO RETRY)" : "📤 SEND REPLY"}
                                   </button>
                                 </div>
                               )}
