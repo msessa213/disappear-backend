@@ -765,6 +765,16 @@ function App() {
       const data = await res.json();
       if (res.ok) {
         triggerToast("✅ SMS DELIVERED SUCCESSFULLY!");
+        
+        // Prepend sent SMS to inbox state for 100% instant visual confirmation
+        const newOutboundItem = {
+          id: `out_${Date.now()}`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          message: `OUTBOUND [To ${formattedTo}]: ${body}`,
+          line: "OUTBOUND_SMS"
+        };
+        setSmsInbox(prev => [newOutboundItem, ...prev]);
+
         setReplyBody("");
         setReplyRecipient("");
         setActiveReplyId(null);
