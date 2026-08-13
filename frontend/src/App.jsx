@@ -609,7 +609,7 @@ function App() {
           });
       }
 
-      // 3. Map Real Purge History
+      // 3. Map Real Purge History & Auto-Populate SMS Inbox
       if (data.history) {
         setAuditLog(prevLog => {
           const latest = data.history[0];
@@ -619,6 +619,19 @@ function App() {
           }
           return data.history;
         });
+
+        // Auto-populate SMS Inbox directly from live Audit Log history
+        const smsFromHistory = data.history
+          .filter(item => item.action && (item.action.startsWith("SMS_") || item.action.includes("SMS")))
+          .map(item => ({
+            id: item.id,
+            timestamp: item.timestamp,
+            message: item.action.replace(/^SMS_RECEIVED\s*/, "").replace(/^SMS_SENT\s*/, "OUTBOUND: "),
+            line: item.node
+          }));
+        if (smsFromHistory.length > 0) {
+          setSmsInbox(smsFromHistory);
+        }
       }
 
       // 4. Map Cards
@@ -696,17 +709,19 @@ function App() {
   };
 
   const fetchSmsInbox = async () => {
-    const activeUserId = currentUserId || localStorage.getItem("disappear_user_id");
-    if (!activeUserId) return;
+    const activeUserId = currentUserId || localStorage.getItem("disappear_user_id") || "user_customer_test_99";
     try {
       const res = await secureRequest(`${API_BASE_URL}/api/v1/sms-inbox/${activeUserId}`);
       if (res.ok) {
         const data = await res.json();
-        setSmsInbox(data.inbox || []);
+        if (data.inbox && data.inbox.length > 0) {
+          setSmsInbox(data.inbox);
+        }
       }
     } catch (e) {
       console.error("SMS Inbox error", e);
     }
+  };
   const handleSendSmsReply = async (targetTo, bodyText) => {
     const recipient = targetTo || replyRecipient;
     const body = bodyText || replyBody;
