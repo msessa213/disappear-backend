@@ -1,8 +1,8 @@
 # Use a lightweight Python base image
 FROM python:3.11-slim
 
-# Install git (needed for installing python packages via git+)
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+# Install git, nodejs, npm
+RUN apt-get update && apt-get install -y git curl nodejs npm && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -15,6 +15,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the project files into the container
 COPY . .
+
+# Build frontend SPA distribution
+RUN cd frontend && npm install && npm run build
 
 # Expose the port your FastAPI app runs on
 EXPOSE 8000

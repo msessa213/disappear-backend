@@ -3173,6 +3173,26 @@ async def send_quarterly_report(user_id: str, quarter: str = Query("Q3 2026"), d
     return {"status": "SENT", "report": report}
 
 
+# --- STATIC FRONTEND SPA FALLBACK MOUNT ---
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+frontend_dist_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "dist")
+if os.path.exists(frontend_dist_path):
+    assets_path = os.path.join(frontend_dist_path, "assets")
+    if os.path.exists(assets_path):
+        app.mount("/assets", StaticFiles(directory=assets_path), name="static_assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa_frontend(full_path: str):
+        if full_path.startswith("api/") or full_path.startswith("twilio/") or full_path in ["docs", "openapi.json", "redoc"]:
+            raise HTTPException(status_code=404, detail="API route not found")
+        index_file = os.path.join(frontend_dist_path, "index.html")
+        if os.path.exists(index_file):
+            return FileResponse(index_file)
+        raise HTTPException(status_code=404, detail="Frontend build missing")
+
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
