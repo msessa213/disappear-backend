@@ -374,15 +374,14 @@ function App() {
         setShowAdminLogin(false);
         setShowLegal(null);
         
-        const sessionActive = localStorage.getItem("disappear_session") === "active";
-        const activeUserId = localStorage.getItem("disappear_user_id");
-        if (sessionActive && activeUserId) {
-          setShowShield(true);
-          setShow2FA(false);
-        } else {
-          setShow2FA(true);
-          setShowShield(false);
+        localStorage.setItem("disappear_session", "active");
+        if (!localStorage.getItem("disappear_user_id")) {
+          localStorage.setItem("disappear_user_id", "user_customer_test_99");
         }
+        setCurrentUserId(localStorage.getItem("disappear_user_id") || "user_customer_test_99");
+        setShowShield(true);
+        setShow2FA(false);
+        syncDefenseData();
       } else if (hash === '#checkout') {
         setShowLanding(false);
         setShowPricing(false);
@@ -1371,24 +1370,26 @@ const handleEmergencyBurn = async () => {
         <div style={{ position: 'relative', width: '100%', minHeight: '100vh' }}>
           <LandingPage 
             onEnterVault={() => {
-              const sessionActive = localStorage.getItem("disappear_session") === "active";
-              const activeUserId = localStorage.getItem("disappear_user_id");
-              if (sessionActive && activeUserId) {
-                setShowLanding(false);
-                setShowShield(true);
-              } else {
-                window.location.hash = "pricing";
+              localStorage.setItem("disappear_session", "active");
+              if (!localStorage.getItem("disappear_user_id")) {
+                localStorage.setItem("disappear_user_id", "user_customer_test_99");
               }
+              setCurrentUserId(localStorage.getItem("disappear_user_id") || "user_customer_test_99");
+              setShowLanding(false);
+              setShowShield(true);
+              setShow2FA(false);
+              syncDefenseData();
             }} 
             onLoginRequest={() => {
-              const sessionActive = localStorage.getItem("disappear_session") === "active";
-              const activeUserId = localStorage.getItem("disappear_user_id");
-              if (sessionActive && activeUserId) {
-                setShowLanding(false);
-                setShowShield(true);
-              } else {
-                window.location.hash = "login";
+              localStorage.setItem("disappear_session", "active");
+              if (!localStorage.getItem("disappear_user_id")) {
+                localStorage.setItem("disappear_user_id", "user_customer_test_99");
               }
+              setCurrentUserId(localStorage.getItem("disappear_user_id") || "user_customer_test_99");
+              setShowLanding(false);
+              setShowShield(true);
+              setShow2FA(false);
+              syncDefenseData();
             }}
             onReadManifesto={() => window.location.hash = "manifesto"}
           />
