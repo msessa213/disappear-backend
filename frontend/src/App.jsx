@@ -1927,8 +1927,22 @@ const handleEmergencyBurn = async () => {
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '240px', overflowY: 'auto' }}>
                         {smsInbox.map(sms => {
-                          const phoneMatch = sms.message.match(/\+?\d{10,15}/);
-                          const extractedPhone = phoneMatch ? phoneMatch[0] : "";
+                          const extractSenderPhone = (msgStr) => {
+                            if (!msgStr) return "";
+                            const fromMatch = msgStr.match(/From\s*[:\s]*\+?([0-9\s\-\(\)]+)/i) || msgStr.match(/To\s*[:\s]*\+?([0-9\s\-\(\)]+)/i);
+                            if (fromMatch && fromMatch[1]) {
+                              const rawNum = fromMatch[1].replace(/\D/g, "");
+                              if (rawNum.length === 10) return `+1${rawNum}`;
+                              if (rawNum.length === 11 && rawNum.startsWith("1")) return `+${rawNum}`;
+                            }
+                            const numMatch = msgStr.match(/\+?1?\s*\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})/);
+                            if (numMatch) {
+                              return `+1${numMatch[1]}${numMatch[2]}${numMatch[3]}`;
+                            }
+                            return "";
+                          };
+
+                          const extractedPhone = extractSenderPhone(sms.message);
                           const isReplying = activeReplyId === sms.id;
 
                           return (
