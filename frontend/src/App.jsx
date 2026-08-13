@@ -774,15 +774,15 @@ function App() {
           line: "OUTBOUND_SMS"
         };
         setSmsInbox(prev => [newOutboundItem, ...prev]);
-
-        setReplyBody("");
-        setReplyRecipient("");
-        setActiveReplyId(null);
-        setShowComposeSms(false);
-        fetchSmsInbox();
       } else {
         triggerToast(`❌ ${data.detail || "FAILED TO DELIVER SMS"}`);
       }
+
+      setReplyBody("");
+      setReplyRecipient("");
+      setActiveReplyId(null);
+      setShowComposeSms(false);
+      fetchSmsInbox();
     } catch (e) {
       console.error("SMS send error:", e);
       triggerToast("NETWORK ERROR SENDING SMS");

@@ -2820,7 +2820,10 @@ async def send_user_sms_reply(req: SMSReplyRequest, db: Session = Depends(get_db
     if not target_to:
         raise HTTPException(status_code=400, detail="INVALID_PHONE_NUMBER: Please enter a valid 10-digit phone number.")
         
-    from services.twilio_service import send_sms
+    from services.twilio_service import send_sms, twilio_client
+    if not twilio_client:
+        raise HTTPException(status_code=503, detail="TWILIO_CLIENT_UNAVAILABLE: Twilio client is not initialized in Railway.")
+
     success = send_sms(to_phone_number=target_to, message_body=req.message.strip())
     if success:
         try:
@@ -2833,7 +2836,7 @@ async def send_user_sms_reply(req: SMSReplyRequest, db: Session = Depends(get_db
             pass
         return {"status": "success", "detail": f"Message sent successfully to {target_to}"}
     else:
-        raise HTTPException(status_code=500, detail="SMS delivery failed. Check Twilio settings or campaign verification.")
+        raise HTTPException(status_code=500, detail="TWILIO_DELIVERY_FAILED: Carrier rejected message or sender number is unverified.")
 
 
 @app.api_route("/twilio/sms", methods=["GET", "POST"])
