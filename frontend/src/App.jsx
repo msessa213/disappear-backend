@@ -32,7 +32,7 @@ const isExplicitLocalDev = typeof window !== 'undefined' &&
   (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') && 
   window.location.port === '5173';
 
-const API_BASE_URL = isExplicitLocalDev ? LOCAL_API : PROD_API;
+const API_BASE_URL = isExplicitLocalDev ? LOCAL_API : "";
 
 function App() {
   // --- SECURE BRIDGE LOGIC ---
@@ -726,42 +726,33 @@ function App() {
     const rawTo = (targetTo || replyRecipient || "").trim();
     const body = (bodyText || replyBody || "").trim();
 
-    const cleanupUI = () => {
-      setReplyBody("");
-      setReplyRecipient("");
-      setActiveReplyId(null);
-      setShowComposeSms(false);
-      setIsSendingSms(false);
-    };
+    // Instantly clear text and close reply card UI on button press
+    setReplyBody("");
+    setReplyRecipient("");
+    setActiveReplyId(null);
+    setShowComposeSms(false);
+    setIsSendingSms(false);
 
     if (!rawTo) {
       triggerToast("⚠️ RECIPIENT PHONE NUMBER REQUIRED");
-      cleanupUI();
       return;
     }
 
     const digitsOnly = rawTo.replace(/\D/g, "");
     if (digitsOnly.length < 10) {
       triggerToast("⚠️ PLEASE ENTER A VALID 10-DIGIT PHONE NUMBER");
-      cleanupUI();
       return;
     }
 
     if (!body) {
       triggerToast("⚠️ PLEASE TYPE A MESSAGE BODY TO SEND");
-      cleanupUI();
       return;
     }
 
     const formattedTo = digitsOnly.length === 10 ? `+1${digitsOnly}` : `+${digitsOnly}`;
-
-    setIsSendingSms(true);
     triggerToast(`⏳ DISPATCHING SMS TO ${formattedTo}...`);
 
     const activeUserId = currentUserId || localStorage.getItem("disappear_user_id") || "user_customer_test_99";
-    
-    // Close reply box immediately for instant UX feedback
-    cleanupUI();
 
     try {
       const res = await secureRequest(`${API_BASE_URL}/api/v1/send-sms`, {
@@ -1985,10 +1976,14 @@ const handleEmergencyBurn = async () => {
                                   <button
                                     className="main-button"
                                     type="button"
-                                    style={{ padding: '4px 12px', fontSize: '0.72rem', width: '100%' }}
-                                    onClick={() => handleSendSmsReply(replyRecipient, replyBody)}
+                                    style={{ padding: '6px 14px', fontSize: '0.75rem', width: '100%', cursor: 'pointer', background: 'linear-gradient(135deg, #10B981, #059669)', border: 'none', color: '#fff', fontWeight: 'bold', borderRadius: '4px', marginTop: '4px' }}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      handleSendSmsReply(replyRecipient || extractedPhone, replyBody);
+                                    }}
                                   >
-                                    📤 SEND REPLY
+                                    📤 SEND REPLY NOW
                                   </button>
                                 </div>
                               )}
