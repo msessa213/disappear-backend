@@ -2795,9 +2795,39 @@ async def get_user_sms_inbox(user_id: str, db: Session = Depends(get_db)):
             "id": log.id,
             "timestamp": log.timestamp.isoformat() if log.timestamp else "",
             "message": msg,
-            "line": log.node_id
         })
     return {"status": "success", "inbox": inbox}
+
+
+class SMSReplyRequest(BaseModel):
+    user_id: str
+    to_phone: str
+    message: str
+
+@app.post("/api/v1/send-sms")
+async def send_user_sms_reply(req: SMSReplyRequest, db: Session = Depends(get_db)):
+    """Allows a user to send an SMS reply from their virtual line to any recipient"""
+    if not req.to_phone or not req.message.strip():
+        raise HTTPException(status_code=400, detail="Recipient phone number and message body are required.")
+    
+    target_to = format_to_e164(req.to_phone)
+    if not target_to:
+        raise HTTPException(status_code=400, detail="INVALID_PHONE_NUMBER: Please enter a valid 10-digit phone number.")
+        
+    from services.twilio_service import send_sms
+    success = send_sms(to_phone_number=target_to, message_body=req.message.strip())
+    if success:
+        try:
+            db.add(DBPurgeLog(
+                action_type=f"SMS_SENT [To {target_to}]: {req.message.strip()}",
+                node_id=f"{req.user_id}_OUTBOUND_SMS"
+            ))
+            db.commit()
+        except Exception:
+            pass
+        return {"status": "success", "detail": f"Message sent successfully to {target_to}"}
+    else:
+        raise HTTPException(status_code=500, detail="SMS delivery failed. Check Twilio settings or campaign verification.")
 
 
 @app.api_route("/twilio/sms", methods=["GET", "POST"])

@@ -123,6 +123,11 @@ function App() {
   const [destinationPhone, setDestinationPhone] = useState("");
   const [hasLoadedPhone, setHasLoadedPhone] = useState(false);
   const [smsInbox, setSmsInbox] = useState([]);
+  const [activeReplyId, setActiveReplyId] = useState(null);
+  const [replyRecipient, setReplyRecipient] = useState("");
+  const [replyBody, setReplyBody] = useState("");
+  const [isSendingSms, setIsSendingSms] = useState(false);
+  const [showComposeSms, setShowComposeSms] = useState(false);
 
   const [targetProfile, setTargetProfile] = useState({
       firstName: "", middleName: "", lastName: "", email: "", password: "", phone: "",
@@ -692,6 +697,37 @@ function App() {
       }
     } catch (e) {
       console.error("SMS Inbox error", e);
+    }
+  const handleSendSmsReply = async (targetTo, bodyText) => {
+    const recipient = targetTo || replyRecipient;
+    const body = bodyText || replyBody;
+    if (!recipient || !recipient.trim() || !body || !body.trim()) {
+      triggerToast("RECIPIENT AND MESSAGE BODY REQUIRED");
+      return;
+    }
+    setIsSendingSms(true);
+    const activeUserId = currentUserId || localStorage.getItem("disappear_user_id") || "user_customer_test_99";
+    try {
+      const res = await secureRequest(`${API_BASE_URL}/api/v1/send-sms`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: activeUserId, to_phone: recipient, message: body })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("✅ SMS DELIVERED SUCCESSFULLY!");
+        setReplyBody("");
+        setReplyRecipient("");
+        setActiveReplyId(null);
+        setShowComposeSms(false);
+        fetchSmsInbox();
+      } else {
+        triggerToast(`❌ ${data.detail || "FAILED TO DELIVER SMS"}`);
+      }
+    } catch (e) {
+      triggerToast("NETWORK ERROR SENDING SMS");
+    } finally {
+      setIsSendingSms(false);
     }
   };
 
@@ -1766,22 +1802,98 @@ const handleEmergencyBurn = async () => {
                       <span style={{ fontSize: '0.82rem', color: '#10B981', fontWeight: 'bold', letterSpacing: '1px' }}>
                         📥 INCOMING SMS MESSAGES (LIVE INBOX)
                       </span>
-                      <button className="reset-btn" style={{ padding: '3px 8px', fontSize: '0.7rem' }} onClick={fetchSmsInbox}>
-                        🔄 REFRESH
-                      </button>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button className="reset-btn" style={{ padding: '3px 8px', fontSize: '0.7rem' }} onClick={() => setShowComposeSms(!showComposeSms)}>
+                          {showComposeSms ? "✕ CLOSE" : "✉️ NEW SMS"}
+                        </button>
+                        <button className="reset-btn" style={{ padding: '3px 8px', fontSize: '0.7rem' }} onClick={fetchSmsInbox}>
+                          🔄 REFRESH
+                        </button>
+                      </div>
                     </div>
+
+                    {showComposeSms && (
+                      <div style={{ background: '#090d16', border: '1px solid #00D2FF', padding: '12px', borderRadius: '6px', marginBottom: '12px' }}>
+                        <div style={{ fontSize: '0.75rem', color: '#00D2FF', fontWeight: 'bold', marginBottom: '8px' }}>✉️ SEND NEW SMS FROM VIRTUAL LINE</div>
+                        <input
+                          type="text"
+                          placeholder="Recipient Phone (+18135551234)"
+                          value={replyRecipient}
+                          onChange={(e) => setReplyRecipient(e.target.value)}
+                          style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#030712', border: '1px solid #1e293b', color: '#fff', borderRadius: '4px', marginBottom: '8px', boxSizing: 'border-box' }}
+                        />
+                        <textarea
+                          placeholder="Type your message..."
+                          value={replyBody}
+                          onChange={(e) => setReplyBody(e.target.value)}
+                          style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#030712', border: '1px solid #1e293b', color: '#fff', borderRadius: '4px', marginBottom: '8px', height: '50px', boxSizing: 'border-box', resize: 'vertical' }}
+                        />
+                        <button
+                          className="main-button"
+                          style={{ padding: '5px 12px', fontSize: '0.75rem', width: '100%' }}
+                          onClick={() => handleSendSmsReply(replyRecipient, replyBody)}
+                          disabled={isSendingSms}
+                        >
+                          {isSendingSms ? "SENDING..." : "📤 SEND SMS"}
+                        </button>
+                      </div>
+                    )}
+
                     {smsInbox.length === 0 ? (
                       <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, textAlign: 'center', padding: '10px' }}>
                         No incoming text messages received yet. Any SMS sent to your alias will appear here instantly.
                       </p>
                     ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto' }}>
-                        {smsInbox.map(sms => (
-                          <div key={sms.id} style={{ background: '#0a0f1d', padding: '8px 12px', borderRadius: '6px', border: '1px solid #1e293b', fontSize: '0.8rem' }}>
-                            <div style={{ color: '#00D2FF', fontWeight: 'bold', fontSize: '0.75rem', marginBottom: '3px' }}>{sms.message}</div>
-                            <div style={{ color: '#94a3b8', fontSize: '0.7rem' }}>{sms.timestamp}</div>
-                          </div>
-                        ))}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '240px', overflowY: 'auto' }}>
+                        {smsInbox.map(sms => {
+                          const phoneMatch = sms.message.match(/\+?\d{10,15}/);
+                          const senderPhone = phoneMatch ? phoneMatch[0] : "";
+                          const isReplying = activeReplyId === sms.id;
+
+                          return (
+                            <div key={sms.id} style={{ background: '#0a0f1d', padding: '10px 12px', borderRadius: '6px', border: '1px solid #1e293b', fontSize: '0.8rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                <div style={{ color: '#00D2FF', fontWeight: 'bold', fontSize: '0.78rem' }}>{sms.message}</div>
+                                {senderPhone && (
+                                  <button
+                                    className="reset-btn"
+                                    style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#10B981', borderColor: '#10B981' }}
+                                    onClick={() => {
+                                      if (isReplying) {
+                                        setActiveReplyId(null);
+                                      } else {
+                                        setActiveReplyId(sms.id);
+                                        setReplyRecipient(senderPhone);
+                                      }
+                                    }}
+                                  >
+                                    {isReplying ? "CANCEL" : "💬 REPLY"}
+                                  </button>
+                                )}
+                              </div>
+                              <div style={{ color: '#94a3b8', fontSize: '0.7rem' }}>{sms.timestamp}</div>
+
+                              {isReplying && (
+                                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #1e293b' }}>
+                                  <textarea
+                                    placeholder={`Reply to ${senderPhone}...`}
+                                    value={replyBody}
+                                    onChange={(e) => setReplyBody(e.target.value)}
+                                    style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#030712', border: '1px solid #334155', color: '#fff', borderRadius: '4px', marginBottom: '6px', height: '45px', boxSizing: 'border-box', resize: 'vertical' }}
+                                  />
+                                  <button
+                                    className="main-button"
+                                    style={{ padding: '4px 12px', fontSize: '0.72rem', width: '100%' }}
+                                    onClick={() => handleSendSmsReply(senderPhone, replyBody)}
+                                    disabled={isSendingSms}
+                                  >
+                                    {isSendingSms ? "SENDING..." : "📤 SEND REPLY"}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
