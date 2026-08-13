@@ -52,6 +52,10 @@ startup_error_message = None
 
 @app.get("/")
 async def root():
+    frontend_dist_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "dist")
+    index_file = os.path.join(frontend_dist_path, "index.html")
+    if os.path.exists(index_file):
+        return FileResponse(index_file)
     if startup_error_message:
         return {"status": "degraded", "error": startup_error_message}
     return {"status": "online"}
