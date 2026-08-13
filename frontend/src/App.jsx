@@ -642,6 +642,9 @@ function App() {
       if (data.referrals) {
         setReferralData(data.referrals);
       }
+
+      // 10. Sync Live SMS Inbox
+      fetchSmsInbox();
     } catch (err) { 
         console.warn("Network interrupted. Attempting silent reconnect on next cycle...");
     }

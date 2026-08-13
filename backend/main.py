@@ -2784,18 +2784,17 @@ async def update_user_phone(req: PhoneUpdateRequest, db: Session = Depends(get_d
 async def get_user_sms_inbox(user_id: str, db: Session = Depends(get_db)):
     """Returns recent incoming SMS messages received for the user's virtual phone aliases"""
     sms_logs = db.query(DBPurgeLog).filter(
-        DBPurgeLog.action_type.like("SMS_%"),
-        or_(
-            DBPurgeLog.node_id.startswith(f"{user_id}_"),
-            DBPurgeLog.node_id == user_id
-        )
+        DBPurgeLog.action_type.like("SMS_%")
     ).order_by(desc(DBPurgeLog.timestamp)).limit(50).all()
     inbox = []
     for log in sms_logs:
+        msg = log.action_type
+        if msg.startswith("SMS_RECEIVED "):
+            msg = msg.replace("SMS_RECEIVED ", "")
         inbox.append({
             "id": log.id,
             "timestamp": log.timestamp.isoformat() if log.timestamp else "",
-            "message": log.action_type,
+            "message": msg,
             "line": log.node_id
         })
     return {"status": "success", "inbox": inbox}
