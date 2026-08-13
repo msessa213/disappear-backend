@@ -723,19 +723,35 @@ function App() {
     }
   };
   const handleSendSmsReply = async (targetTo, bodyText) => {
-    const recipient = targetTo || replyRecipient;
-    const body = bodyText || replyBody;
-    if (!recipient || !recipient.trim() || !body || !body.trim()) {
-      triggerToast("RECIPIENT AND MESSAGE BODY REQUIRED");
+    const rawTo = (targetTo || replyRecipient || "").trim();
+    const body = (bodyText || replyBody || "").trim();
+
+    if (!rawTo) {
+      triggerToast("⚠️ PLEASE ENTER A RECIPIENT PHONE NUMBER");
       return;
     }
+
+    const digitsOnly = rawTo.replace(/\D/g, "");
+    if (digitsOnly.length < 10) {
+      triggerToast("⚠️ PLEASE ENTER A VALID 10-DIGIT PHONE NUMBER");
+      return;
+    }
+
+    if (!body) {
+      triggerToast("⚠️ PLEASE TYPE A MESSAGE BODY TO SEND");
+      return;
+    }
+
+    const formattedTo = digitsOnly.length === 10 ? `+1${digitsOnly}` : `+${digitsOnly}`;
+
     setIsSendingSms(true);
+    triggerToast("⏳ DISPATCHING SMS...");
     const activeUserId = currentUserId || localStorage.getItem("disappear_user_id") || "user_customer_test_99";
     try {
       const res = await secureRequest(`${API_BASE_URL}/api/v1/send-sms`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: activeUserId, to_phone: recipient, message: body })
+        body: JSON.stringify({ user_id: activeUserId, to_phone: formattedTo, message: body })
       });
       const data = await res.json();
       if (res.ok) {
@@ -749,6 +765,7 @@ function App() {
         triggerToast(`❌ ${data.detail || "FAILED TO DELIVER SMS"}`);
       }
     } catch (e) {
+      console.error("SMS send error:", e);
       triggerToast("NETWORK ERROR SENDING SMS");
     } finally {
       setIsSendingSms(false);
