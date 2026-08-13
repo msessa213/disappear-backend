@@ -78,11 +78,11 @@ def send_sms(to_phone_number: str, message_body: str, from_phone_number: Optiona
         logger.error("TWILIO_SEND_SMS_FAILURE: Twilio client is not available. Cannot send message.")
         return False
 
-    try:
-        msg_service_sid = settings.TWILIO_MESSAGING_SERVICE_SID or os.getenv("TWILIO_MESSAGING_SERVICE_SID")
-        
-        # If a messaging service SID is configured and no explicit sender was passed, prefer messaging_service_sid
-        if msg_service_sid and not from_phone_number:
+    msg_service_sid = settings.TWILIO_MESSAGING_SERVICE_SID or os.getenv("TWILIO_MESSAGING_SERVICE_SID")
+    
+    # If a messaging service SID is configured and no explicit sender was passed, prefer messaging_service_sid
+    if msg_service_sid and not from_phone_number:
+        try:
             message = twilio_client.messages.create(
                 body=message_body,
                 messaging_service_sid=msg_service_sid,
@@ -90,46 +90,43 @@ def send_sms(to_phone_number: str, message_body: str, from_phone_number: Optiona
             )
             logger.info(f"Twilio SMS sent via Messaging Service {msg_service_sid} to {to_phone_number}. SID: {message.sid}")
             return True
+        except Exception as ex:
+            logger.warning(f"Messaging Service send failed: {ex}")
 
-        from_num = from_phone_number or settings.TWILIO_PHONE_NUMBER or os.getenv("TWILIO_PHONE_NUMBER")
-        
-        # Fallback to account's first available phone number if from_num is missing
-        if not from_num:
-            try:
-                numbers = twilio_client.incoming_phone_numbers.list(limit=1)
-                if numbers:
-                    from_num = numbers[0].phone_number
-            except Exception:
-                pass
+    from_num = from_phone_number or settings.TWILIO_PHONE_NUMBER or os.getenv("TWILIO_PHONE_NUMBER")
+    
+    # Fallback to account's first available phone number if from_num is missing
+    if not from_num:
+        try:
+            numbers = twilio_client.incoming_phone_numbers.list(limit=1)
+            if numbers:
+                from_num = numbers[0].phone_number
+        except Exception:
+            pass
 
-        if not from_num and msg_service_sid:
-            message = twilio_client.messages.create(
-                body=message_body,
-                messaging_service_sid=msg_service_sid,
-                to=to_phone_number
-            )
-            logger.info(f"Twilio SMS sent via Messaging Service {msg_service_sid} to {to_phone_number}. SID: {message.sid}")
-            return True
-
+    if from_num:
         try:
             message = twilio_client.messages.create(body=message_body, from_=from_num, to=to_phone_number)
             logger.info(f"Twilio SMS sent successfully from {from_num} to {to_phone_number}. SID: {message.sid}")
             return True
-        except TwilioRestException as ex_from:
-            if msg_service_sid:
-                logger.warning(f"Twilio SMS send from {from_num} failed ({ex_from}). Attempting fallback via Messaging Service {msg_service_sid}...")
-                try:
-                    message = twilio_client.messages.create(
-                        body=message_body,
-                        messaging_service_sid=msg_service_sid,
-                        to=to_phone_number
-                    )
-                    logger.info(f"Twilio SMS sent via fallback Messaging Service {msg_service_sid} to {to_phone_number}. SID: {message.sid}")
-                    return True
-                except Exception as ex_fallback:
-                    logger.error(f"TWILIO_SEND_SMS_FAILURE: Messaging Service fallback failed: {ex_fallback}")
-            logger.error(f"TWILIO_SEND_SMS_FAILURE: Failed to send SMS to {to_phone_number}. Error: {ex_from}")
-            return False
+        except Exception as ex_from:
+            logger.warning(f"Twilio SMS send from {from_num} failed: {ex_from}.")
+
+    # Ultimate fallback to Messaging Service if specific sender failed
+    if msg_service_sid:
+        try:
+            message = twilio_client.messages.create(
+                body=message_body,
+                messaging_service_sid=msg_service_sid,
+                to=to_phone_number
+            )
+            logger.info(f"Twilio SMS sent via fallback Messaging Service {msg_service_sid} to {to_phone_number}. SID: {message.sid}")
+            return True
+        except Exception as ex_fallback:
+            logger.error(f"TWILIO_SEND_SMS_FAILURE: Messaging Service fallback failed: {ex_fallback}")
+
+    logger.error(f"TWILIO_SEND_SMS_FAILURE: Failed to send SMS to {to_phone_number}.")
+    return False
 
 def make_voice_call(to_phone_number: str, twiml_url: str) -> bool:
     """
