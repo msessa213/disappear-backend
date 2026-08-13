@@ -1910,13 +1910,11 @@ const handleEmergencyBurn = async () => {
                         />
                         <button
                           className="main-button"
-                          style={{ padding: '5px 12px', fontSize: '0.75rem', width: '100%', opacity: isSendingSms ? 0.7 : 1 }}
-                          onClick={() => {
-                            if (isSendingSms) setIsSendingSms(false);
-                            handleSendSmsReply(replyRecipient, replyBody);
-                          }}
+                          type="button"
+                          style={{ padding: '5px 12px', fontSize: '0.75rem', width: '100%' }}
+                          onClick={() => handleSendSmsReply(replyRecipient, replyBody)}
                         >
-                          {isSendingSms ? "⏳ DISPATCHING... (CLICK TO RETRY)" : "📤 SEND SMS"}
+                          📤 SEND SMS
                         </button>
                       </div>
                     )}
@@ -1952,6 +1950,7 @@ const handleEmergencyBurn = async () => {
                                 <div style={{ color: '#00D2FF', fontWeight: 'bold', fontSize: '0.78rem' }}>{sms.message}</div>
                                 <button
                                   className="reset-btn"
+                                  type="button"
                                   style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#10B981', borderColor: '#10B981' }}
                                   onClick={() => {
                                     if (isReplying) {
@@ -1985,13 +1984,11 @@ const handleEmergencyBurn = async () => {
                                   />
                                   <button
                                     className="main-button"
-                                    style={{ padding: '4px 12px', fontSize: '0.72rem', width: '100%', opacity: isSendingSms ? 0.7 : 1 }}
-                                    onClick={() => {
-                                      if (isSendingSms) setIsSendingSms(false);
-                                      handleSendSmsReply(replyRecipient, replyBody);
-                                    }}
+                                    type="button"
+                                    style={{ padding: '4px 12px', fontSize: '0.72rem', width: '100%' }}
+                                    onClick={() => handleSendSmsReply(replyRecipient, replyBody)}
                                   >
-                                    {isSendingSms ? "⏳ DISPATCHING... (CLICK TO RETRY)" : "📤 SEND REPLY"}
+                                    📤 SEND REPLY
                                   </button>
                                 </div>
                               )}
