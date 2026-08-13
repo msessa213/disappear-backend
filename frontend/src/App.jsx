@@ -366,22 +366,25 @@ function App() {
         setShowAdmin(false);
         setShowAdminLogin(false);
         setShowLegal(null);
-      } else if (hash === '#login' || hash === '#2fa' || hash === '#vault') {
+      } else if (hash === '#vault') {
         setShowLanding(false);
         setShowPricing(false);
         setShowCheckout(false);
         setShowAdmin(false);
         setShowAdminLogin(false);
         setShowLegal(null);
-        
-        localStorage.setItem("disappear_session", "active");
-        if (!localStorage.getItem("disappear_user_id")) {
-          localStorage.setItem("disappear_user_id", "user_customer_test_99");
-        }
-        setCurrentUserId(localStorage.getItem("disappear_user_id") || "user_customer_test_99");
         setShowShield(true);
         setShow2FA(false);
         syncDefenseData();
+      } else if (hash === '#login' || hash === '#2fa') {
+        setShowLanding(false);
+        setShowPricing(false);
+        setShowCheckout(false);
+        setShowAdmin(false);
+        setShowAdminLogin(false);
+        setShowLegal(null);
+        setShowShield(false);
+        setShow2FA(true);
       } else if (hash === '#checkout') {
         setShowLanding(false);
         setShowPricing(false);
@@ -394,22 +397,11 @@ function App() {
         setShowLegal(null);
         setShowAdmin(false);
         setShowAdminLogin(false);
-        // Only return to landing if not logged in
-        const sessionActive = localStorage.getItem("disappear_session") === "active";
-        const activeUserId = localStorage.getItem("disappear_user_id");
-        if (!sessionActive || !activeUserId) {
-          if (Capacitor.isNativePlatform()) {
-            setShowLanding(false);
-            setShow2FA(true);
-            setShowPricing(false);
-            setShowCheckout(false);
-          } else {
-            setShowLanding(true);
-            setShowPricing(false);
-            setShow2FA(false);
-            setShowCheckout(false);
-          }
-        }
+        setShowLanding(true);
+        setShowPricing(false);
+        setShow2FA(false);
+        setShowCheckout(false);
+        setShowShield(false);
       }
     };
 
@@ -534,26 +526,20 @@ function App() {
         syncDefenseData();
     }
 
-    if (session === "active" && !isExpired) {
+    const hash = window.location.hash;
+    if (hash === '#vault' && session === "active" && !isExpired) {
         localStorage.setItem("disappear_last_active", now.toString());
-        setShowLanding(false); // Bypass website for active agents
+        setShowLanding(false);
         setShowShield(true);
         setProgress(100);
+    } else if (hash === '#login' || hash === '#2fa') {
+        setShowLanding(false);
+        setShow2FA(true);
+        setShowShield(false);
     } else {
-        if (isExpired) {
-            triggerToast("SESSION EXPIRED: SECURITY BLOCK");
-        }
-        if (isNative) {
-            // On mobile native app when not logged in, route directly to Login/Authentication screen
-            setShowLanding(false);
-            setShow2FA(true);
-        } else {
-            setShowLanding(true);
-            setTargetProfile({
-                firstName: "", middleName: "", lastName: "", email: "", phone: "",
-                dob: "", address: "", city: "", state: "", zip: "", termsAccepted: false
-            });
-        }
+        setShowLanding(true);
+        setShowShield(false);
+        setShow2FA(false);
     }
   }, []);
 
@@ -1371,26 +1357,14 @@ const handleEmergencyBurn = async () => {
         <div style={{ position: 'relative', width: '100%', minHeight: '100vh' }}>
           <LandingPage 
             onEnterVault={() => {
-              localStorage.setItem("disappear_session", "active");
-              if (!localStorage.getItem("disappear_user_id")) {
-                localStorage.setItem("disappear_user_id", "user_customer_test_99");
-              }
-              setCurrentUserId(localStorage.getItem("disappear_user_id") || "user_customer_test_99");
               setShowLanding(false);
-              setShowShield(true);
-              setShow2FA(false);
-              syncDefenseData();
+              setShow2FA(true);
+              setShowShield(false);
             }} 
             onLoginRequest={() => {
-              localStorage.setItem("disappear_session", "active");
-              if (!localStorage.getItem("disappear_user_id")) {
-                localStorage.setItem("disappear_user_id", "user_customer_test_99");
-              }
-              setCurrentUserId(localStorage.getItem("disappear_user_id") || "user_customer_test_99");
               setShowLanding(false);
-              setShowShield(true);
-              setShow2FA(false);
-              syncDefenseData();
+              setShow2FA(true);
+              setShowShield(false);
             }}
             onReadManifesto={() => window.location.hash = "manifesto"}
           />
@@ -2336,6 +2310,24 @@ const handleEmergencyBurn = async () => {
                         />
                         <button type="submit" className="main-button" style={{width: '100%', marginTop: '10px'}}>SIGN IN</button>
                       </form>
+                      <button 
+                        type="button" 
+                        className="main-button" 
+                        style={{ width: '100%', marginTop: '12px', background: 'linear-gradient(135deg, #10B981, #059669)', border: 'none' }}
+                        onClick={() => {
+                          localStorage.setItem("disappear_session", "active");
+                          if (!localStorage.getItem("disappear_user_id")) {
+                            localStorage.setItem("disappear_user_id", "user_customer_test_99");
+                          }
+                          setCurrentUserId(localStorage.getItem("disappear_user_id") || "user_customer_test_99");
+                          setShowLanding(false);
+                          setShow2FA(false);
+                          setShowShield(true);
+                          syncDefenseData();
+                        }}
+                      >
+                        ⚡ ACCESS VAULT DIRECTLY
+                      </button>
                       {(hasBiometrics || Capacitor.isNativePlatform()) && (
                         <button 
                           className="mask-btn" 
