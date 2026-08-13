@@ -394,6 +394,9 @@ function App() {
         setShowAdminLogin(false);
         setShowLegal(null);
       } else if (hash === '' || hash === '#') {
+        if (window.location.hash) {
+          window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        }
         setShowLegal(null);
         setShowAdmin(false);
         setShowAdminLogin(false);
@@ -408,7 +411,7 @@ function App() {
     handleHashChange();
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  }, [syncDefenseData]);
 
   // --- GOOGLE MAPS PLACES AUTOCOMPLETE ---
   useEffect(() => {
@@ -1614,7 +1617,7 @@ const handleEmergencyBurn = async () => {
                   <button 
                     className="reset-btn" 
                     style={{ padding: '10px 20px', fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} 
-                    onClick={() => { window.location.hash = ""; }}
+                    onClick={() => { window.history.replaceState(null, "", window.location.pathname + window.location.search); setShowLanding(true); setShowLegal(null); setShowPricing(false); setShowCheckout(false); setShow2FA(false); }}
                   >
                     ← BACK TO PUBLIC HOME
                   </button>
@@ -1631,7 +1634,7 @@ const handleEmergencyBurn = async () => {
                   <button 
                     className="reset-btn" 
                     style={{ padding: '10px 20px', fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} 
-                    onClick={() => { window.location.hash = ""; }}
+                    onClick={() => { window.history.replaceState(null, "", window.location.pathname + window.location.search); setShowLanding(true); setShowLegal(null); setShowPricing(false); setShowCheckout(false); setShow2FA(false); }}
                   >
                     ← BACK TO HOME
                   </button>
@@ -1678,7 +1681,7 @@ const handleEmergencyBurn = async () => {
                 </div>
 
                 <div style={{ marginTop: '25px', width: '100%', textAlign: 'center' }}>
-                  <button className="main-button" style={{ padding: '12px 30px', fontSize: '0.85rem' }} onClick={() => { window.location.hash = ""; }}>
+                  <button className="main-button" style={{ padding: '12px 30px', fontSize: '0.85rem' }} onClick={() => { window.history.replaceState(null, "", window.location.pathname + window.location.search); setShowLanding(true); setShowLegal(null); setShowPricing(false); setShowCheckout(false); setShow2FA(false); }}>
                     ← RETURN TO HOME
                   </button>
                 </div>
@@ -2357,7 +2360,7 @@ const handleEmergencyBurn = async () => {
                         <div className="price-amount">${billingCycle === 'monthly' ? '19.99' : '15.99'}</div>
                         <p style={{fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: '20px', textAlign: 'center'}}>Cancel or adjust subscription directly inside your dashboard in a single click.</p>
                         <button className="main-button" style={{width: '100%'}} onClick={() => window.location.hash = "checkout"}>PROCEED</button>
-                        <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => window.location.hash = ""}>CANCEL</button>
+                        <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => { window.history.replaceState(null, "", window.location.pathname + window.location.search); setShowLanding(true); setShowPricing(false); }}>CANCEL</button>
                       </div>
                     </div>
 
