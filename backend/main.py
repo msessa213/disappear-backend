@@ -2871,6 +2871,10 @@ async def twilio_incoming_sms(
         logger.warning(f"Failed to log SMS audit event: {ex}")
 
     forward_phone = format_to_e164(profile.phone) if profile and profile.phone else ""
+    if not forward_phone:
+        env_fwd = os.getenv("FORWARDING_PHONE") or ""
+        if env_fwd:
+            forward_phone = format_to_e164(env_fwd)
 
     if not forward_phone:
         logger.warning(f"TWILIO_SMS_NO_DESTINATION: Captured SMS in Vault but no valid mobile phone configured for virtual line {To}")
