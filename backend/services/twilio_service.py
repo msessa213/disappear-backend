@@ -18,6 +18,7 @@ class TwilioSettings(BaseSettings):
     TWILIO_API_KEY_SID: Optional[str] = None
     TWILIO_API_KEY_SECRET: Optional[str] = None
     TWILIO_PHONE_NUMBER: Optional[str] = None
+    TWILIO_MESSAGING_SERVICE_SID: Optional[str] = None
 
     class Config:
         env_file = ".env"
@@ -78,20 +79,47 @@ def send_sms(to_phone_number: str, message_body: str, from_phone_number: Optiona
         return False
 
     try:
-        clean_to = "".join(filter(str.isdigit, str(to_phone_number or "")))
+        msg_service_sid = settings.TWILIO_MESSAGING_SERVICE_SID or os.getenv("TWILIO_MESSAGING_SERVICE_SID")
         
-        from_num = from_phone_number or settings.TWILIO_PHONE_NUMBER or os.getenv("TWILIO_PHONE_NUMBER") or "+18137558466"
-        clean_from_num = "".join(filter(str.isdigit, str(from_num)))
+        # If a messaging service SID is configured and no explicit sender was passed, prefer messaging_service_sid
+        if msg_service_sid and not from_phone_number:
+            message = twilio_client.messages.create(
+                body=message_body,
+                messaging_service_sid=msg_service_sid,
+                to=to_phone_number
+            )
+            logger.info(f"Twilio SMS sent via Messaging Service {msg_service_sid} to {to_phone_number}. SID: {message.sid}")
+            return True
+
+        from_num = from_phone_number or settings.TWILIO_PHONE_NUMBER or os.getenv("TWILIO_PHONE_NUMBER")
         
-        if clean_to and clean_from_num and clean_to == clean_from_num:
-            # Alternate sender if sender and recipient numbers are identical
-            from_num = "+18134375531" if clean_from_num != "18134375531" else "+14782761964"
+        # Fallback to account's first available phone number if from_num is missing
+        if not from_num:
+            try:
+                numbers = twilio_client.incoming_phone_numbers.list(limit=1)
+                if numbers:
+                    from_num = numbers[0].phone_number
+            except Exception:
+                pass
+
+        if not from_num and msg_service_sid:
+            message = twilio_client.messages.create(
+                body=message_body,
+                messaging_service_sid=msg_service_sid,
+                to=to_phone_number
+            )
+            logger.info(f"Twilio SMS sent via Messaging Service {msg_service_sid} to {to_phone_number}. SID: {message.sid}")
+            return True
+
+        if not from_num:
+            logger.error("TWILIO_SEND_SMS_FAILURE: No valid sender phone number or Messaging Service SID configured.")
+            return False
 
         message = twilio_client.messages.create(body=message_body, from_=from_num, to=to_phone_number)
         logger.info(f"Twilio SMS sent successfully from {from_num} to {to_phone_number}. SID: {message.sid}")
         return True
     except TwilioRestException as e:
-        logger.error(f"TWILIO_SEND_SMS_FAILURE: Failed to send SMS from {from_num} to {to_phone_number}. Error: {e}")
+        logger.error(f"TWILIO_SEND_SMS_FAILURE: Failed to send SMS to {to_phone_number}. Error: {e}")
         return False
 
 def make_voice_call(to_phone_number: str, twiml_url: str) -> bool:

@@ -2671,8 +2671,8 @@ def format_to_e164(phone_str: str) -> str:
     if not phone_str:
         return ""
     digits = "".join(filter(str.isdigit, str(phone_str)))
-    if "555" in digits or len(digits) < 10:
-        # Filter out fictional 555 numbers and invalid phone lengths
+    if (len(digits) == 10 and digits[3:6] == "555" and digits[6:8] == "01") or len(digits) < 10:
+        # Filter out fictional test range 555-01XX and invalid phone lengths
         return ""
     if len(digits) == 10:
         return f"+1{digits}"
@@ -2882,13 +2882,12 @@ async def twilio_incoming_sms(
     # 1. Dispatch SMS via Twilio REST API directly to the user's real phone number
     try:
         from services.twilio_service import send_sms
-        send_sms(to_phone_number=forward_phone, message_body=message_content)
+        send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=To)
     except Exception as ex:
         logger.warning(f"Twilio REST API SMS dispatch failed: {ex}")
 
-    # 2. Return native Twilio TwiML XML to force carrier-level forwarding directly to the user's real cell phone
-    twiml_response = f'<?xml version="1.0" encoding="UTF-8"?><Response><Message to="{forward_phone}">{message_content}</Message></Response>'
-    return Response(content=twiml_response, media_type="application/xml")
+    # Return clean empty TwiML XML response since SMS was dispatched via REST API
+    return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response/>', media_type="application/xml")
 
 
 @app.get("/api/v1/test-twilio")
