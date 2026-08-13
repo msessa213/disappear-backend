@@ -111,16 +111,25 @@ def send_sms(to_phone_number: str, message_body: str, from_phone_number: Optiona
             logger.info(f"Twilio SMS sent via Messaging Service {msg_service_sid} to {to_phone_number}. SID: {message.sid}")
             return True
 
-        if not from_num:
-            logger.error("TWILIO_SEND_SMS_FAILURE: No valid sender phone number or Messaging Service SID configured.")
+        try:
+            message = twilio_client.messages.create(body=message_body, from_=from_num, to=to_phone_number)
+            logger.info(f"Twilio SMS sent successfully from {from_num} to {to_phone_number}. SID: {message.sid}")
+            return True
+        except TwilioRestException as ex_from:
+            if msg_service_sid:
+                logger.warning(f"Twilio SMS send from {from_num} failed ({ex_from}). Attempting fallback via Messaging Service {msg_service_sid}...")
+                try:
+                    message = twilio_client.messages.create(
+                        body=message_body,
+                        messaging_service_sid=msg_service_sid,
+                        to=to_phone_number
+                    )
+                    logger.info(f"Twilio SMS sent via fallback Messaging Service {msg_service_sid} to {to_phone_number}. SID: {message.sid}")
+                    return True
+                except Exception as ex_fallback:
+                    logger.error(f"TWILIO_SEND_SMS_FAILURE: Messaging Service fallback failed: {ex_fallback}")
+            logger.error(f"TWILIO_SEND_SMS_FAILURE: Failed to send SMS to {to_phone_number}. Error: {ex_from}")
             return False
-
-        message = twilio_client.messages.create(body=message_body, from_=from_num, to=to_phone_number)
-        logger.info(f"Twilio SMS sent successfully from {from_num} to {to_phone_number}. SID: {message.sid}")
-        return True
-    except TwilioRestException as e:
-        logger.error(f"TWILIO_SEND_SMS_FAILURE: Failed to send SMS to {to_phone_number}. Error: {e}")
-        return False
 
 def make_voice_call(to_phone_number: str, twiml_url: str) -> bool:
     """
