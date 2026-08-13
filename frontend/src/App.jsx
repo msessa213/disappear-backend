@@ -1889,36 +1889,42 @@ const handleEmergencyBurn = async () => {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '240px', overflowY: 'auto' }}>
                         {smsInbox.map(sms => {
                           const phoneMatch = sms.message.match(/\+?\d{10,15}/);
-                          const senderPhone = phoneMatch ? phoneMatch[0] : "";
+                          const extractedPhone = phoneMatch ? phoneMatch[0] : "";
                           const isReplying = activeReplyId === sms.id;
 
                           return (
                             <div key={sms.id} style={{ background: '#0a0f1d', padding: '10px 12px', borderRadius: '6px', border: '1px solid #1e293b', fontSize: '0.8rem' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                                 <div style={{ color: '#00D2FF', fontWeight: 'bold', fontSize: '0.78rem' }}>{sms.message}</div>
-                                {senderPhone && (
-                                  <button
-                                    className="reset-btn"
-                                    style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#10B981', borderColor: '#10B981' }}
-                                    onClick={() => {
-                                      if (isReplying) {
-                                        setActiveReplyId(null);
-                                      } else {
-                                        setActiveReplyId(sms.id);
-                                        setReplyRecipient(senderPhone);
-                                      }
-                                    }}
-                                  >
-                                    {isReplying ? "CANCEL" : "💬 REPLY"}
-                                  </button>
-                                )}
+                                <button
+                                  className="reset-btn"
+                                  style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#10B981', borderColor: '#10B981' }}
+                                  onClick={() => {
+                                    if (isReplying) {
+                                      setActiveReplyId(null);
+                                    } else {
+                                      setActiveReplyId(sms.id);
+                                      setReplyRecipient(extractedPhone);
+                                      setReplyBody("");
+                                    }
+                                  }}
+                                >
+                                  {isReplying ? "CANCEL" : "💬 REPLY"}
+                                </button>
                               </div>
                               <div style={{ color: '#94a3b8', fontSize: '0.7rem' }}>{sms.timestamp}</div>
 
                               {isReplying && (
                                 <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #1e293b' }}>
+                                  <input
+                                    type="text"
+                                    placeholder="Recipient Phone (+18135551234)"
+                                    value={replyRecipient}
+                                    onChange={(e) => setReplyRecipient(e.target.value)}
+                                    style={{ width: '100%', padding: '6px 10px', fontSize: '0.78rem', background: '#030712', border: '1px solid #334155', color: '#fff', borderRadius: '4px', marginBottom: '6px', boxSizing: 'border-box' }}
+                                  />
                                   <textarea
-                                    placeholder={`Reply to ${senderPhone}...`}
+                                    placeholder="Type your reply message..."
                                     value={replyBody}
                                     onChange={(e) => setReplyBody(e.target.value)}
                                     style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#030712', border: '1px solid #334155', color: '#fff', borderRadius: '4px', marginBottom: '6px', height: '45px', boxSizing: 'border-box', resize: 'vertical' }}
@@ -1926,7 +1932,7 @@ const handleEmergencyBurn = async () => {
                                   <button
                                     className="main-button"
                                     style={{ padding: '4px 12px', fontSize: '0.72rem', width: '100%' }}
-                                    onClick={() => handleSendSmsReply(senderPhone, replyBody)}
+                                    onClick={() => handleSendSmsReply(replyRecipient, replyBody)}
                                     disabled={isSendingSms}
                                   >
                                     {isSendingSms ? "SENDING..." : "📤 SEND REPLY"}
