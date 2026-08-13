@@ -668,7 +668,7 @@ function App() {
   const handleSaveForwardingPhone = async () => {
     let activeUserId = currentUserId || localStorage.getItem("disappear_user_id");
     if (!activeUserId) {
-      activeUserId = "user_customer_test_99";
+      activeUserId = "user_mike803";
       localStorage.setItem("disappear_user_id", activeUserId);
     }
 
@@ -697,7 +697,7 @@ function App() {
   };
 
   const fetchSmsInbox = async () => {
-    const activeUserId = currentUserId || localStorage.getItem("disappear_user_id") || "user_customer_test_99";
+    const activeUserId = currentUserId || localStorage.getItem("disappear_user_id") || "user_mike803";
     try {
       const res = await secureRequest(`${API_BASE_URL}/api/v1/sms-inbox/${activeUserId}`);
       if (res.ok) {
@@ -740,7 +740,7 @@ function App() {
     const formattedTo = digitsOnly.length === 10 ? `+1${digitsOnly}` : `+${digitsOnly}`;
     triggerToast(`⏳ DISPATCHING SMS TO ${formattedTo}...`);
 
-    const activeUserId = currentUserId || localStorage.getItem("disappear_user_id") || "user_customer_test_99";
+    const activeUserId = currentUserId || localStorage.getItem("disappear_user_id") || "user_mike803";
 
     try {
       const res = await secureRequest(`${API_BASE_URL}/api/v1/send-sms`, {
@@ -2320,9 +2320,9 @@ const handleEmergencyBurn = async () => {
                         onClick={() => {
                           localStorage.setItem("disappear_session", "active");
                           if (!localStorage.getItem("disappear_user_id")) {
-                            localStorage.setItem("disappear_user_id", "user_customer_test_99");
+                            localStorage.setItem("disappear_user_id", "user_mike803");
                           }
-                          setCurrentUserId(localStorage.getItem("disappear_user_id") || "user_customer_test_99");
+                          setCurrentUserId(localStorage.getItem("disappear_user_id") || "user_mike803");
                           setShowLanding(false);
                           setShow2FA(false);
                           setShowShield(true);
