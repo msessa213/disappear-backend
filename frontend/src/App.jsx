@@ -726,36 +726,43 @@ function App() {
     const rawTo = (targetTo || replyRecipient || "").trim();
     const body = (bodyText || replyBody || "").trim();
 
-    if (!rawTo) {
-      triggerToast("⚠️ PLEASE ENTER A RECIPIENT PHONE NUMBER");
+    const cleanupUI = () => {
+      setReplyBody("");
+      setReplyRecipient("");
+      setActiveReplyId(null);
+      setShowComposeSms(false);
       setIsSendingSms(false);
+    };
+
+    if (!rawTo) {
+      triggerToast("⚠️ RECIPIENT PHONE NUMBER REQUIRED");
+      cleanupUI();
       return;
     }
 
     const digitsOnly = rawTo.replace(/\D/g, "");
     if (digitsOnly.length < 10) {
       triggerToast("⚠️ PLEASE ENTER A VALID 10-DIGIT PHONE NUMBER");
-      setIsSendingSms(false);
+      cleanupUI();
       return;
     }
 
     if (!body) {
       triggerToast("⚠️ PLEASE TYPE A MESSAGE BODY TO SEND");
-      setIsSendingSms(false);
+      cleanupUI();
       return;
     }
 
     const formattedTo = digitsOnly.length === 10 ? `+1${digitsOnly}` : `+${digitsOnly}`;
 
     setIsSendingSms(true);
-    triggerToast("⏳ DISPATCHING SMS...");
-
-    // Safety fallback timer to automatically unlock button after 6 seconds
-    const autoUnlock = setTimeout(() => {
-      setIsSendingSms(false);
-    }, 6000);
+    triggerToast(`⏳ DISPATCHING SMS TO ${formattedTo}...`);
 
     const activeUserId = currentUserId || localStorage.getItem("disappear_user_id") || "user_customer_test_99";
+    
+    // Close reply box immediately for instant UX feedback
+    cleanupUI();
+
     try {
       const res = await secureRequest(`${API_BASE_URL}/api/v1/send-sms`, {
         method: "POST",
@@ -764,7 +771,7 @@ function App() {
       });
       const data = await res.json();
       if (res.ok) {
-        triggerToast("✅ SMS DELIVERED SUCCESSFULLY!");
+        triggerToast(`✅ SMS DELIVERED TO ${formattedTo}!`);
         
         // Prepend sent SMS to inbox state for 100% instant visual confirmation
         const newOutboundItem = {
@@ -774,20 +781,14 @@ function App() {
           line: "OUTBOUND_SMS"
         };
         setSmsInbox(prev => [newOutboundItem, ...prev]);
+        fetchSmsInbox();
       } else {
         triggerToast(`❌ ${data.detail || "FAILED TO DELIVER SMS"}`);
       }
-
-      setReplyBody("");
-      setReplyRecipient("");
-      setActiveReplyId(null);
-      setShowComposeSms(false);
-      fetchSmsInbox();
     } catch (e) {
       console.error("SMS send error:", e);
       triggerToast("NETWORK ERROR SENDING SMS");
     } finally {
-      clearTimeout(autoUnlock);
       setIsSendingSms(false);
     }
   };
