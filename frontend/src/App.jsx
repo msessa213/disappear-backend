@@ -366,14 +366,23 @@ function App() {
         setShowAdmin(false);
         setShowAdminLogin(false);
         setShowLegal(null);
-      } else if (hash === '#login' || hash === '#2fa') {
+      } else if (hash === '#login' || hash === '#2fa' || hash === '#vault') {
         setShowLanding(false);
         setShowPricing(false);
         setShowCheckout(false);
-        setShow2FA(true);
         setShowAdmin(false);
         setShowAdminLogin(false);
         setShowLegal(null);
+        
+        const sessionActive = localStorage.getItem("disappear_session") === "active";
+        const activeUserId = localStorage.getItem("disappear_user_id");
+        if (sessionActive && activeUserId) {
+          setShowShield(true);
+          setShow2FA(false);
+        } else {
+          setShow2FA(true);
+          setShowShield(false);
+        }
       } else if (hash === '#checkout') {
         setShowLanding(false);
         setShowPricing(false);
@@ -1317,8 +1326,26 @@ const handleEmergencyBurn = async () => {
       {showLanding ? (
         <div style={{ position: 'relative', width: '100%', minHeight: '100vh' }}>
           <LandingPage 
-            onEnterVault={() => window.location.hash = "pricing"} 
-            onLoginRequest={() => window.location.hash = "login"}
+            onEnterVault={() => {
+              const sessionActive = localStorage.getItem("disappear_session") === "active";
+              const activeUserId = localStorage.getItem("disappear_user_id");
+              if (sessionActive && activeUserId) {
+                setShowLanding(false);
+                setShowShield(true);
+              } else {
+                window.location.hash = "pricing";
+              }
+            }} 
+            onLoginRequest={() => {
+              const sessionActive = localStorage.getItem("disappear_session") === "active";
+              const activeUserId = localStorage.getItem("disappear_user_id");
+              if (sessionActive && activeUserId) {
+                setShowLanding(false);
+                setShowShield(true);
+              } else {
+                window.location.hash = "login";
+              }
+            }}
             onReadManifesto={() => window.location.hash = "manifesto"}
           />
         </div>
