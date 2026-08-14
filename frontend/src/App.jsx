@@ -201,12 +201,8 @@ function App() {
   const updateSmsInboxSafely = useCallback((newInbox) => {
     if (!Array.isArray(newInbox)) return;
     setSmsInbox(prev => {
-      if (prev.length === newInbox.length) {
-        const isIdentical = prev.every((item, idx) => {
-          const next = newInbox[idx];
-          return next && (item.id === next.id || (item.message === next.message && item.timestamp === next.timestamp));
-        });
-        if (isIdentical) return prev;
+      if (JSON.stringify(prev) === JSON.stringify(newInbox)) {
+        return prev;
       }
       return newInbox;
     });
@@ -253,14 +249,17 @@ function App() {
       if (!res.ok) throw new Error("Sync failed");
       const data = await res.json();
 
+      const isStructurallyEqual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
       // 2. Map Profile
       if (data.profile) {
-          setCredits({
+          const newCredits = {
               vcc_total: data.profile.vcc_email_total || 6,
               vcc_used: data.profile.used_vcc_email || 0,
               phone_total: data.profile.phone_total || 2,
               phone_used: data.profile.used_phones || 0
-          });
+          };
+          setCredits(prev => isStructurallyEqual(prev, newCredits) ? prev : newCredits);
       }
 
       // 3. Map Real Purge History & Auto-Populate SMS Inbox
@@ -269,6 +268,7 @@ function App() {
         const nonSmsHistory = data.history.filter(item => item && typeof item.action === 'string' && !item.action.toUpperCase().includes("SMS"));
 
         setAuditLog(prevLog => {
+          if (isStructurallyEqual(prevLog, nonSmsHistory)) return prevLog;
           const latest = nonSmsHistory[0];
           const oldLatest = prevLog && prevLog.length > 0 ? prevLog[0] : null;
           if (latest && typeof latest.action === 'string' && (!oldLatest || latest.timestamp !== oldLatest.timestamp)) {
@@ -280,8 +280,8 @@ function App() {
         // Auto-populate SMS Inbox directly from live Audit Log history safely
         const smsFromHistory = data.history
           .filter(item => item && typeof item.action === 'string' && item.action.toUpperCase().includes("SMS"))
-          .map(item => ({
-            id: item.id || `sms_${Math.random()}`,
+          .map((item, idx) => ({
+            id: item.id || `sms_hist_${idx}_${item.timestamp}`,
             timestamp: item.timestamp || "",
             message: (item.action || "").replace(/^SMS_RECEIVED\s*/, "").replace(/^SMS_SENT\s*/, "OUTBOUND: "),
             line: item.node || "VIRTUAL_LINE"
@@ -293,24 +293,25 @@ function App() {
 
       // 4. Map Cards
       if (data.cards) {
-        setCards(data.cards);
+        setCards(prev => isStructurallyEqual(prev, data.cards) ? prev : data.cards);
       }
 
       // 5. Map Aliases (Emails & Phones)
       if (data.aliases) {
-        const allAliases = data.aliases;
-        setEmails(allAliases.filter(a => a.type === 'email'));
-        setPhones(allAliases.filter(a => a.type === 'phone'));
+        const newEmails = data.aliases.filter(a => a.type === 'email');
+        const newPhones = data.aliases.filter(a => a.type === 'phone');
+        setEmails(prev => isStructurallyEqual(prev, newEmails) ? prev : newEmails);
+        setPhones(prev => isStructurallyEqual(prev, newPhones) ? prev : newPhones);
       }
 
       // 6. Map Target Emails
       if (data.target_emails) {
-        setTargetEmails(data.target_emails);
+        setTargetEmails(prev => isStructurallyEqual(prev, data.target_emails) ? prev : data.target_emails);
       }
 
       // 7. Map Payment Methods
       if (data.payment_methods) {
-        setPaymentMethods(data.payment_methods);
+        setPaymentMethods(prev => isStructurallyEqual(prev, data.payment_methods) ? prev : data.payment_methods);
         if (data.payment_methods.length > 0 && !selectedFundingSource) {
           setSelectedFundingSource(data.payment_methods[0].id);
         }
@@ -324,10 +325,11 @@ function App() {
 
       // 9. Map Referral Milestone Data
       if (data.referrals) {
-        setReferralData(data.referrals);
+        setReferralData(prev => isStructurallyEqual(prev, data.referrals) ? prev : data.referrals);
       }
 
       // 10. Sync Live SMS Inbox
+      fetchSmsInbox();
       fetchSmsInbox();
     } catch (err) { 
         console.warn("Network interrupted. Attempting silent reconnect on next cycle...");
