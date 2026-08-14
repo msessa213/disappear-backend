@@ -96,7 +96,7 @@ function App() {
 
   const [showMintModal, setShowMintModal] = useState(false);
   const [newCardLabel, setNewCardLabel] = useState("");
-  const [loginEmail, setLoginEmail] = useState("");
+  const [loginEmail, setLoginEmail] = useState("mike803@verizon.net");
   const [loginPassword, setLoginPassword] = useState("");
   const [hasBiometrics, setHasBiometrics] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState([]);
@@ -1368,22 +1368,14 @@ const handleEmergencyBurn = async () => {
         <div style={{ position: 'relative', width: '100%', minHeight: '100vh' }}>
           <LandingPage 
             onEnterVault={() => {
-              localStorage.setItem("disappear_session", "active");
-              localStorage.setItem("disappear_user_id", "user_mike803");
-              setCurrentUserId("user_mike803");
               setShowLanding(false);
-              setShow2FA(false);
-              setShowShield(true);
-              syncDefenseData();
+              setShow2FA(true);
+              setShowShield(false);
             }} 
             onLoginRequest={() => {
-              localStorage.setItem("disappear_session", "active");
-              localStorage.setItem("disappear_user_id", "user_mike803");
-              setCurrentUserId("user_mike803");
               setShowLanding(false);
-              setShow2FA(false);
-              setShowShield(true);
-              syncDefenseData();
+              setShow2FA(true);
+              setShowShield(false);
             }}
             onReadManifesto={() => window.location.hash = "manifesto"}
           />
