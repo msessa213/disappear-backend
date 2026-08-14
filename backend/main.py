@@ -3192,10 +3192,18 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 frontend_dist_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "dist")
+class NoCacheStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope):
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
+
 if os.path.exists(frontend_dist_path):
     assets_path = os.path.join(frontend_dist_path, "assets")
     if os.path.exists(assets_path):
-        app.mount("/assets", StaticFiles(directory=assets_path), name="static_assets")
+        app.mount("/assets", NoCacheStaticFiles(directory=assets_path), name="static_assets")
 
     @app.get("/{full_path:path}")
     async def serve_spa_frontend(full_path: str):
