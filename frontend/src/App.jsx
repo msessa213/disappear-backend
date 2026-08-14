@@ -189,6 +189,134 @@ function App() {
   const addressRef = useRef(null);
   const [googleLoaded, setGoogleLoaded] = useState(false);
 
+  const pushNotification = useCallback((msg) => {
+    if (!msg) return;
+    const id = `notif-${Date.now()}-${Math.random()}`; 
+    setNotifications(prev => [{ id, msg: msg.includes(':') ? msg : `SYSTEM_EVENT: [${msg}]` }, ...prev].slice(0, 3));
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 4000);
+  }, [setNotifications]);
+
+  const fetchSmsInbox = useCallback(async () => {
+    const activeUserId = currentUserId || localStorage.getItem("disappear_user_id") || "user_mike803";
+    try {
+      const res = await secureRequest(`${API_BASE_URL}/api/v1/sms-inbox/${activeUserId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.inbox && data.inbox.length > 0) {
+          setSmsInbox(data.inbox);
+        }
+      }
+    } catch (e) {
+      console.error("SMS Inbox error", e);
+    }
+  }, [currentUserId]);
+
+  const fetchTargetEmails = useCallback(async () => {
+    const activeUserId = localStorage.getItem("disappear_user_id") || "";
+    try {
+        const res = await secureRequest(`${API_BASE_URL}/profile/emails?user_id=${activeUserId}`);
+        if(res.ok) setTargetEmails(await res.json());
+    } catch(e) {}
+  }, []);
+
+  const syncDefenseData = useCallback(async () => {
+    try {
+      const activeUserId = localStorage.getItem("disappear_user_id") || "";
+      
+      localStorage.setItem("disappear_last_active", Date.now().toString());
+      
+      if (activeUserId === "undefined") {
+          localStorage.removeItem("disappear_user_id");
+          localStorage.removeItem("disappear_session");
+          window.location.reload();
+          return;
+      }
+      
+      // 1. Consolidated Sync Handshake
+      const res = await secureRequest(`${API_BASE_URL}/dashboard/sync?user_id=${activeUserId}&t=${Date.now()}`);
+      if (!res.ok) throw new Error("Sync failed");
+      const data = await res.json();
+
+      // 2. Map Profile
+      if (data.profile) {
+          setCredits({
+              vcc_total: data.profile.vcc_email_total || 6,
+              vcc_used: data.profile.used_vcc_email || 0,
+              phone_total: data.profile.phone_total || 2,
+              phone_used: data.profile.used_phones || 0
+          });
+      }
+
+      // 3. Map Real Purge History & Auto-Populate SMS Inbox
+      if (Array.isArray(data.history)) {
+        setAuditLog(prevLog => {
+          const latest = data.history[0];
+          const oldLatest = prevLog && prevLog.length > 0 ? prevLog[0] : null;
+          if (latest && typeof latest.action === 'string' && (!oldLatest || latest.timestamp !== oldLatest.timestamp)) {
+              pushNotification(`SYSTEM_UPDATE: [${latest.action}]`);
+          }
+          return data.history;
+        });
+
+        // Auto-populate SMS Inbox directly from live Audit Log history safely
+        const smsFromHistory = data.history
+          .filter(item => item && typeof item.action === 'string' && item.action.includes("SMS"))
+          .map(item => ({
+            id: item.id || `sms_${Math.random()}`,
+            timestamp: item.timestamp || "",
+            message: (item.action || "").replace(/^SMS_RECEIVED\s*/, "").replace(/^SMS_SENT\s*/, "OUTBOUND: "),
+            line: item.node || "VIRTUAL_LINE"
+          }));
+        if (smsFromHistory.length > 0) {
+          setSmsInbox(smsFromHistory);
+        }
+      }
+
+      // 4. Map Cards
+      if (data.cards) {
+        setCards(data.cards);
+      }
+
+      // 5. Map Aliases (Emails & Phones)
+      if (data.aliases) {
+        const allAliases = data.aliases;
+        setEmails(allAliases.filter(a => a.type === 'email'));
+        setPhones(allAliases.filter(a => a.type === 'phone'));
+      }
+
+      // 6. Map Target Emails
+      if (data.target_emails) {
+        setTargetEmails(data.target_emails);
+      }
+
+      // 7. Map Payment Methods
+      if (data.payment_methods) {
+        setPaymentMethods(data.payment_methods);
+        if (data.payment_methods.length > 0 && !selectedFundingSource) {
+          setSelectedFundingSource(data.payment_methods[0].id);
+        }
+      }
+
+      // 8. Map Profile Phone Number (Initial load only to avoid polling overwrite)
+      if (data.profile && !hasLoadedPhone) {
+        setDestinationPhone(data.profile.phone || "");
+        setHasLoadedPhone(true);
+      }
+
+      // 9. Map Referral Milestone Data
+      if (data.referrals) {
+        setReferralData(data.referrals);
+      }
+
+      // 10. Sync Live SMS Inbox
+      fetchSmsInbox();
+    } catch (err) { 
+        console.warn("Network interrupted. Attempting silent reconnect on next cycle...");
+    }
+  }, [pushNotification, selectedFundingSource, hasLoadedPhone, fetchSmsInbox]);
+
   // --- DYNAMIC SEO & METADATA ENGINE ---
   useEffect(() => {
     let title = "Disappear | Privacy-as-a-Service & Data Broker Removal";
@@ -543,124 +671,7 @@ function App() {
     }
   }, []);
 
-  const fetchTargetEmails = useCallback(async () => {
-    const activeUserId = localStorage.getItem("disappear_user_id") || "";
-    try {
-        const res = await secureRequest(`${API_BASE_URL}/profile/emails?user_id=${activeUserId}`);
-        if(res.ok) setTargetEmails(await res.json());
-    } catch(e) {}
-  }, []);
 
-  useEffect(() => {
-    if (showCheckout) {
-      secureRequest(`${API_BASE_URL}/`).catch(() => {});
-    }
-  }, [showCheckout]);
-
-  const pushNotification = useCallback((msg) => {
-    if (!msg) return;
-    const id = `notif-${Date.now()}-${Math.random()}`; 
-    setNotifications(prev => [{ id, msg: msg.includes(':') ? msg : `SYSTEM_EVENT: [${msg}]` }, ...prev].slice(0, 3));
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    }, 4000);
-  }, [setNotifications]);
-
-  const syncDefenseData = useCallback(async () => {
-    try {
-      const activeUserId = localStorage.getItem("disappear_user_id") || "";
-      
-      localStorage.setItem("disappear_last_active", Date.now().toString());
-      
-      if (activeUserId === "undefined") {
-          localStorage.removeItem("disappear_user_id");
-          localStorage.removeItem("disappear_session");
-          window.location.reload();
-          return;
-      }
-      
-      // 1. Consolidated Sync Handshake
-      const res = await secureRequest(`${API_BASE_URL}/dashboard/sync?user_id=${activeUserId}&t=${Date.now()}`);
-      if (!res.ok) throw new Error("Sync failed");
-      const data = await res.json();
-
-      // 2. Map Profile
-      if (data.profile) {
-          setCredits({
-              vcc_total: data.profile.vcc_email_total || 6,
-              vcc_used: data.profile.used_vcc_email || 0,
-              phone_total: data.profile.phone_total || 2,
-              phone_used: data.profile.used_phones || 0
-          });
-      }
-
-      // 3. Map Real Purge History & Auto-Populate SMS Inbox
-      if (Array.isArray(data.history)) {
-        setAuditLog(prevLog => {
-          const latest = data.history[0];
-          const oldLatest = prevLog && prevLog.length > 0 ? prevLog[0] : null;
-          if (latest && typeof latest.action === 'string' && (!oldLatest || latest.timestamp !== oldLatest.timestamp)) {
-              pushNotification(`SYSTEM_UPDATE: [${latest.action}]`);
-          }
-          return data.history;
-        });
-
-        // Auto-populate SMS Inbox directly from live Audit Log history safely
-        const smsFromHistory = data.history
-          .filter(item => item && typeof item.action === 'string' && item.action.includes("SMS"))
-          .map(item => ({
-            id: item.id || `sms_${Math.random()}`,
-            timestamp: item.timestamp || "",
-            message: (item.action || "").replace(/^SMS_RECEIVED\s*/, "").replace(/^SMS_SENT\s*/, "OUTBOUND: "),
-            line: item.node || "VIRTUAL_LINE"
-          }));
-        if (smsFromHistory.length > 0) {
-          setSmsInbox(smsFromHistory);
-        }
-      }
-
-      // 4. Map Cards
-      if (data.cards) {
-        setCards(data.cards);
-      }
-
-      // 5. Map Aliases (Emails & Phones)
-      if (data.aliases) {
-        const allAliases = data.aliases;
-        setEmails(allAliases.filter(a => a.type === 'email'));
-        setPhones(allAliases.filter(a => a.type === 'phone'));
-      }
-
-      // 6. Map Target Emails
-      if (data.target_emails) {
-        setTargetEmails(data.target_emails);
-      }
-
-      // 7. Map Payment Methods
-      if (data.payment_methods) {
-        setPaymentMethods(data.payment_methods);
-        if (data.payment_methods.length > 0 && !selectedFundingSource) {
-          setSelectedFundingSource(data.payment_methods[0].id);
-        }
-      }
-
-      // 8. Map Profile Phone Number (Initial load only to avoid polling overwrite)
-      if (data.profile && !hasLoadedPhone) {
-        setDestinationPhone(data.profile.phone || "");
-        setHasLoadedPhone(true);
-      }
-
-      // 9. Map Referral Milestone Data
-      if (data.referrals) {
-        setReferralData(data.referrals);
-      }
-
-      // 10. Sync Live SMS Inbox
-      fetchSmsInbox();
-    } catch (err) { 
-        console.warn("Network interrupted. Attempting silent reconnect on next cycle...");
-    }
-  }, [pushNotification, selectedFundingSource, hasLoadedPhone]);
 
   const handleSaveForwardingPhone = async () => {
     let activeUserId = currentUserId || localStorage.getItem("disappear_user_id");
@@ -693,20 +704,7 @@ function App() {
     }
   };
 
-  const fetchSmsInbox = async () => {
-    const activeUserId = currentUserId || localStorage.getItem("disappear_user_id") || "user_mike803";
-    try {
-      const res = await secureRequest(`${API_BASE_URL}/api/v1/sms-inbox/${activeUserId}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.inbox && data.inbox.length > 0) {
-          setSmsInbox(data.inbox);
-        }
-      }
-    } catch (e) {
-      console.error("SMS Inbox error", e);
-    }
-  };
+
   const handleSendSmsReply = async (targetTo, bodyText) => {
     const rawTo = (targetTo || replyRecipient || "").trim();
     const body = (bodyText || replyBody || "").trim();
