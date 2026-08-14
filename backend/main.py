@@ -3194,7 +3194,13 @@ from fastapi.responses import FileResponse
 frontend_dist_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "dist")
 class NoCacheStaticFiles(StaticFiles):
     async def get_response(self, path: str, scope):
-        response = await super().get_response(path, scope)
+        target_path = path
+        full_path = os.path.join(self.directory, path)
+        if not os.path.exists(full_path) and path.startswith("index-") and path.endswith(".js"):
+            files = [f for f in os.listdir(self.directory) if f.startswith("index-") and f.endswith(".js")]
+            if files:
+                target_path = files[0]
+        response = await super().get_response(target_path, scope)
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
@@ -3203,13 +3209,6 @@ class NoCacheStaticFiles(StaticFiles):
 if os.path.exists(frontend_dist_path):
     assets_path = os.path.join(frontend_dist_path, "assets")
     if os.path.exists(assets_path):
-        @app.get("/assets/index-Cuxaq3tI.js")
-        async def serve_legacy_bundle_override():
-            files = [f for f in os.listdir(assets_path) if f.startswith("index-") and f.endswith(".js")]
-            if files:
-                return FileResponse(os.path.join(assets_path, files[0]), headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"})
-            raise HTTPException(status_code=404, detail="JS bundle not found")
-
         app.mount("/assets", NoCacheStaticFiles(directory=assets_path), name="static_assets")
 
     @app.get("/{full_path:path}")
