@@ -3208,7 +3208,7 @@ if os.path.exists(frontend_dist_path):
             raise HTTPException(status_code=404, detail="API route not found")
         index_file = os.path.join(frontend_dist_path, "index.html")
         if os.path.exists(index_file):
-            return FileResponse(index_file)
+            return FileResponse(index_file, headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"})
         raise HTTPException(status_code=404, detail="Frontend build missing")
 
 
