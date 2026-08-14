@@ -129,6 +129,48 @@ function App() {
   const [showComposeSms, setShowComposeSms] = useState(false);
   const [expandedThreads, setExpandedThreads] = useState({});
 
+  // Memoized, stable SMS thread groups to prevent any text flickering or inline recalculations
+  const groupedSmsThreads = useMemo(() => {
+    if (!smsInbox || smsInbox.length === 0) return [];
+
+    const extractPhoneFromMsg = (msgStr, lineStr) => {
+      if (!msgStr) return lineStr || "VIRTUAL_LINE";
+      const fromMatch = msgStr.match(/From\s*[:\s]*\+?([0-9\s\-\(\)]+)/i) || msgStr.match(/To\s*[:\s]*\+?([0-9\s\-\(\)]+)/i);
+      if (fromMatch && fromMatch[1]) {
+        const rawNum = fromMatch[1].replace(/\D/g, "");
+        if (rawNum.length === 10) return `+1${rawNum}`;
+        if (rawNum.length === 11 && rawNum.startsWith("1")) return `+${rawNum}`;
+      }
+      const numMatch = msgStr.match(/\+?1?\s*\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})/);
+      if (numMatch) {
+        return `+1${numMatch[1]}${numMatch[2]}${numMatch[3]}`;
+      }
+      return lineStr || "VIRTUAL_LINE";
+    };
+
+    const groupedMap = new Map();
+    smsInbox.forEach(sms => {
+      const phone = extractPhoneFromMsg(sms.message, sms.line);
+      if (!groupedMap.has(phone)) {
+        groupedMap.set(phone, []);
+      }
+      groupedMap.get(phone).push(sms);
+    });
+
+    const threadGroups = Array.from(groupedMap.entries()).map(([phone, messages]) => {
+      const sortedMessages = [...messages].sort((a, b) => {
+        const tA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+        const tB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+        return tB - tA;
+      });
+      const newestTime = sortedMessages[0]?.timestamp ? new Date(sortedMessages[0].timestamp).getTime() : 0;
+      return { phone, messages: sortedMessages, newestTime };
+    });
+
+    threadGroups.sort((a, b) => b.newestTime - a.newestTime);
+    return threadGroups;
+  }, [smsInbox]);
+
   const [targetProfile, setTargetProfile] = useState({
       firstName: "", middleName: "", lastName: "", email: "", password: "", phone: "",
       dob: "", address: "", city: "", state: "", zip: "", termsAccepted: false, smsConsentAccepted: false
@@ -1925,177 +1967,132 @@ const handleEmergencyBurn = async () => {
                       </div>
                     )}
 
-                    {(() => {
-                      const extractPhoneFromMsg = (msgStr, lineStr) => {
-                        if (!msgStr) return lineStr || "VIRTUAL_LINE";
-                        const fromMatch = msgStr.match(/From\s*[:\s]*\+?([0-9\s\-\(\)]+)/i) || msgStr.match(/To\s*[:\s]*\+?([0-9\s\-\(\)]+)/i);
-                        if (fromMatch && fromMatch[1]) {
-                          const rawNum = fromMatch[1].replace(/\D/g, "");
-                          if (rawNum.length === 10) return `+1${rawNum}`;
-                          if (rawNum.length === 11 && rawNum.startsWith("1")) return `+${rawNum}`;
-                        }
-                        const numMatch = msgStr.match(/\+?1?\s*\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})/);
-                        if (numMatch) {
-                          return `+1${numMatch[1]}${numMatch[2]}${numMatch[3]}`;
-                        }
-                        return lineStr || "VIRTUAL_LINE";
-                      };
+                    {groupedSmsThreads.length === 0 ? (
+                      <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, textAlign: 'center', padding: '10px' }}>
+                        No incoming text messages received yet. Any SMS sent to your alias will appear here instantly.
+                      </p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '320px', overflowY: 'auto' }}>
+                        {groupedSmsThreads.map(({ phone, messages }) => {
+                          const formattedPhoneDisplay = phone.replace(/\+1([0-9]{3})([0-9]{3})([0-9]{4})/, "+1 ($1) $2-$3");
+                          const isGroupReplying = activeReplyId === `group_${phone}`;
+                          const isExpanded = !!expandedThreads[phone];
 
-                      if (!smsInbox || smsInbox.length === 0) {
-                        return (
-                          <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, textAlign: 'center', padding: '10px' }}>
-                            No incoming text messages received yet. Any SMS sent to your alias will appear here instantly.
-                          </p>
-                        );
-                      }
+                          const newestMessage = messages[0];
+                          const olderMessages = messages.slice(1);
+                          const hasOlderMessages = olderMessages.length > 0;
 
-                      // Group messages by Phone Number
-                      const groupedMap = new Map();
-                      smsInbox.forEach(sms => {
-                        const phone = extractPhoneFromMsg(sms.message, sms.line);
-                        if (!groupedMap.has(phone)) {
-                          groupedMap.set(phone, []);
-                        }
-                        groupedMap.get(phone).push(sms);
-                      });
+                          return (
+                            <div key={`thread_${phone}`} style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '8px', padding: '10px 12px' }}>
+                              {/* Group Header */}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #1e293b' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span style={{ fontSize: '0.85rem', color: '#00D2FF', fontWeight: 'bold' }}>📱 {formattedPhoneDisplay}</span>
+                                  <span style={{ fontSize: '0.65rem', background: '#1e293b', color: '#10B981', padding: '1px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                    {messages.length} {messages.length === 1 ? 'MSG' : 'MSGS'}
+                                  </span>
+                                </div>
+                                <button
+                                  className="reset-btn"
+                                  type="button"
+                                  style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#10B981', borderColor: '#10B981' }}
+                                  onClick={() => {
+                                    if (isGroupReplying) {
+                                      setActiveReplyId(null);
+                                    } else {
+                                      setActiveReplyId(`group_${phone}`);
+                                      setReplyRecipient(phone.startsWith("+") ? phone : "");
+                                      setReplyBody("");
+                                    }
+                                  }}
+                                >
+                                  {isGroupReplying ? "✕ CLOSE" : "💬 REPLY"}
+                                </button>
+                              </div>
 
-                      // Build array of grouped threads and sort with newest thread at top & newest messages first inside each group
-                      const threadGroups = Array.from(groupedMap.entries()).map(([phone, messages]) => {
-                        messages.sort((a, b) => {
-                          const tA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-                          const tB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-                          return tB - tA;
-                        });
-                        const newestTime = messages[0]?.timestamp ? new Date(messages[0].timestamp).getTime() : 0;
-                        return { phone, messages, newestTime };
-                      });
-
-                      // Sort thread groups so newest group is at the top
-                      threadGroups.sort((a, b) => b.newestTime - a.newestTime);
-
-                      return (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '320px', overflowY: 'auto' }}>
-                          {threadGroups.map(({ phone, messages }) => {
-                            const formattedPhoneDisplay = phone.replace(/\+1([0-9]{3})([0-9]{3})([0-9]{4})/, "+1 ($1) $2-$3");
-                            const isGroupReplying = activeReplyId === `group_${phone}`;
-                            const isExpanded = !!expandedThreads[phone];
-
-                            const newestMessage = messages[0];
-                            const olderMessages = messages.slice(1);
-                            const hasOlderMessages = olderMessages.length > 0;
-
-                            return (
-                              <div key={`thread_${phone}`} style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '8px', padding: '10px 12px' }}>
-                                {/* Group Header */}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #1e293b' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span style={{ fontSize: '0.85rem', color: '#00D2FF', fontWeight: 'bold' }}>📱 {formattedPhoneDisplay}</span>
-                                    <span style={{ fontSize: '0.65rem', background: '#1e293b', color: '#10B981', padding: '1px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
-                                      {messages.length} {messages.length === 1 ? 'MSG' : 'MSGS'}
-                                    </span>
-                                  </div>
+                              {/* Quick Reply Box for Thread */}
+                              {isGroupReplying && (
+                                <div style={{ background: '#030712', border: '1px solid #10B981', padding: '8px', borderRadius: '6px', marginBottom: '8px' }}>
+                                  <textarea
+                                    placeholder={`Reply to ${formattedPhoneDisplay}...`}
+                                    value={replyBody}
+                                    onChange={(e) => setReplyBody(e.target.value)}
+                                    style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#090d16', border: '1px solid #1e293b', color: '#fff', borderRadius: '4px', marginBottom: '6px', height: '45px', boxSizing: 'border-box', resize: 'vertical' }}
+                                  />
                                   <button
-                                    className="reset-btn"
+                                    className="main-button"
                                     type="button"
-                                    style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#10B981', borderColor: '#10B981' }}
-                                    onClick={() => {
-                                      if (isGroupReplying) {
-                                        setActiveReplyId(null);
-                                      } else {
-                                        setActiveReplyId(`group_${phone}`);
-                                        setReplyRecipient(phone.startsWith("+") ? phone : "");
-                                        setReplyBody("");
-                                      }
+                                    style={{ padding: '6px 12px', fontSize: '0.75rem', width: '100%', background: 'linear-gradient(135deg, #10B981, #059669)', border: 'none', color: '#fff', fontWeight: 'bold', borderRadius: '4px' }}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      handleSendSmsReply(phone.startsWith("+") ? phone : replyRecipient, replyBody);
                                     }}
                                   >
-                                    {isGroupReplying ? "✕ CLOSE" : "💬 REPLY"}
+                                    📤 SEND REPLY NOW
                                   </button>
                                 </div>
+                              )}
 
-                                {/* Quick Reply Box for Thread */}
-                                {isGroupReplying && (
-                                  <div style={{ background: '#030712', border: '1px solid #10B981', padding: '8px', borderRadius: '6px', marginBottom: '8px' }}>
-                                    <textarea
-                                      placeholder={`Reply to ${formattedPhoneDisplay}...`}
-                                      value={replyBody}
-                                      onChange={(e) => setReplyBody(e.target.value)}
-                                      style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#090d16', border: '1px solid #1e293b', color: '#fff', borderRadius: '4px', marginBottom: '6px', height: '45px', boxSizing: 'border-box', resize: 'vertical' }}
-                                    />
-                                    <button
-                                      className="main-button"
-                                      type="button"
-                                      style={{ padding: '6px 12px', fontSize: '0.75rem', width: '100%', background: 'linear-gradient(135deg, #10B981, #059669)', border: 'none', color: '#fff', fontWeight: 'bold', borderRadius: '4px' }}
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        handleSendSmsReply(phone.startsWith("+") ? phone : replyRecipient, replyBody);
-                                      }}
-                                    >
-                                      📤 SEND REPLY NOW
-                                    </button>
+                              {/* Messages inside this Phone Thread */}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {/* NEWEST MESSAGE ALWAYS SHOWN AT TOP */}
+                                {newestMessage && (
+                                  <div key={newestMessage.id} style={{ background: newestMessage.message.startsWith("OUTBOUND") ? '#051815' : '#030712', padding: '8px 10px', borderRadius: '5px', border: newestMessage.message.startsWith("OUTBOUND") ? '1px solid #059669' : '1px solid #1e293b', fontSize: '0.78rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                                      <span style={{ fontSize: '0.65rem', color: '#10B981', fontWeight: 'bold' }}>LATEST MESSAGE</span>
+                                      <span style={{ color: '#64748B', fontSize: '0.68rem' }}>{newestMessage.timestamp}</span>
+                                    </div>
+                                    <div style={{ color: newestMessage.message.startsWith("OUTBOUND") ? '#34D399' : '#FFFFFF', fontWeight: '500' }}>{newestMessage.message}</div>
                                   </div>
                                 )}
 
-                                {/* Messages inside this Phone Thread */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                  {/* NEWEST MESSAGE ALWAYS SHOWN AT TOP */}
-                                  {newestMessage && (
-                                    <div key={newestMessage.id} style={{ background: newestMessage.message.startsWith("OUTBOUND") ? '#051815' : '#030712', padding: '8px 10px', borderRadius: '5px', border: newestMessage.message.startsWith("OUTBOUND") ? '1px solid #059669' : '1px solid #1e293b', fontSize: '0.78rem' }}>
-                                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-                                        <span style={{ fontSize: '0.65rem', color: '#10B981', fontWeight: 'bold' }}>LATEST MESSAGE</span>
-                                        <span style={{ color: '#64748B', fontSize: '0.68rem' }}>{newestMessage.timestamp}</span>
+                                {/* COLLAPSED OLDER MESSAGES DROPDOWN TOGGLE */}
+                                {hasOlderMessages && (
+                                  <>
+                                    {isExpanded && (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px', paddingLeft: '8px', borderLeft: '2px solid #1e293b' }}>
+                                        {olderMessages.map(sms => (
+                                          <div key={sms.id} style={{ background: sms.message.startsWith("OUTBOUND") ? '#051815' : '#030712', padding: '6px 8px', borderRadius: '4px', border: sms.message.startsWith("OUTBOUND") ? '1px solid #059669' : '1px solid #111827', fontSize: '0.75rem' }}>
+                                            <div style={{ color: sms.message.startsWith("OUTBOUND") ? '#34D399' : '#E2E8F0' }}>{sms.message}</div>
+                                            <div style={{ color: '#64748B', fontSize: '0.65rem', marginTop: '2px', textAlign: 'right' }}>{sms.timestamp}</div>
+                                          </div>
+                                        ))}
                                       </div>
-                                      <div style={{ color: newestMessage.message.startsWith("OUTBOUND") ? '#34D399' : '#FFFFFF', fontWeight: '500' }}>{newestMessage.message}</div>
-                                    </div>
-                                  )}
+                                    )}
 
-                                  {/* COLLAPSED OLDER MESSAGES DROPDOWN TOGGLE */}
-                                  {hasOlderMessages && (
-                                    <>
-                                      {isExpanded && (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px', paddingLeft: '8px', borderLeft: '2px solid #1e293b' }}>
-                                          {olderMessages.map(sms => (
-                                            <div key={sms.id} style={{ background: sms.message.startsWith("OUTBOUND") ? '#051815' : '#030712', padding: '6px 8px', borderRadius: '4px', border: sms.message.startsWith("OUTBOUND") ? '1px solid #059669' : '1px solid #111827', fontSize: '0.75rem' }}>
-                                              <div style={{ color: sms.message.startsWith("OUTBOUND") ? '#34D399' : '#E2E8F0' }}>{sms.message}</div>
-                                              <div style={{ color: '#64748B', fontSize: '0.65rem', marginTop: '2px', textAlign: 'right' }}>{sms.timestamp}</div>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )}
-
-                                      <button
-                                        type="button"
-                                        style={{
-                                          width: '100%',
-                                          padding: '5px',
-                                          marginTop: '4px',
-                                          fontSize: '0.72rem',
-                                          background: '#030712',
-                                          border: '1px dashed #334155',
-                                          borderRadius: '4px',
-                                          color: '#00D2FF',
-                                          fontWeight: 'bold',
-                                          cursor: 'pointer',
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                          gap: '6px'
-                                        }}
-                                        onClick={() => setExpandedThreads(prev => ({ ...prev, [phone]: !prev[phone] }))}
-                                      >
-                                        {isExpanded 
-                                          ? `▲ COLLAPSE HISTORY (${olderMessages.length} OLDER ${olderMessages.length === 1 ? 'MSG' : 'MSGS'})` 
-                                          : `▼ SHOW DROPDOWN (${olderMessages.length} OLDER ${olderMessages.length === 1 ? 'MSG' : 'MSGS'})`}
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
+                                    <button
+                                      type="button"
+                                      style={{
+                                        width: '100%',
+                                        padding: '5px',
+                                        marginTop: '4px',
+                                        fontSize: '0.72rem',
+                                        background: '#030712',
+                                        border: '1px dashed #334155',
+                                        borderRadius: '4px',
+                                        color: '#00D2FF',
+                                        fontWeight: 'bold',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '6px'
+                                      }}
+                                      onClick={() => setExpandedThreads(prev => ({ ...prev, [phone]: !prev[phone] }))}
+                                    >
+                                      {isExpanded 
+                                        ? `▲ COLLAPSE HISTORY (${olderMessages.length} OLDER ${olderMessages.length === 1 ? 'MSG' : 'MSGS'})` 
+                                        : `▼ SHOW DROPDOWN (${olderMessages.length} OLDER ${olderMessages.length === 1 ? 'MSG' : 'MSGS'})`}
+                                    </button>
+                                  </>
+                                )}
                               </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })()}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
 
