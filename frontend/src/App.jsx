@@ -127,6 +127,7 @@ function App() {
   const [replyBody, setReplyBody] = useState("");
   const [isSendingSms, setIsSendingSms] = useState(false);
   const [showComposeSms, setShowComposeSms] = useState(false);
+  const [expandedThreads, setExpandedThreads] = useState({});
 
   const [targetProfile, setTargetProfile] = useState({
       firstName: "", middleName: "", lastName: "", email: "", password: "", phone: "",
@@ -1961,6 +1962,11 @@ const handleEmergencyBurn = async () => {
                           {threadGroups.map(({ phone, messages }) => {
                             const formattedPhoneDisplay = phone.replace(/\+1([0-9]{3})([0-9]{3})([0-9]{4})/, "+1 ($1) $2-$3");
                             const isGroupReplying = activeReplyId === `group_${phone}`;
+                            const isExpanded = !!expandedThreads[phone];
+
+                            const newestMessage = messages[0];
+                            const olderMessages = messages.slice(1);
+                            const hasOlderMessages = olderMessages.length > 0;
 
                             return (
                               <div key={`thread_${phone}`} style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '8px', padding: '10px 12px' }}>
@@ -2014,14 +2020,59 @@ const handleEmergencyBurn = async () => {
                                   </div>
                                 )}
 
-                                {/* Messages inside this Phone Thread (Newest at Top) */}
+                                {/* Messages inside this Phone Thread */}
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                  {messages.map(sms => (
-                                    <div key={sms.id} style={{ background: sms.message.startsWith("OUTBOUND") ? '#051815' : '#030712', padding: '8px 10px', borderRadius: '5px', border: sms.message.startsWith("OUTBOUND") ? '1px solid #059669' : '1px solid #111827', fontSize: '0.78rem' }}>
-                                      <div style={{ color: sms.message.startsWith("OUTBOUND") ? '#34D399' : '#FFFFFF', fontWeight: '500' }}>{sms.message}</div>
-                                      <div style={{ color: '#64748B', fontSize: '0.68rem', marginTop: '3px', textAlign: 'right' }}>{sms.timestamp}</div>
+                                  {/* NEWEST MESSAGE ALWAYS SHOWN AT TOP */}
+                                  {newestMessage && (
+                                    <div key={newestMessage.id} style={{ background: newestMessage.message.startsWith("OUTBOUND") ? '#051815' : '#030712', padding: '8px 10px', borderRadius: '5px', border: newestMessage.message.startsWith("OUTBOUND") ? '1px solid #059669' : '1px solid #1e293b', fontSize: '0.78rem' }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                                        <span style={{ fontSize: '0.65rem', color: '#10B981', fontWeight: 'bold' }}>LATEST MESSAGE</span>
+                                        <span style={{ color: '#64748B', fontSize: '0.68rem' }}>{newestMessage.timestamp}</span>
+                                      </div>
+                                      <div style={{ color: newestMessage.message.startsWith("OUTBOUND") ? '#34D399' : '#FFFFFF', fontWeight: '500' }}>{newestMessage.message}</div>
                                     </div>
-                                  ))}
+                                  )}
+
+                                  {/* COLLAPSED OLDER MESSAGES DROPDOWN TOGGLE */}
+                                  {hasOlderMessages && (
+                                    <>
+                                      {isExpanded && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px', paddingLeft: '8px', borderLeft: '2px solid #1e293b' }}>
+                                          {olderMessages.map(sms => (
+                                            <div key={sms.id} style={{ background: sms.message.startsWith("OUTBOUND") ? '#051815' : '#030712', padding: '6px 8px', borderRadius: '4px', border: sms.message.startsWith("OUTBOUND") ? '1px solid #059669' : '1px solid #111827', fontSize: '0.75rem' }}>
+                                              <div style={{ color: sms.message.startsWith("OUTBOUND") ? '#34D399' : '#E2E8F0' }}>{sms.message}</div>
+                                              <div style={{ color: '#64748B', fontSize: '0.65rem', marginTop: '2px', textAlign: 'right' }}>{sms.timestamp}</div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+
+                                      <button
+                                        type="button"
+                                        style={{
+                                          width: '100%',
+                                          padding: '5px',
+                                          marginTop: '4px',
+                                          fontSize: '0.72rem',
+                                          background: '#030712',
+                                          border: '1px dashed #334155',
+                                          borderRadius: '4px',
+                                          color: '#00D2FF',
+                                          fontWeight: 'bold',
+                                          cursor: 'pointer',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          gap: '6px'
+                                        }}
+                                        onClick={() => setExpandedThreads(prev => ({ ...prev, [phone]: !prev[phone] }))}
+                                      >
+                                        {isExpanded 
+                                          ? `▲ COLLAPSE HISTORY (${olderMessages.length} OLDER ${olderMessages.length === 1 ? 'MSG' : 'MSGS'})` 
+                                          : `▼ SHOW DROPDOWN (${olderMessages.length} OLDER ${olderMessages.length === 1 ? 'MSG' : 'MSGS'})`}
+                                      </button>
+                                    </>
+                                  )}
                                 </div>
                               </div>
                             );
