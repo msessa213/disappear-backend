@@ -198,6 +198,20 @@ function App() {
     }, 4000);
   }, [setNotifications]);
 
+  const updateSmsInboxSafely = useCallback((newInbox) => {
+    if (!Array.isArray(newInbox)) return;
+    setSmsInbox(prev => {
+      if (prev.length === newInbox.length) {
+        const isIdentical = prev.every((item, idx) => {
+          const next = newInbox[idx];
+          return next && (item.id === next.id || (item.message === next.message && item.timestamp === next.timestamp));
+        });
+        if (isIdentical) return prev;
+      }
+      return newInbox;
+    });
+  }, []);
+
   const fetchSmsInbox = useCallback(async () => {
     const activeUserId = currentUserId || localStorage.getItem("disappear_user_id") || "user_mike803";
     try {
@@ -205,13 +219,13 @@ function App() {
       if (res.ok) {
         const data = await res.json();
         if (data.inbox && data.inbox.length > 0) {
-          setSmsInbox(data.inbox);
+          updateSmsInboxSafely(data.inbox);
         }
       }
     } catch (e) {
       console.error("SMS Inbox error", e);
     }
-  }, [currentUserId]);
+  }, [currentUserId, updateSmsInboxSafely]);
 
   const fetchTargetEmails = useCallback(async () => {
     const activeUserId = localStorage.getItem("disappear_user_id") || "";
@@ -273,7 +287,7 @@ function App() {
             line: item.node || "VIRTUAL_LINE"
           }));
         if (smsFromHistory.length > 0) {
-          setSmsInbox(smsFromHistory);
+          updateSmsInboxSafely(smsFromHistory);
         }
       }
 
