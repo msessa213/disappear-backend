@@ -1070,6 +1070,7 @@ const handleEmergencyBurn = async () => {
         localStorage.setItem("disappear_session", "active");
         localStorage.setItem("disappear_user_id", data.user_id || "user_mike803");
         setCurrentUserId(data.user_id || "user_mike803");
+        window.location.hash = "vault";
         setShow2FA(false); 
         setShowLanding(false);
         setShowShield(true); 
@@ -1080,6 +1081,7 @@ const handleEmergencyBurn = async () => {
         localStorage.setItem("disappear_session", "active");
         localStorage.setItem("disappear_user_id", "user_mike803");
         setCurrentUserId("user_mike803");
+        window.location.hash = "vault";
         setShow2FA(false);
         setShowLanding(false);
         setShowShield(true);
@@ -1091,6 +1093,7 @@ const handleEmergencyBurn = async () => {
        localStorage.setItem("disappear_session", "active");
        localStorage.setItem("disappear_user_id", "user_mike803");
        setCurrentUserId("user_mike803");
+       window.location.hash = "vault";
        setShow2FA(false);
        setShowLanding(false);
        setShowShield(true);
