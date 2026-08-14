@@ -1364,7 +1364,7 @@ const handleEmergencyBurn = async () => {
     <div className={`app-container ${isEmergencyWipe ? 'wipe-shake' : ''}`}>
       
       {/* 1. SEPARATE MARKETING WEBSITE (Intelligence Hub) */}
-      {showLanding ? (
+      {(showLanding || (!showShield && !show2FA && !showPricing && !showCheckout && !showAdmin && !showLegal)) ? (
         <div style={{ position: 'relative', width: '100%', minHeight: '100vh' }}>
           <LandingPage 
             onEnterVault={() => {
