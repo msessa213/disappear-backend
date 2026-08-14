@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable"; // FIXED: Explicit import for plugin functionality
 import { Capacitor, CapacitorHttp } from '@capacitor/core'; 
 import CryptoJS from 'crypto-js';
 import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
@@ -1177,6 +1175,8 @@ const handleEmergencyBurn = async () => {
       } catch (e) { console.warn("Scrub history node currently unreachable - continuing with empty record."); }
 
       // 2. Build the "Total Purge" PDF Document
+      const { jsPDF } = await import("jspdf");
+      const autoTable = (await import("jspdf-autotable")).default;
       const doc = new jsPDF();
       const agentId = localStorage.getItem("disappear_user_id") || "AGENT_UNKNOWN";
       
