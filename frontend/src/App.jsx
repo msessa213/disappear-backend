@@ -73,6 +73,7 @@ function App() {
 
   // --- CORE VIEW NAVIGATION (UPDATED) ---
   const [showLanding, setShowLanding] = useState(true); 
+  const [currentUserId, setCurrentUserId] = useState(() => localStorage.getItem("disappear_user_id") || "user_mike803");
   const [showShield, setShowShield] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
