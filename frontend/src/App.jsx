@@ -524,14 +524,20 @@ function App() {
         if (window.location.hash) {
           window.history.replaceState(null, "", window.location.pathname + window.location.search);
         }
+        const activeSession = localStorage.getItem("disappear_session") === "active";
         setShowLegal(null);
         setShowAdmin(false);
         setShowAdminLogin(false);
-        setShowLanding(true);
         setShowPricing(false);
         setShow2FA(false);
         setShowCheckout(false);
-        setShowShield(false);
+        if (activeSession) {
+          setShowLanding(false);
+          setShowShield(true);
+        } else {
+          setShowLanding(true);
+          setShowShield(false);
+        }
       }
     };
 
