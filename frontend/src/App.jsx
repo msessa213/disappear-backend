@@ -18,7 +18,7 @@ import PrivacyAiChat from './PrivacyAiChat';
 import './App.css';
 
 /**
- * DISAPPEAR CORE ENGINE
+ * DISAPPEAR CORE ENGINE v2.0 - LIVE PRODUCTION
  * Refactor: Separated Marketing Intelligence + Secure Vault Gateway
  * Feature: Full Doctrine Integration & Instruction Authority
  */
