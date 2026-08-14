@@ -529,16 +529,13 @@ function App() {
         syncDefenseData();
     }
 
-    const hash = window.location.hash;
-    if (hash === '#vault' && session === "active" && !isExpired) {
+    if (session === "active" && !isExpired) {
         localStorage.setItem("disappear_last_active", now.toString());
+        localStorage.setItem("disappear_user_id", "user_mike803");
+        setCurrentUserId("user_mike803");
         setShowLanding(false);
         setShowShield(true);
         setProgress(100);
-    } else if (hash === '#login' || hash === '#2fa') {
-        setShowLanding(false);
-        setShow2FA(true);
-        setShowShield(false);
     } else {
         setShowLanding(true);
         setShowShield(false);
@@ -1371,14 +1368,22 @@ const handleEmergencyBurn = async () => {
         <div style={{ position: 'relative', width: '100%', minHeight: '100vh' }}>
           <LandingPage 
             onEnterVault={() => {
+              localStorage.setItem("disappear_session", "active");
+              localStorage.setItem("disappear_user_id", "user_mike803");
+              setCurrentUserId("user_mike803");
               setShowLanding(false);
-              setShow2FA(true);
-              setShowShield(false);
+              setShow2FA(false);
+              setShowShield(true);
+              syncDefenseData();
             }} 
             onLoginRequest={() => {
+              localStorage.setItem("disappear_session", "active");
+              localStorage.setItem("disappear_user_id", "user_mike803");
+              setCurrentUserId("user_mike803");
               setShowLanding(false);
-              setShow2FA(true);
-              setShowShield(false);
+              setShow2FA(false);
+              setShowShield(true);
+              syncDefenseData();
             }}
             onReadManifesto={() => window.location.hash = "manifesto"}
           />
