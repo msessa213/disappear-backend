@@ -486,9 +486,9 @@ class ChangePasswordRequest(BaseModel):
     new_password: str
 
 class ForgotPasswordRequest(BaseModel):
-    email: str
+    user_id: Optional[str] = None
+    email: Optional[str] = None
     new_password: Optional[str] = None
-
 
 
 # --- CORE SYSTEM ROUTES ---
@@ -577,8 +577,12 @@ async def change_password_v1(request: Request, req: ChangePasswordRequest, db: S
 def handle_forgot_password(req: ForgotPasswordRequest, db: Session):
     """Handles password reset for forgotten credentials"""
     try:
-        clean_email = req.email.strip().lower() if req and req.email else "mike803@verizon.net"
-        profile = db.query(DBProfile).filter(DBProfile.email.ilike(clean_email)).first()
+        profile = None
+        if req and req.user_id:
+            profile = db.query(DBProfile).filter(DBProfile.id == req.user_id).first()
+        if not profile and req and req.email and req.email.strip():
+            clean_email = req.email.strip().lower()
+            profile = db.query(DBProfile).filter(DBProfile.email.ilike(clean_email)).first()
         if not profile:
             profile = db.query(DBProfile).filter(DBProfile.id == "user_mike803").first()
 
@@ -600,9 +604,9 @@ def handle_forgot_password(req: ForgotPasswordRequest, db: Session):
                 logger.error(f"LOG_ENTRY_ERROR: {log_err}")
                 db.rollback()
 
-            return {"status": "SUCCESS", "message": "PASSWORD_RESET_SUCCESSFUL"}
+            return {"status": "SUCCESS", "message": "PASSWORD_RESET_SUCCESSFUL", "user_id": profile.id}
         else:
-            return {"status": "SUCCESS", "message": "ACCOUNT_VERIFIED", "email": clean_email}
+            return {"status": "SUCCESS", "message": "ACCOUNT_VERIFIED", "user_id": profile.id, "email": profile.email}
     except HTTPException:
         raise
     except Exception as e:
