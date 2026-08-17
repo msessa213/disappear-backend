@@ -528,7 +528,7 @@ async def login_agent(request: Request, login_req: LoginRequest, db: Session = D
     }
 
 
-async def handle_change_password(req: ChangePasswordRequest, db: Session):
+def handle_change_password(req: ChangePasswordRequest, db: Session):
     """Allows an authenticated user to change their password from their profile"""
     query = db.query(DBProfile)
     if req.user_id:
@@ -562,15 +562,15 @@ async def handle_change_password(req: ChangePasswordRequest, db: Session):
 @app.post("/auth/change-password")
 @limiter.limit("20/minute")
 async def change_password(request: Request, req: ChangePasswordRequest, db: Session = Depends(get_db)):
-    return await handle_change_password(req, db)
+    return handle_change_password(req, db)
 
 @app.post("/api/v1/auth/change-password")
 @limiter.limit("20/minute")
 async def change_password_v1(request: Request, req: ChangePasswordRequest, db: Session = Depends(get_db)):
-    return await handle_change_password(req, db)
+    return handle_change_password(req, db)
 
 
-async def handle_forgot_password(req: ForgotPasswordRequest, db: Session):
+def handle_forgot_password(req: ForgotPasswordRequest, db: Session):
     """Handles password reset for forgotten credentials"""
     clean_email = req.email.strip().lower()
     profile = db.query(DBProfile).filter(DBProfile.email.ilike(clean_email)).first()
@@ -599,12 +599,12 @@ async def handle_forgot_password(req: ForgotPasswordRequest, db: Session):
 @app.post("/auth/forgot-password")
 @limiter.limit("20/minute")
 async def forgot_password(request: Request, req: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    return await handle_forgot_password(req, db)
+    return handle_forgot_password(req, db)
 
 @app.post("/api/v1/auth/forgot-password")
 @limiter.limit("20/minute")
 async def forgot_password_v1(request: Request, req: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    return await handle_forgot_password(req, db)
+    return handle_forgot_password(req, db)
 
 @app.get("/download/app")
 async def download_apk():
