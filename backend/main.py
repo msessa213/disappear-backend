@@ -529,6 +529,7 @@ async def login_agent(request: Request, login_req: LoginRequest, db: Session = D
 
 
 @app.post("/auth/change-password")
+@app.post("/api/v1/auth/change-password")
 async def change_password(req: ChangePasswordRequest, db: Session = Depends(get_db)):
     """Allows an authenticated user to change their password from their profile"""
     query = db.query(DBProfile)
@@ -562,6 +563,7 @@ async def change_password(req: ChangePasswordRequest, db: Session = Depends(get_
 
 
 @app.post("/auth/forgot-password")
+@app.post("/api/v1/auth/forgot-password")
 async def forgot_password(req: ForgotPasswordRequest, db: Session = Depends(get_db)):
     """Handles password reset for forgotten credentials"""
     clean_email = req.email.strip().lower()

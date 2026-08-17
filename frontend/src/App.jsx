@@ -862,7 +862,7 @@ function App() {
     setIsResettingPassword(true);
     triggerToast("RESETTING PASSWORD...");
     try {
-      const res = await secureRequest(`${API_BASE_URL}/auth/forgot-password`, {
+      const res = await secureRequest(`${API_BASE_URL}/api/v1/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: forgotEmail, new_password: forgotNewPassword })
@@ -904,7 +904,7 @@ function App() {
     triggerToast("UPDATING VAULT PASSWORD...");
     try {
       const activeUserId = currentUserId || localStorage.getItem("disappear_user_id") || "user_mike803";
-      const res = await secureRequest(`${API_BASE_URL}/auth/change-password`, {
+      const res = await secureRequest(`${API_BASE_URL}/api/v1/auth/change-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
