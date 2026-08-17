@@ -549,12 +549,16 @@ def handle_change_password(req: ChangePasswordRequest, db: Session):
     profile.password_hash = hash_password(req.new_password)
     db.commit()
 
-    log_entry = DBPurgeLog(
-        action_type="PASSWORD_UPDATED_IN_PROFILE",
-        node_id=f"{profile.id}_VAULT_SECURITY"
-    )
-    db.add(log_entry)
-    db.commit()
+    try:
+        log_entry = DBPurgeLog(
+            action_type="PASSWORD_UPDATED_IN_PROFILE",
+            node_id=f"{profile.id}_VAULT_SECURITY"
+        )
+        db.add(log_entry)
+        db.commit()
+    except Exception as log_err:
+        logger.error(f"LOG_ENTRY_ERROR: {log_err}")
+        db.rollback()
 
     return {"status": "SUCCESS", "message": "PASSWORD_UPDATED_SUCCESSFULLY"}
 
@@ -584,12 +588,16 @@ def handle_forgot_password(req: ForgotPasswordRequest, db: Session):
         profile.password_hash = hash_password(req.new_password)
         db.commit()
 
-        log_entry = DBPurgeLog(
-            action_type="PASSWORD_RESET_COMPLETED",
-            node_id=f"{profile.id}_VAULT_AUTH"
-        )
-        db.add(log_entry)
-        db.commit()
+        try:
+            log_entry = DBPurgeLog(
+                action_type="PASSWORD_RESET_COMPLETED",
+                node_id=f"{profile.id}_VAULT_AUTH"
+            )
+            db.add(log_entry)
+            db.commit()
+        except Exception as log_err:
+            logger.error(f"LOG_ENTRY_ERROR: {log_err}")
+            db.rollback()
 
         return {"status": "SUCCESS", "message": "PASSWORD_RESET_SUCCESSFUL"}
     else:
