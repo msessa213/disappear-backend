@@ -932,10 +932,6 @@ function App() {
   const handleSecureLogout = () => {
     localStorage.clear();
     sessionStorage.clear();
-    if (window.location.hash) {
-      window.history.replaceState(null, "", window.location.pathname + window.location.search);
-      window.location.hash = "";
-    }
     setShowShield(false);
     setShowAdmin(false);
     setShowAdminLogin(false);
@@ -944,10 +940,10 @@ function App() {
     setShowLegal(null);
     setShow2FA(false);
     setShowLanding(true);
+    if (window.location.hash) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
     triggerToast("🚪 SECURE LOGOUT COMPLETE");
-    setTimeout(() => {
-      window.location.href = window.location.origin + window.location.pathname;
-    }, 150);
   };
 
   useEffect(() => {
