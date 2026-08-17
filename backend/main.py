@@ -549,10 +549,10 @@ async def handle_change_password(req: ChangePasswordRequest, db: Session):
     profile.password_hash = hash_password(req.new_password)
     db.commit()
 
-    log_entry = DBAuditHistory(
+    log_entry = DBPurgeLog(
         user_id=profile.id,
-        action="PASSWORD_UPDATED_IN_PROFILE",
-        node="VAULT_SECURITY"
+        action_type="PASSWORD_UPDATED_IN_PROFILE",
+        node_id="VAULT_SECURITY"
     )
     db.add(log_entry)
     db.commit()
@@ -585,10 +585,10 @@ async def handle_forgot_password(req: ForgotPasswordRequest, db: Session):
         profile.password_hash = hash_password(req.new_password)
         db.commit()
 
-        log_entry = DBAuditHistory(
+        log_entry = DBPurgeLog(
             user_id=profile.id,
-            action="PASSWORD_RESET_COMPLETED",
-            node="VAULT_AUTH"
+            action_type="PASSWORD_RESET_COMPLETED",
+            node_id="VAULT_AUTH"
         )
         db.add(log_entry)
         db.commit()
