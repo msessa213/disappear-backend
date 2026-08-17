@@ -929,6 +929,27 @@ function App() {
     }
   };
 
+  const handleSecureLogout = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    if (window.location.hash) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      window.location.hash = "";
+    }
+    setShowShield(false);
+    setShowAdmin(false);
+    setShowAdminLogin(false);
+    setShowCheckout(false);
+    setShowPricing(false);
+    setShowLegal(null);
+    setShow2FA(false);
+    setShowLanding(true);
+    triggerToast("🚪 SECURE LOGOUT COMPLETE");
+    setTimeout(() => {
+      window.location.href = window.location.origin + window.location.pathname;
+    }, 150);
+  };
+
   useEffect(() => {
     let interval;
     
@@ -2544,7 +2565,7 @@ const handleEmergencyBurn = async () => {
                 }}>
                   <p className="tool-label" style={{ textAlign: 'center', color: '#FF4D00', marginBottom: '15px' }}>SESSION & SECURITY CONTROLS</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
-                    <button className="reset-btn" style={{ fontSize: '0.95rem', padding: '14px 10px', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }} onClick={() => {localStorage.clear(); window.location.reload();}}>
+                    <button className="reset-btn" style={{ fontSize: '0.95rem', padding: '14px 10px', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }} onClick={handleSecureLogout}>
                       🚪 LOGOUT SECURELY
                     </button>
                     <button className="burn-all-btn" style={{ fontSize: '0.95rem', padding: '14px 10px', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }} onClick={handleEmergencyBurn}>
