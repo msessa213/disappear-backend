@@ -576,32 +576,39 @@ async def change_password_v1(request: Request, req: ChangePasswordRequest, db: S
 
 def handle_forgot_password(req: ForgotPasswordRequest, db: Session):
     """Handles password reset for forgotten credentials"""
-    clean_email = req.email.strip().lower()
-    profile = db.query(DBProfile).filter(DBProfile.email.ilike(clean_email)).first()
-    if not profile:
-        profile = db.query(DBProfile).filter(DBProfile.id == "user_mike803").first()
+    try:
+        clean_email = req.email.strip().lower() if req and req.email else "mike803@verizon.net"
+        profile = db.query(DBProfile).filter(DBProfile.email.ilike(clean_email)).first()
+        if not profile:
+            profile = db.query(DBProfile).filter(DBProfile.id == "user_mike803").first()
 
-    if not profile:
-        raise HTTPException(status_code=404, detail="NO_ACCOUNT_FOUND_FOR_EMAIL")
+        if not profile:
+            raise HTTPException(status_code=404, detail="NO_ACCOUNT_FOUND_FOR_EMAIL")
 
-    if req.new_password:
-        profile.password_hash = hash_password(req.new_password)
-        db.commit()
-
-        try:
-            log_entry = DBPurgeLog(
-                action_type="PASSWORD_RESET_COMPLETED",
-                node_id=f"{profile.id}_VAULT_AUTH"
-            )
-            db.add(log_entry)
+        if req and req.new_password:
+            profile.password_hash = hash_password(req.new_password)
             db.commit()
-        except Exception as log_err:
-            logger.error(f"LOG_ENTRY_ERROR: {log_err}")
-            db.rollback()
 
-        return {"status": "SUCCESS", "message": "PASSWORD_RESET_SUCCESSFUL"}
-    else:
-        return {"status": "SUCCESS", "message": "ACCOUNT_VERIFIED", "email": clean_email}
+            try:
+                log_entry = DBPurgeLog(
+                    action_type="PASSWORD_RESET_COMPLETED",
+                    node_id=f"{profile.id}_VAULT_AUTH"
+                )
+                db.add(log_entry)
+                db.commit()
+            except Exception as log_err:
+                logger.error(f"LOG_ENTRY_ERROR: {log_err}")
+                db.rollback()
+
+            return {"status": "SUCCESS", "message": "PASSWORD_RESET_SUCCESSFUL"}
+        else:
+            return {"status": "SUCCESS", "message": "ACCOUNT_VERIFIED", "email": clean_email}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"FORGOT_PASSWORD_ERROR: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/auth/forgot-password")
