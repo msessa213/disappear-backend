@@ -129,6 +129,17 @@ function App() {
   const [showComposeSms, setShowComposeSms] = useState(false);
   const [expandedThreads, setExpandedThreads] = useState({});
 
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotNewPassword, setForgotNewPassword] = useState("");
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState("");
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+
+  const [currentPasswordInput, setCurrentPasswordInput] = useState("");
+  const [newPasswordInput, setNewPasswordInput] = useState("");
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
   // Memoized, stable SMS thread groups to prevent any text flickering or inline recalculations
   const groupedSmsThreads = useMemo(() => {
     if (!smsInbox || smsInbox.length === 0) return [];
@@ -831,6 +842,90 @@ function App() {
       triggerToast("NETWORK ERROR SENDING SMS");
     } finally {
       setIsSendingSms(false);
+    }
+  };
+
+  const handleForgotPasswordSubmit = async (e) => {
+    e.preventDefault();
+    if (!forgotEmail.trim() || !forgotNewPassword) {
+      triggerToast("ENTER EMAIL & NEW PASSWORD");
+      return;
+    }
+    if (forgotNewPassword !== forgotConfirmPassword) {
+      triggerToast("PASSWORDS DO NOT MATCH");
+      return;
+    }
+    if (forgotNewPassword.length < 6) {
+      triggerToast("PASSWORD MUST BE AT LEAST 6 CHARACTERS");
+      return;
+    }
+    setIsResettingPassword(true);
+    triggerToast("RESETTING PASSWORD...");
+    try {
+      const res = await secureRequest(`${API_BASE_URL}/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmail, new_password: forgotNewPassword })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("✅ PASSWORD RESET! SIGNING IN...");
+        setLoginEmail(forgotEmail);
+        setLoginPassword(forgotNewPassword);
+        setShowForgotPasswordModal(false);
+        setForgotNewPassword("");
+        setForgotConfirmPassword("");
+        verify2FA();
+      } else {
+        triggerToast(`❌ ${data.detail || "FAILED TO RESET PASSWORD"}`);
+      }
+    } catch (err) {
+      triggerToast("NETWORK ERROR RESETTING PASSWORD");
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
+  const handleChangePasswordInProfile = async (e) => {
+    e.preventDefault();
+    if (!currentPasswordInput || !newPasswordInput) {
+      triggerToast("ENTER CURRENT & NEW PASSWORD");
+      return;
+    }
+    if (newPasswordInput !== confirmPasswordInput) {
+      triggerToast("NEW PASSWORDS DO NOT MATCH");
+      return;
+    }
+    if (newPasswordInput.length < 6) {
+      triggerToast("NEW PASSWORD MUST BE AT LEAST 6 CHARACTERS");
+      return;
+    }
+    setIsUpdatingPassword(true);
+    triggerToast("UPDATING VAULT PASSWORD...");
+    try {
+      const activeUserId = currentUserId || localStorage.getItem("disappear_user_id") || "user_mike803";
+      const res = await secureRequest(`${API_BASE_URL}/auth/change-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: activeUserId,
+          current_password: currentPasswordInput,
+          new_password: newPasswordInput
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("✅ PASSWORD UPDATED SUCCESSFULLY!");
+        setCurrentPasswordInput("");
+        setNewPasswordInput("");
+        setConfirmPasswordInput("");
+      } else {
+        triggerToast(`❌ ${data.detail || "INCORRECT CURRENT PASSWORD"}`);
+      }
+    } catch (err) {
+      triggerToast("NETWORK ERROR UPDATING PASSWORD");
+    } finally {
+      setIsUpdatingPassword(false);
     }
   };
 
@@ -2375,6 +2470,67 @@ const handleEmergencyBurn = async () => {
                   </div>
                 </div>
 
+                {/* --- PASSWORD MANAGEMENT CARD (PROFILE SECURITY) --- */}
+                <div className="masking-tool" style={{ 
+                  width: '100%', 
+                  maxWidth: '600px', 
+                  marginTop: '25px',
+                  padding: '20px',
+                  border: '1px solid rgba(0, 210, 255, 0.3)',
+                  background: 'rgba(5, 7, 13, 0.95)',
+                  borderRadius: '12px',
+                  textAlign: 'left'
+                }}>
+                  <p className="tool-label" style={{ textAlign: 'center', color: '#00D2FF', marginBottom: '15px' }}>🔐 USER PROFILE & PASSWORD SECURITY</p>
+                  
+                  <form onSubmit={handleChangePasswordInProfile} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>CURRENT PASSWORD</label>
+                      <input 
+                        type="password"
+                        className="mask-btn"
+                        style={{ width: '100%', marginTop: '4px', color: '#fff', fontSize: '0.85rem' }}
+                        placeholder="Current Vault Password"
+                        value={currentPasswordInput}
+                        onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>NEW PASSWORD</label>
+                      <input 
+                        type="password"
+                        className="mask-btn"
+                        style={{ width: '100%', marginTop: '4px', color: '#fff', fontSize: '0.85rem' }}
+                        placeholder="New Password (min 6 characters)"
+                        value={newPasswordInput}
+                        onChange={(e) => setNewPasswordInput(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>CONFIRM NEW PASSWORD</label>
+                      <input 
+                        type="password"
+                        className="mask-btn"
+                        style={{ width: '100%', marginTop: '4px', color: '#fff', fontSize: '0.85rem' }}
+                        placeholder="Confirm New Password"
+                        value={confirmPasswordInput}
+                        onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <button 
+                      type="submit" 
+                      className="main-button"
+                      disabled={isUpdatingPassword}
+                      style={{ marginTop: '10px', padding: '12px', fontSize: '0.85rem' }}
+                    >
+                      {isUpdatingPassword ? "⏳ UPDATING PASSWORD..." : "🔑 UPDATE VAULT PASSWORD"}
+                    </button>
+                  </form>
+                </div>
+
                 {/* --- SESSION & SECURITY CONTROLS CARD --- */}
                 <div className="masking-tool" style={{ 
                   width: '100%', 
@@ -2428,12 +2584,23 @@ const handleEmergencyBurn = async () => {
                           id="customer_login_password"
                           autoComplete="current-password" 
                           className="mask-btn" 
-                          style={{width: '100%', textAlign: 'center', color: 'white', marginBottom: '15px'}} 
+                          style={{width: '100%', textAlign: 'center', color: 'white', marginBottom: '10px'}} 
                           placeholder="••••••••" 
                           value={loginPassword} 
                           onChange={(e) => setLoginPassword(e.target.value)} 
                         />
-                        <button type="submit" className="main-button" style={{width: '100%', marginTop: '10px'}}>SIGN IN</button>
+                        <div style={{ textAlign: 'right', marginBottom: '15px' }}>
+                          <span 
+                            style={{ color: '#00D2FF', fontSize: '0.78rem', cursor: 'pointer', textDecoration: 'underline', fontWeight: 'bold' }}
+                            onClick={() => {
+                              setForgotEmail(loginEmail || "");
+                              setShowForgotPasswordModal(true);
+                            }}
+                          >
+                            🔑 FORGOT PASSWORD?
+                          </span>
+                        </div>
+                        <button type="submit" className="main-button" style={{width: '100%', marginTop: '5px'}}>SIGN IN</button>
                       </form>
                       <button 
                         type="button" 
@@ -2671,6 +2838,79 @@ const handleEmergencyBurn = async () => {
             <textarea className="mask-btn" style={{width: '100%', height: '100px', color: 'white', textAlign: 'left', paddingTop: '10px'}} placeholder="Describe the anomaly..." value={supportData.message} onChange={(e) => setSupportData({...supportData, message: e.target.value})} />
             <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={handleSendTicket}>TRANSMIT_TICKET</button>
             <button className="reset-btn" style={{width: '100%'}} onClick={() => setShowSupportModal(false)}>ABORT</button>
+          </div>
+        </div>
+      )}
+
+      {/* --- GLOBAL FORGOT PASSWORD MODAL --- */}
+      {showForgotPasswordModal && (
+        <div className="modal-overlay" style={{ zIndex: 60000 }} onClick={() => setShowForgotPasswordModal(false)}>
+          <div className="price-box" style={{ maxWidth: '420px', width: '90%', padding: '25px', textAlign: 'left' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.1rem' }}>🔑 RESET VAULT PASSWORD</h3>
+              <button 
+                type="button" 
+                className="reset-btn" 
+                style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+                onClick={() => setShowForgotPasswordModal(false)}
+              >
+                ✕ CLOSE
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.78rem', color: '#94A3B8', marginBottom: '15px', lineHeight: '1.4' }}>
+              Enter your registered account email and your new password to restore access to your Disappear Vault.
+            </p>
+
+            <form onSubmit={handleForgotPasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <p className="field-label" style={{ marginBottom: '4px' }}>REGISTERED ACCOUNT EMAIL</p>
+                <input 
+                  type="email" 
+                  className="mask-btn" 
+                  style={{ width: '100%', color: 'white', fontSize: '0.85rem' }} 
+                  placeholder="customer@email.com" 
+                  value={forgotEmail} 
+                  onChange={(e) => setForgotEmail(e.target.value)} 
+                  required
+                />
+              </div>
+
+              <div>
+                <p className="field-label" style={{ marginBottom: '4px' }}>NEW PASSWORD</p>
+                <input 
+                  type="password" 
+                  className="mask-btn" 
+                  style={{ width: '100%', color: 'white', fontSize: '0.85rem' }} 
+                  placeholder="New Password (min 6 chars)" 
+                  value={forgotNewPassword} 
+                  onChange={(e) => setForgotNewPassword(e.target.value)} 
+                  required
+                />
+              </div>
+
+              <div>
+                <p className="field-label" style={{ marginBottom: '4px' }}>CONFIRM NEW PASSWORD</p>
+                <input 
+                  type="password" 
+                  className="mask-btn" 
+                  style={{ width: '100%', color: 'white', fontSize: '0.85rem' }} 
+                  placeholder="Confirm New Password" 
+                  value={forgotConfirmPassword} 
+                  onChange={(e) => setForgotConfirmPassword(e.target.value)} 
+                  required
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                className="main-button" 
+                disabled={isResettingPassword}
+                style={{ width: '100%', marginTop: '10px' }}
+              >
+                {isResettingPassword ? "RESETTING PASSWORD..." : "🔑 RESET PASSWORD & SIGN IN"}
+              </button>
+            </form>
           </div>
         </div>
       )}

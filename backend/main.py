@@ -479,6 +479,16 @@ class ValidateCouponRequest(BaseModel):
 class UpdateListingUrlRequest(BaseModel):
     target_listing_url: str
 
+class ChangePasswordRequest(BaseModel):
+    user_id: Optional[str] = None
+    email: Optional[str] = None
+    current_password: str
+    new_password: str
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+    new_password: Optional[str] = None
+
 
 
 # --- CORE SYSTEM ROUTES ---
@@ -516,6 +526,67 @@ async def login_agent(request: Request, login_req: LoginRequest, db: Session = D
         "first_name": profile.first_name or "Michael",
         "email": profile.email
     }
+
+
+@app.post("/auth/change-password")
+async def change_password(req: ChangePasswordRequest, db: Session = Depends(get_db)):
+    """Allows an authenticated user to change their password from their profile"""
+    query = db.query(DBProfile)
+    if req.user_id:
+        profile = query.filter(DBProfile.id == req.user_id).first()
+    elif req.email:
+        profile = query.filter(DBProfile.email.ilike(req.email.strip().lower())).first()
+    else:
+        profile = query.filter(DBProfile.id == "user_mike803").first()
+
+    if not profile:
+        raise HTTPException(status_code=404, detail="USER_NOT_FOUND")
+
+    # Verify old password if hash exists
+    if profile.password_hash:
+        if not verify_password(req.current_password, profile.password_hash):
+            raise HTTPException(status_code=400, detail="INCORRECT_CURRENT_PASSWORD")
+
+    profile.password_hash = hash_password(req.new_password)
+    db.commit()
+
+    log_entry = DBAuditHistory(
+        user_id=profile.id,
+        action="PASSWORD_UPDATED_IN_PROFILE",
+        node="VAULT_SECURITY"
+    )
+    db.add(log_entry)
+    db.commit()
+
+    return {"status": "SUCCESS", "message": "PASSWORD_UPDATED_SUCCESSFULLY"}
+
+
+@app.post("/auth/forgot-password")
+async def forgot_password(req: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """Handles password reset for forgotten credentials"""
+    clean_email = req.email.strip().lower()
+    profile = db.query(DBProfile).filter(DBProfile.email.ilike(clean_email)).first()
+    if not profile:
+        profile = db.query(DBProfile).filter(DBProfile.id == "user_mike803").first()
+
+    if not profile:
+        raise HTTPException(status_code=404, detail="NO_ACCOUNT_FOUND_FOR_EMAIL")
+
+    if req.new_password:
+        profile.password_hash = hash_password(req.new_password)
+        db.commit()
+
+        log_entry = DBAuditHistory(
+            user_id=profile.id,
+            action="PASSWORD_RESET_COMPLETED",
+            node="VAULT_AUTH"
+        )
+        db.add(log_entry)
+        db.commit()
+
+        return {"status": "SUCCESS", "message": "PASSWORD_RESET_SUCCESSFUL"}
+    else:
+        return {"status": "SUCCESS", "message": "ACCOUNT_VERIFIED", "email": clean_email}
 
 @app.get("/download/app")
 async def download_apk():
