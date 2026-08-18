@@ -281,16 +281,16 @@ function App() {
   }, [currentUserId, updateSmsInboxSafely]);
 
   const fetchTargetEmails = useCallback(async () => {
-    const activeUserId = localStorage.getItem("disappear_user_id") || "";
+    const activeUserId = currentUserId || localStorage.getItem("disappear_user_id") || "user_mike803";
     try {
         const res = await secureRequest(`${API_BASE_URL}/profile/emails?user_id=${activeUserId}`);
         if(res.ok) setTargetEmails(await res.json());
     } catch(e) {}
-  }, []);
+  }, [currentUserId]);
 
   const syncDefenseData = useCallback(async () => {
     try {
-      const activeUserId = localStorage.getItem("disappear_user_id") || "";
+      const activeUserId = currentUserId || localStorage.getItem("disappear_user_id") || "user_mike803";
       
       localStorage.setItem("disappear_last_active", Date.now().toString());
       
