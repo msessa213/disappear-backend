@@ -490,6 +490,10 @@ class ForgotPasswordRequest(BaseModel):
     email: Optional[str] = None
     new_password: Optional[str] = None
 
+class CreditRefillRequest(BaseModel):
+    user_id: Optional[str] = None
+    pack_type: Optional[str] = "250_credits"
+
 
 # --- CORE SYSTEM ROUTES ---
 
@@ -1585,6 +1589,8 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
             "used_phones": used_phones,
             "credits_used": total_used,
             "credits_available": max(0, vcc_email_capacity - total_used),
+            "relay_credits": getattr(profile, 'relay_credits', 500) if getattr(profile, 'relay_credits', None) is not None else 500,
+            "relay_credits_total": getattr(profile, 'relay_credits_total', 500) if getattr(profile, 'relay_credits_total', None) is not None else 500,
             "threat_level": "NOMINAL",
             "uptime": "99.998%",
             "active_nodes": total_used 
@@ -1784,6 +1790,42 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
         raise HTTPException(status_code=500, detail="Payment gateway initialization failed.")
 
 
+@app.post("/payments/create-refill-session")
+@limiter.limit("10/minute")
+async def create_credit_refill_session(request: Request, req: CreditRefillRequest, db: Session = Depends(get_db)):
+    """Creates a $5.00 Stripe Checkout session to add 250 Relay Shield Credits"""
+    try:
+        import stripe
+        stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+        user_id = req.user_id or "user_mike803"
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'product_data': {
+                        'name': '250 RELAY SHIELD CREDITS',
+                        'description': 'Adds 250 SMS / Voice Call Credits to your Disappear Vault relay pool.',
+                    },
+                    'unit_amount': 500, # $5.00
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url='https://www.disappearco.com/#vault?refill=success',
+            cancel_url='https://www.disappearco.com/#vault',
+            metadata={
+                'user_id': user_id,
+                'type': 'credit_refill',
+                'credits_to_add': 250
+            }
+        )
+        return {"status": "SUCCESS", "url": session.url}
+    except Exception as e:
+        logger.error(f"REFILL_SESSION_ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/payments/webhook")
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     """Verifies Stripe signature and updates DBProfile capacity with diagnostic logging"""
@@ -1829,6 +1871,14 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
                 logger.info(f"DB_UPDATE: Phone line bonus added for {profile.id}")
                 db.add(profile)
                 
+            elif purchase_type == "credit_refill" or metadata.get("type") == "credit_refill":
+                credits_to_add = int(metadata.get("credits_to_add", 250))
+                profile.relay_credits = (profile.relay_credits or 0) + credits_to_add
+                profile.relay_credits_total = (profile.relay_credits_total or 0) + credits_to_add
+                action = "RELAY_CREDITS_REFILLED"
+                logger.info(f"DB_UPDATE: Added {credits_to_add} Relay Credits for profile {profile.id}")
+                db.add(profile)
+
             elif purchase_type in ["subscription_monthly", "subscription_annual"] or session.get("mode") == "subscription":
                 action = "SUBSCRIPTION_ACTIVATED"
                 profile.kyc_status = "APPROVED"
@@ -2941,6 +2991,13 @@ async def send_user_sms_reply(req: SMSReplyRequest, db: Session = Depends(get_db
     target_to = format_to_e164(req.to_phone)
     if not target_to:
         raise HTTPException(status_code=400, detail="INVALID_PHONE_NUMBER: Please enter a valid 10-digit phone number.")
+
+    profile = db.query(DBProfile).filter(DBProfile.id == req.user_id).first() if req.user_id else None
+    if not profile:
+        profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+
+    if profile and profile.relay_credits is not None and profile.relay_credits <= 0:
+        raise HTTPException(status_code=403, detail="RELAY_CREDITS_EXHAUSTED: Monthly relay credits depleted. Please click REFILL CREDITS in your Vault Dashboard.")
         
     from services.twilio_service import send_sms, twilio_client
     if not twilio_client:
@@ -2948,6 +3005,9 @@ async def send_user_sms_reply(req: SMSReplyRequest, db: Session = Depends(get_db
 
     success = send_sms(to_phone_number=target_to, message_body=req.message.strip())
     if success:
+        if profile:
+            profile.relay_credits = max(0, (profile.relay_credits or 500) - 1)
+            db.commit()
         try:
             db.add(DBPurgeLog(
                 action_type=f"SMS_SENT [To {target_to}]: {req.message.strip()}",
@@ -3041,6 +3101,17 @@ async def twilio_incoming_sms(
         return Response(content="<Response/>", media_type="application/xml")
         
     message_content = f"DISAPPEAR SMS [From {From}]: {Body}"
+    
+    # Credit Firewall check: Protect baseline margin & prevent runaway telecom costs
+    current_credits = getattr(profile, 'relay_credits', 500) if profile else 500
+    if current_credits is not None and current_credits <= 0:
+        logger.warning(f"TWILIO_SMS_BLOCKED: Profile {target_uid} exhausted relay credits")
+        return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response/>', media_type="application/xml")
+
+    if profile:
+        profile.relay_credits = max(0, (profile.relay_credits or 500) - 1)
+        db.commit()
+
     logger.info(f"TWILIO_SMS_FORWARD: Forwarding SMS from {From} via virtual {To} to real phone {forward_phone}")
     
     # 1. Dispatch SMS via Twilio REST API directly to the user's real phone number

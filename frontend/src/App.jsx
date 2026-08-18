@@ -140,6 +140,10 @@ function App() {
   const [confirmPasswordInput, setConfirmPasswordInput] = useState("");
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
+  const [relayCredits, setRelayCredits] = useState(500);
+  const [relayCreditsTotal, setRelayCreditsTotal] = useState(500);
+  const [isRefillingCredits, setIsRefillingCredits] = useState(false);
+
   // Memoized, stable SMS thread groups to prevent any text flickering or inline recalculations
   const groupedSmsThreads = useMemo(() => {
     if (!smsInbox || smsInbox.length === 0) return [];
@@ -371,9 +375,13 @@ function App() {
       }
 
       // 8. Map Profile Phone Number (Initial load only to avoid polling overwrite)
-      if (data.profile && !hasLoadedPhone) {
-        setDestinationPhone(data.profile.phone || "");
-        setHasLoadedPhone(true);
+      if (data.profile) {
+        if (!hasLoadedPhone) {
+          setDestinationPhone(data.profile.phone || "");
+          setHasLoadedPhone(true);
+        }
+        if (data.profile.relay_credits !== undefined) setRelayCredits(data.profile.relay_credits);
+        if (data.profile.relay_credits_total !== undefined) setRelayCreditsTotal(data.profile.relay_credits_total);
       }
 
       // 9. Map Referral Milestone Data
@@ -944,6 +952,29 @@ function App() {
       window.history.replaceState(null, "", window.location.pathname + window.location.search);
     }
     triggerToast("🚪 SECURE LOGOUT COMPLETE");
+  };
+
+  const handleRefillCredits = async () => {
+    setIsRefillingCredits(true);
+    triggerToast("⏳ INITIALIZING RELAY CREDIT REFILL...");
+    try {
+      const activeUserId = currentUserId || localStorage.getItem("disappear_user_id") || "user_mike803";
+      const res = await secureRequest(`${API_BASE_URL}/payments/create-refill-session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: activeUserId, pack_type: "250_credits" })
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        triggerToast(`❌ ${data.detail || "FAILED TO INITIALIZE REFILL SESSION"}`);
+      }
+    } catch (err) {
+      triggerToast("NETWORK ERROR INITIALIZING REFILL");
+    } finally {
+      setIsRefillingCredits(false);
+    }
   };
 
   useEffect(() => {
@@ -1982,6 +2013,49 @@ const handleEmergencyBurn = async () => {
                     ))}
                   </div>
                   <button className="reset-btn" style={{marginTop: '15px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowEmailModal(true)}> + GENERATE EMAIL ALIAS </button>
+                </div>
+
+                {/* --- RELAY SHIELD CREDITS METER CARD --- */}
+                <div className="masking-tool" style={{ 
+                  width: '100%', 
+                  maxWidth: '600px', 
+                  border: '1px solid rgba(0, 210, 255, 0.3)',
+                  background: 'rgba(5, 7, 13, 0.95)',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  textAlign: 'left'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                    <span style={{ fontSize: '0.82rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                      🛡️ MONTHLY RELAY SHIELD CREDITS
+                    </span>
+                    <span style={{ fontSize: '0.85rem', color: relayCredits > 50 ? '#10B981' : '#EF4444', fontWeight: 'bold' }}>
+                      {relayCredits} / {relayCreditsTotal} CREDITS
+                    </span>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.1)', borderRadius: '5px', overflow: 'hidden', marginBottom: '10px' }}>
+                    <div style={{ 
+                      width: `${Math.min(100, Math.max(0, (relayCredits / Math.max(1, relayCreditsTotal)) * 100))}%`, 
+                      height: '100%', 
+                      background: relayCredits > 100 ? 'linear-gradient(90deg, #00D2FF, #10B981)' : 'linear-gradient(90deg, #F59E0B, #EF4444)',
+                      transition: 'width 0.4s ease'
+                    }}></div>
+                  </div>
+
+                  <p style={{ fontSize: '0.74rem', color: '#94A3B8', margin: '0 0 14px 0', lineHeight: '1.4' }}>
+                    1 SMS Relay = 1 Credit | 1 Call Forwarding Minute = 2 Credits. Credits protect your privacy and lock in guaranteed plan pricing.
+                  </p>
+
+                  <button 
+                    className="main-button" 
+                    disabled={isRefillingCredits}
+                    style={{ width: '100%', padding: '12px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                    onClick={handleRefillCredits}
+                  >
+                    {isRefillingCredits ? "⏳ INITIALIZING..." : "⚡ REFILL +250 RELAY CREDITS ($5.00)"}
+                  </button>
                 </div>
 
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>

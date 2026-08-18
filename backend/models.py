@@ -98,6 +98,8 @@ class DBProfile(Base):
     referral_count = Column(Integer, default=0)
     free_months_earned = Column(Integer, default=0)
     free_months_redeemed = Column(Integer, default=0)
+    relay_credits = Column(Integer, default=500)
+    relay_credits_total = Column(Integer, default=500)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class DBTargetEmail(Base):
