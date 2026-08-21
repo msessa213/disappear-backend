@@ -3116,15 +3116,17 @@ async def twilio_incoming_sms(
 
     logger.info(f"TWILIO_SMS_FORWARD: Forwarding SMS from {From} via virtual {To} to real phone {forward_phone}")
     
-    # 1. Dispatch SMS via Twilio REST API directly to the user's real phone number
+    # 1. Dispatch SMS via native TwiML response for 100% instant carrier delivery to recipient cell phone
+    twiml_content = f'<?xml version="1.0" encoding="UTF-8"?><Response><Message to="{forward_phone}">{message_content}</Message></Response>'
+    
+    # 2. Also attempt REST API dispatch as backup
     try:
         from services.twilio_service import send_sms
         send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=To)
     except Exception as ex:
-        logger.warning(f"Twilio REST API SMS dispatch failed: {ex}")
+        logger.warning(f"Twilio REST API SMS dispatch backup: {ex}")
 
-    # Return clean empty TwiML XML response since SMS was dispatched via REST API
-    return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response/>', media_type="application/xml")
+    return Response(content=twiml_content, media_type="application/xml")
 
 
 @app.get("/api/v1/test-twilio")
