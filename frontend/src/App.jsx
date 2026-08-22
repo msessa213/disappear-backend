@@ -33,11 +33,11 @@ const isExplicitLocalDev = typeof window !== 'undefined' &&
 const API_BASE_URL = isExplicitLocalDev ? LOCAL_API : "";
 
 // --- TAB ISOLATION STORAGE ENGINE ---
-// Priority: Uses sessionStorage so each browser tab/window maintains its own isolated session sandbox.
-// Falls back to reading localStorage only if sessionStorage is empty on initial tab boot.
+// Uses sessionStorage so each browser tab/window maintains its own strictly isolated session sandbox.
+// Zero reading or writing to global localStorage to guarantee cross-tab session independence.
 const getSessionItem = (key) => {
   try {
-    return sessionStorage.getItem(key) || localStorage.getItem(key) || "";
+    return sessionStorage.getItem(key) || "";
   } catch (e) {
     return "";
   }
@@ -52,17 +52,12 @@ const setSessionItem = (key, value) => {
 const removeSessionItem = (key) => {
   try {
     sessionStorage.removeItem(key);
-    localStorage.removeItem(key);
   } catch (e) {}
 };
 
 const clearSessionStorage = () => {
   try {
     sessionStorage.clear();
-    localStorage.removeItem("disappear_session");
-    localStorage.removeItem("disappear_user_id");
-    localStorage.removeItem("disappear_user_email");
-    localStorage.removeItem("disappear_last_active");
   } catch (e) {}
 };
 
@@ -678,7 +673,7 @@ function App() {
         if (window.location.hash) {
           window.history.replaceState(null, "", window.location.pathname + window.location.search);
         }
-        const activeSession = localStorage.getItem("disappear_session") === "active";
+        const activeSession = getSessionItem("disappear_session") === "active";
         setShowLegal(null);
         setShowAdmin(false);
         setShowAdminLogin(false);
@@ -930,7 +925,7 @@ function App() {
     const formattedTo = digitsOnly.length === 10 ? `+1${digitsOnly}` : `+${digitsOnly}`;
     triggerToast(`⏳ DISPATCHING SMS TO ${formattedTo}...`);
 
-    const activeUserId = currentUserId || localStorage.getItem("disappear_user_id");
+    const activeUserId = currentUserId || getSessionItem("disappear_user_id");
     if (!activeUserId) {
       triggerToast("⚠️ PLEASE SIGN IN TO SEND SMS");
       setIsSendingSms(false);
@@ -1322,7 +1317,7 @@ const handleEmergencyBurn = async () => {
           pushNotification("SESSION_TERMINATING");
           setIsEmergencyWipe(false); 
           setTimeout(() => {
-            localStorage.clear();
+            clearSessionStorage();
             window.location.reload();
           }, 3000); 
         }, 1500);
@@ -1652,7 +1647,7 @@ const handleEmergencyBurn = async () => {
 
     setIsMinting(true);
     try {
-        const storedRefCode = localStorage.getItem("disappear_ref_code") || "";
+        const storedRefCode = getSessionItem("disappear_ref_code");
         // Combine the address components so the backend database doesn't need to change
         const payload = {
             ...targetProfile,
@@ -2918,12 +2913,12 @@ const handleEmergencyBurn = async () => {
                         className="main-button" 
                         style={{ width: '100%', marginTop: '12px', background: 'linear-gradient(135deg, #10B981, #059669)', border: 'none' }}
                         onClick={() => {
-                          const savedUid = localStorage.getItem("disappear_user_id") || currentUserId;
+                          const savedUid = currentUserId || getSessionItem("disappear_user_id");
                           if (!savedUid) {
                             triggerToast("⚠️ PLEASE SIGN IN WITH YOUR EMAIL & PASSWORD");
                             return;
                           }
-                          localStorage.setItem("disappear_session", "active");
+                          setSessionItem("disappear_session", "active");
                           setCurrentUserId(savedUid);
                           setShowLanding(false);
                           setShow2FA(false);
