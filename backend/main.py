@@ -2350,8 +2350,8 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
             profile.kyc_status = "APPROVED"
             db.commit()
 
-    bonus = profile.bonus_credits if profile else 0
-    phone_bonus = profile.phone_line_bonus if profile else 0
+    bonus = (profile.bonus_credits or 0) if profile else 0
+    phone_bonus = (profile.phone_line_bonus or 0) if profile else 0
     
     req_type = alias_req.type.lower()
     
