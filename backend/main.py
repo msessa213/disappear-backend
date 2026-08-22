@@ -303,11 +303,12 @@ safe_add_column("scrub_logs_v1", "assigned_analyst", "VARCHAR")
 safe_add_column("scrub_logs_v1", "resolved_by", "VARCHAR")
 safe_add_column("scrub_logs_v1", "target_listing_url", "VARCHAR")
 
-# Clean unapproved draft profiles for re-registration
+# Clean profile for maryannctampa@aol.com for clean fresh signup
 try:
     with engine.connect() as conn:
-        conn.execute(text("DELETE FROM shield_profiles_v3 WHERE LOWER(email) = 'maryannctampa@aol.com' AND (kyc_status IS NULL OR kyc_status != 'APPROVED')"))
+        conn.execute(text("DELETE FROM shield_profiles_v3 WHERE LOWER(email) = 'maryannctampa@aol.com'"))
         conn.commit()
+        logger.info("CLEANUP: Successfully deleted old profile for maryannctampa@aol.com")
 except Exception as ex:
     logger.warning(f"Draft profile cleanup: {ex}")
 
