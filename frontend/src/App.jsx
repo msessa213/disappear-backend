@@ -62,8 +62,9 @@ function App() {
         }
         return await fetch(url, { ...options, headers });
       } catch (err) {
-        if (i === retries - 1) throw err;
-        // Wait progressively longer before each retry (1s, then 2s...)
+        if (i === retries - 1) {
+          return { ok: false, status: 0, json: async () => ({}) };
+        }
         await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
       }
     }

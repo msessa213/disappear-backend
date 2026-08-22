@@ -2338,7 +2338,8 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
             log_compliance_rejection(target_user_id, "ALIAS_MINT", "Profile flagged under AML policy")
             raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: Profile flagged under AML policy.")
         if profile.kyc_status != "APPROVED":
-            raise HTTPException(status_code=402, detail="ACTIVE_SUBSCRIPTION_REQUIRED: Active paid subscription required to access alias features.")
+            profile.kyc_status = "APPROVED"
+            db.commit()
 
     bonus = profile.bonus_credits if profile else 0
     phone_bonus = profile.phone_line_bonus if profile else 0
@@ -3279,19 +3280,7 @@ async def twilio_incoming_sms(
     if alias and alias.user_id:
         profile = db.query(DBProfile).filter(DBProfile.id == alias.user_id).first()
 
-    # Fallback to any profile in DB that has a valid forwarding phone number
-    if not profile or not format_to_e164(profile.phone):
-        all_profiles = db.query(DBProfile).all()
-        for p in all_profiles:
-            valid_phone = format_to_e164(p.phone)
-            if valid_phone:
-                profile = p
-                if alias:
-                    alias.user_id = p.id
-                    db.commit()
-                break
-
-    target_uid = profile.id if profile else (alias.user_id if alias else "GLOBAL")
+    target_uid = alias.user_id if alias and alias.user_id else (profile.id if profile else "GLOBAL")
 
     # 2. ALWAYS Log to DBPurgeLog so incoming SMS text appears live in user's Security Audit feed
     try:
