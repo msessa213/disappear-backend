@@ -848,6 +848,22 @@ function App() {
   };
 
 
+  const handleDeleteSmsMessage = async (id, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (!id) return;
+    try {
+      setSmsInbox(prev => prev.filter(m => String(m.id) !== String(id)));
+      triggerToast("🗑️ SMS DELETED FROM VAULT");
+      await secureRequest(`${API_BASE_URL}/api/v1/sms-inbox/${id}`, { method: "DELETE" });
+      fetchSmsInbox();
+    } catch (err) {
+      console.error("Error deleting SMS:", err);
+    }
+  };
+
   const handleSendSmsReply = async (targetTo, bodyText) => {
     const rawTo = (targetTo || replyRecipient || "").trim();
     const body = (bodyText || replyBody || "").trim();
@@ -2311,22 +2327,35 @@ const handleEmergencyBurn = async () => {
                                     {messages.length} {messages.length === 1 ? 'MSG' : 'MSGS'}
                                   </span>
                                 </div>
-                                <button
-                                  className="reset-btn"
-                                  type="button"
-                                  style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#10B981', borderColor: '#10B981' }}
-                                  onClick={() => {
-                                    if (isGroupReplying) {
-                                      setActiveReplyId(null);
-                                    } else {
-                                      setActiveReplyId(`group_${phone}`);
-                                      setReplyRecipient(phone.startsWith("+") ? phone : "");
-                                      setReplyBody("");
-                                    }
-                                  }}
-                                >
-                                  {isGroupReplying ? "✕ CLOSE" : "💬 REPLY"}
-                                </button>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                  <button
+                                    className="reset-btn"
+                                    type="button"
+                                    style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#10B981', borderColor: '#10B981' }}
+                                    onClick={() => {
+                                      if (isGroupReplying) {
+                                        setActiveReplyId(null);
+                                      } else {
+                                        setActiveReplyId(`group_${phone}`);
+                                        setReplyRecipient(phone.startsWith("+") ? phone : "");
+                                        setReplyBody("");
+                                      }
+                                    }}
+                                  >
+                                    {isGroupReplying ? "✕ CLOSE" : "💬 REPLY"}
+                                  </button>
+
+                                  <button
+                                    className="reset-btn"
+                                    type="button"
+                                    style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#EF4444', borderColor: '#EF4444' }}
+                                    onClick={(e) => {
+                                      messages.forEach(msg => handleDeleteSmsMessage(msg.id, e));
+                                    }}
+                                  >
+                                    🗑️ DELETE
+                                  </button>
+                                </div>
                               </div>
 
                               {/* Quick Reply Box for Thread */}
@@ -2358,9 +2387,19 @@ const handleEmergencyBurn = async () => {
                                 {/* NEWEST MESSAGE ALWAYS SHOWN AT TOP */}
                                 {newestMessage && (
                                   <div key={newestMessage.id} style={{ background: newestMessage.message.startsWith("OUTBOUND") ? '#051815' : '#030712', padding: '8px 10px', borderRadius: '5px', border: newestMessage.message.startsWith("OUTBOUND") ? '1px solid #059669' : '1px solid #1e293b', fontSize: '0.78rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
                                       <span style={{ fontSize: '0.65rem', color: '#10B981', fontWeight: 'bold' }}>LATEST MESSAGE</span>
-                                      <span style={{ color: '#64748B', fontSize: '0.68rem' }}>{newestMessage.timestamp}</span>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{ color: '#64748B', fontSize: '0.68rem' }}>{newestMessage.timestamp}</span>
+                                        <button
+                                          type="button"
+                                          style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '0.75rem', cursor: 'pointer', padding: '0 2px' }}
+                                          onClick={(e) => handleDeleteSmsMessage(newestMessage.id, e)}
+                                          title="Delete message"
+                                        >
+                                          🗑️
+                                        </button>
+                                      </div>
                                     </div>
                                     <div style={{ color: newestMessage.message.startsWith("OUTBOUND") ? '#34D399' : '#FFFFFF', fontWeight: '500' }}>{newestMessage.message}</div>
                                   </div>
@@ -2373,8 +2412,18 @@ const handleEmergencyBurn = async () => {
                                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px', paddingLeft: '8px', borderLeft: '2px solid #1e293b' }}>
                                         {olderMessages.map(sms => (
                                           <div key={sms.id} style={{ background: sms.message.startsWith("OUTBOUND") ? '#051815' : '#030712', padding: '6px 8px', borderRadius: '4px', border: sms.message.startsWith("OUTBOUND") ? '1px solid #059669' : '1px solid #111827', fontSize: '0.75rem' }}>
-                                            <div style={{ color: sms.message.startsWith("OUTBOUND") ? '#34D399' : '#E2E8F0' }}>{sms.message}</div>
-                                            <div style={{ color: '#64748B', fontSize: '0.65rem', marginTop: '2px', textAlign: 'right' }}>{sms.timestamp}</div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                                              <div style={{ color: sms.message.startsWith("OUTBOUND") ? '#34D399' : '#E2E8F0', flex: 1 }}>{sms.message}</div>
+                                              <button
+                                                type="button"
+                                                style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '0.72rem', cursor: 'pointer', padding: '0 2px', marginLeft: '6px' }}
+                                                onClick={(e) => handleDeleteSmsMessage(sms.id, e)}
+                                                title="Delete message"
+                                              >
+                                                🗑️
+                                              </button>
+                                            </div>
+                                            <div style={{ color: '#64748B', fontSize: '0.65rem', textAlign: 'right' }}>{sms.timestamp}</div>
                                           </div>
                                         ))}
                                       </div>

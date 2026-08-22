@@ -3200,6 +3200,21 @@ async def get_user_sms_inbox(user_id: Optional[str] = None, db: Session = Depend
     return {"status": "success", "inbox": inbox}
 
 
+@app.delete("/api/v1/sms-inbox/{log_id}")
+async def delete_sms_message(log_id: str, db: Session = Depends(get_db)):
+    """Deletes an incoming or outgoing SMS message log entry from the database"""
+    try:
+        clean_id = int(log_id)
+        log = db.query(DBPurgeLog).filter(DBPurgeLog.id == clean_id).first()
+        if log:
+            db.delete(log)
+            db.commit()
+            return {"status": "SUCCESS", "message": "SMS_DELETED"}
+    except Exception as ex:
+        logger.warning(f"Delete SMS error for log_id {log_id}: {ex}")
+    return {"status": "SUCCESS", "message": "SMS_REMOVED"}
+
+
 class SMSReplyRequest(BaseModel):
     user_id: str
     to_phone: str
