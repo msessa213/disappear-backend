@@ -3031,13 +3031,11 @@ async def get_user_sms_inbox(user_id: Optional[str] = None, db: Session = Depend
                 node_filters.append(DBPurgeLog.node_id.like(f"%{clean_ac[-4:]}%"))
 
     sms_logs = db.query(DBPurgeLog).filter(
-        and_(
-            or_(
-                DBPurgeLog.action_type.like("%SMS_%"),
-                DBPurgeLog.action_type.like("%SMS%")
-            ),
-            or_(*node_filters)
-        )
+        or_(
+            DBPurgeLog.action_type.like("%SMS_%"),
+            DBPurgeLog.action_type.like("%SMS%")
+        ),
+        or_(*node_filters)
     ).order_by(desc(DBPurgeLog.timestamp)).limit(50).all()
 
     inbox = []
