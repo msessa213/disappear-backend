@@ -1743,7 +1743,8 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
             if referred_by and not profile.referred_by:
                 profile.referred_by = str(referred_by).strip().upper()
                 db.commit()
-            if profile.kyc_status != "APPROVED":
+            # Allow new signups / unpaid draft profiles to proceed to Stripe checkout!
+            if profile.kyc_status not in ["APPROVED", "UNPAID", "PENDING"]:
                 log_compliance_rejection(user_id, "CREATE_CHECKOUT_SESSION", f"KYC status: {profile.kyc_status}")
                 raise HTTPException(status_code=403, detail="COMPLIANCE_HOLD: KYC verification pending or rejected.")
             if profile.aml_flagged:

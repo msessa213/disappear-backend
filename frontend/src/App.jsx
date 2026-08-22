@@ -1568,14 +1568,19 @@ const handleEmergencyBurn = async () => {
                         return_url: window.location.origin
                     })
                 });
-                const stripeData = await stripeRes.json();
-                if (stripeData.url) {
-                    window.location.href = stripeData.url;
+                if (stripeRes.ok) {
+                    const stripeData = await stripeRes.json();
+                    if (stripeData.url) {
+                        window.location.href = stripeData.url;
+                    } else {
+                        triggerToast("PAYMENT SESSION INITIALIZATION FAILED");
+                    }
                 } else {
-                    throw new Error("Handshake failed");
+                    const errData = await stripeRes.json().catch(() => ({}));
+                    triggerToast(`PAYMENT ERROR: ${errData.detail || "CHECKOUT FAILED"}`);
                 }
             } catch (err) {
-                triggerToast("PAYMENT NODE OFFLINE");
+                triggerToast("NETWORK ERROR DURING PAYMENT HANDSHAKE");
             }
         } else {
             const errData = await profileRes.json().catch(() => ({}));
