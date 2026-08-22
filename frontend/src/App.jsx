@@ -790,6 +790,21 @@ function App() {
     }
 
     const savedUid = localStorage.getItem("disappear_user_id");
+    const savedEmail = localStorage.getItem("disappear_user_email");
+
+    // CACHE FIREWALL: Prevent other devices from using cached user_7956 / user_mike803 tokens
+    if (savedUid && (savedUid === "user_mike803" || savedUid === "user_7956")) {
+      if (!savedEmail || savedEmail.trim().toLowerCase() !== "mike803@verizon.net") {
+        localStorage.clear();
+        sessionStorage.clear();
+        setCurrentUserId(null);
+        setShowLanding(true);
+        setShowShield(false);
+        setShow2FA(false);
+        return;
+      }
+    }
+
     if (session === "active" && !isExpired && savedUid) {
         localStorage.setItem("disappear_last_active", now.toString());
         setCurrentUserId(savedUid);
@@ -799,6 +814,7 @@ function App() {
     } else {
         localStorage.removeItem("disappear_session");
         localStorage.removeItem("disappear_user_id");
+        localStorage.removeItem("disappear_user_email");
         setCurrentUserId(null);
         setShowLanding(true);
         setShowShield(false);
@@ -1346,6 +1362,7 @@ const handleEmergencyBurn = async () => {
         localStorage.setItem("disappear_session", "active");
         if (data.user_id) {
           localStorage.setItem("disappear_user_id", data.user_id);
+          localStorage.setItem("disappear_user_email", data.email || emailToUse);
           setCurrentUserId(data.user_id);
         }
         window.location.hash = "vault";
