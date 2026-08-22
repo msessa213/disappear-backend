@@ -158,6 +158,7 @@ function App() {
   const [isSendingSms, setIsSendingSms] = useState(false);
   const [showComposeSms, setShowComposeSms] = useState(false);
   const [expandedThreads, setExpandedThreads] = useState({});
+  const [showOnboardingWelcomeModal, setShowOnboardingWelcomeModal] = useState(false);
 
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
@@ -1035,8 +1036,11 @@ function App() {
 
   const handleChangePasswordInProfile = async (e) => {
     e.preventDefault();
-    if (!currentPasswordInput || !newPasswordInput) {
-      triggerToast("ENTER CURRENT & NEW PASSWORD");
+    if (forgotCode && forgotCode.trim()) {
+      return handleForgotPasswordSubmit(e);
+    }
+    if (!newPasswordInput) {
+      triggerToast("PLEASE ENTER YOUR NEW PASSWORD");
       return;
     }
     if (newPasswordInput !== confirmPasswordInput) {
@@ -1061,7 +1065,7 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           user_id: activeUserId,
-          current_password: currentPasswordInput,
+          current_password: currentPasswordInput || "",
           new_password: newPasswordInput
         })
       });
@@ -1071,8 +1075,9 @@ function App() {
         setCurrentPasswordInput("");
         setNewPasswordInput("");
         setConfirmPasswordInput("");
+        setForgotCode("");
       } else {
-        triggerToast(`❌ ${data.detail || "INCORRECT CURRENT PASSWORD"}`);
+        triggerToast(`❌ ${data.detail || "INCORRECT CURRENT PASSWORD OR INVALID VERIFICATION CODE"}`);
       }
     } catch (err) {
       triggerToast("NETWORK ERROR UPDATING PASSWORD");
@@ -1674,7 +1679,8 @@ const handleEmergencyBurn = async () => {
             }
             activeUserId = profileData.profile_id;
             setSessionItem("disappear_user_id", activeUserId);
-            triggerToast("PROFILE CREATED — CHECK EMAIL TO AUTHORIZE PRIVACY RELAY");
+            setShowOnboardingWelcomeModal(true);
+            triggerToast("PROFILE CREATED — CHECK EMAIL & PHONE VERIFICATION");
             
             triggerToast("AUTHORIZING SECURE PAYMENT NODE...");
             try {
@@ -2787,21 +2793,49 @@ const handleEmergencyBurn = async () => {
                   borderRadius: '12px',
                   textAlign: 'left'
                 }}>
-                  <p className="tool-label" style={{ textAlign: 'center', color: '#00D2FF', marginBottom: '15px' }}>🔐 USER PROFILE & PASSWORD SECURITY</p>
+                  <p className="tool-label" style={{ textAlign: 'center', color: '#00D2FF', marginBottom: '10px' }}>🔐 USER PROFILE & PASSWORD SECURITY</p>
                   
-                  <form onSubmit={handleChangePasswordInProfile} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <p style={{ fontSize: '0.78rem', color: '#94A3B8', marginBottom: '15px', lineHeight: '1.4' }}>
+                    Enter your registered account email to receive a 6-digit SMS verification code on your registered mobile phone.
+                  </p>
+
+                  <form onSubmit={handleChangePasswordInProfile} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <div>
-                      <label style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>CURRENT PASSWORD</label>
+                      <label style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>REGISTERED ACCOUNT EMAIL</label>
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                        <input 
+                          type="email" 
+                          className="mask-btn" 
+                          style={{ flex: 1, color: 'white', fontSize: '0.85rem' }} 
+                          placeholder="customer@email.com" 
+                          value={forgotEmail || profileEmail || ""} 
+                          onChange={(e) => setForgotEmail(e.target.value)} 
+                        />
+                        <button
+                          type="button"
+                          className="main-button"
+                          style={{ padding: '8px 12px', fontSize: '0.72rem', whiteSpace: 'nowrap' }}
+                          onClick={() => handleSendResetCode(forgotEmail || profileEmail)}
+                          disabled={isSendingResetCode}
+                        >
+                          {isSendingResetCode ? "SENDING..." : (isResetCodeSent ? "RESEND 📱" : "SEND CODE 📱")}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>📱 6-DIGIT SMS VERIFICATION CODE</label>
                       <input 
-                        type="password"
-                        className="mask-btn"
-                        style={{ width: '100%', marginTop: '4px', color: '#fff', fontSize: '0.85rem' }}
-                        placeholder="Current Vault Password"
-                        value={currentPasswordInput}
-                        onChange={(e) => setCurrentPasswordInput(e.target.value)}
-                        required
+                        type="text" 
+                        className="mask-btn" 
+                        style={{ width: '100%', marginTop: '4px', color: '#00D2FF', fontSize: '1.1rem', letterSpacing: '4px', textAlign: 'center', fontWeight: 'bold', boxSizing: 'border-box' }} 
+                        placeholder="123456" 
+                        maxLength={6}
+                        value={forgotCode} 
+                        onChange={(e) => setForgotCode(e.target.value)} 
                       />
                     </div>
+
                     <div>
                       <label style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>NEW PASSWORD</label>
                       <input 
@@ -2810,7 +2844,7 @@ const handleEmergencyBurn = async () => {
                         style={{ width: '100%', marginTop: '4px', color: '#fff', fontSize: '0.85rem' }}
                         placeholder="New Password (min 6 characters)"
                         value={newPasswordInput}
-                        onChange={(e) => setNewPasswordInput(e.target.value)}
+                        onChange={(e) => { setNewPasswordInput(e.target.value); setForgotNewPassword(e.target.value); }}
                         required
                       />
                     </div>
@@ -2822,17 +2856,17 @@ const handleEmergencyBurn = async () => {
                         style={{ width: '100%', marginTop: '4px', color: '#fff', fontSize: '0.85rem' }}
                         placeholder="Confirm New Password"
                         value={confirmPasswordInput}
-                        onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                        onChange={(e) => { setConfirmPasswordInput(e.target.value); setForgotConfirmPassword(e.target.value); }}
                         required
                       />
                     </div>
                     <button 
                       type="submit" 
                       className="main-button"
-                      disabled={isUpdatingPassword}
+                      disabled={isUpdatingPassword || isResettingPassword}
                       style={{ marginTop: '10px', padding: '12px', fontSize: '0.85rem' }}
                     >
-                      {isUpdatingPassword ? "⏳ UPDATING PASSWORD..." : "🔑 UPDATE VAULT PASSWORD"}
+                      {(isUpdatingPassword || isResettingPassword) ? "⚡ VERIFYING..." : "⚡ VERIFY CODE & UPDATE VAULT PASSWORD"}
                     </button>
                   </form>
                 </div>
@@ -3194,6 +3228,59 @@ const handleEmergencyBurn = async () => {
       )}
 
 
+
+      {/* --- ONBOARDING & VERIFICATION INSTRUCTION MODAL --- */}
+      {showOnboardingWelcomeModal && (
+        <div className="modal-overlay" style={{ zIndex: 60000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 10px' }} onClick={() => setShowOnboardingWelcomeModal(false)}>
+          <div className="price-box" style={{ maxWidth: '540px', width: '100%', padding: '28px', textAlign: 'left', boxSizing: 'border-box' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.15rem' }}>🚀 WELCOME TO DISAPPEAR — ONBOARDING GUIDE</h3>
+              <button type="button" className="reset-btn" style={{ padding: '2px 8px', fontSize: '0.75rem' }} onClick={() => setShowOnboardingWelcomeModal(false)}>✕ CLOSE</button>
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '18px', lineHeight: '1.5' }}>
+              Your account profile, virtual relay nodes, and automated data scrub engine have been initialized! Follow this quick guide to complete email and phone forwarding setup:
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '22px' }}>
+              <div style={{ padding: '12px 16px', background: 'rgba(0, 71, 171, 0.15)', border: '1px solid rgba(0, 210, 255, 0.3)', borderRadius: '10px' }}>
+                <h4 style={{ color: '#00D2FF', margin: '0 0 4px 0', fontSize: '0.9rem' }}>📧 Step 1: Email Verification Process</h4>
+                <p style={{ fontSize: '0.8rem', color: '#94A3B8', margin: 0, lineHeight: '1.4' }}>
+                  An activation email has been dispatched to your primary email address. Click the confirmation link to authorize continuous email alias forwarding to your inbox.
+                </p>
+              </div>
+
+              <div style={{ padding: '12px 16px', background: 'rgba(0, 71, 171, 0.15)', border: '1px solid rgba(0, 210, 255, 0.3)', borderRadius: '10px' }}>
+                <h4 style={{ color: '#00D2FF', margin: '0 0 4px 0', fontSize: '0.9rem' }}>📱 Step 2: Phone Relay Forwarding Setup</h4>
+                <p style={{ fontSize: '0.8rem', color: '#94A3B8', margin: 0, lineHeight: '1.4' }}>
+                  Incoming carrier text messages sent to your virtual burner numbers are logged to your Vault SMS Inbox and automatically forwarded via SMS to your real-world mobile device.
+                </p>
+              </div>
+
+              <div style={{ padding: '12px 16px', background: 'rgba(0, 71, 171, 0.15)', border: '1px solid rgba(0, 210, 255, 0.3)', borderRadius: '10px' }}>
+                <h4 style={{ color: '#00D2FF', margin: '0 0 4px 0', fontSize: '0.9rem' }}>🛡️ Step 3: Data Broker Opt-Out Engine</h4>
+                <p style={{ fontSize: '0.8rem', color: '#94A3B8', margin: 0, lineHeight: '1.4' }}>
+                  Our automated opt-out engine and human privacy analysts enforce continuous removals across 47+ major data broker databases.
+                </p>
+              </div>
+            </div>
+
+            <button 
+              type="button" 
+              className="main-button" 
+              style={{ width: '100%', padding: '14px', fontSize: '0.9rem' }}
+              onClick={() => {
+                setShowOnboardingWelcomeModal(false);
+                setShowLanding(false);
+                setShowShield(true);
+                syncDefenseData();
+              }}
+            >
+              ⚡ UNDERSTOOD — ACCESS MY VAULT DASHBOARD
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* --- KYC COMPLIANCE MODAL --- */}
       {showKycModal && (

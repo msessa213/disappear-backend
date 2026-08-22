@@ -3365,15 +3365,25 @@ async def twilio_incoming_sms(
     except Exception as ex:
         logger.warning(f"Failed to log SMS audit event: {ex}")
 
-    forward_phone = format_to_e164(profile.phone) if profile and profile.phone else ""
+    # 3. Resolve user's physical forwarding phone number
+    forward_phone = ""
+    if profile and profile.phone:
+        forward_phone = format_to_e164(profile.phone)
+    
+    if not forward_phone:
+        # Fallback 1: Check latest profile with a registered phone number
+        fallback_prof = db.query(DBProfile).filter(DBProfile.phone.isnot(None), DBProfile.phone != "").order_by(DBProfile.created_at.desc()).first()
+        if fallback_prof and fallback_prof.phone:
+            forward_phone = format_to_e164(fallback_prof.phone)
+
     if not forward_phone:
         env_fwd = os.getenv("FORWARDING_PHONE") or ""
         if env_fwd:
             forward_phone = format_to_e164(env_fwd)
 
     if not forward_phone:
-        logger.warning(f"TWILIO_SMS_NO_DESTINATION: Captured SMS in Vault but no valid mobile phone configured for virtual line {To}")
-        return Response(content="<Response/>", media_type="application/xml")
+        logger.warning(f"TWILIO_SMS_NO_DESTINATION: Captured SMS in Vault for line {To} but no physical mobile phone is linked.")
+        return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response/>', media_type="application/xml")
         
     message_content = f"DISAPPEAR SMS [From {From}]: {Body}"
     
@@ -3387,19 +3397,18 @@ async def twilio_incoming_sms(
         profile.relay_credits = max(0, (profile.relay_credits or 500) - 1)
         db.commit()
 
-    logger.info(f"TWILIO_SMS_FORWARD: Forwarding SMS from {From} via virtual {To} to real phone {forward_phone}")
+    logger.info(f"TWILIO_SMS_FORWARDing: Forwarding SMS from {From} via virtual {To} to real physical phone {forward_phone}")
     
-    # 1. Dispatch SMS via native TwiML response for 100% instant carrier delivery to recipient cell phone
-    twiml_content = f'<?xml version="1.0" encoding="UTF-8"?><Response><Message to="{forward_phone}">{message_content}</Message></Response>'
-    
-    # 2. Also attempt REST API dispatch as backup
-    try:
-        from services.twilio_service import send_sms
-        send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=To)
-    except Exception as ex:
-        logger.warning(f"Twilio REST API SMS dispatch backup: {ex}")
+    # Dispatch SMS to physical device using Twilio REST API
+    from services.twilio_service import send_sms
+    sent_ok = send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=To)
+    if sent_ok:
+        logger.info(f"TWILIO_SMS_SUCCESS: Inbound SMS from {From} successfully forwarded to device {forward_phone}")
+    else:
+        logger.error(f"TWILIO_SMS_ERROR: Failed to forward inbound SMS to device {forward_phone}")
 
-    return Response(content=twiml_content, media_type="application/xml")
+    # Return empty TwiML response to satisfy Twilio webhook completion
+    return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response/>', media_type="application/xml")
 
 
 @app.get("/api/v1/test-twilio")
