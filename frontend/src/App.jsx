@@ -337,16 +337,7 @@ function App() {
           return nonSmsHistory;
         });
 
-        // Auto-populate SMS Inbox directly from live Audit Log history safely
-        const smsFromHistory = data.history
-          .filter(item => item && typeof item.action === 'string' && item.action.toUpperCase().includes("SMS"))
-          .map((item, idx) => ({
-            id: item.id || `sms_hist_${idx}_${item.timestamp}`,
-            timestamp: item.timestamp || "",
-            message: (item.action || "").replace(/^SMS_RECEIVED\s*/, "").replace(/^SMS_SENT\s*/, "OUTBOUND: "),
-            line: item.node || "VIRTUAL_LINE"
-          }));
-        updateSmsInboxSafely(smsFromHistory);
+        // Audit log mapping complete
       }
 
       // 4. Map Cards
