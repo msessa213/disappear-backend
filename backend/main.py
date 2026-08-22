@@ -3020,28 +3020,15 @@ async def get_user_sms_inbox(user_id: Optional[str] = None, db: Session = Depend
 
     uid = user_id.strip()
 
-    # Collect user specific identifiers
-    profile = db.query(DBProfile).filter(DBProfile.id == uid).first()
+    # Collect user specific virtual line nodes (owner user_id or owner alias content)
     user_aliases = db.query(DBAlias).filter(DBAlias.user_id == uid, DBAlias.type == "phone").all()
 
-    user_identifiers = [uid]
-    if profile and profile.phone:
-        user_identifiers.append(profile.phone)
+    node_filters = [DBPurgeLog.node_id.like(f"%{uid}%")]
     for a in user_aliases:
         if a.content:
-            user_identifiers.append(a.content)
             clean_ac = "".join(filter(str.isdigit, a.content))
             if clean_ac and len(clean_ac) >= 4:
-                user_identifiers.append(f"VIRTUAL_LINE_{clean_ac[-4:]}")
-                user_identifiers.append(clean_ac[-4:])
-
-    filters = []
-    for ident in user_identifiers:
-        filters.append(DBPurgeLog.node_id.like(f"%{ident}%"))
-        filters.append(DBPurgeLog.action_type.like(f"%{ident}%"))
-
-    if not filters:
-        return {"status": "success", "inbox": []}
+                node_filters.append(DBPurgeLog.node_id.like(f"%{clean_ac[-4:]}%"))
 
     sms_logs = db.query(DBPurgeLog).filter(
         and_(
@@ -3049,7 +3036,7 @@ async def get_user_sms_inbox(user_id: Optional[str] = None, db: Session = Depend
                 DBPurgeLog.action_type.like("%SMS_%"),
                 DBPurgeLog.action_type.like("%SMS%")
             ),
-            or_(*filters)
+            or_(*node_filters)
         )
     ).order_by(desc(DBPurgeLog.timestamp)).limit(50).all()
 
