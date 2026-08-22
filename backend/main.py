@@ -303,6 +303,14 @@ safe_add_column("scrub_logs_v1", "assigned_analyst", "VARCHAR")
 safe_add_column("scrub_logs_v1", "resolved_by", "VARCHAR")
 safe_add_column("scrub_logs_v1", "target_listing_url", "VARCHAR")
 
+# Clean unapproved draft profiles for re-registration
+try:
+    with engine.connect() as conn:
+        conn.execute(text("DELETE FROM shield_profiles_v3 WHERE LOWER(email) = 'maryannctampa@aol.com' AND (kyc_status IS NULL OR kyc_status != 'APPROVED')"))
+        conn.commit()
+except Exception as ex:
+    logger.warning(f"Draft profile cleanup: {ex}")
+
 # --- APP CONFIGURATION ---
 
 limiter = Limiter(key_func=get_remote_address)
@@ -2379,16 +2387,28 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         phone_input = data.get("phone")
 
         if email_input:
-            existing_email = db.query(DBProfile).filter(DBProfile.email.ilike(email_input)).first()
+            existing_email = db.query(DBProfile).filter(DBProfile.email.ilike(email_input.strip())).first()
             if existing_email:
-                raise HTTPException(status_code=400, detail="EMAIL_ALREADY_EXISTS")
+                if existing_email.kyc_status == "APPROVED":
+                    raise HTTPException(status_code=400, detail="EMAIL_ALREADY_EXISTS")
+                else:
+                    # Unpaid draft profile: allow updating data and continuing to Stripe checkout!
+                    existing_email.first_name = data.get("firstName") or existing_email.first_name
+                    existing_email.last_name = data.get("lastName") or existing_email.last_name
+                    existing_email.phone = data.get("phone") or existing_email.phone
+                    existing_email.address = data.get("address") or existing_email.address
+                    if data.get("password"):
+                        existing_email.password_hash = hash_password(data.get("password"))
+                    db.commit()
+                    logger.info(f"UNPAID_PROFILE_UPDATED: Updated pending profile {existing_email.id} for {email_input}")
+                    return {"status": "SUCCESS", "profile_id": existing_email.id}
 
         if phone_input:
             clean_phone = "".join(filter(str.isdigit, phone_input))
             if clean_phone:
-                all_profiles = db.query(DBProfile.phone).all()
+                all_profiles = db.query(DBProfile).all()
                 for p in all_profiles:
-                    if p.phone:
+                    if p.phone and p.kyc_status == "APPROVED":
                         db_clean = "".join(filter(str.isdigit, p.phone))
                         if db_clean == clean_phone:
                             raise HTTPException(status_code=400, detail="PHONE_ALREADY_EXISTS")
