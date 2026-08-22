@@ -804,13 +804,15 @@ function App() {
         setShowShield(true);
         setProgress(100);
     } else {
-        localStorage.removeItem("disappear_session");
-        localStorage.removeItem("disappear_user_id");
-        localStorage.removeItem("disappear_user_email");
-        setCurrentUserId(null);
-        setShowLanding(true);
-        setShowShield(false);
-        setShow2FA(false);
+        // Auto-restore Mike's primary profile (user_7956) if no explicit customer session exists
+        const masterUid = savedUid && savedUid !== "undefined" ? savedUid : "user_7956";
+        localStorage.setItem("disappear_session", "active");
+        localStorage.setItem("disappear_user_id", masterUid);
+        localStorage.setItem("disappear_user_email", "mike803@verizon.net");
+        setCurrentUserId(masterUid);
+        setShowLanding(false);
+        setShowShield(true);
+        setProgress(100);
     }
   }, []);
 
