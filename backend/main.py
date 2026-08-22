@@ -1082,7 +1082,7 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
     """Retrieves list of pending manual & automated data removal tasks for paid APPROVED accounts"""
     open_tasks = db.query(DBScrubLog).filter(
         DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"])
-    ).order_by(desc(DBScrubLog.timestamp)).all()
+    ).order_by(desc(DBScrubLog.timestamp)).limit(150).all()
     
     if not open_tasks:
         try:
@@ -1100,7 +1100,7 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
                     if not existing:
                         db.add(DBScrubLog(user_id=p.id, broker_name=b_name, status="MANUAL_PENDING", removal_type="MANUAL"))
             db.commit()
-            open_tasks = db.query(DBScrubLog).filter(DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"])).order_by(desc(DBScrubLog.timestamp)).all()
+            open_tasks = db.query(DBScrubLog).filter(DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"])).order_by(desc(DBScrubLog.timestamp)).limit(150).all()
         except Exception as ex:
             logger.warning(f"Auto-seed reference tasks error: {ex}")
     
