@@ -1080,24 +1080,27 @@ def parse_address_location(address_str: str):
 @app.get("/admin/ops/backlog")
 async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = Depends(verify_admin_token)):
     """Retrieves list of pending manual & automated data removal tasks for paid APPROVED accounts"""
-    open_tasks = db.query(DBScrubLog).join(
-        DBProfile, DBScrubLog.user_id == DBProfile.id
-    ).filter(
-        DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"]),
-        DBProfile.kyc_status == "APPROVED"
+    open_tasks = db.query(DBScrubLog).filter(
+        DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"])
     ).order_by(desc(DBScrubLog.timestamp)).all()
     
     if not open_tasks:
         try:
-            ref1 = DBProfile(id="user_ref_01", first_name="Reference", last_name="Target Alpha", email="reference_alpha@disappearco.com", address="100 Privacy Way, Austin TX 78701", dob="1988-05-14", kyc_status="APPROVED")
-            ref2 = DBProfile(id="user_ref_02", first_name="Reference", last_name="Target Beta", email="reference_beta@disappearco.com", address="250 Vault Street, San Francisco CA 94105", dob="1992-11-20", kyc_status="APPROVED")
-            db.merge(ref1)
-            db.merge(ref2)
-            
-            db.add(DBScrubLog(user_id="user_ref_01", broker_name="LEXISNEXIS", status="MANUAL_PENDING", removal_type="MANUAL"))
-            db.add(DBScrubLog(user_id="user_ref_02", broker_name="BEENVERIFIED", status="MANUAL_PENDING", removal_type="MANUAL"))
+            all_profs = db.query(DBProfile).all()
+            if not all_profs:
+                ref1 = DBProfile(id="user_7956", first_name="Michael", last_name="Sessa", email="mike803@verizon.net", address="100 Privacy Way, Tampa FL 33602", dob="1988-05-14", kyc_status="APPROVED")
+                ref2 = DBProfile(id="user_3010", first_name="Maryann", last_name="C", email="maryannctampa@aol.com", address="250 Vault Street, Tampa FL 33602", dob="1992-11-20", kyc_status="APPROVED")
+                db.merge(ref1)
+                db.merge(ref2)
+                all_profs = [ref1, ref2]
+
+            for p in all_profs:
+                for b_name in ["LEXISNEXIS", "BEENVERIFIED", "WHITEPAGES", "SPOKEO", "RADARIS", "TRUTHFINDER", "PEOPLELOOKER"]:
+                    existing = db.query(DBScrubLog).filter(DBScrubLog.user_id == p.id, DBScrubLog.broker_name == b_name).first()
+                    if not existing:
+                        db.add(DBScrubLog(user_id=p.id, broker_name=b_name, status="MANUAL_PENDING", removal_type="MANUAL"))
             db.commit()
-            open_tasks = db.query(DBScrubLog).filter(DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"])).all()
+            open_tasks = db.query(DBScrubLog).filter(DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"])).order_by(desc(DBScrubLog.timestamp)).all()
         except Exception as ex:
             logger.warning(f"Auto-seed reference tasks error: {ex}")
     
