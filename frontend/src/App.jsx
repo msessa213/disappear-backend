@@ -2808,14 +2808,14 @@ const handleEmergencyBurn = async () => {
                           className="mask-btn" 
                           style={{ flex: 1, color: 'white', fontSize: '0.85rem' }} 
                           placeholder="customer@email.com" 
-                          value={forgotEmail || profileEmail || ""} 
+                          value={forgotEmail || targetProfile.email || getSessionItem("disappear_user_email") || loginEmail || ""} 
                           onChange={(e) => setForgotEmail(e.target.value)} 
                         />
                         <button
                           type="button"
                           className="main-button"
                           style={{ padding: '8px 12px', fontSize: '0.72rem', whiteSpace: 'nowrap' }}
-                          onClick={() => handleSendResetCode(forgotEmail || profileEmail)}
+                          onClick={() => handleSendResetCode(forgotEmail || targetProfile.email || getSessionItem("disappear_user_email") || loginEmail)}
                           disabled={isSendingResetCode}
                         >
                           {isSendingResetCode ? "SENDING..." : (isResetCodeSent ? "RESEND 📱" : "SEND CODE 📱")}
