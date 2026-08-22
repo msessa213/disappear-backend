@@ -1742,7 +1742,24 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
             db.rollback()
             logger.warning(f"Referral code auto-gen skipped: {ref_err}")
 
-    ref_count = profile.referral_count or 0
+    db_ref_count = 0
+    if profile.referral_code:
+        try:
+            db_ref_count = db.query(DBProfile).filter(
+                or_(
+                    DBProfile.referred_by.ilike(f"%{profile.referral_code}%"),
+                    DBProfile.referred_by == profile.id
+                ),
+                DBProfile.id != profile.id
+            ).count()
+        except Exception as ex_ref:
+            logger.warning(f"Referral query error: {ex_ref}")
+
+    ref_count = max(profile.referral_count or 0, db_ref_count)
+    if ref_count > (profile.referral_count or 0):
+        profile.referral_count = ref_count
+        db.commit()
+
     next_needed = 5 - (ref_count % 5)
     progress_pct = round(((ref_count % 5) / 5.0) * 100, 1)
 
