@@ -303,10 +303,12 @@ safe_add_column("scrub_logs_v1", "assigned_analyst", "VARCHAR")
 safe_add_column("scrub_logs_v1", "resolved_by", "VARCHAR")
 safe_add_column("scrub_logs_v1", "target_listing_url", "VARCHAR")
 
-# Restore user_7956 phone aliases to prevent cross-account leak
+# Restore user_7956 phone aliases and isolate user_9685 profile data
 try:
     with engine.connect() as conn:
         conn.execute(text("UPDATE shield_aliases_v3 SET user_id = 'user_7956' WHERE content IN ('+18884317375', '+18137558466', '+18137917531', '+18134375531', '+17274850017')"))
+        conn.execute(text("UPDATE shield_profiles_v3 SET email = 'maryannctampa@aol.com', phone = '8134313737' WHERE id = 'user_9685'"))
+        conn.execute(text("DELETE FROM target_emails_v1 WHERE profile_id = 'user_9685'"))
         conn.commit()
 except Exception as ex:
     logger.warning(f"Alias restore: {ex}")
@@ -1298,10 +1300,7 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
         except Exception:
             profile = None
     if not profile:
-        try:
-            profile = db.query(DBProfile).filter(DBProfile.email.ilike("mike803@verizon.net")).first() or db.query(DBProfile).first()
-        except Exception:
-            profile = None
+        profile = None
 
     if not profile:
         return {
@@ -1397,10 +1396,7 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
                 user_identifiers.append(f"VIRTUAL_LINE_{clean_ac[-4:]}")
                 user_identifiers.append(clean_ac[-4:])
 
-    purge_filters = [
-        DBPurgeLog.action_type.like("%SMS_%"),
-        DBPurgeLog.node_id.like("%VIRTUAL_LINE%")
-    ]
+    purge_filters = []
     for ident in user_identifiers:
         if ident:
             purge_filters.append(DBPurgeLog.node_id.like(f"%{ident}%"))
