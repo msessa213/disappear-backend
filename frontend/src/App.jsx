@@ -3218,7 +3218,9 @@ const handleEmergencyBurn = async () => {
       )}
 
       {/* --- FLOATING AI PRIVACY ASSISTANT CHAT WIDGET --- */}
-      <PrivacyAiChat apiBaseUrl={API_BASE_URL} />
+      {!showForgotPasswordModal && !show2FA && (
+        <PrivacyAiChat apiBaseUrl={API_BASE_URL} />
+      )}
     </div>
   );
 }

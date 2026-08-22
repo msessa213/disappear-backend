@@ -560,6 +560,19 @@ def handle_change_password(req: ChangePasswordRequest, db: Session):
     profile.password_hash = hash_password(req.new_password)
     db.commit()
 
+    # Send SMS Confirmation Notice to registered mobile phone
+    if profile.phone:
+        try:
+            from services.twilio_service import send_sms, format_to_e164
+            clean_p = format_to_e164(profile.phone)
+            if clean_p:
+                send_sms(
+                    to_phone_number=clean_p,
+                    message_body=f"SECURITY ALERT: Your Disappear Vault password for {profile.email} was updated. If you did not authorize this change, contact support immediately."
+                )
+        except Exception as sms_err:
+            logger.warning(f"Password update SMS notification skipped: {sms_err}")
+
     try:
         log_entry = DBPurgeLog(
             action_type="PASSWORD_UPDATED_IN_PROFILE",
@@ -594,8 +607,6 @@ def handle_forgot_password(req: ForgotPasswordRequest, db: Session):
         if not profile and req and req.email and req.email.strip():
             clean_email = req.email.strip().lower()
             profile = db.query(DBProfile).filter(DBProfile.email.ilike(clean_email)).first()
-        if not profile:
-            profile = db.query(DBProfile).filter(DBProfile.id == "user_mike803").first()
 
         if not profile:
             raise HTTPException(status_code=404, detail="NO_ACCOUNT_FOUND_FOR_EMAIL")
@@ -603,6 +614,19 @@ def handle_forgot_password(req: ForgotPasswordRequest, db: Session):
         if req and req.new_password:
             profile.password_hash = hash_password(req.new_password)
             db.commit()
+
+            # Send SMS Confirmation Notice to registered mobile phone
+            if profile.phone:
+                try:
+                    from services.twilio_service import send_sms, format_to_e164
+                    clean_p = format_to_e164(profile.phone)
+                    if clean_p:
+                        send_sms(
+                            to_phone_number=clean_p,
+                            message_body=f"SECURITY ALERT: Disappear Vault password reset completed for {profile.email}. If you did not authorize this, contact support immediately."
+                        )
+                except Exception as sms_err:
+                    logger.warning(f"Forgot password SMS notification skipped: {sms_err}")
 
             try:
                 log_entry = DBPurgeLog(

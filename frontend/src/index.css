@@ -61,12 +61,12 @@ button:focus-visible {
   position: fixed;
   bottom: 25px;
   right: 25px;
-  z-index: 100000 !important;
+  z-index: 9999 !important;
 }
 
 @media (max-width: 768px) {
   .privacy-ai-chat-container {
-    bottom: 145px !important; /* Lifts floating chat badge high above stationary footer on mobile */
+    bottom: 145px !important;
     right: 12px !important;
   }
 }
