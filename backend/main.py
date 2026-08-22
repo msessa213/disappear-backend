@@ -1079,42 +1079,40 @@ def parse_address_location(address_str: str):
 
 @app.get("/admin/ops/backlog")
 async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = Depends(verify_admin_token)):
-    """Retrieves list of pending manual & automated data removal tasks for paid APPROVED accounts"""
-    open_tasks = db.query(DBScrubLog).filter(
-        DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"])
-    ).order_by(desc(DBScrubLog.timestamp)).limit(150).all()
-    
-    if not open_tasks:
-        try:
-            all_profs = db.query(DBProfile).all()
-            if not all_profs:
-                ref1 = DBProfile(id="user_7956", first_name="Michael", last_name="Sessa", email="mike803@verizon.net", address="100 Privacy Way, Tampa FL 33602", dob="1988-05-14", kyc_status="APPROVED")
-                ref2 = DBProfile(id="user_3010", first_name="Maryann", last_name="C", email="maryannctampa@aol.com", address="250 Vault Street, Tampa FL 33602", dob="1992-11-20", kyc_status="APPROVED")
-                db.merge(ref1)
-                db.merge(ref2)
-                all_profs = [ref1, ref2]
+    """Retrieves list of pending manual & automated data removal tasks ONLY for paid APPROVED accounts"""
+    # 1. Ensure all APPROVED profiles have manual scrub tasks initialized
+    approved_profiles = db.query(DBProfile).filter(
+        DBProfile.kyc_status == "APPROVED",
+        DBProfile.id.not_in(["user_ref_01", "user_ref_02"]),
+        ~DBProfile.email.ilike("%@example.com"),
+        ~DBProfile.email.ilike("%test%@gmail.com")
+    ).all()
 
-            for p in all_profs:
-                for b_name in ["LEXISNEXIS", "BEENVERIFIED", "WHITEPAGES", "SPOKEO", "RADARIS", "TRUTHFINDER", "PEOPLELOOKER"]:
-                    existing = db.query(DBScrubLog).filter(DBScrubLog.user_id == p.id, DBScrubLog.broker_name == b_name).first()
-                    if not existing:
-                        db.add(DBScrubLog(user_id=p.id, broker_name=b_name, status="MANUAL_PENDING", removal_type="MANUAL"))
-            db.commit()
-            open_tasks = db.query(DBScrubLog).filter(DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"])).order_by(desc(DBScrubLog.timestamp)).limit(150).all()
-        except Exception as ex:
-            logger.warning(f"Auto-seed reference tasks error: {ex}")
-    
-    # Filter out any legacy synthetic dummy profiles (e.g. Reference Target Alpha/Beta)
-    open_tasks = [t for t in open_tasks if t.user_id not in ["user_ref_01", "user_ref_02"]]
-    
+    for p in approved_profiles:
+        for b_name in ["LEXISNEXIS", "BEENVERIFIED", "WHITEPAGES", "SPOKEO", "RADARIS", "TRUTHFINDER", "PEOPLELOOKER", "FASTPEOPLESEARCH", "SMARTBACKGROUNDCHECKS"]:
+            existing = db.query(DBScrubLog).filter(DBScrubLog.user_id == p.id, DBScrubLog.broker_name == b_name).first()
+            if not existing:
+                db.add(DBScrubLog(user_id=p.id, broker_name=b_name, status="MANUAL_PENDING", removal_type="MANUAL"))
+    db.commit()
+
+    # 2. Fetch pending tasks ONLY for APPROVED paid profiles
+    approved_user_ids = [p.id for p in approved_profiles]
+    if not approved_user_ids:
+        return {"manual_processing_required": [], "automated_backlog": [], "completed_tasks": []}
+
+    open_tasks = db.query(DBScrubLog).filter(
+        DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"]),
+        DBScrubLog.user_id.in_(approved_user_ids)
+    ).order_by(desc(DBScrubLog.timestamp)).limit(150).all()
+
     user_ids = {task.user_id for task in open_tasks if task.user_id}
-    completed_logs = db.query(DBScrubLog).filter(DBScrubLog.status == "REMOVED").order_by(desc(DBScrubLog.timestamp)).limit(50).all()
+    completed_logs = db.query(DBScrubLog).filter(
+        DBScrubLog.status == "REMOVED",
+        DBScrubLog.user_id.in_(approved_user_ids)
+    ).order_by(desc(DBScrubLog.timestamp)).limit(50).all()
     user_ids.update({task.user_id for task in completed_logs if task.user_id})
 
-    profiles_map = {}
-    if user_ids:
-        profiles_list = db.query(DBProfile).filter(DBProfile.id.in_(list(user_ids))).all()
-        profiles_map = {p.id: p for p in profiles_list}
+    profiles_map = {p.id: p for p in approved_profiles}
 
     manual_set = {b.upper() for b in MANUAL_BROKERS}
     automated_backlog = []
