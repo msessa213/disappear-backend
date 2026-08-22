@@ -56,32 +56,43 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-/* --- AI Privacy Chat Floating Container Mobile Positioning --- */
+/* --- AI Privacy Chat Floating Container & Footer Clearance --- */
 .privacy-ai-chat-container {
   position: fixed !important;
-  bottom: 25px !important;
-  right: 25px !important;
-  z-index: 9999999 !important;
+  bottom: 80px !important;
+  right: 24px !important;
+  z-index: 999999 !important;
   display: block !important;
   opacity: 1 !important;
   visibility: visible !important;
   pointer-events: auto !important;
 }
 
+.ai-chat-modal-floating {
+  position: fixed !important;
+  bottom: 140px !important;
+  right: 24px !important;
+  width: 370px !important;
+  max-width: calc(100vw - 30px) !important;
+  height: 520px !important;
+  max-height: calc(100vh - 170px) !important;
+  z-index: 9999999 !important;
+}
+
 @media (max-width: 768px) {
   .privacy-ai-chat-container {
-    bottom: 20px !important;
-    right: 15px !important;
+    bottom: 75px !important;
+    right: 16px !important;
   }
 
   .ai-chat-modal-floating {
-    bottom: 75px !important;
-    right: 15px !important;
-    left: 15px !important;
+    bottom: 130px !important;
+    right: 12px !important;
+    left: 12px !important;
     width: auto !important;
     max-width: none !important;
-    height: calc(100vh - 95px) !important;
-    max-height: calc(100vh - 95px) !important;
+    height: calc(100vh - 150px) !important;
+    max-height: calc(100vh - 150px) !important;
   }
 }
 

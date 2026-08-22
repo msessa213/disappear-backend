@@ -240,7 +240,7 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
       </section>
 
       {/* --- FOOTER COMPLIANCE LINKS --- */}
-      <footer style={{ padding: '30px 20px 50px', borderTop: '1px solid rgba(255,255,255,0.05)', background: '#05070a', textAlign: 'center' }}>
+      <footer style={{ padding: '30px 20px 140px', borderTop: '1px solid rgba(255,255,255,0.05)', background: '#05070a', textAlign: 'center' }}>
         <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '15px', fontSize: '0.85rem' }}>
           <a href="#checkout" onClick={(e) => { e.preventDefault(); window.location.hash = 'checkout'; }} style={{ color: '#00D2FF', textDecoration: 'none' }}>Checkout & Opt-In</a>
           <span style={{ color: '#334155' }}>|</span>
