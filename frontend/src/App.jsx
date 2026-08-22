@@ -1496,11 +1496,34 @@ const handleEmergencyBurn = async () => {
   };
 
   const handleFinalPurchase = async () => {
-    if(!targetProfile.firstName || !targetProfile.lastName || !targetProfile.email || !targetProfile.password || !targetProfile.address || !targetProfile.city || !targetProfile.state || !targetProfile.zip) {
-        triggerToast("REQUIRED FIELDS MISSING");
-        return;
-    }
     if (isMinting) return;
+
+    // Detailed Validation: Check specific missing fields and inform user
+    const missing = [];
+    if (!targetProfile.firstName) missing.push("First Name");
+    if (!targetProfile.lastName) missing.push("Last Name");
+    if (!targetProfile.email) missing.push("Email Address");
+    if (!targetProfile.password) missing.push("Password");
+    if (!targetProfile.phone) missing.push("Phone Number");
+    if (!targetProfile.address) missing.push("Street Address");
+    if (!targetProfile.city) missing.push("City");
+    if (!targetProfile.state) missing.push("State");
+    if (!targetProfile.zip) missing.push("ZIP Code");
+
+    if (missing.length > 0) {
+      triggerToast(`⚠️ PLEASE COMPLETE: ${missing.slice(0, 3).join(", ")}${missing.length > 3 ? "..." : ""}`);
+      return;
+    }
+
+    if (!targetProfile.termsAccepted) {
+      triggerToast("⚠️ PLEASE CHECK 'Authorize Full PII Scrub and Burn' BOX");
+      return;
+    }
+
+    if (!targetProfile.smsConsentAccepted) {
+      triggerToast("⚠️ PLEASE CHECK THE SMS NOTIFICATIONS CONSENT BOX");
+      return;
+    }
 
     setIsMinting(true);
     try {
@@ -2867,8 +2890,30 @@ const handleEmergencyBurn = async () => {
                           )}
                         </div>
 
-                        <button className="main-button" style={{ width: '100%', marginTop: '25px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }} onClick={handleFinalPurchase} disabled={!targetProfile.termsAccepted || !targetProfile.smsConsentAccepted || isMinting}>
-                          {isMinting ? <><span className="cyberpunk-spinner"></span> INITIATING...</> : appliedCoupon ? `CONFIRM & INITIATE ($${appliedCoupon.final_price.toFixed(2)}/mo)` : 'CONFIRM & INITIATE'}
+                        <button 
+                          className="main-button" 
+                          style={{ 
+                            width: '100%', 
+                            marginTop: '25px', 
+                            display: 'flex', 
+                            justifyContent: 'center', 
+                            alignItems: 'center', 
+                            gap: '10px',
+                            background: 'linear-gradient(135deg, #00D2FF 0%, #0072FF 100%)',
+                            color: '#ffffff',
+                            fontWeight: 'bold',
+                            fontSize: '1.05rem',
+                            padding: '16px',
+                            borderRadius: '8px',
+                            boxShadow: '0 0 20px rgba(0, 210, 255, 0.45)',
+                            border: '1px solid rgba(255, 255, 255, 0.4)',
+                            cursor: 'pointer',
+                            letterSpacing: '1px',
+                            transition: 'all 0.3s ease'
+                          }} 
+                          onClick={handleFinalPurchase}
+                        >
+                          {isMinting ? <><span className="cyberpunk-spinner"></span> INITIATING...</> : appliedCoupon ? `⚡ CONFIRM & INITIATE ($${appliedCoupon.final_price.toFixed(2)}/mo)` : '⚡ CONFIRM & INITIATE'}
                         </button>
                         <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => window.location.hash = "pricing"}>BACK</button>
                       </div>
