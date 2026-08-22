@@ -93,14 +93,18 @@ def send_sms(to_phone_number: str, message_body: str, from_phone_number: Optiona
         except Exception as ex:
             logger.warning(f"Messaging Service send failed: {ex}")
 
-    from_num = from_phone_number or settings.TWILIO_PHONE_NUMBER or os.getenv("TWILIO_PHONE_NUMBER")
+    default_sender = "+15855802036"
+    from_num = from_phone_number or settings.TWILIO_PHONE_NUMBER or os.getenv("TWILIO_PHONE_NUMBER") or default_sender
     
-    # Fallback to account's first available phone number if from_num is missing
+    # Fallback to account's default number or first available number if from_num is missing
     if not from_num:
+        from_num = default_sender
         try:
-            numbers = twilio_client.incoming_phone_numbers.list(limit=1)
-            if numbers:
-                from_num = numbers[0].phone_number
+            numbers = twilio_client.incoming_phone_numbers.list(limit=5)
+            for n in numbers:
+                if "5855802036" in n.phone_number:
+                    from_num = n.phone_number
+                    break
         except Exception:
             pass
 
