@@ -2371,7 +2371,10 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
     if req_type == "email":
         content = None
         last_addy_error = ""
-        addy_api_key = os.getenv("ADDY_API_KEY") or os.getenv("ADDY_KEY") or os.getenv("ADDY_IO_KEY") or os.getenv("ANONADDY_API_KEY") or "addy_io_dPdJs2PJZQLQV87dSP14P7di8YuLQOE06tDlidRlf6d08223"
+        raw_key = (os.getenv("ADDY_API_KEY") or os.getenv("ADDY_KEY") or os.getenv("ADDY_IO_KEY") or os.getenv("ANONADDY_API_KEY") or "").strip()
+        if not raw_key:
+            raw_key = "addy_io_dPdJs2PJZQLQV87dSP14P7di8YuLQOE06tDlidRlf6d08223"
+        addy_api_key = raw_key
         if addy_api_key:
             try:
                 async with httpx.AsyncClient(timeout=15.0) as client:
