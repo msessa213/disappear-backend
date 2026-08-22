@@ -2387,17 +2387,22 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
                     
                     recipient_id = None
                     user_email = profile.email if profile and profile.email else None
-                    if user_email:
-                        try:
-                            rec_res = await client.get("https://app.addy.io/api/v1/recipients", headers=headers)
-                            if rec_res.status_code == 200:
-                                recipients_list = rec_res.json().get("data", [])
+                    try:
+                        rec_res = await client.get("https://app.addy.io/api/v1/recipients", headers=headers)
+                        if rec_res.status_code == 200:
+                            recipients_list = rec_res.json().get("data", [])
+                            if user_email:
                                 for r in recipients_list:
-                                    if r.get("email", "").lower() == user_email.lower():
+                                    if r.get("email", "").lower() == user_email.lower() and r.get("email_verified_at"):
                                         recipient_id = r.get("id")
                                         break
-                        except Exception as rec_ex:
-                            logger.warning(f"Addy recipients list fetch skipped: {rec_ex}")
+                            if not recipient_id:
+                                for r in recipients_list:
+                                    if r.get("email_verified_at"):
+                                        recipient_id = r.get("id")
+                                        break
+                    except Exception as rec_ex:
+                        logger.warning(f"Addy recipients list fetch skipped: {rec_ex}")
 
                     alias_payload = {
                         "description": f"Disappear Vault - {alias_req.label}",
