@@ -273,6 +273,7 @@ def sync_all_twilio_webhooks(db=None):
                         type="phone",
                         content=n.phone_number,
                         label=f"Virtual Line {n.phone_number[-4:]}"
+                    ))
                 else:
                     # Keep existing user_id link intact! Never overwrite existing user_id
                     pass
