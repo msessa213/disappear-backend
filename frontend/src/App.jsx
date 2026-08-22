@@ -784,9 +784,9 @@ function App() {
     const savedUid = localStorage.getItem("disappear_user_id");
     const savedEmail = localStorage.getItem("disappear_user_email");
 
-    // CACHE FIREWALL: Prevent other devices from using cached user_7956 / user_mike803 tokens
+    // CACHE FIREWALL: Only purge if an explicitly different non-Mike email is logged in
     if (savedUid && (savedUid === "user_mike803" || savedUid === "user_7956")) {
-      if (!savedEmail || savedEmail.trim().toLowerCase() !== "mike803@verizon.net") {
+      if (savedEmail && savedEmail.trim().toLowerCase() !== "mike803@verizon.net") {
         localStorage.clear();
         sessionStorage.clear();
         setCurrentUserId(null);
