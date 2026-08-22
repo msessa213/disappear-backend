@@ -2432,22 +2432,36 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
                     
                     recipient_id = None
                     user_email = profile.email if profile and profile.email else None
-                    try:
-                        rec_res = await client.get("https://app.addy.io/api/v1/recipients", headers=headers)
-                        if rec_res.status_code == 200:
-                            recipients_list = rec_res.json().get("data", [])
-                            if user_email:
+                    if user_email and "@" in user_email and not user_email.endswith("@disappearco.com"):
+                        try:
+                            rec_res = await client.get("https://app.addy.io/api/v1/recipients", headers=headers)
+                            if rec_res.status_code == 200:
+                                recipients_list = rec_res.json().get("data", [])
                                 for r in recipients_list:
-                                    if r.get("email", "").lower() == user_email.lower() and r.get("email_verified_at"):
+                                    if r.get("email", "").lower() == user_email.lower():
                                         recipient_id = r.get("id")
                                         break
-                            if not recipient_id:
-                                for r in recipients_list:
+                                
+                                # If customer's email is not in Addy recipients, auto-add them!
+                                if not recipient_id:
+                                    add_rec = await client.post("https://app.addy.io/api/v1/recipients", headers=headers, json={"email": user_email.lower()})
+                                    if add_rec.status_code in [200, 201]:
+                                        recipient_id = add_rec.json().get("data", {}).get("id")
+                                        logger.info(f"ADDY_RECIPIENT_CREATED: Dispatched verification email to customer {user_email}")
+                        except Exception as rec_ex:
+                            logger.warning(f"Addy recipient resolution error: {rec_ex}")
+
+                    # Fallback to primary verified account recipient if customer recipient ID is not available
+                    if not recipient_id:
+                        try:
+                            rec_res = await client.get("https://app.addy.io/api/v1/recipients", headers=headers)
+                            if rec_res.status_code == 200:
+                                for r in rec_res.json().get("data", []):
                                     if r.get("email_verified_at"):
                                         recipient_id = r.get("id")
                                         break
-                    except Exception as rec_ex:
-                        logger.warning(f"Addy recipients list fetch skipped: {rec_ex}")
+                        except Exception:
+                            pass
 
                     alias_payload = {
                         "description": f"Disappear Vault - {alias_req.label}",
