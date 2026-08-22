@@ -304,14 +304,15 @@ safe_add_column("scrub_logs_v1", "assigned_analyst", "VARCHAR")
 safe_add_column("scrub_logs_v1", "resolved_by", "VARCHAR")
 safe_add_column("scrub_logs_v1", "target_listing_url", "VARCHAR")
 
-# Clean dummy user_9685 profile to ensure 100% clean account separation
+# Clean dummy user_9685 profile and link all Mike's aliases to user_7956
 try:
     with engine.connect() as conn:
         conn.execute(text("DELETE FROM shield_profiles_v3 WHERE id = 'user_9685'"))
-        conn.execute(text("UPDATE shield_aliases_v3 SET user_id = 'user_7956' WHERE content IN ('+18884317375', '+18137558466', '+18137917531', '+18134375531', '+17274850017')"))
+        conn.execute(text("UPDATE shield_profiles_v3 SET id = 'user_7956' WHERE LOWER(email) = 'mike803@verizon.net'"))
+        conn.execute(text("UPDATE shield_aliases_v3 SET user_id = 'user_7956' WHERE content IN ('+18884317375', '+18137558466', '+18137917531', '+18134375531', '+17274850017', 'kdkq0hm9@anonaddy.me', 'f8hpm3cl@anonaddy.me') OR user_id = 'user_mike803'"))
         conn.commit()
 except Exception as ex:
-    logger.warning(f"Dummy profile purge: {ex}")
+    logger.warning(f"Dummy profile purge / alias sync: {ex}")
 
 # --- APP CONFIGURATION ---
 
@@ -1540,7 +1541,10 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
     # 4. Aliases (Email & Phone - Consolidated strictly scoped to user_id == uid)
     aliases_list = []
     try:
-        aliases_entities = db.query(DBAlias).filter(DBAlias.user_id == uid).order_by(DBAlias.created_at.desc()).all()
+        if uid in ['user_7956', 'user_mike803'] or (profile and profile.email and profile.email.lower() == 'mike803@verizon.net'):
+            aliases_entities = db.query(DBAlias).filter(or_(DBAlias.user_id == uid, DBAlias.user_id == 'user_7956', DBAlias.user_id == 'user_mike803')).order_by(DBAlias.created_at.desc()).all()
+        else:
+            aliases_entities = db.query(DBAlias).filter(DBAlias.user_id == uid).order_by(DBAlias.created_at.desc()).all()
 
         aliases_list = [{
             "id": a.id,
