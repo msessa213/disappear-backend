@@ -1755,6 +1755,8 @@ const handleEmergencyBurn = async () => {
 
   return (
     <div className={`app-container ${isEmergencyWipe ? 'wipe-shake' : ''}`}>
+      {/* FLOATING AI PRIVACY ASSISTANT CHAT WIDGET (UNCONDITIONAL DOM INJECTION) */}
+      <PrivacyAiChat apiBaseUrl={API_BASE_URL} />
       
       {/* 1. SEPARATE MARKETING WEBSITE (Intelligence Hub) */}
       {(showLanding || (!showShield && !show2FA && !showPricing && !showCheckout && !showAdmin && !showLegal)) ? (
@@ -3383,10 +3385,6 @@ const handleEmergencyBurn = async () => {
         </div>
       )}
 
-      {/* --- FLOATING AI PRIVACY ASSISTANT CHAT WIDGET --- */}
-      {!showForgotPasswordModal && !show2FA && (
-        <PrivacyAiChat apiBaseUrl={API_BASE_URL} />
-      )}
     </div>
   );
 }

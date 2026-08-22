@@ -58,10 +58,14 @@ button:focus-visible {
 
 /* --- AI Privacy Chat Floating Container Mobile Positioning --- */
 .privacy-ai-chat-container {
-  position: fixed;
-  bottom: 25px;
-  right: 25px;
-  z-index: 999999 !important;
+  position: fixed !important;
+  bottom: 25px !important;
+  right: 25px !important;
+  z-index: 9999999 !important;
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
 }
 
 @media (max-width: 768px) {
