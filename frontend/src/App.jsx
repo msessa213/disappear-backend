@@ -506,6 +506,48 @@ function App() {
 
   }, [showLanding, showPricing, showCheckout, show2FA, showLegal, showAdmin]);
 
+  // --- REFERRAL LINK HANDLER & CREDENTIAL AUTOFILL ISOLATION FIREWALL ---
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref') || urlParams.get('referral_code') || urlParams.get('referral');
+    if (refCode) {
+      // 1. Save Referral Code to local storage for payout credit
+      localStorage.setItem("disappear_referral_code", refCode);
+      
+      // 2. FORCE LOGOUT / CLEAR ACTIVE SESSION so visitor starts with a clean, blank slate
+      localStorage.removeItem("disappear_session");
+      localStorage.removeItem("disappear_user_id");
+      sessionStorage.clear();
+
+      // 3. WIPE ALL INPUT STATES TO ENSURE 100% BLANK FORMS
+      setLoginEmail("");
+      setLoginPassword("");
+      setLogin2FACode("");
+      setTargetProfile({
+        firstName: "",
+        middleName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        phone: "",
+        address: "",
+        city: "",
+        state: "",
+        zip: "",
+        dob: "",
+        termsAccepted: false,
+        smsConsentAccepted: false
+      });
+
+      // 4. ROUTE CLEANLY TO SIGNUP / PRICING VIEW
+      setShowShield(false);
+      setShow2FA(false);
+      setShowLanding(false);
+      setShowPricing(true);
+      window.location.hash = "pricing";
+    }
+  }, []);
+
   // --- HASH ROUTING CONTROLLER ---
   useEffect(() => {
     const handleHashChange = () => {
@@ -2655,13 +2697,14 @@ const handleEmergencyBurn = async () => {
                         <button className="mask-btn" style={{ fontSize: '0.85rem' }} onClick={() => { window.location.hash = "pricing"; }}>CREATE ACCOUNT</button>
                       </div>
                       <h3 className="tiger-text" style={{ fontSize: '1.1rem', marginBottom: '15px', textAlign: 'center' }}>SIGN IN TO DISAPPEAR</h3>
-                      <form onSubmit={(e) => { e.preventDefault(); verify2FA(); }} autoComplete="on" style={{ width: '100%' }}>
+                      <form onSubmit={(e) => { e.preventDefault(); verify2FA(); }} autoComplete="off" style={{ width: '100%' }}>
                         <p className="field-label">REGISTERED ACCOUNT EMAIL</p>
                         <input 
                           type="email"
-                          name="customer_login_email" 
-                          id="customer_login_email"
-                          autoComplete="username" 
+                          name="disappear_login_email_clean" 
+                          id="disappear_login_email_clean"
+                          autoComplete="off" 
+                          data-lpignore="true"
                           className="mask-btn" 
                           style={{width: '100%', textAlign: 'center', marginBottom: '15px', color: 'white'}} 
                           placeholder="customer@email.com" 
@@ -2671,9 +2714,10 @@ const handleEmergencyBurn = async () => {
                         <p className="field-label">ACCOUNT PASSWORD</p>
                         <input 
                           type="password" 
-                          name="customer_login_password" 
-                          id="customer_login_password"
-                          autoComplete="current-password" 
+                          name="disappear_login_password_clean" 
+                          id="disappear_login_password_clean"
+                          autoComplete="new-password" 
+                          data-lpignore="true"
                           className="mask-btn" 
                           style={{width: '100%', textAlign: 'center', color: 'white', marginBottom: '10px'}} 
                           placeholder="••••••••" 
@@ -2785,8 +2829,8 @@ const handleEmergencyBurn = async () => {
                             <input className="mask-btn" placeholder="First Name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
                             <input className="mask-btn" placeholder="Middle Name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
                             <input className="mask-btn full-row" placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
-                            <input className="mask-btn full-row" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
-                            <input type="password" className="mask-btn full-row" placeholder="Account Password" value={targetProfile.password} onChange={(e) => setTargetProfile({...targetProfile, password: e.target.value})} />
+                            <input type="email" name="disappear_signup_email_clean" autoComplete="off" data-lpignore="true" className="mask-btn full-row" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
+                            <input type="password" name="disappear_signup_password_clean" autoComplete="new-password" data-lpignore="true" className="mask-btn full-row" placeholder="Account Password" value={targetProfile.password} onChange={(e) => setTargetProfile({...targetProfile, password: e.target.value})} />
                             <input className="mask-btn full-row" placeholder="Real Phone Number (For SMS Forwarding)" value={targetProfile.phone} onChange={(e) => setTargetProfile({...targetProfile, phone: e.target.value})} />
                             <input ref={addressRef} className="mask-btn full-row" placeholder="Street Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
                             <input className="mask-btn" placeholder="City" value={targetProfile.city} onChange={(e) => setTargetProfile({...targetProfile, city: e.target.value})} />
