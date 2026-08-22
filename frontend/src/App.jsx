@@ -2863,28 +2863,85 @@ const handleEmergencyBurn = async () => {
                           </label>
                         </div>
                         {/* PROMO / COUPON CODE SECTION */}
-                        <div style={{ marginTop: '18px', background: 'rgba(0, 71, 171, 0.08)', padding: '14px', borderRadius: '6px', border: '1px solid rgba(0, 210, 255, 0.2)' }}>
-                          <label style={{ fontSize: '0.78rem', color: '#00D2FF', letterSpacing: '1px', display: 'block', marginBottom: '6px' }}>🎟️ PROMO / COUPON CODE</label>
-                          <div style={{ display: 'flex', gap: '10px', alignItems: 'stretch' }}>
+                        <div style={{ 
+                          marginTop: '20px', 
+                          background: 'rgba(5, 11, 24, 0.85)', 
+                          padding: '16px', 
+                          borderRadius: '10px', 
+                          border: '1px solid rgba(0, 210, 255, 0.3)',
+                          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.4)'
+                        }}>
+                          <label style={{ 
+                            fontSize: '0.82rem', 
+                            fontWeight: 'bold', 
+                            color: '#00D2FF', 
+                            letterSpacing: '1.2px', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '6px', 
+                            marginBottom: '10px' 
+                          }}>
+                            🎟️ PROMO / DISCOUNTS / COUPON CODE
+                          </label>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '10px', width: '100%', alignItems: 'center' }}>
                             <input 
-                              className="mask-btn" 
+                              type="text"
                               placeholder="Enter Promo Code (e.g. TACTICAL50)" 
-                              style={{ flex: 1, textTransform: 'uppercase', height: '44px', boxSizing: 'border-box', margin: 0 }}
+                              style={{ 
+                                width: '100%', 
+                                height: '48px', 
+                                background: 'rgba(15, 23, 42, 0.9)', 
+                                border: '1px solid rgba(0, 210, 255, 0.35)', 
+                                borderRadius: '6px', 
+                                color: '#FFFFFF', 
+                                fontSize: '0.92rem', 
+                                fontWeight: '600',
+                                padding: '0 16px', 
+                                textTransform: 'uppercase', 
+                                letterSpacing: '1px',
+                                outline: 'none',
+                                boxSizing: 'border-box'
+                              }}
                               value={couponInput}
                               onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                             />
                             <button 
                               type="button"
-                              className="main-button" 
-                              style={{ height: '44px', padding: '0 20px', fontSize: '0.85rem', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0 }}
+                              style={{ 
+                                height: '48px', 
+                                padding: '0 22px', 
+                                fontSize: '0.88rem', 
+                                fontWeight: 'bold', 
+                                letterSpacing: '1px',
+                                color: '#00D2FF',
+                                background: 'rgba(0, 210, 255, 0.12)',
+                                border: '1px solid #00D2FF',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxSizing: 'border-box',
+                                transition: 'all 0.2s ease',
+                                opacity: (!couponInput.trim() || isValidatingCoupon) ? 0.6 : 1
+                              }}
                               onClick={handleApplyCoupon}
                               disabled={isValidatingCoupon || !couponInput.trim()}
                             >
-                              {isValidatingCoupon ? "CHECKING..." : "APPLY"}
+                              {isValidatingCoupon ? "CHECKING..." : "APPLY CODE"}
                             </button>
                           </div>
                           {couponMsg && (
-                            <div style={{ marginTop: '8px', fontSize: '0.8rem', color: couponMsg.startsWith('✔') ? '#34d399' : '#ff6b6b', fontWeight: 'bold' }}>
+                            <div style={{ 
+                              marginTop: '10px', 
+                              fontSize: '0.85rem', 
+                              color: couponMsg.startsWith('✔') ? '#34d399' : '#ff6b6b', 
+                              fontWeight: 'bold',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px'
+                            }}>
                               {couponMsg}
                             </div>
                           )}
