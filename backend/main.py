@@ -2419,13 +2419,14 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
                     
                     if addy_response.status_code < 400:
                         content = addy_response.json().get("data", {}).get("email")
+                    else:
+                        logger.error(f"ADDY_IO_ERROR: Status {addy_response.status_code} | Body: {addy_response.text}")
             except Exception as e:
-                logger.warning(f"ADDY_IO_MINT_WARNING: {str(e)}, generating encrypted local alias.")
+                logger.error(f"ADDY_IO_MINT_EXCEPTION: {str(e)}")
         
-        # Clean short 6-character @anonaddy.me format
         if not content:
-            short_code = secrets.token_hex(3)
-            content = f"{short_code}@anonaddy.me"
+            logger.error("ADDY_IO_MINT_FAILED: Unable to register alias on Addy.io mail servers.")
+            raise HTTPException(status_code=502, detail="EMAIL_PROVIDER_UNAVAILABLE: Could not register real alias on mail server.")
     else:
         # Provision real Twilio phone number
         from services.twilio_service import provision_phone_number
