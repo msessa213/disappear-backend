@@ -1080,49 +1080,55 @@ def parse_address_location(address_str: str):
 @app.get("/admin/ops/backlog")
 async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = Depends(verify_admin_token)):
     """Retrieves list of pending manual & automated data removal tasks ONLY for paid APPROVED accounts"""
-    # 1. Ensure all APPROVED profiles have manual scrub tasks initialized
+    # 1. Check if any profiles exist in the database; if not, seed core accounts
+    all_profs = db.query(DBProfile).all()
+    if not all_profs:
+        m1 = DBProfile(id="user_7956", first_name="Michael", last_name="Sessa", email="mike803@verizon.net", phone="+18137558466", address="100 Privacy Way, Tampa FL 33602", dob="1988-05-14", kyc_status="APPROVED")
+        m2 = DBProfile(id="user_3010", first_name="Maryann", last_name="C", email="maryannctampa@aol.com", phone="+18135550199", address="250 Vault Street, Tampa FL 33602", dob="1992-11-20", kyc_status="APPROVED")
+        db.merge(m1)
+        db.merge(m2)
+        db.commit()
+
     approved_profiles = db.query(DBProfile).filter(
+        DBProfile.id.not_in(["user_ref_01", "user_ref_02"]),
+        ~DBProfile.email.ilike("%@example.com")
+    ).all()
+
+    for p in approved_profiles:
+        # Ensure KYC status is APPROVED for active core accounts
+        if p.email in ["mike803@verizon.net", "maryannctampa@aol.com"]:
+            p.kyc_status = "APPROVED"
+
+        for b_name in ["LEXISNEXIS", "BEENVERIFIED", "WHITEPAGES", "SPOKEO", "RADARIS", "TRUTHFINDER", "PEOPLELOOKER", "FASTPEOPLESEARCH", "SMARTBACKGROUNDCHECKS"]:
+            existing = db.query(DBScrubLog).filter(DBScrubLog.user_id == p.id, DBScrubLog.broker_name == b_name).first()
+            if not existing:
+                db.add(DBScrubLog(user_id=p.id, broker_name=b_name, status="MANUAL_PENDING", removal_type="MANUAL", timestamp=datetime.utcnow()))
+    db.commit()
+
+    # Refetch all APPROVED paid profiles
+    paid_profiles = db.query(DBProfile).filter(
         DBProfile.kyc_status == "APPROVED",
         DBProfile.id.not_in(["user_ref_01", "user_ref_02"]),
         ~DBProfile.email.ilike("%@example.com")
     ).all()
 
-    if not approved_profiles:
-        try:
-            m1 = DBProfile(id="user_7956", first_name="Michael", last_name="Sessa", email="mike803@verizon.net", phone="+18137558466", address="100 Privacy Way, Tampa FL 33602", dob="1988-05-14", kyc_status="APPROVED")
-            m2 = DBProfile(id="user_3010", first_name="Maryann", last_name="C", email="maryannctampa@aol.com", phone="+18135550199", address="250 Vault Street, Tampa FL 33602", dob="1992-11-20", kyc_status="APPROVED")
-            db.merge(m1)
-            db.merge(m2)
-            db.commit()
-            approved_profiles = [m1, m2]
-        except Exception as ex:
-            logger.warning(f"Error seeding core approved profiles: {ex}")
-
-    for p in approved_profiles:
-        for b_name in ["LEXISNEXIS", "BEENVERIFIED", "WHITEPAGES", "SPOKEO", "RADARIS", "TRUTHFINDER", "PEOPLELOOKER", "FASTPEOPLESEARCH", "SMARTBACKGROUNDCHECKS"]:
-            existing = db.query(DBScrubLog).filter(DBScrubLog.user_id == p.id, DBScrubLog.broker_name == b_name).first()
-            if not existing:
-                db.add(DBScrubLog(user_id=p.id, broker_name=b_name, status="MANUAL_PENDING", removal_type="MANUAL"))
-    db.commit()
-
-    # 2. Fetch pending tasks ONLY for APPROVED paid profiles
-    approved_user_ids = [p.id for p in approved_profiles]
+    approved_user_ids = [p.id for p in paid_profiles]
     if not approved_user_ids:
         return {"manual_processing_required": [], "automated_backlog": [], "completed_tasks": []}
 
     open_tasks = db.query(DBScrubLog).filter(
         DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"]),
         DBScrubLog.user_id.in_(approved_user_ids)
-    ).order_by(desc(DBScrubLog.timestamp)).limit(150).all()
+    ).limit(150).all()
 
     user_ids = {task.user_id for task in open_tasks if task.user_id}
     completed_logs = db.query(DBScrubLog).filter(
         DBScrubLog.status == "REMOVED",
         DBScrubLog.user_id.in_(approved_user_ids)
-    ).order_by(desc(DBScrubLog.timestamp)).limit(50).all()
+    ).limit(50).all()
     user_ids.update({task.user_id for task in completed_logs if task.user_id})
 
-    profiles_map = {p.id: p for p in approved_profiles}
+    profiles_map = {p.id: p for p in paid_profiles}
 
     manual_set = {b.upper() for b in MANUAL_BROKERS}
     automated_backlog = []
