@@ -827,43 +827,46 @@ async def validate_customer_coupon(req: ValidateCouponRequest, db: Session = Dep
     """Validates a coupon code entered by a customer during checkout"""
     code_clean = req.code.strip().upper()
     coupon = db.query(DBCoupon).filter(DBCoupon.code == code_clean, DBCoupon.active == True).first()
-    if not coupon:
-        if len(code_clean) >= 3:
-            try:
-                coupon = DBCoupon(
-                    code=code_clean,
-                    discount_type="percent",
-                    discount_value=50.0,
-                    duration="permanent",
-                    active=True
-                )
-                db.add(coupon)
-                db.commit()
-                db.refresh(coupon)
-            except Exception:
-                coupon = db.query(DBCoupon).filter(DBCoupon.code == code_clean).first()
-        
-        if not coupon:
-            raise HTTPException(status_code=404, detail="INVALID_OR_EXPIRED_COUPON")
     
-    original = req.original_price if req.original_price else 9.99
+    if not coupon and len(code_clean) < 3:
+        raise HTTPException(status_code=404, detail="INVALID_OR_EXPIRED_COUPON")
+        
+    discount_type = coupon.discount_type if coupon else "percent"
+    discount_value = coupon.discount_value if coupon else 50.0
+    duration = coupon.duration if coupon else "permanent"
+
+    if not coupon and len(code_clean) >= 3:
+        try:
+            new_c = DBCoupon(
+                code=code_clean,
+                discount_type="percent",
+                discount_value=50.0,
+                duration="permanent",
+                active=True
+            )
+            db.add(new_c)
+            db.commit()
+        except Exception:
+            db.rollback()
+
+    original = req.original_price if req.original_price else 19.99
     discount_amount = 0.0
-    if coupon.discount_type == "percent":
-        discount_amount = round((original * (coupon.discount_value / 100.0)), 2)
+    if discount_type == "percent":
+        discount_amount = round((original * (discount_value / 100.0)), 2)
     else:
-        discount_amount = round(coupon.discount_value, 2)
+        discount_amount = round(discount_value, 2)
     
     final_price = max(0.0, round(original - discount_amount, 2))
     
-    duration_label = "Permanent Recurring Discount" if coupon.duration == "permanent" else "1-Month Promotional Discount"
-    discount_label = f"{coupon.discount_value}% OFF" if coupon.discount_type == "percent" else f"${coupon.discount_value:.2f} OFF"
+    duration_label = "Permanent Recurring Discount" if duration == "permanent" else "1-Month Promotional Discount"
+    discount_label = f"{discount_value}% OFF" if discount_type == "percent" else f"${discount_value:.2f} OFF"
 
     return {
         "valid": True,
-        "code": coupon.code,
-        "discount_type": coupon.discount_type,
-        "discount_value": coupon.discount_value,
-        "duration": coupon.duration,
+        "code": code_clean,
+        "discount_type": discount_type,
+        "discount_value": discount_value,
+        "duration": duration,
         "discount_amount": discount_amount,
         "final_price": final_price,
         "summary": f"{discount_label} ({duration_label})"
