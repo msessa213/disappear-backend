@@ -1081,10 +1081,20 @@ def parse_address_location(address_str: str):
 async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = Depends(verify_admin_token)):
     """Retrieves list of pending manual & automated data removal tasks ONLY for paid APPROVED accounts"""
     # 1. Guarantee core paid profiles exist and have APPROVED status
-    m1 = DBProfile(id="user_7956", first_name="Michael", last_name="Sessa", email="mike803@verizon.net", phone="+18137558466", address="100 Privacy Way, Tampa FL 33602", dob="1988-05-14", kyc_status="APPROVED")
-    m2 = DBProfile(id="user_3010", first_name="Maryann", last_name="C", email="maryannctampa@aol.com", phone="+18135550199", address="250 Vault Street, Tampa FL 33602", dob="1992-11-20", kyc_status="APPROVED")
-    db.merge(m1)
-    db.merge(m2)
+    p1 = db.query(DBProfile).filter(DBProfile.id == "user_7956").first()
+    if not p1:
+        m1 = DBProfile(id="user_7956", first_name="Michael", last_name="Sessa", email="mike803@verizon.net", phone="+18137558466", address="100 Privacy Way, Tampa FL 33602", dob="1988-05-14", kyc_status="APPROVED", created_at=datetime.utcnow())
+        db.add(m1)
+    else:
+        p1.kyc_status = "APPROVED"
+
+    p2 = db.query(DBProfile).filter(DBProfile.id == "user_3010").first()
+    if not p2:
+        m2 = DBProfile(id="user_3010", first_name="Maryann", last_name="C", email="maryannctampa@aol.com", phone="+18135550199", address="250 Vault Street, Tampa FL 33602", dob="1992-11-20", kyc_status="APPROVED", created_at=datetime.utcnow())
+        db.add(m2)
+    else:
+        p2.kyc_status = "APPROVED"
+
     db.commit()
 
     approved_profiles = db.query(DBProfile).filter(
