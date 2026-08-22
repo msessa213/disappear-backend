@@ -1754,6 +1754,23 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
             log_compliance_rejection(user_id, "CREATE_CHECKOUT_SESSION", "KYC verification required (missing profile)")
         customer_id = profile.stripe_customer_id if profile else None
 
+        # Check for applied coupon code
+        raw_coupon = body.get("coupon_code") or body.get("promo_code") or body.get("applied_coupon") or body.get("coupon")
+        coupon_code = str(raw_coupon).strip().upper() if raw_coupon else None
+        
+        applied_coupon_obj = None
+        if coupon_code:
+            applied_coupon_obj = db.query(DBCoupon).filter(DBCoupon.code == coupon_code, DBCoupon.active == True).first()
+            if applied_coupon_obj:
+                if applied_coupon_obj.discount_type == "percent":
+                    discount_factor = max(0.0, 1.0 - (applied_coupon_obj.discount_value / 100.0))
+                    unit_amount = max(50, int(unit_amount * discount_factor))
+                else:
+                    discount_cents = int(applied_coupon_obj.discount_value * 100)
+                    unit_amount = max(50, unit_amount - discount_cents)
+                item_description = f"{item_description} (Promo Code '{applied_coupon_obj.code}' Applied)"
+                logger.info(f"COUPON_DISCOUNT_APPLIED: Code '{applied_coupon_obj.code}' applied. Discounted unit_amount: ${unit_amount/100:.2f}")
+
         is_subscription = "subscription" in etype
         price_data = {
             'currency': 'usd',

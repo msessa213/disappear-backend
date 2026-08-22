@@ -1565,6 +1565,7 @@ const handleEmergencyBurn = async () => {
                         expansion_type: "subscription_" + billingCycle,
                         user_id: activeUserId,
                         referred_by: storedRefCode,
+                        coupon_code: appliedCoupon ? appliedCoupon.code : (couponInput ? couponInput.trim() : ""),
                         return_url: window.location.origin
                     })
                 });
