@@ -3586,6 +3586,10 @@ async def twilio_incoming_sms(
     # Dispatch SMS to physical device using Twilio REST API
     from services.twilio_service import send_sms
     sent_ok = send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=To)
+    if not sent_ok:
+        logger.warning(f"TWILIO_SMS_RETRY: Primary virtual line sender failed. Retrying via master verified system sender...")
+        sent_ok = send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=None)
+
     if sent_ok:
         logger.info(f"TWILIO_SMS_SUCCESS: Inbound SMS from {From} successfully forwarded to device {forward_phone}")
     else:
