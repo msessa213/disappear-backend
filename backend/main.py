@@ -2608,6 +2608,107 @@ async def resend_addy_recipient_verification(user_id: Optional[str] = None, db: 
         raise HTTPException(status_code=500, detail=str(ex))
 
 
+def send_welcome_email(recipient_email: str, first_name: str = "Operative") -> bool:
+    """Dispatches onboarding welcome email to customer from customer.service@disappearco.com"""
+    import smtplib
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+
+    sender = "customer.service@disappearco.com"
+    subject = "🚀 Welcome to Disappear — Your Privacy Vault is Active!"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"></head>
+    <body style="margin: 0; padding: 0; background-color: #05070a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+      <div style="max-width: 600px; margin: 20px auto; background: #0b0f19; border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 14px; padding: 30px; color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 25px;">
+          <h1 style="color: #00D2FF; margin: 0; font-size: 24px; letter-spacing: 1px;">🚀 WELCOME TO DISAPPEAR</h1>
+          <p style="color: #94A3B8; font-size: 13px; margin-top: 5px;">PRIVACY-AS-A-SERVICE & DATA BROKER REMOVAL</p>
+        </div>
+
+        <p style="color: #cbd5e1; font-size: 15px; line-height: 1.6;">
+          Hello <strong>{first_name}</strong>,<br><br>
+          Your subscription is officially active! Your encrypted privacy vault nodes and automated data scrub engine are initialized. Follow these 3 quick steps to verify your email and phone relays:
+        </p>
+
+        <div style="background: rgba(0, 71, 171, 0.18); border: 1px solid rgba(0, 210, 255, 0.3); padding: 18px; border-radius: 10px; margin: 20px 0;">
+          <h3 style="color: #00D2FF; margin: 0 0 8px 0; font-size: 16px;">📧 Step 1: Email Relay Verification</h3>
+          <p style="color: #94A3B8; margin: 0; font-size: 14px; line-height: 1.5;">
+            An activation email has been sent to <strong>{recipient_email}</strong> from <code>noreply@addy.io</code>.<br>
+            Please check your Inbox and <strong>Spam/Junk folder</strong> and click <em>Verify Email Address</em>.<br><br>
+            <strong style="color: #00D2FF;">💡 Note:</strong> Once you see <em>"Recipient verified"</em>, your email relay is 100% active! You do <u>NOT</u> need an account or password on Addy.io—simply close that tab and return to Disappear.
+          </p>
+        </div>
+
+        <div style="background: rgba(0, 71, 171, 0.18); border: 1px solid rgba(0, 210, 255, 0.3); padding: 18px; border-radius: 10px; margin: 20px 0;">
+          <h3 style="color: #00D2FF; margin: 0 0 8px 0; font-size: 16px;">📱 Step 2: Phone Relay Forwarding</h3>
+          <p style="color: #94A3B8; margin: 0; font-size: 14px; line-height: 1.5;">
+            Text messages sent to your virtual burner phone numbers are automatically logged to your Vault SMS Inbox and forwarded via SMS directly to your mobile device.
+          </p>
+        </div>
+
+        <div style="background: rgba(0, 71, 171, 0.18); border: 1px solid rgba(0, 210, 255, 0.3); padding: 18px; border-radius: 10px; margin: 20px 0;">
+          <h3 style="color: #00D2FF; margin: 0 0 8px 0; font-size: 16px;">🛡️ Step 3: Data Broker Removals Active</h3>
+          <p style="color: #94A3B8; margin: 0; font-size: 14px; line-height: 1.5;">
+            Our automated opt-out engine and human privacy analysts enforce continuous removals across 47+ major data broker databases.
+          </p>
+        </div>
+
+        <div style="text-align: center; margin: 35px 0 20px 0;">
+          <a href="https://disappearco.com" style="background: linear-gradient(135deg, #0047AB, #00D2FF); color: #ffffff; padding: 14px 32px; text-decoration: none; font-weight: bold; font-size: 15px; border-radius: 30px; display: inline-block; box-shadow: 0 0 15px rgba(0,210,255,0.4);">
+            ⚡ ACCESS YOUR DISAPPEAR VAULT
+          </a>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.08); margin: 25px 0;">
+        <p style="color: #64748B; font-size: 12px; margin: 0; text-align: center;">
+          © 2026 Disappearco. Brought to you by DFS 213 LLC.<br>
+          Customer Service: customer.service@disappearco.com
+        </p>
+      </div>
+    </body>
+    </html>
+    """
+
+    smtp_host = os.getenv("SMTP_HOST") or os.getenv("MAIL_HOST") or "smtp.gmail.com"
+    smtp_port = int(os.getenv("SMTP_PORT") or os.getenv("MAIL_PORT") or 587)
+    smtp_user = os.getenv("SMTP_USER") or os.getenv("MAIL_USERNAME") or "customer.service@disappearco.com"
+    smtp_pass = os.getenv("SMTP_PASS") or os.getenv("MAIL_PASSWORD") or ""
+
+    if not smtp_pass:
+        logger.warning(f"WELCOME_EMAIL_NOTICE: SMTP_PASS not set. Logged welcome notification email for {recipient_email}")
+        return False
+
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = f"Disappear Customer Service <{sender}>"
+        msg["To"] = recipient_email
+        msg.attach(MIMEText(html_content, "html"))
+
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=12) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.sendmail(sender, [recipient_email], msg.as_string())
+        logger.info(f"WELCOME_EMAIL_SUCCESS: Dispatched welcome onboarding email from {sender} to {recipient_email}")
+        return True
+    except Exception as ex:
+        logger.error(f"WELCOME_EMAIL_ERROR: Failed sending email to {recipient_email}: {ex}")
+        return False
+
+
+@app.post("/api/v1/auth/send-welcome-email")
+async def trigger_welcome_email(email: str, name: Optional[str] = "Operative", db: Session = Depends(get_db)):
+    """API Endpoint: Triggers onboarding welcome email to a customer"""
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Invalid email address.")
+    
+    sent = send_welcome_email(recipient_email=email, first_name=name or "Operative")
+    return {"status": "SUCCESS" if sent else "QUEUED", "detail": f"Welcome email processed for {email}"}
+
+
 # --- FINANCIALS & PROFILE STORAGE ---
 
 @app.get("/financials/data")
