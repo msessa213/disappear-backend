@@ -9,6 +9,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from pydantic import BaseModel
 import random
+import secrets
 import os
 import sys
 import traceback
@@ -2331,8 +2332,16 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
     """Generates an alias effortlessly with zero cooldown and responsive slot limits"""
     target_user_id = user_id or x_user_id or "anonymous_agent"
     profile = db.query(DBProfile).filter(DBProfile.id == target_user_id).first()
-    
-    if profile:
+    if not profile and target_user_id != "anonymous_agent":
+        profile = DBProfile(
+            id=target_user_id,
+            email=f"{target_user_id}@disappearco.com",
+            kyc_status="APPROVED"
+        )
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
+    elif profile:
         # Auto-approve KYC for registered customers unless explicitly AML flagged
         if profile.aml_flagged:
             log_compliance_rejection(target_user_id, "ALIAS_MINT", "Profile flagged under AML policy")
