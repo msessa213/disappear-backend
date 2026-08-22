@@ -1108,8 +1108,12 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
             p.kyc_status = "APPROVED"
 
         for b_name in ["LEXISNEXIS", "BEENVERIFIED", "WHITEPAGES", "SPOKEO", "RADARIS", "TRUTHFINDER", "PEOPLELOOKER", "FASTPEOPLESEARCH", "SMARTBACKGROUNDCHECKS"]:
-            existing = db.query(DBScrubLog).filter(DBScrubLog.user_id == p.id, DBScrubLog.broker_name == b_name).first()
-            if not existing:
+            existing_pending = db.query(DBScrubLog).filter(
+                DBScrubLog.user_id == p.id,
+                DBScrubLog.broker_name == b_name,
+                DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"])
+            ).first()
+            if not existing_pending:
                 db.add(DBScrubLog(user_id=p.id, broker_name=b_name, status="MANUAL_PENDING", removal_type="MANUAL", timestamp=datetime.utcnow()))
     db.commit()
 
