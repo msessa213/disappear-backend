@@ -3151,8 +3151,33 @@ const handleEmergencyBurn = async () => {
 
       {/* --- GLOBAL FORGOT PASSWORD MODAL --- */}
       {showForgotPasswordModal && (
-        <div className="modal-overlay" style={{ zIndex: 60000 }} onClick={() => setShowForgotPasswordModal(false)}>
-          <div className="price-box" style={{ maxWidth: '420px', width: '90%', padding: '25px', textAlign: 'left' }} onClick={e => e.stopPropagation()}>
+        <div 
+          className="modal-overlay" 
+          style={{ 
+            zIndex: 60000, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            overflowY: 'auto', 
+            WebkitOverflowScrolling: 'touch',
+            padding: '20px 10px'
+          }} 
+          onClick={() => setShowForgotPasswordModal(false)}
+        >
+          <div 
+            className="price-box" 
+            style={{ 
+              maxWidth: '420px', 
+              width: '100%', 
+              maxHeight: '85vh', 
+              overflowY: 'auto', 
+              WebkitOverflowScrolling: 'touch',
+              padding: '25px', 
+              textAlign: 'left',
+              boxSizing: 'border-box'
+            }} 
+            onClick={e => e.stopPropagation()}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
               <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.1rem' }}>🔑 RESET VAULT PASSWORD</h3>
               <button 
