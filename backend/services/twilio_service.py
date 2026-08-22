@@ -259,25 +259,6 @@ def sync_all_twilio_webhooks(db=None):
                 except Exception as ex:
                     logger.warning(f"Failed to update webhook for {n.phone_number}: {ex}")
 
-            if db:
-                from models import DBAlias, DBProfile
-                import uuid
-                active_prof = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
-                target_uid = active_prof.id if active_prof else "user_customer_test_99"
-
-                existing = db.query(DBAlias).filter(DBAlias.content == n.phone_number).first()
-                if not existing:
-                    db.add(DBAlias(
-                        id=f"als_{uuid.uuid4().hex[:12]}",
-                        user_id=target_uid,
-                        type="phone",
-                        content=n.phone_number,
-                        label=f"Virtual Line {n.phone_number[-4:]}"
-                    ))
-                else:
-                    # Keep existing user_id link intact! Never overwrite existing user_id
-                    pass
-        if db:
-            db.commit()
+            # Webhook URL sync only - DBAlias ownership is managed strictly per user during minting
     except Exception as e:
         logger.warning(f"TWILIO_WEBHOOK_SYNC_NOTICE: {e}")

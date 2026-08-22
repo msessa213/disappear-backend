@@ -3362,8 +3362,11 @@ class PhoneUpdateRequest(BaseModel):
 
 @app.post("/auth/update-phone")
 async def update_user_phone(req: PhoneUpdateRequest, db: Session = Depends(get_db)):
-    """Updates the user's real destination mobile phone number for SMS forwarding"""
-    uid = req.user_id or "user_customer_test_99"
+    """Updates the specific user's real destination mobile phone number for SMS forwarding"""
+    if not req.user_id:
+        raise HTTPException(status_code=400, detail="USER_ID_REQUIRED: Missing authenticated user ID context.")
+    
+    uid = req.user_id.strip()
     raw_phone = (req.phone or "").strip()
     clean_phone = ""
     if raw_phone:
@@ -3371,23 +3374,15 @@ async def update_user_phone(req: PhoneUpdateRequest, db: Session = Depends(get_d
         if not clean_phone:
             raise HTTPException(status_code=400, detail="INVALID_PHONE_NUMBER: Please provide a valid 10-digit mobile phone number.")
 
-    profiles = db.query(DBProfile).all()
-    if not profiles:
-        prof = DBProfile(id=uid, email=f"{uid}@disappearco.com", phone=clean_phone)
-        db.add(prof)
-        profiles = [prof]
+    profile = db.query(DBProfile).filter(DBProfile.id == uid).first()
+    if not profile:
+        profile = DBProfile(id=uid, email=f"{uid}@disappearco.com", phone=clean_phone)
+        db.add(profile)
     else:
-        for p in profiles:
-            p.phone = clean_phone
+        profile.phone = clean_phone
         
-    # Associate all phone line aliases in the system with this active user profile
-    aliases = db.query(DBAlias).filter(DBAlias.type == "phone").all()
-    for a in aliases:
-        a.user_id = uid
-
     db.commit()
-    
-    logger.info(f"PROFILE_PHONE_UPDATED: Set forwarding phone to '{clean_phone}' for user {uid}")
+    logger.info(f"PROFILE_PHONE_UPDATED: Set forwarding phone to '{clean_phone}' strictly for user {uid}")
     return {"status": "success", "user_id": uid, "phone": clean_phone}
 
 
@@ -3549,24 +3544,13 @@ async def twilio_incoming_sms(
     except Exception as ex:
         logger.warning(f"Failed to log SMS audit event: {ex}")
 
-    # 3. Resolve user's physical forwarding phone number
+    # 3. Resolve owner user's physical forwarding phone number
     forward_phone = ""
     if profile and profile.phone:
         forward_phone = format_to_e164(profile.phone)
-    
-    if not forward_phone:
-        # Fallback 1: Check latest profile with a registered phone number
-        fallback_prof = db.query(DBProfile).filter(DBProfile.phone.isnot(None), DBProfile.phone != "").order_by(DBProfile.created_at.desc()).first()
-        if fallback_prof and fallback_prof.phone:
-            forward_phone = format_to_e164(fallback_prof.phone)
 
     if not forward_phone:
-        env_fwd = os.getenv("FORWARDING_PHONE") or ""
-        if env_fwd:
-            forward_phone = format_to_e164(env_fwd)
-
-    if not forward_phone:
-        logger.warning(f"TWILIO_SMS_NO_DESTINATION: Captured SMS in Vault for line {To} but no physical mobile phone is linked.")
+        logger.warning(f"TWILIO_SMS_NO_DESTINATION: Captured SMS in Vault for line {To} owned by {target_uid}, but owner has no physical mobile phone linked.")
         return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response/>', media_type="application/xml")
         
     message_content = f"DISAPPEAR SMS [From {From}]: {Body}"
