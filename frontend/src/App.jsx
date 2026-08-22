@@ -1041,7 +1041,7 @@ function App() {
     setPhones([]);
     setEmails([]);
     setCards([]);
-    setHistory([]);
+    setAuditLog([]);
     setShowShield(false);
     setShowAdmin(false);
     setShowAdminLogin(false);
