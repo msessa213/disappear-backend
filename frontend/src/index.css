@@ -81,18 +81,18 @@ button:focus-visible {
 
 @media (max-width: 768px) {
   .privacy-ai-chat-container {
-    bottom: 75px !important;
-    right: 16px !important;
+    bottom: 110px !important;
+    right: 14px !important;
   }
 
   .ai-chat-modal-floating {
-    bottom: 130px !important;
-    right: 12px !important;
-    left: 12px !important;
+    bottom: 165px !important;
+    right: 10px !important;
+    left: 10px !important;
     width: auto !important;
     max-width: none !important;
-    height: calc(100vh - 150px) !important;
-    max-height: calc(100vh - 150px) !important;
+    height: calc(100vh - 185px) !important;
+    max-height: calc(100vh - 185px) !important;
   }
 }
 
