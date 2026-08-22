@@ -303,15 +303,14 @@ safe_add_column("scrub_logs_v1", "assigned_analyst", "VARCHAR")
 safe_add_column("scrub_logs_v1", "resolved_by", "VARCHAR")
 safe_add_column("scrub_logs_v1", "target_listing_url", "VARCHAR")
 
-# Restore user_7956 phone aliases and isolate user_9685 profile data
+# Clean dummy user_9685 profile to ensure 100% clean account separation
 try:
     with engine.connect() as conn:
+        conn.execute(text("DELETE FROM shield_profiles_v3 WHERE id = 'user_9685'"))
         conn.execute(text("UPDATE shield_aliases_v3 SET user_id = 'user_7956' WHERE content IN ('+18884317375', '+18137558466', '+18137917531', '+18134375531', '+17274850017')"))
-        conn.execute(text("UPDATE shield_profiles_v3 SET email = 'maryannctampa@aol.com', phone = '8134313737' WHERE id = 'user_9685'"))
-        conn.execute(text("DELETE FROM target_emails_v1 WHERE profile_id = 'user_9685'"))
         conn.commit()
 except Exception as ex:
-    logger.warning(f"Alias restore: {ex}")
+    logger.warning(f"Dummy profile purge: {ex}")
 
 # --- APP CONFIGURATION ---
 
