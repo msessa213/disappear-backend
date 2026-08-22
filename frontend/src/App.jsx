@@ -346,9 +346,7 @@ function App() {
             message: (item.action || "").replace(/^SMS_RECEIVED\s*/, "").replace(/^SMS_SENT\s*/, "OUTBOUND: "),
             line: item.node || "VIRTUAL_LINE"
           }));
-        if (smsFromHistory.length > 0) {
-          updateSmsInboxSafely(smsFromHistory);
-        }
+        updateSmsInboxSafely(smsFromHistory);
       }
 
       // 4. Map Cards
@@ -1012,6 +1010,12 @@ function App() {
   const handleSecureLogout = () => {
     localStorage.clear();
     sessionStorage.clear();
+    setCurrentUserId(null);
+    setSmsInbox([]);
+    setPhones([]);
+    setEmails([]);
+    setCards([]);
+    setHistory([]);
     setShowShield(false);
     setShowAdmin(false);
     setShowAdminLogin(false);
