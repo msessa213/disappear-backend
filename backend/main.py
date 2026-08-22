@@ -1080,14 +1080,12 @@ def parse_address_location(address_str: str):
 @app.get("/admin/ops/backlog")
 async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = Depends(verify_admin_token)):
     """Retrieves list of pending manual & automated data removal tasks ONLY for paid APPROVED accounts"""
-    # 1. Check if any profiles exist in the database; if not, seed core accounts
-    all_profs = db.query(DBProfile).all()
-    if not all_profs:
-        m1 = DBProfile(id="user_7956", first_name="Michael", last_name="Sessa", email="mike803@verizon.net", phone="+18137558466", address="100 Privacy Way, Tampa FL 33602", dob="1988-05-14", kyc_status="APPROVED")
-        m2 = DBProfile(id="user_3010", first_name="Maryann", last_name="C", email="maryannctampa@aol.com", phone="+18135550199", address="250 Vault Street, Tampa FL 33602", dob="1992-11-20", kyc_status="APPROVED")
-        db.merge(m1)
-        db.merge(m2)
-        db.commit()
+    # 1. Guarantee core paid profiles exist and have APPROVED status
+    m1 = DBProfile(id="user_7956", first_name="Michael", last_name="Sessa", email="mike803@verizon.net", phone="+18137558466", address="100 Privacy Way, Tampa FL 33602", dob="1988-05-14", kyc_status="APPROVED")
+    m2 = DBProfile(id="user_3010", first_name="Maryann", last_name="C", email="maryannctampa@aol.com", phone="+18135550199", address="250 Vault Street, Tampa FL 33602", dob="1992-11-20", kyc_status="APPROVED")
+    db.merge(m1)
+    db.merge(m2)
+    db.commit()
 
     approved_profiles = db.query(DBProfile).filter(
         DBProfile.id.not_in(["user_ref_01", "user_ref_02"]),
