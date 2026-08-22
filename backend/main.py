@@ -2570,6 +2570,44 @@ async def check_addy_recipient_status(user_id: Optional[str] = None, db: Session
     return {"status": "PENDING_VERIFICATION", "verified": False, "email": profile.email}
 
 
+@app.post("/aliases/resend-recipient-verification")
+async def resend_addy_recipient_verification(user_id: Optional[str] = None, db: Session = Depends(get_db)):
+    """Deletes stale recipient link and dispatches a fresh valid signed verification link from Addy.io"""
+    profile = db.query(DBProfile).filter(DBProfile.id == user_id).first() if user_id else None
+    if not profile or not profile.email or profile.email.endswith("@disappearco.com"):
+        raise HTTPException(status_code=400, detail="INVALID_EMAIL: No valid personal customer email found.")
+    
+    raw_key = (os.getenv("ADDY_API_KEY") or os.getenv("ADDY_KEY") or os.getenv("ADDY_IO_KEY") or os.getenv("ANONADDY_API_KEY") or "").strip()
+    if not raw_key:
+        raw_key = "addy_io_dPdJs2PJZQLQV87dSP14P7di8YuLQOE06tDlidRlf6d08223"
+    
+    headers = {"Authorization": f"Bearer {raw_key}", "Accept": "application/json", "Content-Type": "application/json"}
+    try:
+        async with httpx.AsyncClient(timeout=12.0) as client:
+            rec_res = await client.get("https://app.addy.io/api/v1/recipients", headers=headers)
+            if rec_res.status_code == 200:
+                recipients = rec_res.json().get("data", [])
+                for r in recipients:
+                    if r.get("email", "").lower() == profile.email.lower():
+                        # Delete stale unverified recipient
+                        if not r.get("email_verified_at"):
+                            await client.delete(f"https://app.addy.io/api/v1/recipients/{r.get('id')}", headers=headers)
+                        else:
+                            return {"status": "ALREADY_VERIFIED", "detail": f"Email {profile.email} is already verified!"}
+
+            # Create fresh recipient entry to generate a fresh valid signed verification URL
+            add_res = await client.post("https://app.addy.io/api/v1/recipients", headers=headers, json={"email": profile.email.lower()})
+            if add_res.status_code in [200, 201]:
+                return {"status": "VERIFICATION_SENT", "detail": f"Fresh verification email with new valid signature sent to {profile.email}."}
+            else:
+                raise HTTPException(status_code=500, detail=f"Failed to issue fresh verification link: {add_res.text}")
+    except HTTPException as he:
+        raise he
+    except Exception as ex:
+        logger.error(f"Resend verification error: {ex}")
+        raise HTTPException(status_code=500, detail=str(ex))
+
+
 # --- FINANCIALS & PROFILE STORAGE ---
 
 @app.get("/financials/data")
