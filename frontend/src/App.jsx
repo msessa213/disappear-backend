@@ -1975,6 +1975,12 @@ const handleEmergencyBurn = async () => {
               <div className="price-box" onClick={e => e.stopPropagation()}>
                 <h3 className="tiger-text">GENERATE {showEmailModal ? 'EMAIL' : 'PHONE'} ALIAS</h3>
                 
+                {showEmailModal && (
+                  <div style={{ fontSize: '0.75rem', color: '#00D2FF', background: 'rgba(0, 71, 171, 0.2)', border: '1px solid rgba(0, 210, 255, 0.3)', padding: '10px 12px', borderRadius: '8px', marginBottom: '15px', textAlign: 'left', lineHeight: '1.4' }}>
+                    💡 <strong>VERIFICATION NOTE:</strong> Clicking your email verification link authorizes forwarding. If prompted on the verification page, <u>you do not need to log into Addy.io</u>—simply close that tab and return to Disappear!
+                  </div>
+                )}
+                
                 <p className="field-label">ASSOCIATE LABEL</p>
                 <input className="mask-btn" style={{color: 'white', textAlign: 'center', marginBottom: '15px'}} placeholder="e.g. Shopping, Personal" value={aliasLabel} onChange={(e) => setAliasLabel(e.target.value)} />
                 
@@ -3245,9 +3251,12 @@ const handleEmergencyBurn = async () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '22px' }}>
               <div style={{ padding: '12px 16px', background: 'rgba(0, 71, 171, 0.15)', border: '1px solid rgba(0, 210, 255, 0.3)', borderRadius: '10px' }}>
                 <h4 style={{ color: '#00D2FF', margin: '0 0 4px 0', fontSize: '0.9rem' }}>📧 Step 1: Email Verification Process</h4>
-                <p style={{ fontSize: '0.8rem', color: '#94A3B8', margin: 0, lineHeight: '1.4' }}>
-                  An activation email has been dispatched to your primary email address. Click the confirmation link to authorize continuous email alias forwarding to your inbox.
+                <p style={{ fontSize: '0.8rem', color: '#cbd5e1', margin: '0 0 6px 0', lineHeight: '1.4' }}>
+                  An activation email has been dispatched to your primary email address. Click the confirmation link inside to authorize continuous email alias forwarding to your inbox.
                 </p>
+                <div style={{ fontSize: '0.75rem', color: '#00D2FF', background: 'rgba(5, 11, 20, 0.7)', padding: '8px 12px', borderRadius: '6px', borderLeft: '3px solid #00D2FF', marginTop: '6px' }}>
+                  💡 <strong>IMPORTANT:</strong> When you click the verification link and see <em>"Recipient verified"</em>, your email is 100% active! <u>You do NOT need to log into Addy.io</u>—simply close that browser tab and return to your Disappear Vault.
+                </div>
               </div>
 
               <div style={{ padding: '12px 16px', background: 'rgba(0, 71, 171, 0.15)', border: '1px solid rgba(0, 210, 255, 0.3)', borderRadius: '10px' }}>
