@@ -71,7 +71,7 @@ function App() {
 
   // --- CORE VIEW NAVIGATION (UPDATED) ---
   const [showLanding, setShowLanding] = useState(true); 
-  const [currentUserId, setCurrentUserId] = useState(() => localStorage.getItem("disappear_user_id") || "user_mike803");
+  const [currentUserId, setCurrentUserId] = useState(() => localStorage.getItem("disappear_user_id") || "");
   const [showShield, setShowShield] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
@@ -95,7 +95,7 @@ function App() {
 
   const [showMintModal, setShowMintModal] = useState(false);
   const [newCardLabel, setNewCardLabel] = useState("");
-  const [loginEmail, setLoginEmail] = useState("mike803@verizon.net");
+  const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [hasBiometrics, setHasBiometrics] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState([]);
@@ -1309,8 +1309,12 @@ const handleEmergencyBurn = async () => {
   };
 
   const verify2FA = async () => {
-    const emailToUse = loginEmail ? loginEmail.trim() : "mike803@verizon.net";
-    const passwordToUse = loginPassword || "password123";
+    const emailToUse = loginEmail ? loginEmail.trim() : "";
+    const passwordToUse = loginPassword || "";
+    if (!emailToUse || !passwordToUse) {
+      triggerToast("❌ PLEASE ENTER YOUR EMAIL AND PASSWORD");
+      return;
+    }
     triggerToast("AUTHENTICATING...");
     try {
       const res = await secureRequest(`${API_BASE_URL}/auth/login`, {
@@ -1321,38 +1325,23 @@ const handleEmergencyBurn = async () => {
       if (res.ok) {
         const data = await res.json();
         localStorage.setItem("disappear_session", "active");
-        localStorage.setItem("disappear_user_id", data.user_id || "user_mike803");
-        setCurrentUserId(data.user_id || "user_mike803");
+        if (data.user_id) {
+          localStorage.setItem("disappear_user_id", data.user_id);
+          setCurrentUserId(data.user_id);
+        }
         window.location.hash = "vault";
         setShow2FA(false); 
         setShowLanding(false);
         setShowShield(true); 
         setProgress(100);
-        triggerToast(`WELCOME BACK, ${(data.first_name || 'MIKE').toUpperCase()}`);
+        triggerToast(`WELCOME BACK, ${(data.first_name || 'OPERATIVE').toUpperCase()}`);
         syncDefenseData();
       } else {
-        localStorage.setItem("disappear_session", "active");
-        localStorage.setItem("disappear_user_id", "user_mike803");
-        setCurrentUserId("user_mike803");
-        window.location.hash = "vault";
-        setShow2FA(false);
-        setShowLanding(false);
-        setShowShield(true);
-        setProgress(100);
-        triggerToast("WELCOME BACK, MIKE");
-        syncDefenseData();
+        const data = await res.json().catch(() => ({}));
+        triggerToast(`❌ ${data.detail || "INVALID LOGIN CREDENTIALS"}`);
       }
     } catch (err) {
-       localStorage.setItem("disappear_session", "active");
-       localStorage.setItem("disappear_user_id", "user_mike803");
-       setCurrentUserId("user_mike803");
-       window.location.hash = "vault";
-       setShow2FA(false);
-       setShowLanding(false);
-       setShowShield(true);
-       setProgress(100);
-       triggerToast("WELCOME BACK, MIKE");
-       syncDefenseData();
+      triggerToast("NETWORK ERROR DURING AUTHENTICATION");
     }
   };
 
