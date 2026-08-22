@@ -2391,18 +2391,6 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
                                 if r.get("email", "").lower() == user_email.lower():
                                     recipient_id = r.get("id")
                                     break
-                        if not recipient_id:
-                            try:
-                                new_rec = await client.post(
-                                    "https://app.addy.io/api/v1/recipients",
-                                    headers=headers,
-                                    json={"email": user_email}
-                                )
-                                if new_rec.status_code < 400:
-                                    recipient_id = new_rec.json().get("data", {}).get("id")
-                            except Exception as ex:
-                                logger.warning(f"Addy recipient creation skipped: {ex}")
-
                     alias_payload = {
                         "description": f"Disappear Vault - {alias_req.label}",
                         "format": "random_characters",
