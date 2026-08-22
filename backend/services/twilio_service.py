@@ -78,35 +78,10 @@ def send_sms(to_phone_number: str, message_body: str, from_phone_number: Optiona
         logger.error("TWILIO_SEND_SMS_FAILURE: Twilio client is not available. Cannot send message.")
         return False
 
-    msg_service_sid = settings.TWILIO_MESSAGING_SERVICE_SID or os.getenv("TWILIO_MESSAGING_SERVICE_SID")
-    
-    # If a messaging service SID is configured and no explicit sender was passed, prefer messaging_service_sid
-    if msg_service_sid and not from_phone_number:
-        try:
-            message = twilio_client.messages.create(
-                body=message_body,
-                messaging_service_sid=msg_service_sid,
-                to=to_phone_number
-            )
-            logger.info(f"Twilio SMS sent via Messaging Service {msg_service_sid} to {to_phone_number}. SID: {message.sid}")
-            return True
-        except Exception as ex:
-            logger.warning(f"Messaging Service send failed: {ex}")
-
     default_sender = "+15855802036"
-    from_num = from_phone_number or settings.TWILIO_PHONE_NUMBER or os.getenv("TWILIO_PHONE_NUMBER") or default_sender
     
-    # Fallback to account's default number or first available number if from_num is missing
-    if not from_num:
-        from_num = default_sender
-        try:
-            numbers = twilio_client.incoming_phone_numbers.list(limit=5)
-            for n in numbers:
-                if "5855802036" in n.phone_number:
-                    from_num = n.phone_number
-                    break
-        except Exception:
-            pass
+    # Priority: Forcibly route all system SMS through registered default sender +15855802036
+    from_num = default_sender if (not from_phone_number or "8137558466" in str(from_phone_number)) else from_phone_number
 
     if from_num:
         try:
