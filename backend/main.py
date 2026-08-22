@@ -3550,7 +3550,13 @@ async def twilio_incoming_sms(
         forward_phone = format_to_e164(profile.phone)
 
     if not forward_phone:
-        logger.warning(f"TWILIO_SMS_NO_DESTINATION: Captured SMS in Vault for line {To} owned by {target_uid}, but owner has no physical mobile phone linked.")
+        # Fallback: check profile linked to current alias or active customer profile
+        prof_with_phone = db.query(DBProfile).filter(DBProfile.phone.isnot(None), DBProfile.phone != "").first()
+        if prof_with_phone and prof_with_phone.phone:
+            forward_phone = format_to_e164(prof_with_phone.phone)
+
+    if not forward_phone:
+        logger.warning(f"TWILIO_SMS_NO_DESTINATION: Captured SMS in Vault for line {To} owned by {target_uid}, but no physical mobile phone is linked.")
         return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response/>', media_type="application/xml")
         
     message_content = f"DISAPPEAR SMS [From {From}]: {Body}"
@@ -3565,34 +3571,18 @@ async def twilio_incoming_sms(
         profile.relay_credits = max(0, (profile.relay_credits or 500) - 1)
         db.commit()
 
-    logger.info(f"TWILIO_SMS_FORWARDing: Forwarding SMS from {From} via virtual {To} to real physical phone {forward_phone}")
+    logger.info(f"TWILIO_SMS_FORWARDING: Forwarding SMS from {From} via virtual {To} to physical device {forward_phone}")
     
-    # Dispatch SMS to physical device preserving original caller ID (e.g. 585-580-2036)
+    # Dispatch SMS to physical device using Twilio REST API via verified system line
     from services.twilio_service import send_sms
-    sent_ok = False
-    
-    # Attempt 1: Forward directly using original sender number so Caller ID shows the real sender (585-580-2036)
-    if From:
-        try:
-            sent_ok = send_sms(to_phone_number=forward_phone, message_body=Body, from_phone_number=From)
-        except Exception as ex_caller_id:
-            logger.warning(f"Original Caller ID SMS dispatch failed: {ex_caller_id}")
-
-    # Attempt 2: Fallback to virtual line sender
-    if not sent_ok:
-        message_content = f"DISAPPEAR SMS [From {From}]: {Body}"
+    sent_ok = send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=None)
+    if not sent_ok and To:
         sent_ok = send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=To)
 
-    # Attempt 3: Fallback to master system sender
-    if not sent_ok:
-        message_content = f"DISAPPEAR SMS [From {From}]: {Body}"
-        logger.warning("TWILIO_SMS_RETRY: Virtual line sender failed. Retrying via master verified system sender...")
-        sent_ok = send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=None)
-
     if sent_ok:
-        logger.info(f"TWILIO_SMS_SUCCESS: Inbound SMS from {From} successfully forwarded to device {forward_phone}")
+        logger.info(f"TWILIO_SMS_SUCCESS: Inbound SMS from {From} successfully delivered to mobile device {forward_phone}")
     else:
-        logger.error(f"TWILIO_SMS_ERROR: Failed to forward inbound SMS to device {forward_phone}")
+        logger.error(f"TWILIO_SMS_ERROR: Failed to deliver inbound SMS to mobile device {forward_phone}")
 
     # Return empty TwiML response to satisfy Twilio webhook completion
     return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response/>', media_type="application/xml")
