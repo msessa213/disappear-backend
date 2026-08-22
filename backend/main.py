@@ -1374,6 +1374,99 @@ async def delete_profile_by_email(email: str = Query(...), db: Session = Depends
     return {"status": "SUCCESS", "message": f"Deleted {count} profile(s) for email {email}"}
 
 
+@app.get("/admin/ops/user-report")
+async def get_user_activity_report(
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    status: Optional[str] = Query("ALL"),
+    search: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    admin_key: str = Depends(verify_admin_token)
+):
+    """Admin Endpoint: Generate filtered user activity & diagnostic report by date range"""
+    query = db.query(DBProfile)
+
+    # Date Range Filtering
+    if start_date:
+        try:
+            s_dt = datetime.strptime(start_date.split("T")[0], "%Y-%m-%d")
+            query = query.filter(DBProfile.created_at >= s_dt)
+        except Exception:
+            pass
+
+    if end_date:
+        try:
+            e_dt = datetime.strptime(end_date.split("T")[0], "%Y-%m-%d") + timedelta(days=1)
+            query = query.filter(DBProfile.created_at < e_dt)
+        except Exception:
+            pass
+
+    # Status Filtering
+    if status and status.upper() != "ALL":
+        st_clean = status.upper()
+        if st_clean in ["APPROVED", "PAID"]:
+            query = query.filter(DBProfile.kyc_status == "APPROVED")
+        elif st_clean in ["UNPAID", "PENDING"]:
+            query = query.filter(DBProfile.kyc_status != "APPROVED")
+        elif st_clean == "AML_FLAGGED":
+            query = query.filter(DBProfile.aml_flagged == True)
+
+    # Search Query Filtering
+    if search and search.strip():
+        q_term = f"%{search.strip()}%"
+        query = query.filter(
+            or_(
+                DBProfile.email.ilike(q_term),
+                DBProfile.id.ilike(q_term),
+                DBProfile.phone.ilike(q_term),
+                DBProfile.first_name.ilike(q_term),
+                DBProfile.last_name.ilike(q_term)
+            )
+        )
+
+    profiles = query.order_by(DBProfile.created_at.desc()).all()
+
+    report = []
+    for p in profiles:
+        aliases = db.query(DBAlias).filter(DBAlias.user_id == p.id).all()
+        email_aliases = [a.content for a in aliases if a.type == "email" and a.content]
+        phone_aliases = [a.content for a in aliases if a.type == "phone" and a.content]
+
+        scrub_logs = db.query(DBScrubLog).filter(DBScrubLog.user_id == p.id).all()
+        total_scrubs = len(scrub_logs)
+        removed_scrubs = len([s for s in scrub_logs if s.status == "REMOVED"])
+        pending_scrubs = len([s for s in scrub_logs if s.status != "REMOVED"])
+
+        report.append({
+            "user_id": p.id,
+            "email": p.email,
+            "first_name": p.first_name or "",
+            "last_name": p.last_name or "",
+            "phone": p.phone or "",
+            "kyc_status": p.kyc_status or "UNPAID",
+            "aml_flagged": bool(p.aml_flagged),
+            "relay_credits": p.relay_credits if p.relay_credits is not None else 500,
+            "created_at": p.created_at.isoformat() + "Z" if p.created_at else "",
+            "email_aliases": email_aliases,
+            "phone_aliases": phone_aliases,
+            "total_scrubs": total_scrubs,
+            "removed_scrubs": removed_scrubs,
+            "pending_scrubs": pending_scrubs
+        })
+
+    return {
+        "status": "SUCCESS",
+        "total_users": len(report),
+        "filters": {
+            "start_date": start_date,
+            "end_date": end_date,
+            "status": status,
+            "search": search
+        },
+        "users": report
+    }
+
+
 class AssignPhoneRequest(BaseModel):
     email: str
     phone_number: str

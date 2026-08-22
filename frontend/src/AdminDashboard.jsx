@@ -20,6 +20,101 @@ export default function AdminDashboard({ API_BASE_URL }) {
   const [newDuration, setNewDuration] = useState("permanent");
   const [couponStatusMsg, setCouponStatusMsg] = useState("");
 
+  // --- USER ACTIVITY & DIAGNOSTIC REPORTING STATES ---
+  const [reportStartDate, setReportStartDate] = useState("");
+  const [reportEndDate, setReportEndDate] = useState("");
+  const [reportStatusFilter, setReportStatusFilter] = useState("ALL");
+  const [reportSearchTerm, setReportSearchTerm] = useState("");
+  const [userReportData, setUserReportData] = useState([]);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [reportStatusMsg, setReportStatusMsg] = useState("");
+
+  const setReportDatePreset = (days) => {
+    const today = new Date();
+    const endStr = today.toISOString().split('T')[0];
+    if (days === 0) {
+      setReportStartDate(endStr);
+      setReportEndDate(endStr);
+    } else if (days > 0) {
+      const past = new Date(today.getTime() - days * 24 * 60 * 60 * 1000);
+      setReportStartDate(past.toISOString().split('T')[0]);
+      setReportEndDate(endStr);
+    } else {
+      setReportStartDate("");
+      setReportEndDate("");
+    }
+  };
+
+  const handleGenerateUserReport = async (e) => {
+    if (e) e.preventDefault();
+    const keyToUse = cleanHeaderKey(adminKey);
+    if (!keyToUse) {
+      setReportStatusMsg("❌ ADMIN SECRET KEY REQUIRED TO GENERATE REPORTS.");
+      return;
+    }
+
+    setIsGeneratingReport(true);
+    setReportStatusMsg("");
+    try {
+      const params = new URLSearchParams();
+      if (reportStartDate) params.append("start_date", reportStartDate);
+      if (reportEndDate) params.append("end_date", reportEndDate);
+      if (reportStatusFilter) params.append("status", reportStatusFilter);
+      if (reportSearchTerm.trim()) params.append("search", reportSearchTerm.trim());
+
+      const res = await fetch(`${API_BASE_URL}/admin/ops/user-report?${params.toString()}`, {
+        headers: { "X-Disappear-Admin-Key": keyToUse }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUserReportData(data.users || []);
+        setReportStatusMsg(`✅ REPORT GENERATED: ${data.total_users || 0} USER RECORD(S) FOUND.`);
+      } else {
+        const err = await res.json();
+        setReportStatusMsg(`❌ REPORT FAILED: ${err.detail || 'UNABLE TO GENERATE REPORT'}`);
+      }
+    } catch (err) {
+      console.error("User report error", err);
+      setReportStatusMsg("❌ NETWORK ERROR GENERATING USER REPORT.");
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
+  const handleExportReportCsv = () => {
+    if (!userReportData || userReportData.length === 0) {
+      alert("No report data available to export. Please generate a report first.");
+      return;
+    }
+
+    const headers = ["User ID", "Registration Date", "First Name", "Last Name", "Email", "Phone", "KYC Status", "Email Aliases", "Phone Aliases", "Relay Credits", "Total Scrubs", "Removed Scrubs", "Pending Scrubs"];
+    const rows = userReportData.map(u => [
+      `"${u.user_id || ''}"`,
+      `"${u.created_at || ''}"`,
+      `"${u.first_name || ''}"`,
+      `"${u.last_name || ''}"`,
+      `"${u.email || ''}"`,
+      `"${u.phone || ''}"`,
+      `"${u.kyc_status || 'UNPAID'}"`,
+      `"${(u.email_aliases || []).join(' ; ')}"`,
+      `"${(u.phone_aliases || []).join(' ; ')}"`,
+      `"${u.relay_credits !== undefined ? u.relay_credits : 500}"`,
+      `"${u.total_scrubs || 0}"`,
+      `"${u.removed_scrubs || 0}"`,
+      `"${u.pending_scrubs || 0}"`
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    const dateStamp = new Date().toISOString().split('T')[0];
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Disappear_User_Activity_Report_${dateStamp}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const [copiedTaskId, setCopiedTaskId] = useState(null);
 
   const handleCopyListingUrl = (taskId, url) => {
@@ -395,6 +490,179 @@ export default function AdminDashboard({ API_BASE_URL }) {
             🚪 LOGOUT
           </button>
         </div>
+      </div>
+
+      {/* --- USER ACTIVITY & DIAGNOSTIC REPORTING PANEL --- */}
+      <div className="pricing-card" style={{ marginBottom: '30px', border: '1px solid #00D2FF', background: 'rgba(5, 10, 20, 0.95)', padding: '24px', borderRadius: '12px', textAlign: 'left' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.15rem' }}>📊 USER ACTIVITY & DIAGNOSTIC REPORTING</h3>
+            <p style={{ color: '#94A3B8', fontSize: '0.8rem', margin: '4px 0 0 0' }}>
+              Pull custom user registration reports by date range, account status, or search query to identify and diagnose operational issues.
+            </p>
+          </div>
+          {userReportData.length > 0 && (
+            <button 
+              type="button" 
+              className="reset-btn" 
+              style={{ padding: '8px 16px', fontSize: '0.8rem', borderColor: '#10B981', color: '#34d399', fontWeight: 'bold' }}
+              onClick={handleExportReportCsv}
+            >
+              📥 EXPORT REPORT (CSV)
+            </button>
+          )}
+        </div>
+
+        {reportStatusMsg && (
+          <div style={{ padding: '10px 14px', borderRadius: '6px', fontSize: '0.85rem', marginBottom: '15px', background: reportStatusMsg.startsWith('✅') ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', border: `1px solid ${reportStatusMsg.startsWith('✅') ? '#10b981' : '#ef4444'}`, color: reportStatusMsg.startsWith('✅') ? '#34d399' : '#ff6b6b' }}>
+            {reportStatusMsg}
+          </div>
+        )}
+
+        {/* Filter Controls Form */}
+        <form onSubmit={handleGenerateUserReport} style={{ background: 'rgba(0,0,0,0.4)', padding: '18px', borderRadius: '8px', border: '1px solid rgba(0,210,255,0.2)', marginBottom: '20px' }}>
+          
+          {/* Quick Date Range Presets */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.75rem', color: '#00D2FF', fontWeight: 'bold' }}>QUICK PRESETS:</span>
+            <button type="button" className="reset-btn" style={{ padding: '3px 10px', fontSize: '0.72rem' }} onClick={() => setReportDatePreset(0)}>TODAY</button>
+            <button type="button" className="reset-btn" style={{ padding: '3px 10px', fontSize: '0.72rem' }} onClick={() => setReportDatePreset(7)}>LAST 7 DAYS</button>
+            <button type="button" className="reset-btn" style={{ padding: '3px 10px', fontSize: '0.72rem' }} onClick={() => setReportDatePreset(30)}>LAST 30 DAYS</button>
+            <button type="button" className="reset-btn" style={{ padding: '3px 10px', fontSize: '0.72rem' }} onClick={() => setReportDatePreset(-1)}>ALL TIME</button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '15px', alignItems: 'flex-end' }}>
+            <div>
+              <label style={{ fontSize: '0.75rem', color: '#94A3B8', marginBottom: '6px', display: 'block', fontWeight: 'bold' }}>START DATE</label>
+              <input
+                type="date"
+                className="mask-btn"
+                value={reportStartDate}
+                onChange={(e) => setReportStartDate(e.target.value)}
+                style={{ width: '100%', padding: '8px 10px', fontSize: '0.82rem', background: '#020617', border: '1px solid #1e293b', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.75rem', color: '#94A3B8', marginBottom: '6px', display: 'block', fontWeight: 'bold' }}>END DATE</label>
+              <input
+                type="date"
+                className="mask-btn"
+                value={reportEndDate}
+                onChange={(e) => setReportEndDate(e.target.value)}
+                style={{ width: '100%', padding: '8px 10px', fontSize: '0.82rem', background: '#020617', border: '1px solid #1e293b', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.75rem', color: '#94A3B8', marginBottom: '6px', display: 'block', fontWeight: 'bold' }}>ACCOUNT STATUS</label>
+              <select
+                className="mask-btn"
+                value={reportStatusFilter}
+                onChange={(e) => setReportStatusFilter(e.target.value)}
+                style={{ width: '100%', padding: '8px 10px', fontSize: '0.82rem', background: '#020617', border: '1px solid #1e293b', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' }}
+              >
+                <option value="ALL">ALL USERS</option>
+                <option value="APPROVED">APPROVED (PAID)</option>
+                <option value="UNPAID">UNPAID / PENDING</option>
+                <option value="AML_FLAGGED">AML FLAGGED</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.75rem', color: '#94A3B8', marginBottom: '6px', display: 'block', fontWeight: 'bold' }}>SEARCH (EMAIL / ID / PHONE)</label>
+              <input
+                type="text"
+                placeholder="Search query..."
+                className="mask-btn"
+                value={reportSearchTerm}
+                onChange={(e) => setReportSearchTerm(e.target.value)}
+                style={{ width: '100%', padding: '8px 10px', fontSize: '0.82rem', background: '#020617', border: '1px solid #1e293b', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                className="main-button"
+                style={{ width: '100%', padding: '10px', fontSize: '0.82rem', background: 'linear-gradient(135deg, #0047AB, #00D2FF)' }}
+                disabled={isGeneratingReport}
+              >
+                {isGeneratingReport ? "GENERATING..." : "📊 PULL USER REPORT"}
+              </button>
+            </div>
+          </div>
+        </form>
+
+        {/* User Activity Report Data Table */}
+        {userReportData.length > 0 && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <h4 style={{ color: '#00D2FF', fontSize: '0.9rem', margin: 0 }}>
+                📋 USER ACTIVITY REPORT ({userReportData.length} RECORDS)
+              </h4>
+            </div>
+
+            <div style={{ overflowX: 'auto', border: '1px solid #1e293b', borderRadius: '6px', maxHeight: '420px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ background: '#090d16', borderBottom: '1px solid #1e293b', color: '#00D2FF' }}>
+                    <th style={{ padding: '10px' }}>REG DATE</th>
+                    <th style={{ padding: '10px' }}>USER ID / NAME</th>
+                    <th style={{ padding: '10px' }}>EMAIL & PHONE</th>
+                    <th style={{ padding: '10px' }}>STATUS</th>
+                    <th style={{ padding: '10px' }}>EMAIL ALIASES</th>
+                    <th style={{ padding: '10px' }}>PHONE ALIASES</th>
+                    <th style={{ padding: '10px' }}>SCRUBS (DONE/TOTAL)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {userReportData.map((u, idx) => (
+                    <tr key={u.user_id || idx} style={{ borderBottom: '1px solid #0f172a', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
+                      <td style={{ padding: '10px', color: '#94A3B8', whiteSpace: 'nowrap' }}>
+                        {u.created_at ? u.created_at.split('T')[0] : 'N/A'}
+                      </td>
+                      <td style={{ padding: '10px' }}>
+                        <div style={{ fontWeight: 'bold', color: '#FFFFFF' }}>{u.user_id}</div>
+                        <div style={{ color: '#94A3B8', fontSize: '0.72rem' }}>{u.first_name} {u.last_name}</div>
+                      </td>
+                      <td style={{ padding: '10px' }}>
+                        <div style={{ color: '#00D2FF' }}>{u.email}</div>
+                        <div style={{ color: '#10B981', fontSize: '0.72rem' }}>{u.phone || 'No phone'}</div>
+                      </td>
+                      <td style={{ padding: '10px' }}>
+                        <span style={{
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          fontSize: '0.7rem',
+                          fontWeight: 'bold',
+                          background: u.kyc_status === 'APPROVED' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                          border: `1px solid ${u.kyc_status === 'APPROVED' ? '#10b981' : '#F59E0B'}`,
+                          color: u.kyc_status === 'APPROVED' ? '#34d399' : '#FCD34D'
+                        }}>
+                          {u.kyc_status}
+                        </span>
+                      </td>
+                      <td style={{ padding: '10px', color: '#CBD5E1' }}>
+                        {(u.email_aliases && u.email_aliases.length > 0) ? u.email_aliases.map(ea => (
+                          <div key={ea} style={{ fontSize: '0.72rem', fontFamily: 'monospace' }}>{ea}</div>
+                        )) : <span style={{ color: '#64748B' }}>None</span>}
+                      </td>
+                      <td style={{ padding: '10px', color: '#CBD5E1' }}>
+                        {(u.phone_aliases && u.phone_aliases.length > 0) ? u.phone_aliases.map(pa => (
+                          <div key={pa} style={{ fontSize: '0.72rem', fontFamily: 'monospace' }}>{pa}</div>
+                        )) : <span style={{ color: '#64748B' }}>None</span>}
+                      </td>
+                      <td style={{ padding: '10px', color: '#CBD5E1' }}>
+                        <span style={{ color: '#10B981', fontWeight: 'bold' }}>{u.removed_scrubs}</span> / {u.total_scrubs}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* --- COUPON MANAGEMENT PANEL --- */}
