@@ -514,33 +514,27 @@ class CreditRefillRequest(BaseModel):
 @limiter.limit("20/minute")
 async def login_agent(request: Request, login_req: LoginRequest, db: Session = Depends(get_db)):
     """Authenticates an agent via email and password to sync their specific profile to the app"""
-    clean_email = login_req.email.strip().lower() if login_req and login_req.email else "mike803@verizon.net"
+    if not login_req or not login_req.email or not login_req.email.strip():
+        raise HTTPException(status_code=400, detail="EMAIL_REQUIRED")
+
+    clean_email = login_req.email.strip().lower()
     
     profile = db.query(DBProfile).filter(DBProfile.email.ilike(clean_email)).first()
     if not profile:
-        profile = db.query(DBProfile).filter(DBProfile.email.ilike("mike803@verizon.net")).first()
-        
-    if not profile:
-        profile = DBProfile(
-            id="user_mike803",
-            email="mike803@verizon.net",
-            first_name="Michael",
-            last_name="Sessa",
-            phone="+18138105237",
-            password_hash=hash_password(login_req.password if login_req and login_req.password else "password123")
-        )
-        db.add(profile)
-        db.commit()
-        db.refresh(profile)
-    else:
-        if login_req and login_req.password:
+        raise HTTPException(status_code=404, detail="ACCOUNT_NOT_FOUND")
+
+    if login_req.password:
+        if profile.password_hash:
+            if not verify_password(login_req.password, profile.password_hash):
+                raise HTTPException(status_code=400, detail="INVALID_PASSWORD")
+        else:
             profile.password_hash = hash_password(login_req.password)
             db.commit()
 
     return {
         "status": "AUTHORIZED",
         "user_id": profile.id,
-        "first_name": profile.first_name or "Michael",
+        "first_name": profile.first_name or "Agent",
         "email": profile.email
     }
 
@@ -1303,7 +1297,7 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
         except Exception:
             profile = None
     if not profile:
-        profile = db.query(DBProfile).filter(DBProfile.email.ilike("mike803@verizon.net")).first()
+        profile = None
 
     if not profile:
         return {
