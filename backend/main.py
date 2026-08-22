@@ -662,6 +662,7 @@ def handle_forgot_password(req: ForgotPasswordRequest, db: Session):
 
 
 @app.post("/auth/send-reset-code")
+@app.post("/api/v1/auth/send-reset-code")
 @limiter.limit("10/minute")
 async def send_reset_code(request: Request, req: SendResetCodeRequest, db: Session = Depends(get_db)):
     """Generates a 6-digit SMS verification code and texts it to the registered user's phone"""
@@ -706,6 +707,7 @@ async def send_reset_code(request: Request, req: SendResetCodeRequest, db: Sessi
 
 
 @app.post("/auth/verify-reset-code-and-change-password")
+@app.post("/api/v1/auth/verify-reset-code-and-change-password")
 @limiter.limit("10/minute")
 async def verify_code_and_change_password(request: Request, req: VerifyResetCodeRequest, db: Session = Depends(get_db)):
     """Verifies the 6-digit SMS verification code and updates the account password"""
