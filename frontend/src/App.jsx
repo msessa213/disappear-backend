@@ -191,6 +191,8 @@ function App() {
       dob: "", address: "", city: "", state: "", zip: "", termsAccepted: false, smsConsentAccepted: false
   });
 
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
+
   const [billingCycle, setBillingCycle] = useState("monthly");
   const [couponInput, setCouponInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState(null);
@@ -523,6 +525,7 @@ function App() {
       setLoginEmail("");
       setLoginPassword("");
       setLogin2FACode("");
+      setSignupConfirmPassword("");
       setTargetProfile({
         firstName: "",
         middleName: "",
@@ -1504,6 +1507,7 @@ const handleEmergencyBurn = async () => {
     if (!targetProfile.lastName) missing.push("Last Name");
     if (!targetProfile.email) missing.push("Email Address");
     if (!targetProfile.password) missing.push("Password");
+    if (!signupConfirmPassword) missing.push("Confirm Password");
     if (!targetProfile.phone) missing.push("Phone Number");
     if (!targetProfile.address) missing.push("Street Address");
     if (!targetProfile.city) missing.push("City");
@@ -1512,6 +1516,11 @@ const handleEmergencyBurn = async () => {
 
     if (missing.length > 0) {
       triggerToast(`⚠️ PLEASE COMPLETE: ${missing.slice(0, 3).join(", ")}${missing.length > 3 ? "..." : ""}`);
+      return;
+    }
+
+    if (targetProfile.password !== signupConfirmPassword) {
+      triggerToast("⚠️ PASSWORDS DO NOT MATCH! PLEASE VERIFY BOTH PASSWORD FIELDS");
       return;
     }
 
@@ -2848,7 +2857,8 @@ const handleEmergencyBurn = async () => {
                             <input className="mask-btn" placeholder="Middle Name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
                             <input className="mask-btn full-row" placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
                             <input type="email" name="disappear_signup_email_clean" autoComplete="off" data-lpignore="true" className="mask-btn full-row" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
-                            <input type="password" name="disappear_signup_password_clean" autoComplete="new-password" data-lpignore="true" className="mask-btn full-row" placeholder="Account Password" value={targetProfile.password} onChange={(e) => setTargetProfile({...targetProfile, password: e.target.value})} />
+                            <input type="password" name="disappear_signup_password_clean" autoComplete="new-password" data-lpignore="true" className="mask-btn full-row" placeholder="Account Password (min 6 characters)" value={targetProfile.password} onChange={(e) => setTargetProfile({...targetProfile, password: e.target.value})} />
+                            <input type="password" name="disappear_signup_confirm_password_clean" autoComplete="new-password" data-lpignore="true" className="mask-btn full-row" placeholder="Confirm Account Password" value={signupConfirmPassword} onChange={(e) => setSignupConfirmPassword(e.target.value)} />
                             <input className="mask-btn full-row" placeholder="Real Phone Number (For SMS Forwarding)" value={targetProfile.phone} onChange={(e) => setTargetProfile({...targetProfile, phone: e.target.value})} />
                             <input ref={addressRef} className="mask-btn full-row" placeholder="Street Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
                             <input className="mask-btn" placeholder="City" value={targetProfile.city} onChange={(e) => setTargetProfile({...targetProfile, city: e.target.value})} />
