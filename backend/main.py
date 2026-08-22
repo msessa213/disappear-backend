@@ -2422,10 +2422,10 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
             except Exception as e:
                 logger.warning(f"ADDY_IO_MINT_WARNING: {str(e)}, generating encrypted local alias.")
         
-        # Local fallback if Addy is unavailable
+        # Clean short 6-character @anonaddy.me format
         if not content:
-            rand_suffix = secrets.token_hex(4)
-            content = f"shield_{rand_suffix}@disappearco.com"
+            short_code = secrets.token_hex(3)
+            content = f"{short_code}@anonaddy.me"
     else:
         # Provision real Twilio phone number
         from services.twilio_service import provision_phone_number
