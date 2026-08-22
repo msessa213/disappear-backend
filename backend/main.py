@@ -306,9 +306,8 @@ safe_add_column("scrub_logs_v1", "target_listing_url", "VARCHAR")
 # Clean profile for maryannctampa@aol.com for clean fresh signup
 try:
     with engine.connect() as conn:
-        conn.execute(text("DELETE FROM shield_profiles_v3 WHERE LOWER(email) = 'maryannctampa@aol.com'"))
+        conn.execute(text("DELETE FROM shield_profiles_v3 WHERE LOWER(email) = 'maryannctampa@aol.com' AND (kyc_status IS NULL OR kyc_status = 'UNPAID')"))
         conn.commit()
-        logger.info("CLEANUP: Successfully deleted old profile for maryannctampa@aol.com")
 except Exception as ex:
     logger.warning(f"Draft profile cleanup: {ex}")
 
