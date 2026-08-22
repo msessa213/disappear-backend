@@ -3567,11 +3567,26 @@ async def twilio_incoming_sms(
 
     logger.info(f"TWILIO_SMS_FORWARDing: Forwarding SMS from {From} via virtual {To} to real physical phone {forward_phone}")
     
-    # Dispatch SMS to physical device using Twilio REST API
+    # Dispatch SMS to physical device preserving original caller ID (e.g. 585-580-2036)
     from services.twilio_service import send_sms
-    sent_ok = send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=To)
+    sent_ok = False
+    
+    # Attempt 1: Forward directly using original sender number so Caller ID shows the real sender (585-580-2036)
+    if From:
+        try:
+            sent_ok = send_sms(to_phone_number=forward_phone, message_body=Body, from_phone_number=From)
+        except Exception as ex_caller_id:
+            logger.warning(f"Original Caller ID SMS dispatch failed: {ex_caller_id}")
+
+    # Attempt 2: Fallback to virtual line sender
     if not sent_ok:
-        logger.warning(f"TWILIO_SMS_RETRY: Primary virtual line sender failed. Retrying via master verified system sender...")
+        message_content = f"DISAPPEAR SMS [From {From}]: {Body}"
+        sent_ok = send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=To)
+
+    # Attempt 3: Fallback to master system sender
+    if not sent_ok:
+        message_content = f"DISAPPEAR SMS [From {From}]: {Body}"
+        logger.warning("TWILIO_SMS_RETRY: Virtual line sender failed. Retrying via master verified system sender...")
         sent_ok = send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=None)
 
     if sent_ok:
