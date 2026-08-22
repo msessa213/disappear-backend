@@ -174,6 +174,11 @@ function App() {
   const [confirmPasswordInput, setConfirmPasswordInput] = useState("");
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
+  const [addyRecipientStatus, setAddyRecipientStatus] = useState(null);
+  const [addyRecipientEmail, setAddyRecipientEmail] = useState("");
+  const [isCheckingAddyStatus, setIsCheckingAddyStatus] = useState(false);
+  const [isResendingAddyVerification, setIsResendingAddyVerification] = useState(false);
+
   const [relayCredits, setRelayCredits] = useState(500);
   const [relayCreditsTotal, setRelayCreditsTotal] = useState(500);
   const [isRefillingCredits, setIsRefillingCredits] = useState(false);
@@ -1258,7 +1263,55 @@ function App() {
     } catch (err) { triggerToast("UPLINK FAILURE"); }
   };
 
-  const handleMintAlias = async (type) => {
+  const checkAddyRecipientStatus = async (showToastNotice = false) => {
+    const activeUserId = currentUserId || getSessionItem("disappear_user_id");
+    if (!activeUserId) return;
+    setIsCheckingAddyStatus(true);
+    try {
+      const res = await secureRequest(`${API_BASE_URL}/aliases/recipient-status?user_id=${activeUserId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAddyRecipientStatus(data.status || (data.verified ? "VERIFIED" : "PENDING_VERIFICATION"));
+        setAddyRecipientEmail(data.email || "");
+        if (showToastNotice) {
+          if (data.verified) {
+            triggerToast("✅ EMAIL RECIPIENT VERIFIED & ACTIVE!");
+          } else {
+            triggerToast("⚠️ EMAIL VERIFICATION PENDING — CHECK INBOX/SPAM");
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed checking Addy recipient status:", err);
+    } finally {
+      setIsCheckingAddyStatus(false);
+    }
+  };
+
+  const handleResendAddyVerification = async () => {
+    const activeUserId = currentUserId || getSessionItem("disappear_user_id");
+    if (!activeUserId) return;
+    setIsResendingAddyVerification(true);
+    triggerToast("DISPATCHING FRESH VERIFICATION LINK...");
+    try {
+      const res = await secureRequest(`${API_BASE_URL}/aliases/resend-recipient-verification?user_id=${activeUserId}`, {
+        method: "POST"
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("✅ FRESH VERIFICATION LINK SENT! CHECK YOUR INBOX & SPAM");
+        checkAddyRecipientStatus(false);
+      } else {
+        triggerToast(`❌ ${data.detail || "FAILED TO RESEND LINK"}`);
+      }
+    } catch (err) {
+      triggerToast("NETWORK ERROR RESENDING VERIFICATION");
+    } finally {
+      setIsResendingAddyVerification(false);
+    }
+  };
+
+  const handleMintAlias = async (type = 'email') => {
     if (!aliasLabel) { triggerToast("ENTER LABEL"); return; }
     
     setPurgeStatus(`ENCRYPTING ${type.toUpperCase()}...`);
@@ -1975,6 +2028,47 @@ const handleEmergencyBurn = async () => {
               <div className="price-box" onClick={e => e.stopPropagation()}>
                 <h3 className="tiger-text">GENERATE {showEmailModal ? 'EMAIL' : 'PHONE'} ALIAS</h3>
                 
+                {showEmailModal && addyRecipientStatus === "PENDING_VERIFICATION" && (
+                  <div style={{
+                    fontSize: '0.82rem',
+                    color: '#F59E0B',
+                    background: 'rgba(245, 158, 11, 0.12)',
+                    border: '1px solid rgba(245, 158, 11, 0.5)',
+                    padding: '14px',
+                    borderRadius: '10px',
+                    marginBottom: '18px',
+                    textAlign: 'left',
+                    lineHeight: '1.45'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', fontWeight: 'bold', color: '#FCD34D', fontSize: '0.9rem' }}>
+                      ⚠️ EMAIL VERIFICATION REQUIRED FROM ADDY.IO
+                    </div>
+                    <p style={{ margin: '0 0 10px 0', color: '#E2E8F0', fontSize: '0.8rem' }}>
+                      Your destination email <strong>{addyRecipientEmail || "on file"}</strong> has not verified Addy.io forwarding permissions yet. Please check your inbox & Spam/Junk folder for an email from <code>noreply@addy.io</code> and click <em>Verify Email Address</em>.
+                    </p>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button 
+                        type="button" 
+                        className="main-button" 
+                        style={{ padding: '6px 12px', fontSize: '0.72rem', background: 'linear-gradient(135deg, #F59E0B, #D97706)' }}
+                        onClick={handleResendAddyVerification}
+                        disabled={isResendingAddyVerification}
+                      >
+                        {isResendingAddyVerification ? "SENDING..." : "📩 RESEND VERIFICATION EMAIL"}
+                      </button>
+                      <button 
+                        type="button" 
+                        className="reset-btn" 
+                        style={{ padding: '6px 12px', fontSize: '0.72rem', borderColor: '#F59E0B', color: '#FCD34D' }}
+                        onClick={() => checkAddyRecipientStatus(true)}
+                        disabled={isCheckingAddyStatus}
+                      >
+                        {isCheckingAddyStatus ? "CHECKING..." : "🔄 RE-CHECK STATUS"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {showEmailModal && (
                   <div style={{ fontSize: '0.75rem', color: '#00D2FF', background: 'rgba(0, 71, 171, 0.2)', border: '1px solid rgba(0, 210, 255, 0.3)', padding: '10px 12px', borderRadius: '8px', marginBottom: '15px', textAlign: 'left', lineHeight: '1.4' }}>
                     💡 <strong>VERIFICATION NOTE:</strong> Clicking your email verification link authorizes forwarding. If prompted on the verification page, <u>you do not need to log into Addy.io</u>—simply close that tab and return to Disappear!
@@ -2206,7 +2300,7 @@ const handleEmergencyBurn = async () => {
                       </div>
                     ))}
                   </div>
-                  <button className="reset-btn" style={{marginTop: '15px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowEmailModal(true)}> + GENERATE EMAIL ALIAS </button>
+                  <button className="reset-btn" style={{marginTop: '15px', width: '100%', borderStyle: 'dashed'}} onClick={() => { setShowEmailModal(true); checkAddyRecipientStatus(false); }}> + GENERATE EMAIL ALIAS </button>
                 </div>
 
                 {/* --- RELAY SHIELD CREDITS METER CARD --- */}
