@@ -1399,10 +1399,11 @@ const handleEmergencyBurn = async () => {
     }
     triggerToast("AUTHENTICATING...");
     try {
+      const savedRefCode = localStorage.getItem("disappear_referral_code") || "";
       const res = await secureRequest(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailToUse, password: passwordToUse })
+        body: JSON.stringify({ email: emailToUse, password: passwordToUse, referral_code: savedRefCode })
       });
       if (res.ok) {
         const data = await res.json();

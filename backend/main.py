@@ -442,6 +442,7 @@ class LoginRequest(BaseModel):
     email: str
     password: Optional[str] = None
     code: Optional[str] = None
+    referral_code: Optional[str] = None
 
 
 class TargetEmailRequest(BaseModel):
@@ -547,6 +548,33 @@ async def login_agent(request: Request, login_req: LoginRequest, db: Session = D
         else:
             profile.password_hash = hash_password(login_req.password)
             db.commit()
+
+    if login_req.referral_code:
+        ref_code = login_req.referral_code.strip().upper()
+        if not profile.referred_by:
+            profile.referred_by = ref_code
+            db.commit()
+
+        referrer = db.query(DBProfile).filter(DBProfile.referral_code == ref_code).first()
+        if not referrer:
+            referrer = db.query(DBProfile).filter(DBProfile.id == ref_code).first()
+
+        if referrer and referrer.id != profile.id:
+            already_credited = db.query(DBPurgeLog).filter(
+                DBPurgeLog.action_type == "REFERRAL_CREDITED",
+                DBPurgeLog.node_id == f"REFERRED_{profile.id}"
+            ).first()
+
+            if not already_credited:
+                db.add(DBPurgeLog(
+                    action_type="REFERRAL_CREDITED",
+                    node_id=f"REFERRED_{profile.id}",
+                    timestamp=datetime.utcnow()
+                ))
+                referrer.referral_count = (referrer.referral_count or 0) + 1
+                if referrer.referral_count % 5 == 0:
+                    referrer.free_months_earned = (referrer.free_months_earned or 0) + 1
+                db.commit()
 
     return {
         "status": "AUTHORIZED",
