@@ -422,26 +422,40 @@ export default function AdminDashboard({ API_BASE_URL }) {
 
   if (!isAuthenticated) {
     return (
-      <div className="app-container" style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-        <div className="pricing-card" style={{ maxWidth: '480px', width: '100%', border: '1px solid #00D2FF' }}>
-          <h2 className="tiger-text" style={{ textAlign: 'center', marginBottom: '10px' }}>CENTRAL COMMAND ACCESS</h2>
-          <p style={{ color: '#94A3B8', fontSize: '0.85rem', textAlign: 'center', marginBottom: '25px' }}>
-            OPERATIONS ANALYST & COUPON MANAGEMENT PORTAL
-          </p>
+      <div className="app-container" style={{ minHeight: '82vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+        <div className="pricing-card" style={{ 
+          maxWidth: '520px', 
+          width: '100%', 
+          border: '1px solid #00D2FF', 
+          background: 'rgba(5, 10, 20, 0.95)', 
+          borderRadius: '14px', 
+          padding: '35px 30px', 
+          boxShadow: '0 0 35px rgba(0, 210, 255, 0.25)', 
+          textAlign: 'left' 
+        }}>
+          <div style={{ textAlign: 'center', marginBottom: '22px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(0, 71, 171, 0.25)', border: '1px solid rgba(0, 210, 255, 0.4)', padding: '4px 14px', borderRadius: '20px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '0.75rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px' }}>🔒 SECURE ACCESS GATEWAY</span>
+            </div>
+            <h2 className="tiger-text" style={{ margin: '0 0 6px 0', fontSize: '1.6rem', letterSpacing: '1px' }}>CENTRAL COMMAND ACCESS</h2>
+            <p style={{ color: '#94A3B8', fontSize: '0.82rem', margin: 0 }}>
+              USER REPORTING, COUPON & OPERATIONS COMMAND PORTAL
+            </p>
+          </div>
 
           {authError && (
-            <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#ff6b6b', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', marginBottom: '20px', textAlign: 'center' }}>
+            <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#ff6b6b', padding: '12px 16px', borderRadius: '8px', fontSize: '0.82rem', marginBottom: '22px', textAlign: 'center', lineHeight: '1.4' }}>
               {authError}
             </div>
           )}
 
-          <form onSubmit={handleAssociateLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <form onSubmit={handleAssociateLogin} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
             <div>
-              <label style={{ fontSize: '0.78rem', color: '#00D2FF', letterSpacing: '1px', display: 'block', marginBottom: '5px' }}>ANALYST / ASSOCIATE NAME</label>
+              <label style={{ fontSize: '0.78rem', color: '#00D2FF', letterSpacing: '1px', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>👤 ANALYST / ASSOCIATE NAME</label>
               <input 
                 className="mask-btn" 
                 placeholder="e.g. Analyst_Alpha" 
-                style={{ width: '100%' }}
+                style={{ width: '100%', padding: '10px 14px', fontSize: '0.85rem', background: '#020617', border: '1px solid #1e293b', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' }}
                 value={analystName}
                 onChange={(e) => setAnalystName(e.target.value)}
                 required
@@ -449,22 +463,26 @@ export default function AdminDashboard({ API_BASE_URL }) {
             </div>
 
             <div>
-              <label style={{ fontSize: '0.78rem', color: '#00D2FF', letterSpacing: '1px', display: 'block', marginBottom: '5px' }}>PRODUCTION ADMIN SECRET KEY</label>
+              <label style={{ fontSize: '0.78rem', color: '#00D2FF', letterSpacing: '1px', display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>🔑 PRODUCTION ADMIN SECRET KEY</label>
               <input 
                 type="password"
                 className="mask-btn" 
-                placeholder="Enter Admin Key..." 
-                style={{ width: '100%' }}
+                placeholder="Enter Admin Secret Key..." 
+                style={{ width: '100%', padding: '10px 14px', fontSize: '0.85rem', background: '#020617', border: '1px solid #1e293b', color: '#fff', borderRadius: '6px', boxSizing: 'border-box' }}
                 value={adminKey}
                 onChange={(e) => setAdminKey(e.target.value)}
                 required
               />
             </div>
 
-            <button type="submit" className="main-button" style={{ width: '100%', marginTop: '10px' }} disabled={loading}>
-              {loading ? "AUTHENTICATING..." : "AUTHENTICATE & ENTER PORTAL"}
+            <button type="submit" className="main-button" style={{ width: '100%', marginTop: '8px', padding: '12px', fontSize: '0.9rem', background: 'linear-gradient(135deg, #0047AB, #00D2FF)', fontWeight: 'bold', letterSpacing: '1px' }} disabled={loading}>
+              {loading ? "AUTHENTICATING NODE..." : "⚡ AUTHENTICATE & ENTER COMMAND PORTAL"}
             </button>
           </form>
+
+          <div style={{ marginTop: '25px', paddingTop: '15px', borderTop: '1px solid rgba(255,255,255,0.08)', textAlign: 'center', fontSize: '0.72rem', color: '#64748B' }}>
+            OPERATIONS SECURITY SYSTEM | DFS 213 LLC
+          </div>
         </div>
       </div>
     );
