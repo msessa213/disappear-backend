@@ -32,11 +32,45 @@ const isExplicitLocalDev = typeof window !== 'undefined' &&
 
 const API_BASE_URL = isExplicitLocalDev ? LOCAL_API : "";
 
+// --- TAB ISOLATION STORAGE ENGINE ---
+// Priority: Uses sessionStorage so each browser tab/window maintains its own isolated session sandbox.
+// Falls back to reading localStorage only if sessionStorage is empty on initial tab boot.
+const getSessionItem = (key) => {
+  try {
+    return sessionStorage.getItem(key) || localStorage.getItem(key) || "";
+  } catch (e) {
+    return "";
+  }
+};
+
+const setSessionItem = (key, value) => {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch (e) {}
+};
+
+const removeSessionItem = (key) => {
+  try {
+    sessionStorage.removeItem(key);
+    localStorage.removeItem(key);
+  } catch (e) {}
+};
+
+const clearSessionStorage = () => {
+  try {
+    sessionStorage.clear();
+    localStorage.removeItem("disappear_session");
+    localStorage.removeItem("disappear_user_id");
+    localStorage.removeItem("disappear_user_email");
+    localStorage.removeItem("disappear_last_active");
+  } catch (e) {}
+};
+
 function App() {
   // --- SECURE BRIDGE LOGIC ---
   // This bridges the gap between the app and the server on native hardware
   const secureRequest = async (url, options = {}, retries = 3) => {
-    const activeUserId = localStorage.getItem("disappear_user_id") || "";
+    const activeUserId = currentUserId || getSessionItem("disappear_user_id") || "";
     const headers = { 
       'Content-Type': 'application/json', 
       'x-user-id': activeUserId, 
@@ -72,7 +106,7 @@ function App() {
 
   // --- CORE VIEW NAVIGATION (UPDATED) ---
   const [showLanding, setShowLanding] = useState(true); 
-  const [currentUserId, setCurrentUserId] = useState(() => localStorage.getItem("disappear_user_id") || "");
+  const [currentUserId, setCurrentUserId] = useState(() => getSessionItem("disappear_user_id") || "");
   const [showShield, setShowShield] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
@@ -272,7 +306,7 @@ function App() {
   }, []);
 
   const fetchSmsInbox = useCallback(async () => {
-    const activeUserId = currentUserId || localStorage.getItem("disappear_user_id");
+    const activeUserId = currentUserId || getSessionItem("disappear_user_id");
     if (!activeUserId) return;
     try {
       const res = await secureRequest(`${API_BASE_URL}/api/v1/sms-inbox/${activeUserId}`);
@@ -286,7 +320,7 @@ function App() {
   }, [currentUserId, updateSmsInboxSafely]);
 
   const fetchTargetEmails = useCallback(async () => {
-    const activeUserId = currentUserId || localStorage.getItem("disappear_user_id");
+    const activeUserId = currentUserId || getSessionItem("disappear_user_id");
     if (!activeUserId) return;
     try {
         const res = await secureRequest(`${API_BASE_URL}/profile/emails?user_id=${activeUserId}`);
@@ -296,14 +330,14 @@ function App() {
 
   const syncDefenseData = useCallback(async () => {
     try {
-      const activeUserId = currentUserId || localStorage.getItem("disappear_user_id");
+      const activeUserId = currentUserId || getSessionItem("disappear_user_id");
       if (!activeUserId) return;
       
-      localStorage.setItem("disappear_last_active", Date.now().toString());
+      setSessionItem("disappear_last_active", Date.now().toString());
       
       if (activeUserId === "undefined") {
-          localStorage.removeItem("disappear_user_id");
-          localStorage.removeItem("disappear_session");
+          removeSessionItem("disappear_user_id");
+          removeSessionItem("disappear_session");
           window.location.reload();
           return;
       }
@@ -507,12 +541,12 @@ function App() {
     const urlParams = new URLSearchParams(window.location.search);
     const refCode = urlParams.get('ref') || urlParams.get('referral_code') || urlParams.get('referral');
     if (refCode) {
-      // 1. Save Referral Code to local storage for payout credit
-      localStorage.setItem("disappear_referral_code", refCode);
+      // 1. Save Referral Code to session storage for payout credit
+      setSessionItem("disappear_referral_code", refCode);
       
       // 2. FORCE LOGOUT / CLEAR ACTIVE SESSION so visitor starts with a clean, blank slate
-      localStorage.removeItem("disappear_session");
-      localStorage.removeItem("disappear_user_id");
+      removeSessionItem("disappear_session");
+      removeSessionItem("disappear_user_id");
       sessionStorage.clear();
 
       // 3. WIPE ALL INPUT STATES TO ENSURE 100% BLANK FORMS
@@ -739,14 +773,15 @@ function App() {
 
   // PERSISTENCE & PAYMENT SYNC
   useEffect(() => {
-    const session = localStorage.getItem("disappear_session");
-    const lastActive = localStorage.getItem("disappear_last_active");
+    const session = getSessionItem("disappear_session");
+    const lastActive = getSessionItem("disappear_last_active");
     const query = new URLSearchParams(window.location.search);
     const isNative = Capacitor.isNativePlatform();
 
     const refCode = query.get("ref");
     if (refCode) {
-      localStorage.setItem("disappear_ref_code", refCode.trim());
+      setSessionItem("disappear_ref_code", refCode.trim());
+      setSessionItem("disappear_referral_code", refCode.trim());
     }
 
     // Check for session timeout (e.g., 30 minutes of inactivity)
@@ -757,16 +792,16 @@ function App() {
     if (session === "active" && lastActive) {
       const timeSinceLastActive = now - parseInt(lastActive, 10);
       if (timeSinceLastActive > TIMEOUT_DURATION) {
-        localStorage.removeItem("disappear_session");
-        localStorage.removeItem("disappear_user_id");
-        localStorage.removeItem("disappear_last_active");
+        removeSessionItem("disappear_session");
+        removeSessionItem("disappear_user_id");
+        removeSessionItem("disappear_last_active");
         isExpired = true;
       }
     }
 
     if (query.get("payment") === "success") {
-        localStorage.setItem("disappear_session", "active");
-        localStorage.setItem("disappear_last_active", now.toString());
+        setSessionItem("disappear_session", "active");
+        setSessionItem("disappear_last_active", now.toString());
         setShowLanding(false);
         setShowShield(true);
         setProgress(100);
@@ -782,14 +817,13 @@ function App() {
         syncDefenseData();
     }
 
-    const savedUid = localStorage.getItem("disappear_user_id");
-    const savedEmail = localStorage.getItem("disappear_user_email");
+    const savedUid = getSessionItem("disappear_user_id");
+    const savedEmail = getSessionItem("disappear_user_email");
 
     // CACHE FIREWALL: Only purge if an explicitly different non-Mike email is logged in
     if (savedUid && (savedUid === "user_mike803" || savedUid === "user_7956")) {
       if (savedEmail && savedEmail.trim().toLowerCase() !== "mike803@verizon.net") {
-        localStorage.clear();
-        sessionStorage.clear();
+        clearSessionStorage();
         setCurrentUserId(null);
         setShowLanding(true);
         setShowShield(false);
@@ -799,17 +833,19 @@ function App() {
     }
 
     if (session === "active" && !isExpired && savedUid) {
-        localStorage.setItem("disappear_last_active", now.toString());
+        setSessionItem("disappear_last_active", now.toString());
+        setSessionItem("disappear_session", "active");
+        setSessionItem("disappear_user_id", savedUid);
         setCurrentUserId(savedUid);
         setShowLanding(false);
         setShowShield(true);
         setProgress(100);
     } else {
-        // Auto-restore Mike's primary profile (user_7956) if no explicit customer session exists
+        // Auto-restore Mike's primary profile (user_7956) if no explicit customer session exists for this tab
         const masterUid = savedUid && savedUid !== "undefined" ? savedUid : "user_7956";
-        localStorage.setItem("disappear_session", "active");
-        localStorage.setItem("disappear_user_id", masterUid);
-        localStorage.setItem("disappear_user_email", "mike803@verizon.net");
+        setSessionItem("disappear_session", "active");
+        setSessionItem("disappear_user_id", masterUid);
+        setSessionItem("disappear_user_email", "mike803@verizon.net");
         setCurrentUserId(masterUid);
         setShowLanding(false);
         setShowShield(true);
@@ -820,7 +856,7 @@ function App() {
 
 
   const handleSaveForwardingPhone = async () => {
-    let activeUserId = currentUserId || localStorage.getItem("disappear_user_id");
+    let activeUserId = currentUserId || getSessionItem("disappear_user_id");
     if (!activeUserId) return;
 
     try {
@@ -1019,7 +1055,7 @@ function App() {
     setIsUpdatingPassword(true);
     triggerToast("UPDATING VAULT PASSWORD...");
     try {
-      const activeUserId = currentUserId || localStorage.getItem("disappear_user_id");
+      const activeUserId = currentUserId || getSessionItem("disappear_user_id");
       if (!activeUserId) {
         triggerToast("⚠️ PLEASE SIGN IN FIRST");
         setIsUpdatingPassword(false);
@@ -1051,8 +1087,7 @@ function App() {
   };
 
   const handleSecureLogout = () => {
-    localStorage.clear();
-    sessionStorage.clear();
+    clearSessionStorage();
     setCurrentUserId(null);
     setSmsInbox([]);
     setPhones([]);
@@ -1077,7 +1112,7 @@ function App() {
     setIsRefillingCredits(true);
     triggerToast("⏳ INITIALIZING RELAY CREDIT REFILL...");
     try {
-      const activeUserId = currentUserId || localStorage.getItem("disappear_user_id");
+      const activeUserId = currentUserId || getSessionItem("disappear_user_id");
       if (!activeUserId) {
         triggerToast("⚠️ PLEASE SIGN IN FIRST");
         setIsRefillingCredits(false);
@@ -1148,7 +1183,7 @@ function App() {
     setIsProcessingPayment(true);
     
     // AUTHENTICATION_BRIDGE: Capture local user ID to bind payment event
-    const activeUserId = localStorage.getItem("disappear_user_id") || "anonymous_agent";
+    const activeUserId = currentUserId || getSessionItem("disappear_user_id") || "anonymous_agent";
 
     // UPDATED: Corrected mapping for Phone Line Expansion
     const mappedType = (type === 'phone') 
@@ -1186,7 +1221,7 @@ function App() {
 
   const handleAddTargetEmail = async () => {
     if(!newTargetEmail) return;
-    const activeUserId = localStorage.getItem("disappear_user_id") || "";
+    const activeUserId = currentUserId || getSessionItem("disappear_user_id") || "";
     try {
         const res = await secureRequest(`${API_BASE_URL}/profile/emails?user_id=${activeUserId}`, {
             method: "POST",
@@ -1229,7 +1264,7 @@ function App() {
     setPurgeStatus(`ENCRYPTING ${type.toUpperCase()}...`);
     setIsEncrypting(true); 
     try {
-      const activeUserId = localStorage.getItem("disappear_user_id") || "";
+      const activeUserId = currentUserId || getSessionItem("disappear_user_id") || "";
       const res = await secureRequest(`${API_BASE_URL}/aliases/mint?user_id=${activeUserId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1304,7 +1339,7 @@ const handleEmergencyBurn = async () => {
     setIsProcessingPayment(true);
     triggerToast("UPLINKING TO STRIPE SECURE VAULT...");
     try {
-      const activeUserId = localStorage.getItem("disappear_user_id") || "";
+      const activeUserId = currentUserId || getSessionItem("disappear_user_id") || "";
       const res = await secureRequest(`${API_BASE_URL}/payments/create-setup-session?user_id=${activeUserId}`, { 
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1342,7 +1377,7 @@ const handleEmergencyBurn = async () => {
     setPurgeStatus("GENERATING PROTECTED DIGITS...");
     setIsEncrypting(true); 
     try {
-      const activeUserId = localStorage.getItem("disappear_user_id") || "";
+      const activeUserId = currentUserId || getSessionItem("disappear_user_id") || "";
       const response = await secureRequest(`${API_BASE_URL}/financials/mint?user_id=${activeUserId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1399,7 +1434,7 @@ const handleEmergencyBurn = async () => {
     }
     triggerToast("AUTHENTICATING...");
     try {
-      const savedRefCode = localStorage.getItem("disappear_referral_code") || "";
+      const savedRefCode = getSessionItem("disappear_referral_code");
       const res = await secureRequest(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1407,10 +1442,10 @@ const handleEmergencyBurn = async () => {
       });
       if (res.ok) {
         const data = await res.json();
-        localStorage.setItem("disappear_session", "active");
+        setSessionItem("disappear_session", "active");
         if (data.user_id) {
-          localStorage.setItem("disappear_user_id", data.user_id);
-          localStorage.setItem("disappear_user_email", data.email || emailToUse);
+          setSessionItem("disappear_user_id", data.user_id);
+          setSessionItem("disappear_user_email", data.email || emailToUse);
           setCurrentUserId(data.user_id);
         }
         window.location.hash = "vault";
@@ -1433,9 +1468,9 @@ const handleEmergencyBurn = async () => {
     try {
       const verified = await promptBiometricAuth("Authenticate to unlock Disappear Vault");
       if (verified) {
-        const storedUserId = localStorage.getItem("disappear_user_id");
+        const storedUserId = currentUserId || getSessionItem("disappear_user_id");
         if (storedUserId) {
-          localStorage.setItem("disappear_session", "active");
+          setSessionItem("disappear_session", "active");
           setShow2FA(false); 
           setShowLanding(false); // Switch to app
           setShowShield(true); 
@@ -1463,7 +1498,7 @@ const handleEmergencyBurn = async () => {
     
     triggerToast("ENCRYPTING VAULT CONFIGURATION...");
     const exportData = {
-      agent_id: localStorage.getItem("disappear_user_id") || "AGENT_UNKNOWN",
+      agent_id: currentUserId || getSessionItem("disappear_user_id") || "AGENT_UNKNOWN",
       timestamp: new Date().toISOString(),
       vault_signature: "SIG_TIGER_BLUE_ALPHA",
       assets: {
@@ -1507,7 +1542,7 @@ const handleEmergencyBurn = async () => {
       const { jsPDF } = await import("jspdf");
       const autoTable = (await import("jspdf-autotable")).default;
       const doc = new jsPDF();
-      const agentId = localStorage.getItem("disappear_user_id") || "AGENT_UNKNOWN";
+      const agentId = currentUserId || getSessionItem("disappear_user_id") || "AGENT_UNKNOWN";
       
       // Cyberpunk Header
       doc.setFillColor(0, 71, 171); // Jesuit Tiger Blue
@@ -1632,7 +1667,7 @@ const handleEmergencyBurn = async () => {
             body: JSON.stringify(payload)
         });
         
-        let activeUserId = localStorage.getItem("disappear_user_id");
+        let activeUserId = currentUserId || getSessionItem("disappear_user_id");
         if (profileRes.ok) {
             const profileData = await profileRes.json();
             
@@ -1643,7 +1678,7 @@ const handleEmergencyBurn = async () => {
                 return;
             }
             activeUserId = profileData.profile_id;
-            localStorage.setItem("disappear_user_id", activeUserId);
+            setSessionItem("disappear_user_id", activeUserId);
             triggerToast("PROFILE CREATED — CHECK EMAIL TO AUTHORIZE PRIVACY RELAY");
             
             triggerToast("AUTHORIZING SECURE PAYMENT NODE...");
@@ -1707,7 +1742,7 @@ const handleEmergencyBurn = async () => {
 
   const handleManageBilling = async () => {
     triggerToast("UPLINKING TO STRIPE PORTAL...");
-    const activeUserId = localStorage.getItem("disappear_user_id") || "";
+    const activeUserId = currentUserId || getSessionItem("disappear_user_id") || "";
     try {
         const res = await secureRequest(`${API_BASE_URL}/payments/create-portal-session?user_id=${activeUserId}`, { 
           method: "POST",
