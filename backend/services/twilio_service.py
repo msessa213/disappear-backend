@@ -273,9 +273,9 @@ def sync_all_twilio_webhooks(db=None):
                         type="phone",
                         content=n.phone_number,
                         label=f"Virtual Line {n.phone_number[-4:]}"
-                    ))
                 else:
-                    existing.user_id = target_uid
+                    # Keep existing user_id link intact! Never overwrite existing user_id
+                    pass
         if db:
             db.commit()
     except Exception as e:

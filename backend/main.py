@@ -303,13 +303,13 @@ safe_add_column("scrub_logs_v1", "assigned_analyst", "VARCHAR")
 safe_add_column("scrub_logs_v1", "resolved_by", "VARCHAR")
 safe_add_column("scrub_logs_v1", "target_listing_url", "VARCHAR")
 
-# Clean profile for maryannctampa@aol.com for clean fresh signup
+# Restore user_7956 phone aliases to prevent cross-account leak
 try:
     with engine.connect() as conn:
-        conn.execute(text("DELETE FROM shield_profiles_v3 WHERE LOWER(email) = 'maryannctampa@aol.com' AND (kyc_status IS NULL OR kyc_status = 'UNPAID')"))
+        conn.execute(text("UPDATE shield_aliases_v3 SET user_id = 'user_7956' WHERE content IN ('+18884317375', '+18137558466', '+18137917531', '+18134375531', '+17274850017')"))
         conn.commit()
 except Exception as ex:
-    logger.warning(f"Draft profile cleanup: {ex}")
+    logger.warning(f"Alias restore: {ex}")
 
 # --- APP CONFIGURATION ---
 
@@ -1473,12 +1473,18 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
         "progress_pct": round((removed_b_count / float(total_b_count)) * 100, 1) if total_b_count > 0 else 0
     }
 
+    def format_iso_z(dt_obj):
+        if not dt_obj:
+            dt_obj = datetime.utcnow()
+        s = dt_obj.isoformat()
+        return s if s.endswith("Z") else f"{s}Z"
+
     data_brokers_list = [{
         "id": s.id,
         "broker_name": s.broker_name,
         "status": s.status,
         "removal_type": s.removal_type,
-        "timestamp": s.timestamp.isoformat() if s.timestamp else datetime.utcnow().isoformat()
+        "timestamp": format_iso_z(s.timestamp)
     } for s in scrub_entries]
 
     # Ensure initial audit logs exist for customer accounts
@@ -1495,7 +1501,7 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
 
     history_list = []
     for entry in purge_entries:
-        ts = entry.timestamp.isoformat() if entry.timestamp else datetime.utcnow().isoformat()
+        ts = format_iso_z(entry.timestamp)
         history_list.append({
             "id": entry.id or random.randint(1000, 9999),
             "action": entry.action_type,
@@ -1505,7 +1511,7 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
 
     for scrub in scrub_entries:
         action_name = f"DATA_REMOVAL [{scrub.status}]: {scrub.broker_name.upper()}"
-        ts = scrub.timestamp.isoformat() if scrub.timestamp else datetime.utcnow().isoformat()
+        ts = format_iso_z(scrub.timestamp)
         history_list.append({
             "id": f"scrub_{scrub.id}",
             "action": action_name,
@@ -1528,32 +1534,15 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
             "expiry": c.expiry,
             "cvv": c.cvv,
             "funding_source": getattr(c, 'funding_source_id', '') or "",
-            "created_at": c.created_at.isoformat() if getattr(c, 'created_at', None) else datetime.utcnow().isoformat()
+            "created_at": format_iso_z(c.created_at)
         } for c in cards_entities]
     except Exception as e:
         logger.error(f"Sync Cards Error: {e}")
 
-    # 4. Aliases (Email & Phone - Consolidated)
+    # 4. Aliases (Email & Phone - Consolidated strictly scoped to user_id == uid)
     aliases_list = []
     try:
-        try:
-            phone_aliases = db.query(DBAlias).filter(DBAlias.type == "phone").all()
-            for pa in phone_aliases:
-                if pa.user_id != uid:
-                    pa.user_id = uid
-            db.commit()
-        except Exception as pa_err:
-            db.rollback()
-            logger.warning(f"Phone alias user re-link skipped: {pa_err}")
-
         aliases_entities = db.query(DBAlias).filter(DBAlias.user_id == uid).order_by(DBAlias.created_at.desc()).all()
-        if not aliases_entities:
-            try:
-                from services.twilio_service import sync_all_twilio_webhooks
-                sync_all_twilio_webhooks(db=db)
-                aliases_entities = db.query(DBAlias).filter(DBAlias.user_id == uid).order_by(DBAlias.created_at.desc()).all()
-            except Exception as tw_err:
-                logger.warning(f"Twilio sync skipped: {tw_err}")
 
         aliases_list = [{
             "id": a.id,
@@ -1561,7 +1550,7 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
             "label": a.label,
             "type": a.type,
             "content": a.content,
-            "created_at": a.created_at.isoformat() if getattr(a, 'created_at', None) else datetime.utcnow().isoformat()
+            "created_at": format_iso_z(a.created_at)
         } for a in aliases_entities]
     except Exception as e:
         logger.error(f"Sync Aliases Error: {e}")
