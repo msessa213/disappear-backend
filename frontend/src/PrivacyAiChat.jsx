@@ -147,18 +147,23 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
       {/* Floating Chat Modal */}
       {isOpen && (
         <div
+          className="ai-chat-modal-floating"
           style={{
-            width: '360px',
-            maxWidth: 'calc(100vw - 40px)',
-            height: '520px',
-            maxHeight: 'calc(100vh - 100px)',
+            position: 'fixed',
+            bottom: '80px',
+            right: '25px',
+            width: '370px',
+            maxWidth: 'calc(100vw - 30px)',
+            height: '540px',
+            maxHeight: 'calc(100vh - 110px)',
             backgroundColor: '#0A0E17',
             border: '1px solid var(--tiger-blue, #0047AB)',
             borderRadius: '16px',
-            boxShadow: '0 0 35px rgba(0, 71, 171, 0.5), 0 20px 40px rgba(0,0,0,0.8)',
+            boxShadow: '0 0 45px rgba(0, 210, 255, 0.4), 0 20px 50px rgba(0,0,0,0.95)',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
+            zIndex: 999999,
             fontFamily: "'Inter', -apple-system, sans-serif"
           }}
         >

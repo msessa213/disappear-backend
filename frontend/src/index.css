@@ -61,13 +61,23 @@ button:focus-visible {
   position: fixed;
   bottom: 25px;
   right: 25px;
-  z-index: 9999 !important;
+  z-index: 999999 !important;
 }
 
 @media (max-width: 768px) {
   .privacy-ai-chat-container {
-    bottom: 145px !important;
-    right: 12px !important;
+    bottom: 20px !important;
+    right: 15px !important;
+  }
+
+  .ai-chat-modal-floating {
+    bottom: 75px !important;
+    right: 15px !important;
+    left: 15px !important;
+    width: auto !important;
+    max-width: none !important;
+    height: calc(100vh - 95px) !important;
+    max-height: calc(100vh - 95px) !important;
   }
 }
 
