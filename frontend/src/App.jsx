@@ -131,8 +131,11 @@ function App() {
 
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotCode, setForgotCode] = useState("");
   const [forgotNewPassword, setForgotNewPassword] = useState("");
   const [forgotConfirmPassword, setForgotConfirmPassword] = useState("");
+  const [isResetCodeSent, setIsResetCodeSent] = useState(false);
+  const [isSendingResetCode, setIsSendingResetCode] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   const [currentPasswordInput, setCurrentPasswordInput] = useState("");
@@ -909,10 +912,38 @@ function App() {
     }
   };
 
+  const handleSendResetCode = async (emailTarget) => {
+    const targetEmail = emailTarget || forgotEmail;
+    if (!targetEmail || !targetEmail.trim()) {
+      triggerToast("⚠️ PLEASE ENTER YOUR REGISTERED ACCOUNT EMAIL");
+      return;
+    }
+    setIsSendingResetCode(true);
+    triggerToast("SENDING 6-DIGIT VERIFICATION CODE VIA SMS...");
+    try {
+      const res = await secureRequest(`${API_BASE_URL}/auth/send-reset-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: targetEmail.trim() })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setIsResetCodeSent(true);
+        triggerToast("📱 6-DIGIT VERIFICATION CODE TEXTED TO YOUR PHONE!");
+      } else {
+        triggerToast(`❌ ${data.detail || "FAILED TO SEND SMS CODE"}`);
+      }
+    } catch (err) {
+      triggerToast("NETWORK ERROR SENDING SMS CODE");
+    } finally {
+      setIsSendingResetCode(false);
+    }
+  };
+
   const handleForgotPasswordSubmit = async (e) => {
     e.preventDefault();
-    if (!forgotEmail.trim() || !forgotNewPassword) {
-      triggerToast("ENTER EMAIL & NEW PASSWORD");
+    if (!forgotEmail.trim() || !forgotCode.trim() || !forgotNewPassword) {
+      triggerToast("ENTER YOUR EMAIL, 6-DIGIT SMS CODE, & NEW PASSWORD");
       return;
     }
     if (forgotNewPassword !== forgotConfirmPassword) {
@@ -924,24 +955,26 @@ function App() {
       return;
     }
     setIsResettingPassword(true);
-    triggerToast("RESETTING PASSWORD...");
+    triggerToast("VERIFYING SMS CODE & RESETTING PASSWORD...");
     try {
-      const res = await secureRequest(`${API_BASE_URL}/api/v1/auth/forgot-password`, {
+      const res = await secureRequest(`${API_BASE_URL}/auth/verify-reset-code-and-change-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: forgotEmail, new_password: forgotNewPassword })
+        body: JSON.stringify({ email: forgotEmail.trim(), code: forgotCode.trim(), new_password: forgotNewPassword })
       });
       const data = await res.json();
       if (res.ok) {
-        triggerToast("✅ PASSWORD RESET! SIGNING IN...");
+        triggerToast("✅ CODE VERIFIED! PASSWORD UPDATED & SMS ALERT SENT");
         setLoginEmail(forgotEmail);
         setLoginPassword(forgotNewPassword);
         setShowForgotPasswordModal(false);
+        setForgotCode("");
         setForgotNewPassword("");
         setForgotConfirmPassword("");
+        setIsResetCodeSent(false);
         verify2FA();
       } else {
-        triggerToast(`❌ ${data.detail || "FAILED TO RESET PASSWORD"}`);
+        triggerToast(`❌ ${data.detail || "INVALID OR EXPIRED VERIFICATION CODE"}`);
       }
     } catch (err) {
       triggerToast("NETWORK ERROR RESETTING PASSWORD");
@@ -3131,19 +3164,44 @@ const handleEmergencyBurn = async () => {
             </div>
 
             <p style={{ fontSize: '0.78rem', color: '#94A3B8', marginBottom: '15px', lineHeight: '1.4' }}>
-              Enter your registered account email and your new password to restore access to your Disappear Vault.
+              Enter your registered account email to receive a 6-digit SMS verification code on your registered mobile phone.
             </p>
 
             <form onSubmit={handleForgotPasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
                 <p className="field-label" style={{ marginBottom: '4px' }}>REGISTERED ACCOUNT EMAIL</p>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input 
+                    type="email" 
+                    className="mask-btn" 
+                    style={{ flex: 1, color: 'white', fontSize: '0.85rem' }} 
+                    placeholder="customer@email.com" 
+                    value={forgotEmail} 
+                    onChange={(e) => setForgotEmail(e.target.value)} 
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="main-button"
+                    style={{ padding: '8px 12px', fontSize: '0.72rem', whiteSpace: 'nowrap' }}
+                    onClick={() => handleSendResetCode(forgotEmail)}
+                    disabled={isSendingResetCode}
+                  >
+                    {isSendingResetCode ? "SENDING..." : (isResetCodeSent ? "RESEND 📱" : "SEND CODE 📱")}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <p className="field-label" style={{ marginBottom: '4px' }}>📱 6-DIGIT SMS VERIFICATION CODE</p>
                 <input 
-                  type="email" 
+                  type="text" 
                   className="mask-btn" 
-                  style={{ width: '100%', color: 'white', fontSize: '0.85rem' }} 
-                  placeholder="customer@email.com" 
-                  value={forgotEmail} 
-                  onChange={(e) => setForgotEmail(e.target.value)} 
+                  style={{ width: '100%', color: '#00D2FF', fontSize: '1.1rem', letterSpacing: '4px', textAlign: 'center', fontWeight: 'bold', boxSizing: 'border-box' }} 
+                  placeholder="123456" 
+                  maxLength={6}
+                  value={forgotCode} 
+                  onChange={(e) => setForgotCode(e.target.value)} 
                   required
                 />
               </div>
@@ -3180,7 +3238,7 @@ const handleEmergencyBurn = async () => {
                 disabled={isResettingPassword}
                 style={{ width: '100%', marginTop: '10px' }}
               >
-                {isResettingPassword ? "RESETTING PASSWORD..." : "🔑 RESET PASSWORD & SIGN IN"}
+                {isResettingPassword ? "VERIFYING..." : "⚡ VERIFY CODE & RESET PASSWORD"}
               </button>
             </form>
           </div>

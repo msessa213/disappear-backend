@@ -100,6 +100,8 @@ class DBProfile(Base):
     free_months_redeemed = Column(Integer, default=0)
     relay_credits = Column(Integer, default=500)
     relay_credits_total = Column(Integer, default=500)
+    reset_code = Column(String, nullable=True)
+    reset_code_expiry = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class DBTargetEmail(Base):

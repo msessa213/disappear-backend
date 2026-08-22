@@ -298,6 +298,8 @@ safe_add_column("shield_profiles_v3", "free_months_earned", "INTEGER DEFAULT 0")
 safe_add_column("shield_profiles_v3", "free_months_redeemed", "INTEGER DEFAULT 0")
 safe_add_column("shield_profiles_v3", "relay_credits", "INTEGER DEFAULT 500")
 safe_add_column("shield_profiles_v3", "relay_credits_total", "INTEGER DEFAULT 500")
+safe_add_column("shield_profiles_v3", "reset_code", "VARCHAR")
+safe_add_column("shield_profiles_v3", "reset_code_expiry", "TIMESTAMP")
 safe_add_column("scrub_logs_v1", "removal_type", "VARCHAR DEFAULT 'AUTOMATED'")
 safe_add_column("scrub_logs_v1", "manual_instruction_url", "VARCHAR")
 safe_add_column("scrub_logs_v1", "assigned_analyst", "VARCHAR")
@@ -503,6 +505,16 @@ class ForgotPasswordRequest(BaseModel):
     email: Optional[str] = None
     new_password: Optional[str] = None
 
+class SendResetCodeRequest(BaseModel):
+    user_id: Optional[str] = None
+    email: Optional[str] = None
+
+class VerifyResetCodeRequest(BaseModel):
+    user_id: Optional[str] = None
+    email: Optional[str] = None
+    code: str
+    new_password: str
+
 class CreditRefillRequest(BaseModel):
     user_id: Optional[str] = None
     pack_type: Optional[str] = "250_credits"
@@ -568,7 +580,7 @@ def handle_change_password(req: ChangePasswordRequest, db: Session):
             if clean_p:
                 send_sms(
                     to_phone_number=clean_p,
-                    message_body=f"SECURITY ALERT: Your Disappear Vault password for {profile.email} was updated. If you did not authorize this change, contact support immediately."
+                    message_body=f"SECURITY ALERT: Your Disappear Vault password for {profile.email} was updated. If you did not authorize this change, please reset your password immediately."
                 )
         except Exception as sms_err:
             logger.warning(f"Password update SMS notification skipped: {sms_err}")
@@ -623,7 +635,7 @@ def handle_forgot_password(req: ForgotPasswordRequest, db: Session):
                     if clean_p:
                         send_sms(
                             to_phone_number=clean_p,
-                            message_body=f"SECURITY ALERT: Disappear Vault password reset completed for {profile.email}. If you did not authorize this, contact support immediately."
+                            message_body=f"SECURITY ALERT: Disappear Vault password reset completed for {profile.email}. If you did not authorize this change, please reset your password immediately."
                         )
                 except Exception as sms_err:
                     logger.warning(f"Forgot password SMS notification skipped: {sms_err}")
@@ -646,8 +658,103 @@ def handle_forgot_password(req: ForgotPasswordRequest, db: Session):
         raise
     except Exception as e:
         logger.error(f"FORGOT_PASSWORD_ERROR: {e}")
+        raise HTTPException(status_code=500, detail="INTERNAL_SERVER_ERROR")
+
+
+@app.post("/auth/send-reset-code")
+@limiter.limit("10/minute")
+async def send_reset_code(request: Request, req: SendResetCodeRequest, db: Session = Depends(get_db)):
+    """Generates a 6-digit SMS verification code and texts it to the registered user's phone"""
+    profile = None
+    if req.user_id:
+        profile = db.query(DBProfile).filter(DBProfile.id == req.user_id).first()
+    if not profile and req.email and req.email.strip():
+        clean_email = req.email.strip().lower()
+        profile = db.query(DBProfile).filter(DBProfile.email.ilike(clean_email)).first()
+
+    if not profile:
+        raise HTTPException(status_code=404, detail="NO_ACCOUNT_FOUND")
+
+    code = f"{random.randint(100000, 999999)}"
+    profile.reset_code = code
+    profile.reset_code_expiry = datetime.utcnow() + timedelta(minutes=10)
+    db.commit()
+
+    phone_sent = False
+    if profile.phone:
+        try:
+            from services.twilio_service import send_sms, format_to_e164
+            clean_p = format_to_e164(profile.phone)
+            if clean_p:
+                send_sms(
+                    to_phone_number=clean_p,
+                    message_body=f"Disappear Vault Security: Your 6-digit verification code is {code}. Enter this code to verify your identity and set your new password. If you did not request this, please reset your password immediately."
+                )
+                phone_sent = True
+        except Exception as sms_err:
+            logger.warning(f"Reset code SMS dispatch error: {sms_err}")
+
+    if not phone_sent:
+        logger.info(f"VERIFICATION_CODE_GENERATED for {profile.email}: {code}")
+
+    return {
+        "status": "SUCCESS",
+        "message": "VERIFICATION_CODE_SENT",
+        "email": profile.email,
+        "phone_last_four": profile.phone[-4:] if profile.phone else "SMS"
+    }
+
+
+@app.post("/auth/verify-reset-code-and-change-password")
+@limiter.limit("10/minute")
+async def verify_code_and_change_password(request: Request, req: VerifyResetCodeRequest, db: Session = Depends(get_db)):
+    """Verifies the 6-digit SMS verification code and updates the account password"""
+    profile = None
+    if req.user_id:
+        profile = db.query(DBProfile).filter(DBProfile.id == req.user_id).first()
+    if not profile and req.email and req.email.strip():
+        clean_email = req.email.strip().lower()
+        profile = db.query(DBProfile).filter(DBProfile.email.ilike(clean_email)).first()
+
+    if not profile:
+        raise HTTPException(status_code=404, detail="NO_ACCOUNT_FOUND")
+
+    if not profile.reset_code or not req.code or req.code.strip() != profile.reset_code:
+        raise HTTPException(status_code=400, detail="INVALID_VERIFICATION_CODE")
+
+    if profile.reset_code_expiry and datetime.utcnow() > profile.reset_code_expiry:
+        raise HTTPException(status_code=400, detail="VERIFICATION_CODE_EXPIRED")
+
+    # Code is valid! Update password and clear reset code
+    profile.password_hash = hash_password(req.new_password)
+    profile.reset_code = None
+    profile.reset_code_expiry = None
+    db.commit()
+
+    # Dispatch SMS Security Confirmation Notice
+    if profile.phone:
+        try:
+            from services.twilio_service import send_sms, format_to_e164
+            clean_p = format_to_e164(profile.phone)
+            if clean_p:
+                send_sms(
+                    to_phone_number=clean_p,
+                    message_body=f"SECURITY ALERT: Your Disappear Vault password for {profile.email} was successfully updated. If you did not authorize this change, please reset your password immediately."
+                )
+        except Exception as sms_err:
+            logger.warning(f"Password update confirmation SMS skipped: {sms_err}")
+
+    try:
+        log_entry = DBPurgeLog(
+            action_type="PASSWORD_RESET_VERIFIED_VIA_SMS_2FA",
+            node_id=f"{profile.id}_VAULT_SECURITY"
+        )
+        db.add(log_entry)
+        db.commit()
+    except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+
+    return {"status": "SUCCESS", "message": "PASSWORD_UPDATED_SUCCESSFULLY"}
 
 
 @app.post("/auth/forgot-password")
