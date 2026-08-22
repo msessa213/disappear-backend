@@ -3014,13 +3014,45 @@ async def update_user_phone(req: PhoneUpdateRequest, db: Session = Depends(get_d
 @app.get("/api/v1/sms-inbox/")
 @app.get("/api/v1/sms-inbox")
 async def get_user_sms_inbox(user_id: Optional[str] = None, db: Session = Depends(get_db)):
-    """Returns recent incoming SMS messages received for the user's virtual phone aliases"""
+    """Returns recent incoming SMS messages received strictly for the specific user's virtual phone aliases"""
+    if not user_id or user_id.strip() == "" or user_id.strip() == "undefined":
+        return {"status": "success", "inbox": []}
+
+    uid = user_id.strip()
+
+    # Collect user specific identifiers
+    profile = db.query(DBProfile).filter(DBProfile.id == uid).first()
+    user_aliases = db.query(DBAlias).filter(DBAlias.user_id == uid, DBAlias.type == "phone").all()
+
+    user_identifiers = [uid]
+    if profile and profile.phone:
+        user_identifiers.append(profile.phone)
+    for a in user_aliases:
+        if a.content:
+            user_identifiers.append(a.content)
+            clean_ac = "".join(filter(str.isdigit, a.content))
+            if clean_ac and len(clean_ac) >= 4:
+                user_identifiers.append(f"VIRTUAL_LINE_{clean_ac[-4:]}")
+                user_identifiers.append(clean_ac[-4:])
+
+    filters = []
+    for ident in user_identifiers:
+        filters.append(DBPurgeLog.node_id.like(f"%{ident}%"))
+        filters.append(DBPurgeLog.action_type.like(f"%{ident}%"))
+
+    if not filters:
+        return {"status": "success", "inbox": []}
+
     sms_logs = db.query(DBPurgeLog).filter(
-        or_(
-            DBPurgeLog.action_type.like("%SMS_%"),
-            DBPurgeLog.action_type.like("%SMS%")
+        and_(
+            or_(
+                DBPurgeLog.action_type.like("%SMS_%"),
+                DBPurgeLog.action_type.like("%SMS%")
+            ),
+            or_(*filters)
         )
     ).order_by(desc(DBPurgeLog.timestamp)).limit(50).all()
+
     inbox = []
     for log in sms_logs:
         msg = log.action_type
@@ -3028,7 +3060,7 @@ async def get_user_sms_inbox(user_id: Optional[str] = None, db: Session = Depend
             msg = msg.replace("SMS_RECEIVED ", "")
         inbox.append({
             "id": log.id,
-            "timestamp": log.timestamp.isoformat() if log.timestamp else "",
+            "timestamp": log.timestamp.isoformat() + "Z" if log.timestamp and not log.timestamp.isoformat().endswith("Z") else (log.timestamp.isoformat() if log.timestamp else ""),
             "message": msg,
             "line": log.node_id
         })
