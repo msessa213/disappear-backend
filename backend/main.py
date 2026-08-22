@@ -1104,6 +1104,9 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
         except Exception as ex:
             logger.warning(f"Auto-seed reference tasks error: {ex}")
     
+    # Filter out any legacy synthetic dummy profiles (e.g. Reference Target Alpha/Beta)
+    open_tasks = [t for t in open_tasks if t.user_id not in ["user_ref_01", "user_ref_02"]]
+    
     user_ids = {task.user_id for task in open_tasks if task.user_id}
     completed_logs = db.query(DBScrubLog).filter(DBScrubLog.status == "REMOVED").order_by(desc(DBScrubLog.timestamp)).limit(50).all()
     user_ids.update({task.user_id for task in completed_logs if task.user_id})
