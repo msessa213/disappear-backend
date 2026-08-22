@@ -2539,6 +2539,37 @@ async def kill_alias(alias_id: str, db: Session = Depends(get_db)):
     raise HTTPException(status_code=404, detail="Node not found")
 
 
+@app.get("/aliases/recipient-status")
+async def check_addy_recipient_status(user_id: Optional[str] = None, db: Session = Depends(get_db)):
+    """Checks whether the user's destination email address is verified on Addy.io"""
+    profile = db.query(DBProfile).filter(DBProfile.id == user_id).first() if user_id else None
+    if not profile or not profile.email or profile.email.endswith("@disappearco.com"):
+        return {"status": "UNKNOWN", "verified": False, "email": profile.email if profile else ""}
+    
+    raw_key = (os.getenv("ADDY_API_KEY") or os.getenv("ADDY_KEY") or os.getenv("ADDY_IO_KEY") or os.getenv("ANONADDY_API_KEY") or "").strip()
+    if not raw_key:
+        raw_key = "addy_io_dPdJs2PJZQLQV87dSP14P7di8YuLQOE06tDlidRlf6d08223"
+    
+    headers = {"Authorization": f"Bearer {raw_key}", "Accept": "application/json"}
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            rec_res = await client.get("https://app.addy.io/api/v1/recipients", headers=headers)
+            if rec_res.status_code == 200:
+                recipients = rec_res.json().get("data", [])
+                for r in recipients:
+                    if r.get("email", "").lower() == profile.email.lower():
+                        is_verified = bool(r.get("email_verified_at"))
+                        return {
+                            "status": "VERIFIED" if is_verified else "PENDING_VERIFICATION",
+                            "verified": is_verified,
+                            "email": profile.email
+                        }
+    except Exception as ex:
+        logger.warning(f"Addy recipient status check error: {ex}")
+    
+    return {"status": "PENDING_VERIFICATION", "verified": False, "email": profile.email}
+
+
 # --- FINANCIALS & PROFILE STORAGE ---
 
 @app.get("/financials/data")
