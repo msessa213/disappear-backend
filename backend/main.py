@@ -2370,12 +2370,13 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
     
     if req_type == "email":
         content = None
+        last_addy_error = ""
         addy_api_key = os.getenv("ADDY_API_KEY") or os.getenv("ADDY_KEY") or os.getenv("ADDY_IO_KEY") or os.getenv("ANONADDY_API_KEY") or "addy_io_dPdJs2PJZQLQV87dSP14P7di8YuLQOE06tDlidRlf6d08223"
         if addy_api_key:
             try:
-                async with httpx.AsyncClient() as client:
+                async with httpx.AsyncClient(timeout=15.0) as client:
                     headers = {
-                        "Authorization": f"Bearer {addy_api_key}",
+                        "Authorization": f"Bearer {addy_api_key.strip()}",
                         "Content-Type": "application/json",
                         "Accept": "application/json",
                         "X-Requested-With": "XMLHttpRequest" 
@@ -2384,13 +2385,17 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
                     recipient_id = None
                     user_email = profile.email if profile and profile.email else None
                     if user_email:
-                        rec_res = await client.get("https://app.addy.io/api/v1/recipients", headers=headers)
-                        if rec_res.status_code == 200:
-                            recipients_list = rec_res.json().get("data", [])
-                            for r in recipients_list:
-                                if r.get("email", "").lower() == user_email.lower():
-                                    recipient_id = r.get("id")
-                                    break
+                        try:
+                            rec_res = await client.get("https://app.addy.io/api/v1/recipients", headers=headers)
+                            if rec_res.status_code == 200:
+                                recipients_list = rec_res.json().get("data", [])
+                                for r in recipients_list:
+                                    if r.get("email", "").lower() == user_email.lower():
+                                        recipient_id = r.get("id")
+                                        break
+                        except Exception as rec_ex:
+                            logger.warning(f"Addy recipients list fetch skipped: {rec_ex}")
+
                     alias_payload = {
                         "description": f"Disappear Vault - {alias_req.label}",
                         "format": "random_characters",
@@ -2408,13 +2413,15 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
                     if addy_response.status_code < 400:
                         content = addy_response.json().get("data", {}).get("email")
                     else:
-                        logger.error(f"ADDY_IO_ERROR: Status {addy_response.status_code} | Body: {addy_response.text}")
+                        last_addy_error = f"Status {addy_response.status_code}: {addy_response.text}"
+                        logger.error(f"ADDY_IO_ERROR: {last_addy_error}")
             except Exception as e:
+                last_addy_error = str(e)
                 logger.error(f"ADDY_IO_MINT_EXCEPTION: {str(e)}")
         
         if not content:
-            logger.error("ADDY_IO_MINT_FAILED: Unable to register alias on Addy.io mail servers.")
-            raise HTTPException(status_code=502, detail="EMAIL_PROVIDER_UNAVAILABLE: Could not register real alias on mail server.")
+            logger.error(f"ADDY_IO_MINT_FAILED: {last_addy_error}")
+            raise HTTPException(status_code=502, detail=f"EMAIL_PROVIDER_UNAVAILABLE: {last_addy_error or 'Could not register real alias on mail server.'}")
     else:
         # Provision real Twilio phone number
         from services.twilio_service import provision_phone_number
