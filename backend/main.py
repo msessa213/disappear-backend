@@ -1524,12 +1524,16 @@ async def update_profile_details(req: UpdateProfileDetailsRequest, db: Session =
     if not prof:
         raise HTTPException(status_code=404, detail=f"No user profile found for {req.user_id}")
 
-    if req.first_name is not None: prof.first_name = req.first_name.strip()
-    if req.last_name is not None: prof.last_name = req.last_name.strip()
-    if req.email is not None: prof.email = req.email.strip()
-    if req.address is not None: prof.address = req.address.strip()
-    if req.dob is not None: prof.dob = req.dob.strip()
-    if req.phone is not None: prof.phone = format_to_e164(req.phone)
+    if req.first_name is not None and req.first_name.strip(): prof.first_name = req.first_name.strip()
+    if req.last_name is not None and req.last_name.strip(): prof.last_name = req.last_name.strip()
+    if req.email is not None and req.email.strip(): prof.email = req.email.strip()
+    if req.address is not None and req.address.strip(): prof.address = req.address.strip()
+    if req.dob is not None and req.dob.strip(): prof.dob = req.dob.strip()
+    if req.phone is not None and req.phone.strip():
+        try:
+            prof.phone = format_to_e164(req.phone)
+        except Exception:
+            prof.phone = req.phone.strip()
 
     db.commit()
     return {
