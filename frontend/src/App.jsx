@@ -159,6 +159,7 @@ function App() {
   const [showComposeSms, setShowComposeSms] = useState(false);
   const [expandedThreads, setExpandedThreads] = useState({});
   const [showOnboardingWelcomeModal, setShowOnboardingWelcomeModal] = useState(false);
+  const [showDataRemovalNoticeModal, setShowDataRemovalNoticeModal] = useState(false);
 
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
@@ -1505,6 +1506,7 @@ const handleEmergencyBurn = async () => {
         setShowLanding(false);
         setShowShield(true); 
         setProgress(100);
+        setShowDataRemovalNoticeModal(true);
         triggerToast(`WELCOME BACK, ${(data.first_name || 'OPERATIVE').toUpperCase()}`);
         syncDefenseData();
       } else {
@@ -1527,6 +1529,7 @@ const handleEmergencyBurn = async () => {
           setShowLanding(false); // Switch to app
           setShowShield(true); 
           setProgress(100);
+          setShowDataRemovalNoticeModal(true);
           triggerToast("BIOMETRICS VERIFIED — VAULT UNLOCKED");
           syncDefenseData();
           return;
@@ -3327,6 +3330,92 @@ const handleEmergencyBurn = async () => {
       )}
 
 
+
+      {/* --- DATA REMOVAL TARGET NOTICE MODAL (POPUP ON SIGN IN) --- */}
+      {showDataRemovalNoticeModal && (
+        <div className="modal-overlay" style={{ zIndex: 60050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 10px' }} onClick={() => setShowDataRemovalNoticeModal(false)}>
+          <div className="price-box" style={{ maxWidth: '540px', width: '100%', padding: '28px', textAlign: 'left', boxSizing: 'border-box', border: '1px solid #00D2FF', boxShadow: '0 0 35px rgba(0, 210, 255, 0.35)', borderRadius: '14px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '1.4rem' }}>🛡️</span>
+                <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.15rem', color: '#00D2FF', letterSpacing: '0.5px' }}>DATA REMOVAL TARGET NOTICE</h3>
+              </div>
+              <button type="button" className="reset-btn" style={{ padding: '2px 8px', fontSize: '0.75rem' }} onClick={() => setShowDataRemovalNoticeModal(false)}>✕ CLOSE</button>
+            </div>
+
+            <div style={{ padding: '14px', background: 'rgba(0, 210, 255, 0.08)', border: '1px solid rgba(0, 210, 255, 0.3)', borderRadius: '8px', marginBottom: '18px' }}>
+              <p style={{ fontSize: '0.88rem', color: '#F8FAFC', margin: 0, lineHeight: '1.5' }}>
+                ℹ️ <strong>IMPORTANT SERVICE DIRECTIVE:</strong> The legal name and profile details registered to your account will be the <strong>EXACT target searched, scrubbed, and removed</strong> across all 47+ data broker registries as part of your Data Freedom Solutions protection plan.
+              </p>
+            </div>
+
+            {/* Target Details Card */}
+            <div style={{ background: '#050B14', border: '1px solid #1E293B', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
+              <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '10px' }}>
+                CURRENT TARGET PROFILE FOR DATA REMOVAL
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.84rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #0F172A', paddingBottom: '6px' }}>
+                  <span style={{ color: '#94A3B8' }}>Legal Target Name:</span>
+                  <strong style={{ color: '#00D2FF' }}>
+                    {targetProfile.first_name || targetProfile.last_name 
+                      ? `${targetProfile.first_name || ''} ${targetProfile.last_name || ''}`.trim() 
+                      : (getSessionItem("disappear_user_email") || 'Registered Account Owner')}
+                  </strong>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #0F172A', paddingBottom: '6px' }}>
+                  <span style={{ color: '#94A3B8' }}>Target Address:</span>
+                  <span style={{ color: '#E2E8F0', fontWeight: '500' }}>
+                    {targetProfile.address || '4017 Arroyo Ln, Tampa, FL 33624'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#94A3B8' }}>Date of Birth:</span>
+                  <span style={{ color: '#E2E8F0', fontWeight: '500' }}>
+                    {targetProfile.dob || '04/08/1980'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <p style={{ fontSize: '0.78rem', color: '#94A3B8', marginBottom: '22px', lineHeight: '1.4' }}>
+              💡 If you need to update legal middle names, maiden names, or secondary addresses, click <strong>⚙️ REVIEW / EDIT PROFILE</strong> below.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button 
+                type="button" 
+                className="main-button" 
+                style={{ width: '100%', padding: '14px', fontSize: '0.9rem', fontWeight: 'bold' }}
+                onClick={() => {
+                  setShowDataRemovalNoticeModal(false);
+                }}
+              >
+                ✅ ACKNOWLEDGE & ENTER DASHBOARD
+              </button>
+
+              <button 
+                type="button" 
+                className="reset-btn" 
+                style={{ width: '100%', padding: '10px', fontSize: '0.8rem', color: '#00D2FF', borderColor: '#00D2FF' }}
+                onClick={() => {
+                  setShowDataRemovalNoticeModal(false);
+                  window.location.hash = "vault";
+                  setTimeout(() => {
+                    const el = document.getElementById("profile");
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }, 300);
+                }}
+              >
+                ⚙️ REVIEW / EDIT PROFILE DETAILS
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* --- ONBOARDING & VERIFICATION INSTRUCTION MODAL --- */}
       {showOnboardingWelcomeModal && (
