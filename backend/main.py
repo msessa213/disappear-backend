@@ -1102,21 +1102,28 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
         ~DBProfile.email.ilike("%@example.com")
     ).all()
 
+    approved_user_ids_raw = [p.id for p in approved_profiles]
+    existing_scrubs = db.query(DBScrubLog).filter(DBScrubLog.user_id.in_(approved_user_ids_raw)).all() if approved_user_ids_raw else []
+    scrub_key_map = {(s.user_id, s.broker_name.upper()): s for s in existing_scrubs}
+
+    new_scrubs = []
+    target_brokers = ["LEXISNEXIS", "BEENVERIFIED", "WHITEPAGES", "SPOKEO", "RADARIS", "TRUTHFINDER", "PEOPLELOOKER", "FASTPEOPLESEARCH", "SMARTBACKGROUNDCHECKS"]
+    now = datetime.utcnow()
+
     for p in approved_profiles:
-        # Ensure KYC status is APPROVED for active core accounts
         if p.email in ["mike803@verizon.net", "maryannctampa@aol.com"]:
             p.kyc_status = "APPROVED"
 
-        for b_name in ["LEXISNEXIS", "BEENVERIFIED", "WHITEPAGES", "SPOKEO", "RADARIS", "TRUTHFINDER", "PEOPLELOOKER", "FASTPEOPLESEARCH", "SMARTBACKGROUNDCHECKS"]:
-            existing = db.query(DBScrubLog).filter(
-                DBScrubLog.user_id == p.id,
-                DBScrubLog.broker_name == b_name
-            ).first()
-            if not existing:
-                db.add(DBScrubLog(user_id=p.id, broker_name=b_name, status="MANUAL_PENDING", removal_type="MANUAL", timestamp=datetime.utcnow()))
-            elif existing.status not in ["PROCESSING", "MANUAL_PENDING", "PENDING"]:
-                existing.status = "MANUAL_PENDING"
-                existing.timestamp = datetime.utcnow()
+        for b_name in target_brokers:
+            s = scrub_key_map.get((p.id, b_name))
+            if not s:
+                new_scrubs.append(DBScrubLog(user_id=p.id, broker_name=b_name, status="MANUAL_PENDING", removal_type="MANUAL", timestamp=now))
+            elif s.status not in ["PROCESSING", "MANUAL_PENDING", "PENDING"]:
+                s.status = "MANUAL_PENDING"
+                s.timestamp = now
+
+    if new_scrubs:
+        db.bulk_save_objects(new_scrubs)
     db.commit()
 
     # Refetch all APPROVED paid profiles
