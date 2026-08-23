@@ -3604,15 +3604,45 @@ async def get_user_sms_inbox(user_id: Optional[str] = None, db: Session = Depend
         or_(*node_conditions)
     ).order_by(desc(DBPurgeLog.timestamp)).limit(50).all()
 
+    alias_map = {("".join(filter(str.isdigit, a.content or ""))[-4:] if a.content else ""): a.content for a in user_aliases if a.content}
+
     inbox = []
     for log in sms_logs:
         msg = log.action_type
         if msg.startswith("SMS_RECEIVED "):
             msg = msg.replace("SMS_RECEIVED ", "")
+        elif msg.startswith("SMS_SENT "):
+            msg = msg.replace("SMS_SENT ", "")
+
+        from_phone = ""
+        to_phone = ""
+
+        if "[From " in msg:
+            try:
+                from_part = msg.split("[From ")[1].split("]")[0]
+                from_phone = from_part.strip()
+            except Exception:
+                pass
+
+        if "[To " in msg:
+            try:
+                to_part = msg.split("[To ")[1].split("]")[0]
+                to_phone = to_part.strip()
+            except Exception:
+                pass
+
+        if not to_phone and log.node_id:
+            node_digits = "".join(filter(str.isdigit, log.node_id))
+            if len(node_digits) >= 4:
+                last4 = node_digits[-4:]
+                to_phone = alias_map.get(last4, f"+1 (813) ***-{last4}")
+
         inbox.append({
             "id": log.id,
             "timestamp": log.timestamp.isoformat() + "Z" if log.timestamp and not log.timestamp.isoformat().endswith("Z") else (log.timestamp.isoformat() if log.timestamp else ""),
             "message": msg,
+            "from_phone": from_phone,
+            "to_phone": to_phone,
             "line": log.node_id
         })
     return {"status": "success", "inbox": inbox}

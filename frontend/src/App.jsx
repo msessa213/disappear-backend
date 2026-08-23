@@ -2463,8 +2463,13 @@ const handleEmergencyBurn = async () => {
                             <div key={`thread_${phone}`} style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '8px', padding: '10px 12px' }}>
                               {/* Group Header */}
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #1e293b' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <span style={{ fontSize: '0.85rem', color: '#00D2FF', fontWeight: 'bold' }}>📱 {formattedPhoneDisplay}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                  <span style={{ fontSize: '0.82rem', color: '#00D2FF', fontWeight: 'bold' }}>📱 FROM: {formattedPhoneDisplay}</span>
+                                  {newestMessage?.to_phone && (
+                                    <span style={{ fontSize: '0.72rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.15)', padding: '2px 7px', borderRadius: '4px', border: '1px solid rgba(56, 189, 248, 0.3)', fontWeight: 'bold' }}>
+                                      📥 TO: {newestMessage.to_phone}
+                                    </span>
+                                  )}
                                   <span style={{ fontSize: '0.65rem', background: '#1e293b', color: '#10B981', padding: '1px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
                                     {messages.length} {messages.length === 1 ? 'MSG' : 'MSGS'}
                                   </span>
@@ -2529,8 +2534,15 @@ const handleEmergencyBurn = async () => {
                                 {/* NEWEST MESSAGE ALWAYS SHOWN AT TOP */}
                                 {newestMessage && (
                                   <div key={newestMessage.id} style={{ background: newestMessage.message.startsWith("OUTBOUND") ? '#051815' : '#030712', padding: '8px 10px', borderRadius: '5px', border: newestMessage.message.startsWith("OUTBOUND") ? '1px solid #059669' : '1px solid #1e293b', fontSize: '0.78rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
-                                      <span style={{ fontSize: '0.65rem', color: '#10B981', fontWeight: 'bold' }}>LATEST MESSAGE</span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span style={{ fontSize: '0.65rem', color: '#10B981', fontWeight: 'bold' }}>LATEST MESSAGE</span>
+                                        {newestMessage.to_phone && (
+                                          <span style={{ fontSize: '0.65rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
+                                            📥 TO: {newestMessage.to_phone}
+                                          </span>
+                                        )}
+                                      </div>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <span style={{ color: '#64748B', fontSize: '0.68rem' }}>{newestMessage.timestamp}</span>
                                         <button
