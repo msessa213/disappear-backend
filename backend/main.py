@@ -1083,14 +1083,14 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
     # 1. Guarantee core paid profiles exist and have APPROVED status
     p1 = db.query(DBProfile).filter(DBProfile.id == "user_7956").first()
     if not p1:
-        m1 = DBProfile(id="user_7956", first_name="Michael", last_name="Sessa", email="mike803@verizon.net", phone="+18137558466", address="100 Privacy Way, Tampa FL 33602", dob="1988-05-14", kyc_status="APPROVED", created_at=datetime.utcnow())
+        m1 = DBProfile(id="user_7956", first_name="Michael", last_name="Sessa", email="mike803@verizon.net", phone="+18137558466", kyc_status="APPROVED", created_at=datetime.utcnow())
         db.add(m1)
     else:
         p1.kyc_status = "APPROVED"
 
     p2 = db.query(DBProfile).filter(DBProfile.id == "user_3010").first()
     if not p2:
-        m2 = DBProfile(id="user_3010", first_name="Maryann", last_name="C", email="maryannctampa@aol.com", phone="+18135550199", address="250 Vault Street, Tampa FL 33602", dob="1992-11-20", kyc_status="APPROVED", created_at=datetime.utcnow())
+        m2 = DBProfile(id="user_3010", first_name="Maryann", last_name="C", email="maryannctampa@aol.com", phone="+18135550199", kyc_status="APPROVED", created_at=datetime.utcnow())
         db.add(m2)
     else:
         p2.kyc_status = "APPROVED"
@@ -1498,6 +1498,47 @@ async def get_user_activity_report(
             "search": search
         },
         "users": report
+    }
+
+
+class UpdateProfileDetailsRequest(BaseModel):
+    user_id: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
+    address: Optional[str] = None
+    dob: Optional[str] = None
+    phone: Optional[str] = None
+
+@app.post("/api/admin/profile/update-details")
+async def update_profile_details(req: UpdateProfileDetailsRequest, db: Session = Depends(get_db)):
+    """Admin Endpoint: Updates a customer's real profile address, DOB, phone, or name"""
+    prof = db.query(DBProfile).filter(
+        or_(
+            DBProfile.id == req.user_id,
+            DBProfile.email.ilike(req.user_id.strip())
+        )
+    ).first()
+    if not prof:
+        raise HTTPException(status_code=404, detail=f"No user profile found for {req.user_id}")
+
+    if req.first_name is not None: prof.first_name = req.first_name.strip()
+    if req.last_name is not None: prof.last_name = req.last_name.strip()
+    if req.email is not None: prof.email = req.email.strip()
+    if req.address is not None: prof.address = req.address.strip()
+    if req.dob is not None: prof.dob = req.dob.strip()
+    if req.phone is not None: prof.phone = format_to_e164(req.phone)
+
+    db.commit()
+    return {
+        "status": "SUCCESS",
+        "user_id": prof.id,
+        "email": prof.email,
+        "first_name": prof.first_name,
+        "last_name": prof.last_name,
+        "address": prof.address,
+        "dob": prof.dob,
+        "phone": prof.phone
     }
 
 
