@@ -1083,14 +1083,14 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
     # 1. Guarantee core paid profiles exist and have APPROVED status
     p1 = db.query(DBProfile).filter(DBProfile.id == "user_7956").first()
     if not p1:
-        m1 = DBProfile(id="user_7956", first_name="Michael", last_name="Sessa", email="mike803@verizon.net", phone="+18137558466", kyc_status="APPROVED", created_at=datetime.utcnow())
+        m1 = DBProfile(id="user_7956", first_name="Michael", last_name="Sessa", email="mike803@verizon.net", phone="+18138105237", address="4017 Arroyo Ln, Tampa, FL 33624", dob="1980-04-08", kyc_status="APPROVED", created_at=datetime.utcnow())
         db.add(m1)
     else:
         p1.kyc_status = "APPROVED"
 
     p2 = db.query(DBProfile).filter(DBProfile.id == "user_3010").first()
     if not p2:
-        m2 = DBProfile(id="user_3010", first_name="Maryann", last_name="C", email="maryannctampa@aol.com", phone="+18135550199", kyc_status="APPROVED", created_at=datetime.utcnow())
+        m2 = DBProfile(id="user_3010", first_name="Maryann", last_name="C", email="maryannctampa@aol.com", phone="+18134313737", address="4017 Arroyo Ln, Tampa, FL 33624", dob="1976-06-15", kyc_status="APPROVED", created_at=datetime.utcnow())
         db.add(m2)
     else:
         p2.kyc_status = "APPROVED"
