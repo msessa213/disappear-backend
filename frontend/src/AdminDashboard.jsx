@@ -29,6 +29,63 @@ export default function AdminDashboard({ API_BASE_URL }) {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [reportStatusMsg, setReportStatusMsg] = useState("");
 
+  // --- PROFILE EDITOR MODAL STATES ---
+  const [editingProfileUser, setEditingProfileUser] = useState(null);
+  const [editProfileFirstName, setEditProfileFirstName] = useState("");
+  const [editProfileLastName, setEditProfileLastName] = useState("");
+  const [editProfileEmail, setEditProfileEmail] = useState("");
+  const [editProfilePhone, setEditProfilePhone] = useState("");
+  const [editProfileAddress, setEditProfileAddress] = useState("");
+  const [editProfileDob, setEditProfileDob] = useState("");
+  const [editProfileMsg, setEditProfileMsg] = useState("");
+
+  const handleOpenEditProfileModal = (user) => {
+    setEditingProfileUser(user);
+    setEditProfileFirstName(user.first_name || "");
+    setEditProfileLastName(user.last_name || "");
+    setEditProfileEmail(user.email || "");
+    setEditProfilePhone(user.phone || "");
+    setEditProfileAddress(user.address || "");
+    setEditProfileDob(user.dob || "");
+    setEditProfileMsg("");
+  };
+
+  const handleSaveProfileDetails = async (e) => {
+    if (e) e.preventDefault();
+    if (!editingProfileUser) return;
+
+    setEditProfileMsg("");
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/profile/update-details`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: editingProfileUser.user_id,
+          first_name: editProfileFirstName,
+          last_name: editProfileLastName,
+          email: editProfileEmail,
+          phone: editProfilePhone,
+          address: editProfileAddress,
+          dob: editProfileDob
+        })
+      });
+      if (res.ok) {
+        setEditProfileMsg("✅ PROFILE UPDATED SUCCESSFULLY!");
+        setTimeout(() => {
+          setEditingProfileUser(null);
+          handleGenerateUserReport();
+          fetchBacklog(adminKey);
+        }, 1200);
+      } else {
+        const err = await res.json();
+        setEditProfileMsg(`❌ UPDATE FAILED: ${err.detail || 'ERROR UPDATING PROFILE'}`);
+      }
+    } catch (err) {
+      console.error("Save profile error", err);
+      setEditProfileMsg("❌ NETWORK ERROR UPDATING PROFILE.");
+    }
+  };
+
   const setReportDatePreset = (days) => {
     const today = new Date();
     const endStr = today.toISOString().split('T')[0];
@@ -628,10 +685,11 @@ export default function AdminDashboard({ API_BASE_URL }) {
                     <th style={{ padding: '10px' }}>REG DATE</th>
                     <th style={{ padding: '10px' }}>USER ID / NAME</th>
                     <th style={{ padding: '10px' }}>EMAIL & PHONE</th>
+                    <th style={{ padding: '10px' }}>PHYSICAL ADDRESS & DOB</th>
                     <th style={{ padding: '10px' }}>STATUS</th>
                     <th style={{ padding: '10px' }}>EMAIL ALIASES</th>
                     <th style={{ padding: '10px' }}>PHONE ALIASES</th>
-                    <th style={{ padding: '10px' }}>SCRUBS (DONE/TOTAL)</th>
+                    <th style={{ padding: '10px' }}>ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -647,6 +705,10 @@ export default function AdminDashboard({ API_BASE_URL }) {
                       <td style={{ padding: '10px' }}>
                         <div style={{ color: '#00D2FF' }}>{u.email}</div>
                         <div style={{ color: '#10B981', fontSize: '0.72rem' }}>{u.phone || 'No phone'}</div>
+                      </td>
+                      <td style={{ padding: '10px' }}>
+                        <div style={{ color: '#E2E8F0', fontSize: '0.74rem' }}>{u.address || <span style={{ color: '#64748B', fontStyle: 'italic' }}>No address entered</span>}</div>
+                        <div style={{ color: '#94A3B8', fontSize: '0.70rem' }}>DOB: {u.dob || 'Not provided'}</div>
                       </td>
                       <td style={{ padding: '10px' }}>
                         <span style={{
@@ -671,13 +733,80 @@ export default function AdminDashboard({ API_BASE_URL }) {
                           <div key={pa} style={{ fontSize: '0.72rem', fontFamily: 'monospace' }}>{pa}</div>
                         )) : <span style={{ color: '#64748B' }}>None</span>}
                       </td>
-                      <td style={{ padding: '10px', color: '#CBD5E1' }}>
-                        <span style={{ color: '#10B981', fontWeight: 'bold' }}>{u.removed_scrubs}</span> / {u.total_scrubs}
+                      <td style={{ padding: '10px' }}>
+                        <button
+                          type="button"
+                          className="reset-btn"
+                          style={{ padding: '3px 8px', fontSize: '0.7rem', borderColor: '#00D2FF', color: '#00D2FF', fontWeight: 'bold' }}
+                          onClick={() => handleOpenEditProfileModal(u)}
+                        >
+                          ✏️ EDIT DETAILS
+                        </button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Profile Details Edit Modal */}
+        {editingProfileUser && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <div style={{ background: '#090d16', border: '1px solid #00D2FF', borderRadius: '12px', padding: '25px', maxWidth: '500px', width: '100%', boxShadow: '0 0 30px rgba(0, 210, 255, 0.3)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.1rem' }}>✏️ EDIT CUSTOMER PROFILE DETAILS</h3>
+                <button type="button" className="reset-btn" style={{ padding: '2px 8px', fontSize: '0.8rem' }} onClick={() => setEditingProfileUser(null)}>✕ CLOSE</button>
+              </div>
+
+              <p style={{ color: '#94A3B8', fontSize: '0.78rem', marginBottom: '15px' }}>
+                Updating profile details for User ID: <strong style={{ color: '#00D2FF' }}>{editingProfileUser.user_id}</strong>
+              </p>
+
+              {editProfileMsg && (
+                <div style={{ padding: '8px 12px', borderRadius: '6px', fontSize: '0.8rem', marginBottom: '15px', background: editProfileMsg.startsWith('✅') ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', border: `1px solid ${editProfileMsg.startsWith('✅') ? '#10b981' : '#ef4444'}`, color: editProfileMsg.startsWith('✅') ? '#34d399' : '#ff6b6b' }}>
+                  {editProfileMsg}
+                </div>
+              )}
+
+              <form onSubmit={handleSaveProfileDetails} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', display: 'block', marginBottom: '4px' }}>FIRST NAME</label>
+                    <input type="text" className="mask-btn" style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#020617', color: '#fff' }} value={editProfileFirstName} onChange={(e) => setEditProfileFirstName(e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', display: 'block', marginBottom: '4px' }}>LAST NAME</label>
+                    <input type="text" className="mask-btn" style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#020617', color: '#fff' }} value={editProfileLastName} onChange={(e) => setEditProfileLastName(e.target.value)} />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.72rem', color: '#00D2FF', display: 'block', marginBottom: '4px' }}>EMAIL ADDRESS</label>
+                  <input type="email" className="mask-btn" style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#020617', color: '#fff' }} value={editProfileEmail} onChange={(e) => setEditProfileEmail(e.target.value)} />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.72rem', color: '#00D2FF', display: 'block', marginBottom: '4px' }}>MOBILE / PHYSICAL PHONE</label>
+                  <input type="text" className="mask-btn" style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#020617', color: '#fff' }} value={editProfilePhone} onChange={(e) => setEditProfilePhone(e.target.value)} />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.72rem', color: '#00D2FF', display: 'block', marginBottom: '4px' }}>PHYSICAL ADDRESS</label>
+                  <input type="text" placeholder="e.g. 123 Main St, City, State ZIP" className="mask-btn" style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#020617', color: '#fff' }} value={editProfileAddress} onChange={(e) => setEditProfileAddress(e.target.value)} />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.72rem', color: '#00D2FF', display: 'block', marginBottom: '4px' }}>DATE OF BIRTH (DOB)</label>
+                  <input type="text" placeholder="e.g. 1988-05-14 or MM/DD/YYYY" className="mask-btn" style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#020617', color: '#fff' }} value={editProfileDob} onChange={(e) => setEditProfileDob(e.target.value)} />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                  <button type="submit" className="main-button" style={{ flex: 1, padding: '8px', fontSize: '0.82rem' }}>💾 SAVE PROFILE CHANGES</button>
+                  <button type="button" className="reset-btn" style={{ padding: '8px 14px', fontSize: '0.82rem' }} onClick={() => setEditingProfileUser(null)}>CANCEL</button>
+                </div>
+              </form>
             </div>
           </div>
         )}
