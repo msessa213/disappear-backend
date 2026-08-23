@@ -1097,36 +1097,6 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
 
     db.commit()
 
-    approved_profiles = db.query(DBProfile).filter(
-        DBProfile.id.not_in(["user_ref_01", "user_ref_02"]),
-        ~DBProfile.email.ilike("%@example.com")
-    ).all()
-
-    approved_user_ids_raw = [p.id for p in approved_profiles]
-    existing_scrubs = db.query(DBScrubLog).filter(DBScrubLog.user_id.in_(approved_user_ids_raw)).all() if approved_user_ids_raw else []
-    scrub_key_map = {(s.user_id, s.broker_name.upper()): s for s in existing_scrubs}
-
-    new_scrubs = []
-    target_brokers = ["LEXISNEXIS", "BEENVERIFIED", "WHITEPAGES", "SPOKEO", "RADARIS", "TRUTHFINDER", "PEOPLELOOKER", "FASTPEOPLESEARCH", "SMARTBACKGROUNDCHECKS"]
-    now = datetime.utcnow()
-
-    for p in approved_profiles:
-        if p.email in ["mike803@verizon.net", "maryannctampa@aol.com"]:
-            p.kyc_status = "APPROVED"
-
-        for b_name in target_brokers:
-            s = scrub_key_map.get((p.id, b_name))
-            if not s:
-                new_scrubs.append(DBScrubLog(user_id=p.id, broker_name=b_name, status="MANUAL_PENDING", removal_type="MANUAL", timestamp=now))
-            elif s.status not in ["PROCESSING", "MANUAL_PENDING", "PENDING"]:
-                s.status = "MANUAL_PENDING"
-                s.timestamp = now
-
-    if new_scrubs:
-        db.bulk_save_objects(new_scrubs)
-    db.commit()
-
-    # Refetch all APPROVED paid profiles
     paid_profiles = db.query(DBProfile).filter(
         DBProfile.kyc_status == "APPROVED",
         DBProfile.id.not_in(["user_ref_01", "user_ref_02"]),
@@ -1136,6 +1106,26 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
     approved_user_ids = [p.id for p in paid_profiles]
     if not approved_user_ids:
         return {"manual_processing_required": [], "automated_backlog": [], "completed_tasks": []}
+
+    existing_scrubs = db.query(DBScrubLog).filter(DBScrubLog.user_id.in_(approved_user_ids)).all()
+    scrub_key_map = {(s.user_id, s.broker_name.upper()): s for s in existing_scrubs}
+
+    new_scrubs = []
+    target_brokers = ["LEXISNEXIS", "BEENVERIFIED", "WHITEPAGES", "SPOKEO", "RADARIS", "TRUTHFINDER", "PEOPLELOOKER", "FASTPEOPLESEARCH", "SMARTBACKGROUNDCHECKS"]
+    now = datetime.utcnow()
+
+    for p in paid_profiles:
+        for b_name in target_brokers:
+            s = scrub_key_map.get((p.id, b_name))
+            if not s:
+                new_scrubs.append(DBScrubLog(user_id=p.id, broker_name=b_name, status="MANUAL_PENDING", removal_type="MANUAL", timestamp=now))
+            elif s.status not in ["PROCESSING", "MANUAL_PENDING", "PENDING"]:
+                s.status = "MANUAL_PENDING"
+                s.timestamp = now
+
+    if new_scrubs:
+        db.add_all(new_scrubs)
+    db.commit()
 
     open_tasks = db.query(DBScrubLog).filter(
         DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"]),
