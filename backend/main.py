@@ -3587,14 +3587,19 @@ async def get_user_sms_inbox(user_id: Optional[str] = None, db: Session = Depend
             alias_digits.add(d[-4:])
 
     # Strictly filter DBPurgeLog by target_uid prefix OR specific owned alias 4-digits
-    node_conditions = [DBPurgeLog.node_id.like(f"{target_uid}_%")]
+    node_conditions = [
+        DBPurgeLog.node_id.ilike(f"{target_uid}_%"),
+        DBPurgeLog.node_id.ilike(f"{raw_uid}_%")
+    ]
     for digits in alias_digits:
-        node_conditions.append(DBPurgeLog.node_id.like(f"%_VIRTUAL_LINE_{digits}"))
+        node_conditions.append(DBPurgeLog.node_id.ilike(f"%_LINE_{digits}"))
+        node_conditions.append(DBPurgeLog.node_id.ilike(f"%_{digits}"))
 
     sms_logs = db.query(DBPurgeLog).filter(
         or_(
-            DBPurgeLog.action_type.like("SMS_RECEIVED%"),
-            DBPurgeLog.action_type.like("SMS_SENT%")
+            DBPurgeLog.action_type.ilike("%SMS_%"),
+            DBPurgeLog.action_type.ilike("%SMS%"),
+            DBPurgeLog.action_type.ilike("%From%")
         ),
         or_(*node_conditions)
     ).order_by(desc(DBPurgeLog.timestamp)).limit(50).all()
