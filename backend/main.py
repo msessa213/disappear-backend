@@ -1477,6 +1477,8 @@ async def get_user_activity_report(
             "first_name": p.first_name or "",
             "last_name": p.last_name or "",
             "phone": p.phone or "",
+            "address": p.address or "",
+            "dob": p.dob or "",
             "kyc_status": p.kyc_status or "UNPAID",
             "aml_flagged": bool(p.aml_flagged),
             "relay_credits": p.relay_credits if p.relay_credits is not None else 500,
