@@ -1100,7 +1100,10 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
     paid_profiles = db.query(DBProfile).filter(
         DBProfile.kyc_status == "APPROVED",
         DBProfile.id.not_in(["user_ref_01", "user_ref_02"]),
-        ~DBProfile.email.ilike("%@example.com")
+        ~DBProfile.email.ilike("%@example.com"),
+        ~DBProfile.email.ilike("%@test.com"),
+        ~DBProfile.email.ilike("%msessa2@gmail.com"),
+        ~DBProfile.email.ilike("%123 main st%")
     ).all()
 
     approved_user_ids = [p.id for p in paid_profiles]
