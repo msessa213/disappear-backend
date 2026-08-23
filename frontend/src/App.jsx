@@ -160,6 +160,7 @@ function App() {
   const [expandedThreads, setExpandedThreads] = useState({});
   const [showOnboardingWelcomeModal, setShowOnboardingWelcomeModal] = useState(false);
   const [showDataRemovalNoticeModal, setShowDataRemovalNoticeModal] = useState(false);
+  const [showSignupTargetNoticeModal, setShowSignupTargetNoticeModal] = useState(false);
 
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
@@ -3136,10 +3137,42 @@ const handleEmergencyBurn = async () => {
                     <div className="pricing-card">
                       <div className="price-box">
                         <h3 className="tiger-text">TARGET PROFILE DATA</h3>
+
+                        {/* LEGAL NAME & DATA REMOVAL TARGET NOTICE BANNER */}
+                        <div style={{
+                          background: 'rgba(0, 210, 255, 0.08)',
+                          border: '1px solid #00D2FF',
+                          borderRadius: '8px',
+                          padding: '14px 16px',
+                          marginBottom: '18px',
+                          boxShadow: '0 0 20px rgba(0, 210, 255, 0.2)',
+                          textAlign: 'left'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                              <h4 style={{ color: '#00D2FF', margin: 0, fontSize: '0.92rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                                LEGAL NAME & DATA REMOVAL TARGET NOTICE
+                              </h4>
+                            </div>
+                            <button
+                              type="button"
+                              className="reset-btn"
+                              style={{ padding: '2px 8px', fontSize: '0.72rem', color: '#00D2FF', borderColor: '#00D2FF' }}
+                              onClick={() => setShowSignupTargetNoticeModal(true)}
+                            >
+                              ℹ️ WHY REAL NAME?
+                            </button>
+                          </div>
+                          <p style={{ color: '#F8FAFC', fontSize: '0.82rem', margin: 0, lineHeight: '1.45' }}>
+                            <strong>IMPORTANT:</strong> Please enter your <strong>REAL LEGAL NAME</strong> and physical address below. The name entered here will be the <strong>exact target searched, scrubbed, and removed</strong> across all 47+ public data broker registries.
+                          </p>
+                        </div>
+
                         <div className="checkout-grid">
-                            <input className="mask-btn" placeholder="First Name" value={targetProfile.firstName} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
-                            <input className="mask-btn" placeholder="Middle Name" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
-                            <input className="mask-btn full-row" placeholder="Last Name" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
+                            <input className="mask-btn" placeholder="First Name (Legal Name)" value={targetProfile.firstName} onFocus={() => setShowSignupTargetNoticeModal(true)} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
+                            <input className="mask-btn" placeholder="Middle Name (Legal Name)" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
+                            <input className="mask-btn full-row" placeholder="Last Name (Legal Name)" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
                             <input type="email" name="disappear_signup_email_clean" autoComplete="off" data-lpignore="true" className="mask-btn full-row" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
                             <input type="password" name="disappear_signup_password_clean" autoComplete="new-password" data-lpignore="true" className="mask-btn full-row" placeholder="Account Password (min 6 characters)" value={targetProfile.password} onChange={(e) => setTargetProfile({...targetProfile, password: e.target.value})} />
                             <input type="password" name="disappear_signup_confirm_password_clean" autoComplete="new-password" data-lpignore="true" className="mask-btn full-row" placeholder="Confirm Account Password" value={signupConfirmPassword} onChange={(e) => setSignupConfirmPassword(e.target.value)} />
@@ -3413,6 +3446,45 @@ const handleEmergencyBurn = async () => {
                 ⚙️ REVIEW / EDIT PROFILE DETAILS
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- SIGNUP TARGET NAME NOTICE MODAL (POPUP ON SIGNUP) --- */}
+      {showSignupTargetNoticeModal && (
+        <div className="modal-overlay" style={{ zIndex: 60050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 10px' }} onClick={() => setShowSignupTargetNoticeModal(false)}>
+          <div className="price-box" style={{ maxWidth: '540px', width: '100%', padding: '28px', textAlign: 'left', boxSizing: 'border-box', border: '1px solid #00D2FF', boxShadow: '0 0 35px rgba(0, 210, 255, 0.35)', borderRadius: '14px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '1.4rem' }}>🛡️</span>
+                <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.15rem', color: '#00D2FF', letterSpacing: '0.5px' }}>REAL LEGAL NAME REQUIRED FOR SCRUBBING</h3>
+              </div>
+              <button type="button" className="reset-btn" style={{ padding: '2px 8px', fontSize: '0.75rem' }} onClick={() => setShowSignupTargetNoticeModal(false)}>✕ CLOSE</button>
+            </div>
+
+            <div style={{ padding: '14px', background: 'rgba(0, 210, 255, 0.08)', border: '1px solid rgba(0, 210, 255, 0.3)', borderRadius: '8px', marginBottom: '18px' }}>
+              <p style={{ fontSize: '0.88rem', color: '#F8FAFC', margin: 0, lineHeight: '1.5' }}>
+                ℹ️ <strong>SERVICE DIRECTIVE:</strong> The legal name entered during registration is the <strong>EXACT target searched, targeted, and removed</strong> across Whitepages, Spokeo, BeenVerified, LexisNexis, and 47+ public data broker registries.
+              </p>
+            </div>
+
+            <div style={{ background: '#050B14', border: '1px solid #1E293B', borderRadius: '8px', padding: '16px', marginBottom: '20px' }}>
+              <h4 style={{ color: '#00D2FF', margin: '0 0 8px 0', fontSize: '0.88rem' }}>Why Your Real Legal Name & Address Are Mandatory:</h4>
+              <ul style={{ margin: 0, paddingLeft: '20px', color: '#CBD5E1', fontSize: '0.82rem', lineHeight: '1.6' }}>
+                <li>Public data brokers index individual profiles by their real legal full name and primary address.</li>
+                <li>Entering a fake name or pseudonym will cause opt-out requests to fail against public records.</li>
+                <li>Your real identity is kept 100% confidential inside your encrypted Disappear Vault.</li>
+              </ul>
+            </div>
+
+            <button 
+              type="button" 
+              className="main-button" 
+              style={{ width: '100%', padding: '14px', fontSize: '0.9rem', fontWeight: 'bold' }}
+              onClick={() => setShowSignupTargetNoticeModal(false)}
+            >
+              ✅ UNDERSTOOD — I WILL ENTER MY REAL LEGAL NAME
+            </button>
           </div>
         </div>
       )}
