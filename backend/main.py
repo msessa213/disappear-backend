@@ -3576,8 +3576,11 @@ async def get_user_sms_inbox(user_id: Optional[str] = None, db: Session = Depend
     if profile:
         target_ids.add(profile.id)
 
-    # Collect user specific virtual line nodes (owner user_id or owner alias content)
-    user_aliases = db.query(DBAlias).filter(or_(DBAlias.user_id.in_(target_ids), DBAlias.type == "phone")).all()
+    # Collect user specific virtual line nodes (strictly owned by user_id)
+    user_aliases = db.query(DBAlias).filter(
+        DBAlias.type == "phone",
+        DBAlias.user_id.in_(target_ids)
+    ).all()
 
     node_filters = []
     for tid in target_ids:
