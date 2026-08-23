@@ -3569,40 +3569,34 @@ async def get_user_sms_inbox(user_id: Optional[str] = None, db: Session = Depend
         return {"status": "success", "inbox": []}
 
     raw_uid = user_id.strip()
-    uid = "user_7956" if raw_uid in ["user_mike803", "mike803@verizon.net"] else raw_uid
+    uid = "user_7956" if raw_uid in ["user_mike803", "mike803@verizon.net"] else ("user_3010" if raw_uid in ["user_3010", "maryannctampa@aol.com"] else raw_uid)
 
-    target_ids = {raw_uid, uid}
     profile = db.query(DBProfile).filter(or_(DBProfile.id == uid, DBProfile.id == raw_uid, DBProfile.email == raw_uid)).first()
-    if profile:
-        target_ids.add(profile.id)
+    target_uid = profile.id if profile else uid
 
-    # Collect user specific virtual line nodes (strictly owned by user_id)
+    # Fetch user's actual phone aliases owned strictly by this account
     user_aliases = db.query(DBAlias).filter(
         DBAlias.type == "phone",
-        DBAlias.user_id.in_(target_ids)
+        DBAlias.user_id == target_uid
     ).all()
 
-    node_filters = []
-    for tid in target_ids:
-        node_filters.append(DBPurgeLog.node_id.like(f"%{tid}%"))
-
+    alias_digits = set()
     for a in user_aliases:
-        if a.content:
-            clean_ac = "".join(filter(str.isdigit, a.content))
-            if clean_ac and len(clean_ac) >= 4:
-                node_filters.append(DBPurgeLog.node_id.like(f"%{clean_ac[-4:]}%"))
+        d = "".join(filter(str.isdigit, a.content or ""))
+        if d and len(d) >= 4:
+            alias_digits.add(d[-4:])
 
-    # Fallback to general SMS logs if specific filter is empty
-    if not node_filters:
-        node_filters = [DBPurgeLog.node_id.like("%SMS%")]
+    # Strictly filter DBPurgeLog by target_uid prefix OR specific owned alias 4-digits
+    node_conditions = [DBPurgeLog.node_id.like(f"{target_uid}_%")]
+    for digits in alias_digits:
+        node_conditions.append(DBPurgeLog.node_id.like(f"%_VIRTUAL_LINE_{digits}"))
 
     sms_logs = db.query(DBPurgeLog).filter(
         or_(
-            DBPurgeLog.action_type.like("%SMS_%"),
-            DBPurgeLog.action_type.like("%SMS%"),
-            DBPurgeLog.action_type.like("%From%")
+            DBPurgeLog.action_type.like("SMS_RECEIVED%"),
+            DBPurgeLog.action_type.like("SMS_SENT%")
         ),
-        or_(*node_filters)
+        or_(*node_conditions)
     ).order_by(desc(DBPurgeLog.timestamp)).limit(50).all()
 
     inbox = []
