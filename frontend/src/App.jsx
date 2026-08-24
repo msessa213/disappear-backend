@@ -3441,8 +3441,8 @@ const handleEmergencyBurn = async () => {
 
       {/* --- DATA REMOVAL TARGET NOTICE MODAL (POPUP ON SIGN IN) --- */}
       {showDataRemovalNoticeModal && (
-        <div className="modal-overlay" style={{ zIndex: 60050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 12px', overflowY: 'auto' }} onClick={() => setShowDataRemovalNoticeModal(false)}>
-          <div className="price-box" style={{ maxWidth: '540px', width: '100%', maxHeight: '85vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '24px', textAlign: 'left', boxSizing: 'border-box', border: '1px solid #00D2FF', boxShadow: '0 0 35px rgba(0, 210, 255, 0.35)', borderRadius: '14px' }} onClick={e => e.stopPropagation()}>
+        <div className="modal-overlay" style={{ zIndex: 60050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(16px, env(safe-area-inset-top, 16px)) 12px max(24px, env(safe-area-inset-bottom, 24px)) 12px', overflowY: 'auto' }} onClick={() => setShowDataRemovalNoticeModal(false)}>
+          <div style={{ maxWidth: '540px', width: '100%', maxHeight: '82vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '24px 20px', textAlign: 'left', boxSizing: 'border-box', border: '1px solid #00D2FF', boxShadow: '0 10px 40px rgba(0,0,0,0.95), 0 0 35px rgba(0, 210, 255, 0.35)', borderRadius: '16px', background: 'linear-gradient(145deg, #090d16 0%, #030712 100%)', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '1.4rem' }}>🛡️</span>
@@ -3527,8 +3527,8 @@ const handleEmergencyBurn = async () => {
 
       {/* --- SIGNUP TARGET NAME NOTICE MODAL (POPUP ON SIGNUP) --- */}
       {showSignupTargetNoticeModal && (
-        <div className="modal-overlay" style={{ zIndex: 60050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 12px', overflowY: 'auto' }} onClick={() => setShowSignupTargetNoticeModal(false)}>
-          <div className="price-box" style={{ maxWidth: '540px', width: '100%', maxHeight: '85vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '24px', textAlign: 'left', boxSizing: 'border-box', border: '1px solid #00D2FF', boxShadow: '0 0 35px rgba(0, 210, 255, 0.35)', borderRadius: '14px' }} onClick={e => e.stopPropagation()}>
+        <div className="modal-overlay" style={{ zIndex: 60050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(16px, env(safe-area-inset-top, 16px)) 12px max(24px, env(safe-area-inset-bottom, 24px)) 12px', overflowY: 'auto' }} onClick={() => setShowSignupTargetNoticeModal(false)}>
+          <div style={{ maxWidth: '540px', width: '100%', maxHeight: '82vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '24px 20px', textAlign: 'left', boxSizing: 'border-box', border: '1px solid #00D2FF', boxShadow: '0 10px 40px rgba(0,0,0,0.95), 0 0 35px rgba(0, 210, 255, 0.35)', borderRadius: '16px', background: 'linear-gradient(145deg, #090d16 0%, #030712 100%)', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '1.4rem' }}>🛡️</span>
