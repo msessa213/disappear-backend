@@ -38,6 +38,8 @@ export default function AdminDashboard({ API_BASE_URL }) {
   // --- PROFILE EDITOR MODAL STATES ---
   const [editingProfileUser, setEditingProfileUser] = useState(null);
   const [editProfileFirstName, setEditProfileFirstName] = useState("");
+  const [editProfileMiddleName, setEditProfileMiddleName] = useState("");
+  const [editProfileNickname, setEditProfileNickname] = useState("");
   const [editProfileLastName, setEditProfileLastName] = useState("");
   const [editProfileEmail, setEditProfileEmail] = useState("");
   const [editProfilePhone, setEditProfilePhone] = useState("");
@@ -48,6 +50,8 @@ export default function AdminDashboard({ API_BASE_URL }) {
   const handleOpenEditProfileModal = (user) => {
     setEditingProfileUser(user);
     setEditProfileFirstName(user.first_name || "");
+    setEditProfileMiddleName(user.middle_name || "");
+    setEditProfileNickname(user.nickname || "");
     setEditProfileLastName(user.last_name || "");
     setEditProfileEmail(user.email || "");
     setEditProfilePhone(user.phone || "");
@@ -68,6 +72,8 @@ export default function AdminDashboard({ API_BASE_URL }) {
         body: JSON.stringify({
           user_id: editingProfileUser.user_id,
           first_name: editProfileFirstName,
+          middle_name: editProfileMiddleName,
+          nickname: editProfileNickname,
           last_name: editProfileLastName,
           email: editProfileEmail,
           phone: editProfilePhone,
@@ -150,11 +156,13 @@ export default function AdminDashboard({ API_BASE_URL }) {
       return;
     }
 
-    const headers = ["User ID", "Registration Date", "First Name", "Last Name", "Email", "Phone", "KYC Status", "Email Aliases", "Phone Aliases", "Relay Credits", "Total Scrubs", "Removed Scrubs", "Pending Scrubs"];
+    const headers = ["User ID", "Registration Date", "First Name", "Middle Name", "Nickname / Alias", "Last Name", "Email", "Phone", "KYC Status", "Email Aliases", "Phone Aliases", "Relay Credits", "Total Scrubs", "Removed Scrubs", "Pending Scrubs"];
     const rows = userReportData.map(u => [
       `"${u.user_id || ''}"`,
       `"${u.created_at || ''}"`,
       `"${u.first_name || ''}"`,
+      `"${u.middle_name || ''}"`,
+      `"${u.nickname || ''}"`,
       `"${u.last_name || ''}"`,
       `"${u.email || ''}"`,
       `"${u.phone || ''}"`,
@@ -763,7 +771,14 @@ export default function AdminDashboard({ API_BASE_URL }) {
                       </td>
                       <td style={{ padding: '10px' }}>
                         <div style={{ fontWeight: 'bold', color: '#FFFFFF' }}>{u.user_id}</div>
-                        <div style={{ color: '#94A3B8', fontSize: '0.72rem' }}>{u.first_name} {u.last_name}</div>
+                        <div style={{ color: '#94A3B8', fontSize: '0.72rem' }}>
+                          {u.first_name} {u.middle_name ? `${u.middle_name} ` : ''}{u.last_name}
+                        </div>
+                        {u.nickname && (
+                          <div style={{ color: '#FFD700', fontSize: '0.68rem', fontWeight: 'bold' }}>
+                            Alias: "{u.nickname}"
+                          </div>
+                        )}
                       </td>
                       <td style={{ padding: '10px' }}>
                         <div style={{ color: '#00D2FF' }}>{u.email}</div>
@@ -844,15 +859,24 @@ export default function AdminDashboard({ API_BASE_URL }) {
               )}
 
               <form onSubmit={handleSaveProfileDetails} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
                   <div>
                     <label style={{ fontSize: '0.72rem', color: '#00D2FF', display: 'block', marginBottom: '4px' }}>FIRST NAME</label>
                     <input type="text" className="mask-btn" style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#020617', color: '#fff' }} value={editProfileFirstName} onChange={(e) => setEditProfileFirstName(e.target.value)} />
                   </div>
                   <div>
+                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', display: 'block', marginBottom: '4px' }}>MIDDLE NAME</label>
+                    <input type="text" className="mask-btn" style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#020617', color: '#fff' }} value={editProfileMiddleName} onChange={(e) => setEditProfileMiddleName(e.target.value)} />
+                  </div>
+                  <div>
                     <label style={{ fontSize: '0.72rem', color: '#00D2FF', display: 'block', marginBottom: '4px' }}>LAST NAME</label>
                     <input type="text" className="mask-btn" style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#020617', color: '#fff' }} value={editProfileLastName} onChange={(e) => setEditProfileLastName(e.target.value)} />
                   </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.72rem', color: '#00D2FF', display: 'block', marginBottom: '4px' }}>NICKNAME / PUBLIC RECORD ALIAS</label>
+                  <input type="text" placeholder="e.g. Mike, Former Maiden Names" className="mask-btn" style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#020617', color: '#fff' }} value={editProfileNickname} onChange={(e) => setEditProfileNickname(e.target.value)} />
                 </div>
 
                 <div>

@@ -77,6 +77,7 @@ class DBProfile(Base):
     id = Column(String, primary_key=True, index=True)
     first_name = Column(String)
     middle_name = Column(String)
+    nickname = Column(String, nullable=True)
     last_name = Column(String)
     email = Column(String)
     address = Column(String)

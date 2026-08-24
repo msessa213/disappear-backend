@@ -397,6 +397,7 @@ function App() {
                       ...prev,
                       firstName: data.profile.first_name || prev.firstName || "",
                       middleName: data.profile.middle_name || prev.middleName || "",
+                      nickname: data.profile.nickname || prev.nickname || "",
                       lastName: data.profile.last_name || prev.lastName || "",
                       email: data.profile.email || prev.email || "",
                       phone: data.profile.phone || prev.phone || "",
@@ -3370,8 +3371,9 @@ const handleEmergencyBurn = async () => {
 
                         <div className="checkout-grid">
                             <input className="mask-btn" placeholder="First Name (Legal Name)" value={targetProfile.firstName || targetProfile.first_name || ""} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value, first_name: e.target.value})} />
-                            <input className="mask-btn" placeholder="Middle Name (Legal Name)" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
-                            <input className="mask-btn full-row" placeholder="Last Name (Legal Name)" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
+                            <input className="mask-btn" placeholder="Middle Name (Legal Name)" value={targetProfile.middleName || targetProfile.middle_name || ""} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value, middle_name: e.target.value})} />
+                            <input className="mask-btn full-row" placeholder="Nickname / Public Record Alias (e.g. Common Short Names / Former Names)" value={targetProfile.nickname || ""} onChange={(e) => setTargetProfile({...targetProfile, nickname: e.target.value})} />
+                            <input className="mask-btn full-row" placeholder="Last Name (Legal Name)" value={targetProfile.lastName || targetProfile.last_name || ""} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value, last_name: e.target.value})} />
                             <input type="email" name="disappear_signup_email_clean" autoComplete="off" data-lpignore="true" className="mask-btn full-row" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
                             <input type="password" name="disappear_signup_password_clean" autoComplete="new-password" data-lpignore="true" className="mask-btn full-row" placeholder="Account Password (min 6 characters)" value={targetProfile.password} onChange={(e) => setTargetProfile({...targetProfile, password: e.target.value})} />
                             <input type="password" name="disappear_signup_confirm_password_clean" autoComplete="new-password" data-lpignore="true" className="mask-btn full-row" placeholder="Confirm Account Password" value={signupConfirmPassword} onChange={(e) => setSignupConfirmPassword(e.target.value)} />
@@ -3653,10 +3655,19 @@ const handleEmergencyBurn = async () => {
                   <span style={{ color: '#94A3B8' }}>Legal Target Name:</span>
                   <strong style={{ color: '#00D2FF' }}>
                     {targetProfile.firstName || targetProfile.first_name || targetProfile.lastName || targetProfile.last_name 
-                      ? `${targetProfile.firstName || targetProfile.first_name || ''} ${targetProfile.lastName || targetProfile.last_name || ''}`.trim() 
+                      ? `${targetProfile.firstName || targetProfile.first_name || ''} ${targetProfile.middleName || targetProfile.middle_name ? `${targetProfile.middleName || targetProfile.middle_name} ` : ''}${targetProfile.lastName || targetProfile.last_name || ''}`.trim() 
                       : (getSessionItem("disappear_user_email") || 'Registered Account Owner')}
                   </strong>
                 </div>
+
+                {(targetProfile.nickname || targetProfile.public_alias) && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #0F172A', paddingBottom: '6px' }}>
+                    <span style={{ color: '#94A3B8' }}>Nickname / Public Record Alias:</span>
+                    <strong style={{ color: '#FFD700' }}>
+                      "{targetProfile.nickname || targetProfile.public_alias}"
+                    </strong>
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #0F172A', paddingBottom: '6px' }}>
                   <span style={{ color: '#94A3B8' }}>Target Address:</span>

@@ -280,6 +280,8 @@ def safe_add_column(table: str, column: str, col_type: str):
 
 
 safe_add_column("purge_logs_v1", "user_id", "VARCHAR")
+safe_add_column("shield_profiles_v3", "middle_name", "VARCHAR")
+safe_add_column("shield_profiles_v3", "nickname", "VARCHAR")
 safe_add_column("shield_profiles_v3", "extra_email_slots", "INTEGER DEFAULT 0")
 safe_add_column("shield_assets_v3", "user_id", "VARCHAR")
 safe_add_column("shield_aliases_v3", "user_id", "VARCHAR")
