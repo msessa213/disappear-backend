@@ -1551,6 +1551,23 @@ async def get_user_activity_report(
         removed_scrubs = len([s for s in scrub_logs if s.status == "REMOVED"])
         pending_scrubs = len([s for s in scrub_logs if s.status != "REMOVED"])
 
+        # Determine live billing / payment status
+        canceled_at_val = getattr(p, 'canceled_at', None)
+        cancellation_date_str = ""
+        if canceled_at_val:
+            cancellation_date_str = canceled_at_val.isoformat() + "Z" if hasattr(canceled_at_val, 'isoformat') else str(canceled_at_val)
+
+        if p.kyc_status == "APPROVED":
+            payment_status = "ACTIVE SHIELD"
+        elif p.kyc_status == "PAST_DUE":
+            payment_status = "PAST DUE"
+        elif p.kyc_status == "CANCELLED" or cancellation_date_str:
+            payment_status = "CANCELLED"
+        else:
+            payment_status = "UNPAID"
+
+        created_str = p.created_at.isoformat() + "Z" if (p.created_at and hasattr(p.created_at, 'isoformat')) else (str(p.created_at) if p.created_at else "")
+
         report.append({
             "user_id": p.id,
             "email": p.email,
@@ -1560,9 +1577,12 @@ async def get_user_activity_report(
             "address": p.address or "",
             "dob": p.dob or "",
             "kyc_status": p.kyc_status or "UNPAID",
+            "payment_status": payment_status,
+            "cancellation_date": cancellation_date_str,
+            "signup_timestamp": created_str,
             "aml_flagged": bool(p.aml_flagged),
             "relay_credits": p.relay_credits if p.relay_credits is not None else 500,
-            "created_at": p.created_at.isoformat() + "Z" if p.created_at else "",
+            "created_at": created_str,
             "email_aliases": email_aliases,
             "phone_aliases": phone_aliases,
             "total_scrubs": total_scrubs,

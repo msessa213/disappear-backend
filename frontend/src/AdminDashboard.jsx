@@ -682,11 +682,12 @@ export default function AdminDashboard({ API_BASE_URL }) {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ background: '#090d16', borderBottom: '1px solid #1e293b', color: '#00D2FF' }}>
-                    <th style={{ padding: '10px' }}>REG DATE</th>
+                    <th style={{ padding: '10px' }}>SIGNUP TIMESTAMP</th>
                     <th style={{ padding: '10px' }}>USER ID / NAME</th>
                     <th style={{ padding: '10px' }}>EMAIL & PHONE</th>
                     <th style={{ padding: '10px' }}>PHYSICAL ADDRESS & DOB</th>
-                    <th style={{ padding: '10px' }}>STATUS</th>
+                    <th style={{ padding: '10px' }}>PAYMENT STATUS</th>
+                    <th style={{ padding: '10px' }}>CANCELLATION DATE</th>
                     <th style={{ padding: '10px' }}>EMAIL ALIASES</th>
                     <th style={{ padding: '10px' }}>PHONE ALIASES</th>
                     <th style={{ padding: '10px' }}>ACTIONS</th>
@@ -696,7 +697,12 @@ export default function AdminDashboard({ API_BASE_URL }) {
                   {userReportData.map((u, idx) => (
                     <tr key={u.user_id || idx} style={{ borderBottom: '1px solid #0f172a', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
                       <td style={{ padding: '10px', color: '#94A3B8', whiteSpace: 'nowrap' }}>
-                        {u.created_at ? u.created_at.split('T')[0] : 'N/A'}
+                        <div style={{ color: '#E2E8F0', fontWeight: 'bold' }}>
+                          {u.signup_timestamp || u.created_at ? (u.signup_timestamp || u.created_at).split('T')[0] : 'N/A'}
+                        </div>
+                        <div style={{ color: '#64748B', fontSize: '0.70rem' }}>
+                          {(u.signup_timestamp || u.created_at || '').includes('T') ? (u.signup_timestamp || u.created_at).split('T')[1].replace('Z', '') : ''}
+                        </div>
                       </td>
                       <td style={{ padding: '10px' }}>
                         <div style={{ fontWeight: 'bold', color: '#FFFFFF' }}>{u.user_id}</div>
@@ -712,16 +718,26 @@ export default function AdminDashboard({ API_BASE_URL }) {
                       </td>
                       <td style={{ padding: '10px' }}>
                         <span style={{
-                          padding: '2px 8px',
+                          padding: '3px 8px',
                           borderRadius: '4px',
-                          fontSize: '0.7rem',
+                          fontSize: '0.72rem',
                           fontWeight: 'bold',
-                          background: u.kyc_status === 'APPROVED' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                          border: `1px solid ${u.kyc_status === 'APPROVED' ? '#10b981' : '#F59E0B'}`,
-                          color: u.kyc_status === 'APPROVED' ? '#34d399' : '#FCD34D'
+                          display: 'inline-block',
+                          background: (u.payment_status === 'ACTIVE SHIELD' || u.kyc_status === 'APPROVED') ? 'rgba(16, 185, 129, 0.15)' : (u.payment_status === 'CANCELLED' ? 'rgba(239, 68, 68, 0.15)' : (u.payment_status === 'PAST DUE' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(148, 163, 184, 0.15)')),
+                          border: `1px solid ${(u.payment_status === 'ACTIVE SHIELD' || u.kyc_status === 'APPROVED') ? '#10b981' : (u.payment_status === 'CANCELLED' ? '#ef4444' : (u.payment_status === 'PAST DUE' ? '#f59e0b' : '#64748b'))}`,
+                          color: (u.payment_status === 'ACTIVE SHIELD' || u.kyc_status === 'APPROVED') ? '#34d399' : (u.payment_status === 'CANCELLED' ? '#f87171' : (u.payment_status === 'PAST DUE' ? '#fcd34d' : '#94a3b8'))
                         }}>
-                          {u.kyc_status}
+                          {u.payment_status || (u.kyc_status === 'APPROVED' ? 'ACTIVE SHIELD' : u.kyc_status)}
                         </span>
+                      </td>
+                      <td style={{ padding: '10px', whiteSpace: 'nowrap' }}>
+                        {u.cancellation_date ? (
+                          <div style={{ color: '#EF4444', fontWeight: 'bold', fontSize: '0.75rem' }}>
+                            🛑 {u.cancellation_date.split('T')[0]}
+                          </div>
+                        ) : (
+                          <span style={{ color: '#64748B', fontSize: '0.72rem' }}>N/A (Active)</span>
+                        )}
                       </td>
                       <td style={{ padding: '10px', color: '#CBD5E1' }}>
                         {(u.email_aliases && u.email_aliases.length > 0) ? u.email_aliases.map(ea => (
