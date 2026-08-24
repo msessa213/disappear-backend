@@ -837,6 +837,8 @@ function App() {
         syncDefenseData();
     }
 
+    const savedUid = getSessionItem("disappear_user_id");
+
     if (session === "active" && !isExpired && savedUid && savedUid !== "undefined") {
         setSessionItem("disappear_last_active", now.toString());
         setSessionItem("disappear_session", "active");
