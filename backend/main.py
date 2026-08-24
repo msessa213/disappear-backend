@@ -3535,13 +3535,14 @@ async def create_support_ticket(
                     },
                     json={
                         "from": "Disappear System <onboarding@resend.dev>",
-                        "to": ["customer.service@disappearco.com"],
+                        "to": ["michael.sessa@disappearco.com"],
                         "subject": f"DISAPPEAR SUPPORT TICKET [{support_req.category}]: {support_req.subject}",
                         "text": (
                             f"SECURE SUPPORT TICKET DISPATCH\n"
                             f"--------------------------------------------------\n"
                             f"USER ID:          {target_uid}\n"
                             f"REGISTERED EMAIL: {target_email}\n"
+                            f"DESTINATION:      customer.service@disappearco.com\n"
                             f"CATEGORY:         {support_req.category}\n"
                             f"SUBJECT:          {support_req.subject}\n"
                             f"TIMESTAMP:        {datetime.utcnow().isoformat()}Z\n"
