@@ -172,6 +172,24 @@ function App() {
   const [showDataRemovalNoticeModal, setShowDataRemovalNoticeModal] = useState(false);
   const [showSignupTargetNoticeModal, setShowSignupTargetNoticeModal] = useState(false);
 
+  const checkAndShowNoticeModal = (uid) => {
+    const targetId = uid || currentUserId || getSessionItem("disappear_user_id");
+    if (!targetId) return;
+    const isAcked = getSessionItem(`disappear_notice_acked_${targetId}`) || localStorage.getItem(`disappear_notice_acked_${targetId}`);
+    if (isAcked !== "true") {
+      setShowDataRemovalNoticeModal(true);
+    }
+  };
+
+  const acknowledgeNoticeModal = () => {
+    const targetId = currentUserId || getSessionItem("disappear_user_id");
+    if (targetId) {
+      setSessionItem(`disappear_notice_acked_${targetId}`, "true");
+      localStorage.setItem(`disappear_notice_acked_${targetId}`, "true");
+    }
+    setShowDataRemovalNoticeModal(false);
+  };
+
   const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotCode, setForgotCode] = useState("");
@@ -1541,7 +1559,7 @@ const handleEmergencyBurn = async () => {
         setShowLanding(false);
         setShowShield(true); 
         setProgress(100);
-        setShowDataRemovalNoticeModal(true);
+        checkAndShowNoticeModal(data.user_id);
         triggerToast(`WELCOME BACK, ${(data.first_name || 'OPERATIVE').toUpperCase()}`);
         syncDefenseData();
       } else {
@@ -1575,7 +1593,7 @@ const handleEmergencyBurn = async () => {
           setShowLanding(false);
           setShowShield(true); 
           setProgress(100);
-          setShowDataRemovalNoticeModal(true);
+          checkAndShowNoticeModal(targetUid);
           triggerToast("BIOMETRICS VERIFIED — VAULT UNLOCKED");
           syncDefenseData();
           return;
@@ -3481,7 +3499,7 @@ const handleEmergencyBurn = async () => {
                 className="main-button" 
                 style={{ width: '100%', padding: '14px', fontSize: '0.9rem', fontWeight: 'bold' }}
                 onClick={() => {
-                  setShowDataRemovalNoticeModal(false);
+                  acknowledgeNoticeModal();
                 }}
               >
                 ✅ ACKNOWLEDGE & ENTER DASHBOARD
@@ -3492,7 +3510,7 @@ const handleEmergencyBurn = async () => {
                 className="reset-btn" 
                 style={{ width: '100%', padding: '10px', fontSize: '0.8rem', color: '#00D2FF', borderColor: '#00D2FF' }}
                 onClick={() => {
-                  setShowDataRemovalNoticeModal(false);
+                  acknowledgeNoticeModal();
                   window.location.hash = "vault";
                   setTimeout(() => {
                     const el = document.getElementById("profile");
