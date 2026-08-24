@@ -35,3 +35,42 @@ export const promptBiometricAuth = async (reason = "Authenticate to decrypt Disa
   }
   return false;
 };
+
+export const enableBiometricLogin = (userId, email) => {
+  try {
+    if (!userId) return;
+    localStorage.setItem("disappear_biometrics_enabled", "true");
+    localStorage.setItem("disappear_biometric_uid", userId);
+    if (email) localStorage.setItem("disappear_biometric_email", email);
+  } catch (e) {
+    console.warn("Error enabling biometric storage:", e);
+  }
+};
+
+export const disableBiometricLogin = () => {
+  try {
+    localStorage.removeItem("disappear_biometrics_enabled");
+    localStorage.removeItem("disappear_biometric_uid");
+    localStorage.removeItem("disappear_biometric_email");
+  } catch (e) {
+    console.warn("Error clearing biometric storage:", e);
+  }
+};
+
+export const getBiometricCredentials = () => {
+  try {
+    const enabled = localStorage.getItem("disappear_biometrics_enabled") === "true";
+    const uid = localStorage.getItem("disappear_biometric_uid");
+    const email = localStorage.getItem("disappear_biometric_email");
+    if (enabled && uid) {
+      return { uid, email };
+    }
+  } catch (e) {
+    console.warn("Error getting biometric credentials:", e);
+  }
+  return null;
+};
+
+export const isBiometricEnabled = () => {
+  return !!getBiometricCredentials();
+};

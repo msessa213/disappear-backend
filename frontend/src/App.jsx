@@ -10,7 +10,7 @@ import { Terms } from './Terms';
 import { AmlFraudPolicy } from './AmlFraudPolicy';
 import AdminDashboard from './AdminDashboard'; 
 import LandingPage from './LandingPage'; // Integration: Authority Website Layer
-import { checkBiometricAvailability, promptBiometricAuth } from './biometricService';
+import { checkBiometricAvailability, promptBiometricAuth, enableBiometricLogin, getBiometricCredentials, isBiometricEnabled } from './biometricService';
 import PrivacyAiChat from './PrivacyAiChat';
 
 import './App.css';
@@ -132,7 +132,17 @@ function App() {
   const [selectedFundingSource, setSelectedFundingSource] = useState("");
 
   useEffect(() => {
-    checkBiometricAvailability().then(available => setHasBiometrics(available));
+    checkBiometricAvailability().then(available => {
+      setHasBiometrics(available);
+      if (available && isBiometricEnabled() && Capacitor.isNativePlatform()) {
+        const creds = getBiometricCredentials();
+        if (creds && creds.uid) {
+          setTimeout(() => {
+            handleBiometricLogin();
+          }, 600);
+        }
+      }
+    });
   }, []);
 
   // --- SUPPORT & FAQ STATES ---
@@ -1503,6 +1513,7 @@ const handleEmergencyBurn = async () => {
           setSessionItem("disappear_user_id", data.user_id);
           setSessionItem("disappear_user_email", data.email || emailToUse);
           setCurrentUserId(data.user_id);
+          enableBiometricLogin(data.user_id, data.email || emailToUse);
         }
         window.location.hash = "vault";
         setShow2FA(false); 
@@ -1523,13 +1534,24 @@ const handleEmergencyBurn = async () => {
 
   const handleBiometricLogin = async () => {
     try {
+      const bioCreds = getBiometricCredentials();
+      const storedUserId = currentUserId || bioCreds?.uid || getSessionItem("disappear_user_id");
+
+      if (!storedUserId && !loginEmail) {
+        triggerToast("ENTER REGISTERED EMAIL & PASSWORD FIRST TO LINK BIOMETRICS");
+        return;
+      }
+
       const verified = await promptBiometricAuth("Authenticate to unlock Disappear Vault");
       if (verified) {
-        const storedUserId = currentUserId || getSessionItem("disappear_user_id");
-        if (storedUserId) {
+        const targetUid = storedUserId || bioCreds?.uid;
+        if (targetUid) {
           setSessionItem("disappear_session", "active");
+          setSessionItem("disappear_user_id", targetUid);
+          setSessionItem("disappear_last_active", Date.now().toString());
+          setCurrentUserId(targetUid);
           setShow2FA(false); 
-          setShowLanding(false); // Switch to app
+          setShowLanding(false);
           setShowShield(true); 
           setProgress(100);
           setShowDataRemovalNoticeModal(true);
@@ -1540,10 +1562,10 @@ const handleEmergencyBurn = async () => {
         if (loginEmail && loginPassword) {
           return verify2FA();
         }
-        triggerToast("ENTER REGISTERED EMAIL & PASSWORD TO INITIALIZE BIOMETRIC LINK");
       }
     } catch (err) {
-      triggerToast("BIOMETRIC AUTH CANCELLED OR FAILED");
+      console.warn("Biometric auth error/cancelled:", err);
+      triggerToast("BIOMETRIC AUTH CANCELLED OR FAILED — PLEASE ENTER PASSWORD");
     }
   };
 
