@@ -76,12 +76,33 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
           <div className="bento-inner-content" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             <h1 className="elite-header site-hero-text">STAY<br />VIGILANT.</h1>
             <p className="hero-description">
-              Your identity is a target. In 2026, data brokers weaponize your PII for profit. 
+              Your identity is a target. In 2026, data brokers weaponize your <strong>PII (Personally Identifiable Information)</strong> for profit. 
               <strong> Disappear</strong> is the tactical identity security counter-measure brought to you by <strong>DFS 213 LLC</strong> to scorch your digital trail and replace exposure with synthetic privacy.
             </p>
-            <div className="hero-cta-group" style={{ marginTop: '30px' }}>
-              <button className="main-button" onClick={onEnterVault}>INITIATE IDENTITY SCRUB</button>
-              <p className="cta-subtext" style={{ marginTop: '15px' }}>Proprietary PII Scrubbing Engine // Global Data Broker Coverage</p>
+            <div className="hero-cta-group" style={{ marginTop: '25px', textAlign: 'center' }}>
+              <button className="main-button" style={{ width: '100%', padding: '16px', fontSize: '1.05rem', fontWeight: 'bold' }} onClick={onEnterVault}>
+                ⚡ INITIATE IDENTITY SCRUB
+              </button>
+              
+              <div style={{ marginTop: '12px', marginBottom: '14px' }}>
+                <span 
+                  style={{ 
+                    color: '#FFD700', 
+                    fontSize: '0.88rem', 
+                    fontWeight: 'bold', 
+                    cursor: 'pointer', 
+                    textDecoration: 'underline',
+                    letterSpacing: '0.5px'
+                  }} 
+                  onClick={onEnterVault}
+                >
+                  👉 NEW CUSTOMERS SIGN UP HERE TO INITIATE SCRUB
+                </span>
+              </div>
+
+              <p className="cta-subtext" style={{ marginTop: '10px' }}>
+                Proprietary PII (Personally Identifiable Information) Scrubbing Engine // Global Data Broker Coverage (400+ Registries)
+              </p>
             </div>
           </div>
         </div>
@@ -96,11 +117,11 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
             </div>
             <div className="intel-stat">
               <span className="stat-value">82%</span>
-              <span className="stat-label">OF USERS HAVE EXPOSED PII</span>
+              <span className="stat-label">OF USERS HAVE EXPOSED PII (PERSONALLY IDENTIFIABLE INFORMATION)</span>
             </div>
             <div className="intel-update" style={{ marginTop: 'auto' }}>
               <p style={{ fontSize: '0.95rem', color: '#cbd5e1', lineHeight: '1.4', margin: '0' }}>
-                <span className="tiger-text" style={{ fontWeight: 'bold' }}>» SYSTEM_LOG:</span> Your digital footprint is harvested daily. Disappear automates the removal of your data from lead-gen lists.
+                <span className="tiger-text" style={{ fontWeight: 'bold' }}>» SYSTEM_LOG:</span> Your digital footprint is harvested daily. Disappear automates the removal of your PII (Personally Identifiable Information) from lead-gen lists.
               </p>
             </div>
           </div>
@@ -110,7 +131,7 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
         <div className="bento-item bento-scanner-full">
           <h3 className="card-title" style={{ textAlign: 'center', border: 'none' }}>LIVE RECONNAISSANCE</h3>
           <p className="hero-description" style={{ fontSize: '1.05rem', marginBottom: '20px', maxWidth: '100%', textAlign: 'center' }}>
-            Enter your PII to perform a real-time deterministic scan of the global broker index.
+            Enter your PII (Personally Identifiable Information) to perform a real-time deterministic scan of the global broker index.
           </p>
           
           <div className="checkout-grid">
