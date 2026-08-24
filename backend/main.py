@@ -3484,7 +3484,6 @@ def contains_pii(text: str) -> bool:
     return False
 
 @app.post("/api/support")
-@app.post("/api/support")
 @app.post("/support/ticket")
 @limiter.limit("5/minute")
 async def create_support_ticket(
