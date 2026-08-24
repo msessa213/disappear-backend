@@ -3087,17 +3087,21 @@ const handleEmergencyBurn = async () => {
                       textAlign: 'left',
                       boxSizing: 'border-box'
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                        <span style={{ fontSize: '1.6rem' }}>⚡</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                        <span style={{ fontSize: '1.6rem' }}>🛡️</span>
                         <div>
                           <h2 className="tiger-text" style={{ margin: 0, fontSize: '1.2rem', letterSpacing: '0.5px' }}>
                             RECLAIM YOUR PRIVACY & ERASE YOUR TRAIL
                           </h2>
-                          <p style={{ color: '#94A3B8', fontSize: '0.78rem', margin: '4px 0 0 0' }}>
-                            Automated data broker opt-outs + human privacy analyst enforcement
+                          <p style={{ color: '#00D2FF', fontSize: '0.78rem', margin: '4px 0 0 0', fontWeight: 'bold' }}>
+                            Proprietary PII (Personally Identifiable Information) Scrubbing Engine // Global Data Broker Coverage
                           </p>
                         </div>
                       </div>
+
+                      <p style={{ fontSize: '0.84rem', color: '#E2E8F0', lineHeight: '1.55', marginBottom: '18px' }}>
+                        Your identity is a target. In 2026, data brokers weaponize your <strong>PII (Personally Identifiable Information)</strong> for profit. <strong>Disappear</strong> is the tactical identity security counter-measure brought to you by <strong>DFS 213 LLC</strong> to scorch your digital trail and replace exposure with synthetic privacy.
+                      </p>
 
                       {/* Hero CTA Button */}
                       <button 
@@ -3106,41 +3110,43 @@ const handleEmergencyBurn = async () => {
                         style={{ 
                           width: '100%', 
                           padding: '16px', 
-                          fontSize: '1rem', 
+                          fontSize: '1.05rem', 
                           fontWeight: 'bold', 
                           letterSpacing: '1px',
                           background: 'linear-gradient(135deg, #00D2FF 0%, #0047AB 100%)',
                           boxShadow: '0 0 25px rgba(0, 210, 255, 0.4)',
-                          marginBottom: '14px',
                           border: 'none',
                           cursor: 'pointer'
                         }}
                         onClick={() => {
-                          triggerToast("⚠️ ACCOUNT REQUIRED: CREATE YOUR ACCOUNT FIRST TO INITIATE SCRUB");
+                          triggerToast("⚡ NEW CUSTOMERS: SIGN UP HERE TO INITIATE YOUR IDENTITY SCRUB");
                           window.location.hash = "pricing";
                         }}
                       >
                         ⚡ INITIATE IDENTITY SCRUB
                       </button>
 
-                      {/* Signup Requirement Notice */}
-                      <div style={{ 
-                        padding: '10px 14px', 
-                        background: 'rgba(255, 215, 0, 0.08)', 
-                        border: '1px solid rgba(255, 215, 0, 0.3)', 
-                        borderRadius: '8px', 
-                        marginBottom: '16px',
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '8px'
-                      }}>
-                        <span style={{ fontSize: '1rem', lineHeight: '1' }}>ℹ️</span>
-                        <span style={{ fontSize: '0.78rem', color: '#FDF0A6', lineHeight: '1.4' }}>
-                          <strong>Account Creation Required:</strong> Initiating an identity scrub requires new customers to <strong>create an account and register their target profile</strong> so our engine and privacy analysts can legally search and remove records across 400+ data brokers.
+                      {/* NEW CUSTOMERS SIGN UP HERE DIRECT LINK / SUBTEXT */}
+                      <div style={{ textAlign: 'center', marginTop: '10px', marginBottom: '18px' }}>
+                        <span 
+                          style={{ 
+                            color: '#FFD700', 
+                            fontSize: '0.84rem', 
+                            fontWeight: 'bold', 
+                            cursor: 'pointer', 
+                            textDecoration: 'underline',
+                            letterSpacing: '0.5px'
+                          }}
+                          onClick={() => {
+                            triggerToast("⚡ NEW CUSTOMERS SIGN UP HERE");
+                            window.location.hash = "pricing";
+                          }}
+                        >
+                          👉 NEW CUSTOMERS SIGN UP HERE TO INITIATE SCRUB
                         </span>
                       </div>
 
-                      {/* PII Explanation Box */}
+                      {/* PII (Personally Identifiable Information) Explanation Box */}
                       <div style={{ 
                         background: '#050B14', 
                         border: '1px solid #1E293B', 
@@ -3148,13 +3154,13 @@ const handleEmergencyBurn = async () => {
                         padding: '14px 16px' 
                       }}>
                         <h4 style={{ color: '#00D2FF', margin: '0 0 6px 0', fontSize: '0.86rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          🛡️ WHAT IS PII & WHY SCRUBBING PROTECTS YOU:
+                          🛡️ WHAT IS PII (PERSONALLY IDENTIFIABLE INFORMATION) & WHY SCRUBBING PROTECTS YOU:
                         </h4>
                         <p style={{ fontSize: '0.80rem', color: '#CBD5E1', margin: '0 0 8px 0', lineHeight: '1.45' }}>
-                          <strong>PII (Personally Identifiable Information)</strong> includes your <strong>real legal name, home street address, personal phone number, date of birth, and family/relative connections</strong>.
+                          <strong>PII (Personally Identifiable Information)</strong> encompasses your <strong>real legal name, physical home address, personal phone number, date of birth, family/relative connections, and email history</strong>.
                         </p>
                         <p style={{ fontSize: '0.76rem', color: '#94A3B8', margin: 0, lineHeight: '1.4' }}>
-                          Public data brokers (like Whitepages, Spokeo, and LexisNexis) collect and sell your PII online to telemarketers, scammers, doxxers, and background search sites. Disappear legally forces these registries to eradicate your PII permanently.
+                          Public data brokers (such as Whitepages, Spokeo, BeenVerified, and LexisNexis) collect and sell your PII online to telemarketers, scammers, doxxers, and background search sites. Disappear's automated engine and human privacy analysts legally force these registries to eradicate your PII permanently.
                         </p>
                       </div>
                     </div>
