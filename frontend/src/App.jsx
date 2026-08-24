@@ -3075,8 +3075,92 @@ const handleEmergencyBurn = async () => {
               /* 4. ONBOARDING & LOGIN FLOW (MOBILE OPTIMIZED) */
               <div className="onboarding-flow">
                 {(show2FA || (!showPricing && !showCheckout && !isScanning)) && (
-                  <div className="pricing-card fade-in" style={{ maxWidth: '450px', margin: '0 auto', width: '100%' }}>
-                    <div className="price-box" style={{ padding: '30px 25px' }}>
+                  <div className="fade-in" style={{ maxWidth: '480px', margin: '0 auto', width: '100%' }}>
+                    {/* --- HERO CALL TO ACTION & PII SCRUB INFORMATION --- */}
+                    <div style={{
+                      background: 'linear-gradient(145deg, rgba(9, 13, 22, 0.95) 0%, rgba(3, 7, 18, 0.98) 100%)',
+                      border: '1px solid #00D2FF',
+                      borderRadius: '16px',
+                      padding: '24px 20px',
+                      marginBottom: '25px',
+                      boxShadow: '0 0 35px rgba(0, 210, 255, 0.25)',
+                      textAlign: 'left',
+                      boxSizing: 'border-box'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                        <span style={{ fontSize: '1.6rem' }}>⚡</span>
+                        <div>
+                          <h2 className="tiger-text" style={{ margin: 0, fontSize: '1.2rem', letterSpacing: '0.5px' }}>
+                            RECLAIM YOUR PRIVACY & ERASE YOUR TRAIL
+                          </h2>
+                          <p style={{ color: '#94A3B8', fontSize: '0.78rem', margin: '4px 0 0 0' }}>
+                            Automated data broker opt-outs + human privacy analyst enforcement
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Hero CTA Button */}
+                      <button 
+                        type="button"
+                        className="main-button"
+                        style={{ 
+                          width: '100%', 
+                          padding: '16px', 
+                          fontSize: '1rem', 
+                          fontWeight: 'bold', 
+                          letterSpacing: '1px',
+                          background: 'linear-gradient(135deg, #00D2FF 0%, #0047AB 100%)',
+                          boxShadow: '0 0 25px rgba(0, 210, 255, 0.4)',
+                          marginBottom: '14px',
+                          border: 'none',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => {
+                          triggerToast("⚠️ ACCOUNT REQUIRED: CREATE YOUR ACCOUNT FIRST TO INITIATE SCRUB");
+                          window.location.hash = "pricing";
+                        }}
+                      >
+                        ⚡ INITIATE IDENTITY SCRUB
+                      </button>
+
+                      {/* Signup Requirement Notice */}
+                      <div style={{ 
+                        padding: '10px 14px', 
+                        background: 'rgba(255, 215, 0, 0.08)', 
+                        border: '1px solid rgba(255, 215, 0, 0.3)', 
+                        borderRadius: '8px', 
+                        marginBottom: '16px',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '8px'
+                      }}>
+                        <span style={{ fontSize: '1rem', lineHeight: '1' }}>ℹ️</span>
+                        <span style={{ fontSize: '0.78rem', color: '#FDF0A6', lineHeight: '1.4' }}>
+                          <strong>Account Creation Required:</strong> Initiating an identity scrub requires new customers to <strong>create an account and register their target profile</strong> so our engine and privacy analysts can legally search and remove records across 400+ data brokers.
+                        </span>
+                      </div>
+
+                      {/* PII Explanation Box */}
+                      <div style={{ 
+                        background: '#050B14', 
+                        border: '1px solid #1E293B', 
+                        borderRadius: '10px', 
+                        padding: '14px 16px' 
+                      }}>
+                        <h4 style={{ color: '#00D2FF', margin: '0 0 6px 0', fontSize: '0.86rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          🛡️ WHAT IS PII & WHY SCRUBBING PROTECTS YOU:
+                        </h4>
+                        <p style={{ fontSize: '0.80rem', color: '#CBD5E1', margin: '0 0 8px 0', lineHeight: '1.45' }}>
+                          <strong>PII (Personally Identifiable Information)</strong> includes your <strong>real legal name, home street address, personal phone number, date of birth, and family/relative connections</strong>.
+                        </p>
+                        <p style={{ fontSize: '0.76rem', color: '#94A3B8', margin: 0, lineHeight: '1.4' }}>
+                          Public data brokers (like Whitepages, Spokeo, and LexisNexis) collect and sell your PII online to telemarketers, scammers, doxxers, and background search sites. Disappear legally forces these registries to eradicate your PII permanently.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="pricing-card" style={{ width: '100%' }}>
+                      <div className="price-box" style={{ padding: '30px 25px' }}>
                       <div className="billing-toggle" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', width: '100%', marginBottom: '20px' }}>
                         <button className="mask-btn active-toggle" style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>SIGN IN</button>
                         <button className="mask-btn" style={{ fontSize: '0.85rem' }} onClick={() => { window.location.hash = "pricing"; }}>CREATE ACCOUNT</button>
@@ -3156,7 +3240,8 @@ const handleEmergencyBurn = async () => {
                       </button>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
                 {showPricing && !showCheckout && !isScanning && (
                   <div className="onboarding-panels-container fade-in">
@@ -3245,7 +3330,7 @@ const handleEmergencyBurn = async () => {
                         </div>
 
                         <div className="checkout-grid">
-                            <input className="mask-btn" placeholder="First Name (Legal Name)" value={targetProfile.firstName} onFocus={() => setShowSignupTargetNoticeModal(true)} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value})} />
+                            <input className="mask-btn" placeholder="First Name (Legal Name)" value={targetProfile.firstName || targetProfile.first_name || ""} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value, first_name: e.target.value})} />
                             <input className="mask-btn" placeholder="Middle Name (Legal Name)" value={targetProfile.middleName} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value})} />
                             <input className="mask-btn full-row" placeholder="Last Name (Legal Name)" value={targetProfile.lastName} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value})} />
                             <input type="email" name="disappear_signup_email_clean" autoComplete="off" data-lpignore="true" className="mask-btn full-row" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
