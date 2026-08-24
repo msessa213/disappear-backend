@@ -1261,19 +1261,31 @@ function App() {
   };
 
   const handleSendTicket = async () => {
-    if (!supportData.message) { triggerToast("ENTER MESSAGE"); return; }
+    if (!supportData.message) { triggerToast("⚠️ PLEASE ENTER A MESSAGE DESCRIPTION"); return; }
     try {
-        const res = await secureRequest(`${API_BASE_URL}/support/ticket`, {
+        const activeUserId = currentUserId || getSessionItem("disappear_user_id");
+        const activeEmail = targetProfile.email || getSessionItem("disappear_user_email");
+        const payload = {
+          ...supportData,
+          user_id: activeUserId || "UNAUTHENTICATED",
+          email: activeEmail || "NOT_PROVIDED"
+        };
+        const res = await secureRequest(`${API_BASE_URL}/support/ticket?user_id=${activeUserId || ''}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(supportData)
+            body: JSON.stringify(payload)
         });
+        const data = await res.json().catch(() => ({}));
         if (res.ok) {
-            triggerToast("TICKET TRANSMITTED");
+            triggerToast("✅ TICKET TRANSMITTED TO CUSTOMER SERVICE");
             setSupportData({ subject: "TECHNICAL_ERR", message: "" });
             setShowSupportModal(false);
+        } else {
+            triggerToast(`❌ ${data.detail || "FAILED TO TRANSMIT SUPPORT TICKET"}`);
         }
-    } catch (err) { triggerToast("UPLINK FAILURE"); }
+    } catch (err) { 
+        triggerToast("❌ NETWORK ERROR: COULD NOT TRANSMIT TICKET"); 
+    }
   };
 
   const checkAddyRecipientStatus = async (showToastNotice = false) => {

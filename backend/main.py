@@ -453,6 +453,8 @@ class SupportRequest(BaseModel):
     category: str
     subject: str
     message: str
+    user_id: Optional[str] = None
+    email: Optional[str] = None
 
 class CallTestRequest(BaseModel):
     to_phone_number: str
@@ -3482,43 +3484,87 @@ def contains_pii(text: str) -> bool:
     return False
 
 @app.post("/api/support")
+@app.post("/api/support")
 @app.post("/support/ticket")
-@limiter.limit("3/minute")
-async def create_support_ticket(request: Request, support_req: SupportRequest, db: Session = Depends(get_db)):
-    """Logs support requests for PaaS serviceability"""
+@limiter.limit("5/minute")
+async def create_support_ticket(
+    request: Request, 
+    support_req: SupportRequest, 
+    user_id: Optional[str] = Query(None),
+    x_user_id: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    """Logs and dispatches support requests to customer.service@disappearco.com"""
     try:
+        # Resolve target user context
+        target_uid = support_req.user_id or user_id or x_user_id or "UNAUTHENTICATED"
+        target_email = support_req.email or "NOT_PROVIDED"
+
+        if target_uid != "UNAUTHENTICATED" and target_email == "NOT_PROVIDED":
+            prof = db.query(DBProfile).filter(DBProfile.id == target_uid).first()
+            if prof and prof.email:
+                target_email = prof.email
+
         # Strict PII firewall rejection
         if contains_pii(support_req.subject) or contains_pii(support_req.message):
-            raise HTTPException(status_code=400, detail="PII_DETECTED: Please remove email addresses, credit card numbers, or SSNs from your message. This channel is for technical inquiries only.")
+            raise HTTPException(
+                status_code=400, 
+                detail="PII_DETECTED: Please remove email addresses, credit card numbers, or SSNs from your message text. This channel is for technical inquiries only."
+            )
             
-        log_entry = f"CAT: {support_req.category} | SUB: {support_req.subject} | MSG: {support_req.message}"
+        log_entry = f"USER: {target_uid} ({target_email}) | CAT: {support_req.category} | SUB: {support_req.subject} | MSG: {support_req.message}"
         log = DBPurgeLog(action_type="SUPPORT_REQUEST", node_id=log_entry)
         db.add(log)
         db.commit()
         
-        # --- NEW: SECURE EMAIL DISPATCH ---
+        # --- SECURE EMAIL DISPATCH TO customer.service@disappearco.com ---
         resend_key = os.getenv("RESEND_API_KEY")
+        email_dispatched = False
         if resend_key:
             try:
                 async with httpx.AsyncClient() as client:
-                    await client.post(
+                    resend_resp = await client.post(
                         "https://api.resend.com/emails",
                         headers={"Authorization": f"Bearer {resend_key}"},
                         json={
                             "from": "Disappear System <onboarding@resend.dev>",
                             "to": "customer.service@disappearco.com",
-                            "subject": f"DISAPPEAR TICKET [{support_req.category}]: {support_req.subject}",
-                            "text": f"SECURE SUPPORT TICKET LOGGED\n\nCATEGORY: {support_req.category}\nSUBJECT: {support_req.subject}\n\nPAYLOAD:\n{support_req.message}\n\n---\nDisappear PaaS Automated Dispatch"
-                        }
+                            "subject": f"DISAPPEAR SUPPORT TICKET [{support_req.category}]: {support_req.subject}",
+                            "text": (
+                                f"SECURE SUPPORT TICKET DISPATCH\n"
+                                f"--------------------------------------------------\n"
+                                f"USER ID:          {target_uid}\n"
+                                f"REGISTERED EMAIL: {target_email}\n"
+                                f"CATEGORY:         {support_req.category}\n"
+                                f"SUBJECT:          {support_req.subject}\n"
+                                f"TIMESTAMP:        {datetime.utcnow().isoformat()}Z\n"
+                                f"--------------------------------------------------\n\n"
+                                f"CUSTOMER MESSAGE:\n"
+                                f"{support_req.message}\n\n"
+                                f"--------------------------------------------------\n"
+                                f"Disappear PaaS Automated Support Uplink"
+                            )
+                        },
+                        timeout=15.0
                     )
+                    if resend_resp.status_code in [200, 201, 202]:
+                        email_dispatched = True
+                    else:
+                        logger.warning(f"RESEND_DISPATCH_WARNING: Status {resend_resp.status_code} - {resend_resp.text}")
             except Exception as email_err:
                 logger.error(f"EMAIL_DISPATCH_FAILED: {str(email_err)}")
-                
-        return {"status": "TRANSMITTED", "id": random.randint(1000, 9999)}
+
+        return {
+            "status": "TRANSMITTED", 
+            "email_dispatched": email_dispatched, 
+            "id": random.randint(1000, 9999)
+        }
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         logger.error(f"SUPPORT_TICKET_ERROR: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to transmit support ticket.")
+        raise HTTPException(status_code=500, detail=f"Failed to transmit support ticket: {str(e)}")
 
 
 @app.post("/scrub")
