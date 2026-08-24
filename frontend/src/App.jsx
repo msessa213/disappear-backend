@@ -361,6 +361,23 @@ function App() {
               phone_used: data.profile.used_phones || 0
           };
           setCredits(prev => isStructurallyEqual(prev, newCredits) ? prev : newCredits);
+
+          // PERMANENT PERSISTENCE SAFEGUARD: Re-hydrate Target Profile State directly from PostgreSQL
+          if (data.profile.first_name || data.profile.email || data.profile.address) {
+              setTargetProfile(prev => {
+                  const updated = {
+                      ...prev,
+                      firstName: data.profile.first_name || prev.firstName || "",
+                      middleName: data.profile.middle_name || prev.middleName || "",
+                      lastName: data.profile.last_name || prev.lastName || "",
+                      email: data.profile.email || prev.email || "",
+                      phone: data.profile.phone || prev.phone || "",
+                      address: data.profile.address || prev.address || "",
+                      dob: data.profile.dob || prev.dob || ""
+                  };
+                  return isStructurallyEqual(prev, updated) ? prev : updated;
+              });
+          }
       }
 
       // 3. Map Real Purge History & Auto-Populate SMS Inbox

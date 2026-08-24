@@ -522,6 +522,86 @@ class CreditRefillRequest(BaseModel):
     pack_type: Optional[str] = "250_credits"
 
 
+class RegistrationRequest(BaseModel):
+    first_name: str
+    middle_name: Optional[str] = ""
+    last_name: str
+    email: str
+    password: str
+    phone: Optional[str] = ""
+    address: Optional[str] = ""
+    city: Optional[str] = ""
+    state: Optional[str] = ""
+    zip: Optional[str] = ""
+    dob: Optional[str] = ""
+    referred_by: Optional[str] = None
+
+@app.post("/auth/register-draft-profile")
+@app.post("/api/v1/auth/register-draft-profile")
+async def register_draft_profile(req: RegistrationRequest, db: Session = Depends(get_db)):
+    """
+    Registers or updates a customer profile with full target profile data (Name, Address, Phone, DOB, Password)
+    BEFORE checkout to guarantee 100% data persistence in PostgreSQL.
+    """
+    if not req.email or not req.email.strip():
+        raise HTTPException(status_code=400, detail="EMAIL_REQUIRED")
+    if not req.first_name or not req.last_name:
+        raise HTTPException(status_code=400, detail="LEGAL_NAME_REQUIRED")
+
+    clean_email = req.email.strip().lower()
+    full_address = req.address.strip() if req.address else ""
+    if req.city and req.state:
+        full_address = f"{full_address}, {req.city.strip()}, {req.state.strip()} {req.zip.strip() if req.zip else ''}".strip(", ")
+
+    profile = db.query(DBProfile).filter(DBProfile.email.ilike(clean_email)).first()
+    if not profile:
+        import uuid
+        uid = f"user_{str(uuid.uuid4())[:8]}"
+        profile = DBProfile(
+            id=uid,
+            first_name=req.first_name.strip(),
+            middle_name=req.middle_name.strip() if req.middle_name else "",
+            last_name=req.last_name.strip(),
+            email=clean_email,
+            phone=format_to_e164(req.phone) if req.phone else "",
+            address=full_address,
+            dob=req.dob.strip() if req.dob else "",
+            password_hash=hash_password(req.password) if req.password else None,
+            kyc_status="UNPAID",
+            referred_by=req.referred_by.strip().upper() if req.referred_by else None,
+            created_at=datetime.utcnow()
+        )
+        db.add(profile)
+    else:
+        profile.first_name = req.first_name.strip()
+        if req.middle_name:
+            profile.middle_name = req.middle_name.strip()
+        profile.last_name = req.last_name.strip()
+        if req.phone:
+            profile.phone = format_to_e164(req.phone)
+        if full_address:
+            profile.address = full_address
+        if req.dob:
+            profile.dob = req.dob.strip()
+        if req.password:
+            profile.password_hash = hash_password(req.password)
+        if req.referred_by and not profile.referred_by:
+            profile.referred_by = req.referred_by.strip().upper()
+
+    db.commit()
+    db.refresh(profile)
+
+    logger.info(f"DRAFT_PROFILE_SAVED: Registered customer profile {profile.id} ({profile.email}) with full address & DOB.")
+    return {
+        "status": "SUCCESS",
+        "user_id": profile.id,
+        "email": profile.email,
+        "first_name": profile.first_name,
+        "last_name": profile.last_name,
+        "kyc_status": profile.kyc_status
+    }
+
+
 # --- CORE SYSTEM ROUTES ---
 
 @app.post("/auth/login")
@@ -1948,7 +2028,14 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
 
     return {
         "profile": {
+            "first_name": profile.first_name or "",
+            "middle_name": profile.middle_name or "",
+            "last_name": profile.last_name or "",
+            "email": profile.email or "",
             "phone": profile.phone or "",
+            "address": profile.address or "",
+            "dob": profile.dob or "",
+            "kyc_status": profile.kyc_status or "UNPAID",
             "email_alias": STABLE_EMAIL,
             "phone_alias": STABLE_PHONE,
             "vcc_email_total": vcc_email_capacity,
@@ -2982,9 +3069,13 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
                 else:
                     # Unpaid draft profile: allow updating data and continuing to Stripe checkout!
                     existing_email.first_name = data.get("firstName") or existing_email.first_name
+                    if data.get("middleName"):
+                        existing_email.middle_name = data.get("middleName")
                     existing_email.last_name = data.get("lastName") or existing_email.last_name
                     existing_email.phone = data.get("phone") or existing_email.phone
                     existing_email.address = data.get("address") or existing_email.address
+                    if data.get("dob"):
+                        existing_email.dob = data.get("dob")
                     if data.get("password"):
                         existing_email.password_hash = hash_password(data.get("password"))
                     db.commit()
