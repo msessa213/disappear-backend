@@ -160,4 +160,17 @@ class DBCoupon(Base):
     duration = Column(String) # "permanent" or "one_month"
     active = Column(Boolean, default=True)
     usage_count = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class DBSupportTicket(Base):
+    __tablename__ = "support_tickets_v1"
+    id = Column(Integer, primary_key=True, index=True)
+    tracking_id = Column(String, unique=True, index=True)
+    user_id = Column(String, index=True)
+    email = Column(String)
+    category = Column(String)
+    subject = Column(String)
+    message = Column(Text)
+    status = Column(String, default="OPEN")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -72,7 +72,7 @@ async def health_status():
 # --- COMPREHENSIVE STARTUP ERROR HANDLING ---
 try:
     # --- IMPORT DATABASE FROM MODELS ---
-    from models import engine, SessionLocal, Base, DBCard, DBAlias, DBProfile, DBTargetEmail, DBScrubLog, DBPurgeLog, DBMarqetaEvent, DBBrokerMatch, DBCoupon
+    from models import engine, SessionLocal, Base, DBCard, DBAlias, DBProfile, DBTargetEmail, DBScrubLog, DBPurgeLog, DBMarqetaEvent, DBBrokerMatch, DBCoupon, DBSupportTicket
     from services.twilio_service import send_sms, make_voice_call, twilio_client
     from services.redaction_service import RedactionService
     from services.match_engine import MatchEngine
@@ -1066,6 +1066,57 @@ async def delete_admin_coupon(coupon_id: int, db: Session = Depends(get_db), adm
     coupon.active = False
     db.commit()
     return {"status": "DELETED", "id": coupon_id}
+
+# --- ADMIN SUPPORT TICKET MANAGEMENT ENDPOINTS ---
+
+@app.get("/admin/support/tickets")
+async def list_admin_support_tickets(
+    status: Optional[str] = Query(None),
+    db: Session = Depends(get_db), 
+    admin_key: str = Depends(verify_admin_token)
+):
+    """Fetches all submitted support tickets for the Admin Operations Command Center"""
+    query = db.query(DBSupportTicket)
+    if status and status.upper() != "ALL":
+        query = query.filter(DBSupportTicket.status == status.upper())
+    tickets = query.order_by(desc(DBSupportTicket.created_at)).all()
+    return tickets
+
+
+@app.post("/admin/support/tickets/{ticket_id}/status")
+async def update_support_ticket_status(
+    ticket_id: int, 
+    status: str = Query("RESOLVED"),
+    db: Session = Depends(get_db), 
+    admin_key: str = Depends(verify_admin_token)
+):
+    """Updates status (OPEN, RESOLVED, CLOSED) for a support ticket"""
+    ticket = db.query(DBSupportTicket).filter(DBSupportTicket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="SUPPORT_TICKET_NOT_FOUND")
+    
+    ticket.status = status.upper()
+    ticket.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(ticket)
+    return {"status": "UPDATED", "id": ticket_id, "ticket_status": ticket.status}
+
+
+@app.delete("/admin/support/tickets/{ticket_id}")
+async def delete_support_ticket(
+    ticket_id: int, 
+    db: Session = Depends(get_db), 
+    admin_key: str = Depends(verify_admin_token)
+):
+    """Clears/removes a support ticket from the system"""
+    ticket = db.query(DBSupportTicket).filter(DBSupportTicket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="SUPPORT_TICKET_NOT_FOUND")
+    
+    db.delete(ticket)
+    db.commit()
+    return {"status": "DELETED", "id": ticket_id}
+
 
 @app.post("/coupons/validate")
 async def validate_customer_coupon(req: ValidateCouponRequest, db: Session = Depends(get_db)):
@@ -3510,11 +3561,26 @@ async def create_support_ticket(
                 status_code=400, 
                 detail="PII_DETECTED: Please remove email addresses, credit card numbers, or SSNs from your message text. This channel is for technical inquiries only."
             )
+
+        # --- DATABASE PERSISTENCE ---
+        tkt_num = random.randint(100000, 999999)
+        tracking_id = f"TKT-{tkt_num}"
+        db_ticket = DBSupportTicket(
+            tracking_id=tracking_id,
+            user_id=target_uid,
+            email=target_email,
+            category=support_req.category,
+            subject=support_req.subject,
+            message=support_req.message,
+            status="OPEN"
+        )
+        db.add(db_ticket)
             
-        log_entry = f"USER: {target_uid} ({target_email}) | CAT: {support_req.category} | SUB: {support_req.subject} | MSG: {support_req.message}"
+        log_entry = f"USER: {target_uid} ({target_email}) | TKT: {tracking_id} | CAT: {support_req.category} | SUB: {support_req.subject} | MSG: {support_req.message}"
         log = DBPurgeLog(action_type="SUPPORT_REQUEST", node_id=log_entry)
         db.add(log)
         db.commit()
+        db.refresh(db_ticket)
         
         # --- SECURE EMAIL DISPATCH TO customer.service@disappearco.com ---
         resend_key = (os.getenv("RESEND_API_KEY") or "").strip()

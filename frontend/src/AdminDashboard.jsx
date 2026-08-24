@@ -17,8 +17,11 @@ export default function AdminDashboard({ API_BASE_URL }) {
   const [newCouponCode, setNewCouponCode] = useState("");
   const [newDiscountType, setNewDiscountType] = useState("percent");
   const [newDiscountValue, setNewDiscountValue] = useState("");
-  const [newDuration, setNewDuration] = useState("permanent");
-  const [couponStatusMsg, setCouponStatusMsg] = useState("");
+  // --- SUPPORT TICKET INBOX STATES ---
+  const [supportTickets, setSupportTickets] = useState([]);
+  const [ticketFilter, setTicketFilter] = useState("ALL");
+  const [expandedTicketId, setExpandedTicketId] = useState(null);
+  const [ticketStatusMsg, setTicketStatusMsg] = useState("");
 
   // --- USER ACTIVITY & DIAGNOSTIC REPORTING STATES ---
   const [reportStartDate, setReportStartDate] = useState("");
@@ -253,6 +256,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
       setIsAuthenticated(true);
 
       fetchCoupons(keyToUse);
+      fetchSupportTickets(keyToUse);
       return true;
     } catch (e) {
       console.error("Admin fetch error", e);
@@ -334,6 +338,56 @@ export default function AdminDashboard({ API_BASE_URL }) {
       }
     } catch (e) {
       console.error("Delete coupon error", e);
+    }
+  };
+
+  // --- SUPPORT TICKET HANDLERS ---
+  const fetchSupportTickets = async (keyToUse) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/support/tickets`, {
+        headers: { "X-Disappear-Admin-Key": keyToUse || cleanHeaderKey(adminKey) }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSupportTickets(data || []);
+      }
+    } catch (e) {
+      console.error("Error fetching support tickets", e);
+    }
+  };
+
+  const handleUpdateTicketStatus = async (ticketId, newStatus) => {
+    try {
+      setTicketStatusMsg("");
+      const res = await fetch(`${API_BASE_URL}/admin/support/tickets/${ticketId}/status?status=${newStatus}`, {
+        method: "POST",
+        headers: { "X-Disappear-Admin-Key": cleanHeaderKey(adminKey) }
+      });
+      if (res.ok) {
+        setTicketStatusMsg(`✅ Ticket #${ticketId} status updated to ${newStatus}`);
+        fetchSupportTickets(cleanHeaderKey(adminKey));
+      }
+    } catch (e) {
+      console.error("Error updating ticket status", e);
+      setTicketStatusMsg("❌ Failed to update ticket status.");
+    }
+  };
+
+  const handleDeleteTicket = async (ticketId) => {
+    if (!window.confirm("Permanently delete this support ticket from database?")) return;
+    try {
+      setTicketStatusMsg("");
+      const res = await fetch(`${API_BASE_URL}/admin/support/tickets/${ticketId}`, {
+        method: "DELETE",
+        headers: { "X-Disappear-Admin-Key": cleanHeaderKey(adminKey) }
+      });
+      if (res.ok) {
+        setTicketStatusMsg(`✅ Ticket #${ticketId} deleted successfully.`);
+        fetchSupportTickets(cleanHeaderKey(adminKey));
+      }
+    } catch (e) {
+      console.error("Error deleting ticket", e);
+      setTicketStatusMsg("❌ Failed to delete ticket.");
     }
   };
 
@@ -940,6 +994,112 @@ export default function AdminDashboard({ API_BASE_URL }) {
                     </td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* --- SUPPORT TICKET INBOX BOX --- */}
+      <div className="price-box" style={{ background: 'rgba(5, 5, 5, 0.8)', border: '1px solid rgba(0, 210, 255, 0.25)', padding: '24px', borderRadius: '10px', marginBottom: '35px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <h3 className="tiger-text" style={{ margin: 0 }}>📩 SUPPORT TICKET INBOX (OPERATIONS COMMAND)</h3>
+            <p style={{ color: '#94A3B8', fontSize: '0.8rem', margin: '4px 0 0 0' }}>Real-time customer inquiry logging and support ticket management</p>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button className="reset-btn" style={{ padding: '4px 10px', fontSize: '0.75rem', color: ticketFilter === 'ALL' ? '#00D2FF' : '#94A3B8', borderColor: ticketFilter === 'ALL' ? '#00D2FF' : '#334155' }} onClick={() => setTicketFilter('ALL')}>ALL ({supportTickets.length})</button>
+            <button className="reset-btn" style={{ padding: '4px 10px', fontSize: '0.75rem', color: ticketFilter === 'OPEN' ? '#ef4444' : '#94A3B8', borderColor: ticketFilter === 'OPEN' ? '#ef4444' : '#334155' }} onClick={() => setTicketFilter('OPEN')}>OPEN ({supportTickets.filter(t => t.status === 'OPEN').length})</button>
+            <button className="reset-btn" style={{ padding: '4px 10px', fontSize: '0.75rem', color: ticketFilter === 'RESOLVED' ? '#10b981' : '#94A3B8', borderColor: ticketFilter === 'RESOLVED' ? '#10b981' : '#334155' }} onClick={() => setTicketFilter('RESOLVED')}>RESOLVED ({supportTickets.filter(t => t.status === 'RESOLVED').length})</button>
+            <button className="reset-btn" style={{ padding: '4px 10px', fontSize: '0.75rem', color: '#38bdf8' }} onClick={() => fetchSupportTickets(cleanHeaderKey(adminKey))}>🔄 REFRESH</button>
+          </div>
+        </div>
+
+        {ticketStatusMsg && (
+          <div style={{ padding: '10px 14px', borderRadius: '6px', fontSize: '0.85rem', marginBottom: '15px', background: ticketStatusMsg.startsWith('✅') ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', border: `1px solid ${ticketStatusMsg.startsWith('✅') ? '#10b981' : '#ef4444'}`, color: ticketStatusMsg.startsWith('✅') ? '#34d399' : '#ff6b6b' }}>
+            {ticketStatusMsg}
+          </div>
+        )}
+
+        {supportTickets.filter(t => ticketFilter === 'ALL' ? true : t.status === ticketFilter).length === 0 ? (
+          <p style={{ color: '#64748B', fontSize: '0.85rem', fontStyle: 'italic', padding: '15px 0' }}>No support tickets logged matching selected filter.</p>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(0,210,255,0.3)', color: '#94A3B8' }}>
+                  <th style={{ padding: '8px' }}>TRACKING ID</th>
+                  <th style={{ padding: '8px' }}>USER ID</th>
+                  <th style={{ padding: '8px' }}>CUSTOMER EMAIL</th>
+                  <th style={{ padding: '8px' }}>CATEGORY / SUBJECT</th>
+                  <th style={{ padding: '8px' }}>SUBMITTED AT</th>
+                  <th style={{ padding: '8px' }}>STATUS</th>
+                  <th style={{ padding: '8px', textAlign: 'right' }}>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {supportTickets
+                  .filter(t => ticketFilter === 'ALL' ? true : t.status === ticketFilter)
+                  .map(t => {
+                    const isExpanded = expandedTicketId === t.id;
+                    const isResolved = t.status === 'RESOLVED';
+                    return (
+                      <React.Fragment key={t.id}>
+                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: isExpanded ? 'rgba(0,210,255,0.05)' : 'transparent' }}>
+                          <td style={{ padding: '8px', color: '#00D2FF', fontWeight: 'bold' }}>{t.tracking_id || `TKT-${t.id}`}</td>
+                          <td style={{ padding: '8px', color: '#F8FAFC', fontWeight: 'bold' }}>{t.user_id}</td>
+                          <td style={{ padding: '8px', color: '#38BDF8' }}>{t.email}</td>
+                          <td style={{ padding: '8px', color: '#FFF' }}>
+                            <span style={{ fontSize: '0.7rem', background: '#1e293b', padding: '2px 6px', borderRadius: '4px', color: '#00D2FF', fontWeight: 'bold', marginRight: '6px' }}>{t.category}</span>
+                            {t.subject}
+                          </td>
+                          <td style={{ padding: '8px', color: '#94A3B8', fontSize: '0.78rem' }}>
+                            {t.created_at ? new Date(t.created_at).toLocaleString() : 'N/A'}
+                          </td>
+                          <td style={{ padding: '8px' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 'bold', padding: '2px 8px', borderRadius: '4px', background: isResolved ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: isResolved ? '#34d399' : '#ff6b6b', border: `1px solid ${isResolved ? '#10b981' : '#ef4444'}` }}>
+                              {t.status}
+                            </span>
+                          </td>
+                          <td style={{ padding: '8px', textAlign: 'right' }}>
+                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                              <button
+                                className="reset-btn"
+                                style={{ padding: '3px 8px', fontSize: '0.72rem', color: isExpanded ? '#FFD700' : '#00D2FF', borderColor: isExpanded ? '#FFD700' : '#00D2FF' }}
+                                onClick={() => setExpandedTicketId(isExpanded ? null : t.id)}
+                              >
+                                {isExpanded ? '▲ HIDE MSG' : '▼ VIEW MSG'}
+                              </button>
+                              <button
+                                className="reset-btn"
+                                style={{ padding: '3px 8px', fontSize: '0.72rem', color: isResolved ? '#fbbf24' : '#10b981', borderColor: isResolved ? '#fbbf24' : '#10b981' }}
+                                onClick={() => handleUpdateTicketStatus(t.id, isResolved ? 'OPEN' : 'RESOLVED')}
+                              >
+                                {isResolved ? '🔄 REOPEN' : '✅ RESOLVE'}
+                              </button>
+                              <button
+                                className="reset-btn"
+                                style={{ padding: '3px 8px', fontSize: '0.72rem', color: '#ff6b6b', borderColor: '#ef4444' }}
+                                onClick={() => handleDeleteTicket(t.id)}
+                              >
+                                🗑️ CLEAR
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                        {isExpanded && (
+                          <tr style={{ background: 'rgba(0,0,0,0.5)', borderBottom: '1px solid rgba(0,210,255,0.2)' }}>
+                            <td colSpan={7} style={{ padding: '12px 16px' }}>
+                              <div style={{ background: '#090d16', padding: '12px', borderRadius: '6px', border: '1px solid #1e293b' }}>
+                                <p style={{ fontSize: '0.75rem', color: '#00D2FF', fontWeight: 'bold', marginBottom: '6px' }}>💬 CUSTOMER MESSAGE TEXT:</p>
+                                <p style={{ fontSize: '0.85rem', color: '#F8FAFC', whiteSpace: 'pre-wrap', margin: 0, lineHeight: '1.4' }}>{t.message}</p>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
               </tbody>
             </table>
           </div>
