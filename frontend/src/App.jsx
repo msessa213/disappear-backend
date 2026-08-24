@@ -827,10 +827,19 @@ function App() {
     const query = new URLSearchParams(window.location.search);
     const isNative = Capacitor.isNativePlatform();
 
-    const refCode = query.get("ref");
+    let refCode = query.get("ref");
+    if (!refCode && window.location.hash.includes("ref=")) {
+      try {
+        const hashQuery = window.location.hash.includes("?") ? window.location.hash.split("?")[1] : "";
+        const hashParams = new URLSearchParams(hashQuery);
+        refCode = hashParams.get("ref");
+      } catch (e) {}
+    }
     if (refCode) {
-      setSessionItem("disappear_ref_code", refCode.trim());
-      setSessionItem("disappear_referral_code", refCode.trim());
+      const cleanRef = refCode.trim();
+      setSessionItem("disappear_ref_code", cleanRef);
+      setSessionItem("disappear_referral_code", cleanRef);
+      try { localStorage.setItem("disappear_ref_code", cleanRef); } catch (e) {}
     }
 
     // Check for session timeout (e.g., 30 minutes of inactivity)
@@ -1803,7 +1812,10 @@ const handleEmergencyBurn = async () => {
 
     setIsMinting(true);
     try {
-        const storedRefCode = getSessionItem("disappear_ref_code");
+        let storedRefCode = getSessionItem("disappear_ref_code") || getSessionItem("disappear_referral_code");
+        if (!storedRefCode) {
+          try { storedRefCode = localStorage.getItem("disappear_ref_code") || ""; } catch (e) {}
+        }
         // Combine the address components so the backend database doesn't need to change
         const payload = {
             ...targetProfile,

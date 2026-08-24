@@ -2004,11 +2004,16 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
     db_ref_count = 0
     if profile.referral_code:
         try:
+            ref_filters = [
+                DBProfile.referred_by.ilike(f"%{profile.referral_code}%"),
+                DBProfile.referred_by == profile.id,
+                DBProfile.referred_by.ilike(f"%{profile.id}%")
+            ]
+            if profile.email:
+                ref_filters.append(DBProfile.referred_by.ilike(f"%{profile.email}%"))
+
             db_ref_count = db.query(DBProfile).filter(
-                or_(
-                    DBProfile.referred_by.ilike(f"%{profile.referral_code}%"),
-                    DBProfile.referred_by == profile.id
-                ),
+                or_(*ref_filters),
                 DBProfile.id != profile.id
             ).count()
         except Exception as ex_ref:
@@ -3148,11 +3153,23 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
         import uuid
         my_ref_code = f"REF{uuid.uuid4().hex[:8].upper()}"
         ref_by_input = (data.get("referred_by") or data.get("referral_code") or "").strip().upper()
+        resolved_referred_by = ref_by_input if ref_by_input else None
+        if ref_by_input:
+            referrer_obj = db.query(DBProfile).filter(
+                or_(
+                    DBProfile.referral_code.ilike(ref_by_input),
+                    DBProfile.id == ref_by_input,
+                    DBProfile.email.ilike(ref_by_input)
+                )
+            ).first()
+            if referrer_obj and referrer_obj.referral_code:
+                resolved_referred_by = referrer_obj.referral_code
 
         new_profile = DBProfile(
             id=profile_id,
             first_name=data.get("firstName", "Unknown"),
             middle_name=data.get("middleName", ""),
+            nickname=data.get("nickname") or data.get("nickname_alias") or "",
             last_name=data.get("lastName", ""),
             email=data.get("email"),
             address=data.get("address"),
@@ -3163,7 +3180,7 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
             kyc_status=kyc_status,
             aml_flagged=aml_flagged,
             referral_code=my_ref_code,
-            referred_by=ref_by_input if ref_by_input else None
+            referred_by=resolved_referred_by
         )
         db.add(new_profile)
         
