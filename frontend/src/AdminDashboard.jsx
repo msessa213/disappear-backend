@@ -1004,7 +1004,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
       </div>
 
       {/* --- SUPPORT TICKET INBOX BOX --- */}
-      <div className="price-box" style={{ background: 'rgba(5, 5, 5, 0.8)', border: '1px solid rgba(0, 210, 255, 0.25)', padding: '24px', borderRadius: '10px', marginBottom: '35px' }}>
+      <div className="pricing-card" style={{ marginBottom: '35px', border: '1px solid var(--tiger-blue)', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
           <div>
             <h3 className="tiger-text" style={{ margin: 0 }}>📩 SUPPORT TICKET INBOX (OPERATIONS COMMAND)</h3>
@@ -1027,8 +1027,8 @@ export default function AdminDashboard({ API_BASE_URL }) {
         {supportTickets.filter(t => ticketFilter === 'ALL' ? true : t.status === ticketFilter).length === 0 ? (
           <p style={{ color: '#64748B', fontSize: '0.85rem', fontStyle: 'italic', padding: '15px 0' }}>No support tickets logged matching selected filter.</p>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+          <div style={{ overflowX: 'auto', width: '100%' }}>
+            <table style={{ width: '100%', minWidth: '750px', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(0,210,255,0.3)', color: '#94A3B8' }}>
                   <th style={{ padding: '8px' }}>TRACKING ID</th>
