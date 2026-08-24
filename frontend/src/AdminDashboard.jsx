@@ -17,6 +17,9 @@ export default function AdminDashboard({ API_BASE_URL }) {
   const [newCouponCode, setNewCouponCode] = useState("");
   const [newDiscountType, setNewDiscountType] = useState("percent");
   const [newDiscountValue, setNewDiscountValue] = useState("");
+  const [newDuration, setNewDuration] = useState("permanent");
+  const [couponStatusMsg, setCouponStatusMsg] = useState("");
+
   // --- SUPPORT TICKET INBOX STATES ---
   const [supportTickets, setSupportTickets] = useState([]);
   const [ticketFilter, setTicketFilter] = useState("ALL");
