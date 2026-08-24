@@ -3240,7 +3240,7 @@ const handleEmergencyBurn = async () => {
                             </button>
                           </div>
                           <p style={{ color: '#F8FAFC', fontSize: '0.82rem', margin: 0, lineHeight: '1.45' }}>
-                            <strong>IMPORTANT:</strong> Please enter your <strong>REAL LEGAL NAME</strong> and physical address below. The name entered here will be the <strong>exact target searched, scrubbed, and removed</strong> across all 47+ public data broker registries.
+                            <strong>IMPORTANT:</strong> Please enter your <strong>REAL LEGAL NAME</strong> and physical address below. The name entered here will be the <strong>exact target searched, scrubbed, and removed</strong> across all 400+ public data broker registries.
                           </p>
                         </div>
 
@@ -3453,7 +3453,7 @@ const handleEmergencyBurn = async () => {
 
             <div style={{ padding: '14px', background: 'rgba(0, 210, 255, 0.08)', border: '1px solid rgba(0, 210, 255, 0.3)', borderRadius: '8px', marginBottom: '18px' }}>
               <p style={{ fontSize: '0.88rem', color: '#F8FAFC', margin: 0, lineHeight: '1.5' }}>
-                ℹ️ <strong>IMPORTANT SERVICE DIRECTIVE:</strong> The legal name and profile details registered to your account will be the <strong>EXACT target searched, scrubbed, and removed</strong> across all 47+ data broker registries as part of your Data Freedom Solutions protection plan.
+                ℹ️ <strong>IMPORTANT SERVICE DIRECTIVE:</strong> The legal name and profile details registered to your account will be the <strong>EXACT target searched, scrubbed, and removed</strong> across all 400+ data broker registries as part of your Data Freedom Solutions protection plan.
               </p>
             </div>
 
@@ -3539,7 +3539,7 @@ const handleEmergencyBurn = async () => {
 
             <div style={{ padding: '14px', background: 'rgba(0, 210, 255, 0.08)', border: '1px solid rgba(0, 210, 255, 0.3)', borderRadius: '8px', marginBottom: '18px' }}>
               <p style={{ fontSize: '0.88rem', color: '#F8FAFC', margin: 0, lineHeight: '1.5' }}>
-                ℹ️ <strong>SERVICE DIRECTIVE:</strong> The legal name entered during registration is the <strong>EXACT target searched, targeted, and removed</strong> across Whitepages, Spokeo, BeenVerified, LexisNexis, and 47+ public data broker registries.
+                ℹ️ <strong>SERVICE DIRECTIVE:</strong> The legal name entered during registration is the <strong>EXACT target searched, targeted, and removed</strong> across Whitepages, Spokeo, BeenVerified, LexisNexis, and 400+ public data broker registries.
               </p>
             </div>
 
@@ -3598,7 +3598,7 @@ const handleEmergencyBurn = async () => {
               <div style={{ padding: '12px 16px', background: 'rgba(0, 71, 171, 0.15)', border: '1px solid rgba(0, 210, 255, 0.3)', borderRadius: '10px' }}>
                 <h4 style={{ color: '#00D2FF', margin: '0 0 4px 0', fontSize: '0.9rem' }}>🛡️ Step 3: Data Broker Opt-Out Engine</h4>
                 <p style={{ fontSize: '0.8rem', color: '#94A3B8', margin: 0, lineHeight: '1.4' }}>
-                  Our automated opt-out engine and human privacy analysts enforce continuous removals across 47+ major data broker databases.
+                  Our automated opt-out engine and human privacy analysts enforce continuous removals across 400+ major data broker databases.
                 </p>
               </div>
             </div>

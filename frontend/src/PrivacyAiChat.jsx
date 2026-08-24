@@ -45,13 +45,13 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
       } else {
         setMessages(prev => [...prev, { 
           sender: 'ai', 
-          text: "I am having trouble reaching the command server. Here is a quick overview:\n\n• **Elite Privacy Plan**: $19.99/month ($15.99/mo annual)\n• **Included**: 47+ broker data scrubs, 6 relay slots, human analyst audits, and emergency burn." 
+          text: "I am having trouble reaching the command server. Here is a quick overview:\n\n• **Elite Privacy Plan**: $19.99/month ($15.99/mo annual)\n• **Included**: 400+ broker data scrubs, 6 relay slots, human analyst audits, and emergency burn." 
         }]);
       }
     } catch (err) {
       setMessages(prev => [...prev, { 
         sender: 'ai', 
-        text: "Our privacy shield is active! Our **Elite Plan is $19.99/mo** (or **$15.99/mo annual**). It includes continuous 47+ data broker scrubs, burner email/phone relays, and emergency wipe." 
+        text: "Our privacy shield is active! Our **Elite Plan is $19.99/mo** (or **$15.99/mo annual**). It includes continuous 400+ data broker scrubs, burner email/phone relays, and emergency wipe." 
       }]);
     } finally {
       setIsTyping(false);

@@ -935,7 +935,7 @@ async def get_admin_stats(db: Session = Depends(get_db), admin_key: str = Depend
     total_users = db.query(DBProfile).count()
     total_cards = db.query(DBCard).count()
     total_aliases = db.query(DBAlias).count()
-    total_removals = (total_users + total_aliases) * 47 
+    total_removals = (total_users + total_aliases) * 400 
     
     return {
         "total_users": total_users,
@@ -2224,13 +2224,13 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
             slot_category = "BYPASS_TOKEN"
         elif "subscription_monthly" in etype:
             item_name = "Disappear Elite Operative (Monthly Subscription)"
-            item_description = "Full Access to 47+ Data Broker Removals, Email Relays, and Phone Lines"
+            item_description = "Full Access to 400+ Data Broker Removals, Email Relays, and Phone Lines"
             unit_amount = 1999  # $19.99
             purchase_key = "subscription_monthly"
             slot_category = "MONTHLY_SUBSCRIPTION"
         elif "subscription_annual" in etype:
             item_name = "Disappear Elite Operative (Annual Subscription)"
-            item_description = "Full Access to 47+ Data Broker Removals, Email Relays, and Phone Lines (Billed Annually)"
+            item_description = "Full Access to 400+ Data Broker Removals, Email Relays, and Phone Lines (Billed Annually)"
             unit_amount = 15999  # $159.99 (equals $13.33/mo)
             purchase_key = "subscription_annual"
             slot_category = "ANNUAL_SUBSCRIPTION"
@@ -2983,7 +2983,7 @@ def send_welcome_email(recipient_email: str, first_name: str = "Operative") -> b
         <div style="background: rgba(0, 71, 171, 0.18); border: 1px solid rgba(0, 210, 255, 0.3); padding: 18px; border-radius: 10px; margin: 20px 0;">
           <h3 style="color: #00D2FF; margin: 0 0 8px 0; font-size: 16px;">🛡️ Step 3: Data Broker Removals Active</h3>
           <p style="color: #94A3B8; margin: 0; font-size: 14px; line-height: 1.5;">
-            Our automated opt-out engine and human privacy analysts enforce continuous removals across 47+ major data broker databases.
+            Our automated opt-out engine and human privacy analysts enforce continuous removals across 400+ major data broker databases.
           </p>
         </div>
 
@@ -3406,7 +3406,7 @@ async def ai_privacy_chat(request: Request, req: AIChatRequest):
             "• **Monthly Plan**: $19.99/month\n"
             "• **Annual Plan**: $15.99/month ($191.88 billed annually — **Save 20%**)\n\n"
             "**What Every Plan Includes**:\n"
-            "✓ Continuous background scans across 47+ data broker registries\n"
+            "✓ Continuous background scans across 400+ data broker registries\n"
             "✓ Dedicated Human Privacy Analyst manual opt-out enforcement\n"
             "✓ 6 Active Alias Slots (Masked Email & Virtual SMS Phone Lines)\n"
             "✓ Emergency Burn (1-tap panic destruction)\n"
@@ -3417,7 +3417,7 @@ async def ai_privacy_chat(request: Request, req: AIChatRequest):
         reply = (
             "🛡️ **How Disappear Protects Your Identity (Step-by-Step)**:\n\n"
             "**Step 1: Deep PII Audit & Threat Detection**\n"
-            "Our engine scans 47+ major data broker sites (Whitepages, Spokeo, Radaris, LexisNexis) for your name, phone, home address, and relatives.\n\n"
+            "Our engine scans 400+ major data broker sites (Whitepages, Spokeo, Radaris, LexisNexis) for your name, phone, home address, and relatives.\n\n"
             "**Step 2: Dual-Force Removal Engine**\n"
             "Automated opt-out bots issue legal removal notices, while our **Human Privacy Analysts** manually follow up with resistant brokers until your data is completely wiped.\n\n"
             "**Step 3: Identity Masking (Active Shield)**\n"
@@ -3428,8 +3428,8 @@ async def ai_privacy_chat(request: Request, req: AIChatRequest):
     elif any(k in msg for k in ["broker", "scrub", "remove", "data broker", "whitepages", "spokeo", "beenverified", "opt out", "opt-out", "delete my data"]):
         reply = (
             "🔍 **Data Broker Removal Power**:\n\n"
-            "Disappear purges your personal information from **47+ major data broker databases**, including:\n"
-            "• Whitepages, Spokeo, Radaris, BeenVerified, PeopleFinders, FastPeopleSearch, LexisNexis, TruthFinder, Intelius, and 38+ more.\n\n"
+            "Disappear purges your personal information from **400+ major data broker databases**, including:\n"
+            "• Whitepages, Spokeo, Radaris, BeenVerified, PeopleFinders, FastPeopleSearch, LexisNexis, TruthFinder, Intelius, and 390+ more.\n\n"
             "Unlike other tools that fail on tough brokers, our **Human Analyst Team** manually files legal opt-out documentation until your records disappear."
         )
     elif any(k in msg for k in ["alias", "email alias", "phone alias", "relay", "burner", "virtual phone", "sms", "forward"]):
@@ -3460,19 +3460,19 @@ async def ai_privacy_chat(request: Request, req: AIChatRequest):
             "2. **1-Tap Emergency Burn**:\n"
             "   If spam or phishing emails start arriving on that breached alias, simply tap **Emergency Burn** in your dashboard. The alias is instantly scorched and deleted, severing the hackers' link to you permanently.\n\n"
             "3. **Automated Dark Web & Broker Scrubbing**:\n"
-            "   Data brokers buy breached databases. Disappear continuously scans 47+ data broker sites every 30 days to detect and legally purge any re-listed records."
+            "   Data brokers buy breached databases. Disappear continuously scans 400+ data broker sites every 30 days to detect and legally purge any re-listed records."
         )
     elif any(k in msg for k in ["spam", "robocall", "junk", "telemarketer", "scam", "phishing"]):
         reply = (
             "🚫 **How Disappear Stops Spam & Robocalls**:\n\n"
-            "• **Data Broker Purging**: Most spam calls come from data brokers selling your phone number. Disappear wipes your number from 47+ broker directories.\n"
+            "• **Data Broker Purging**: Most spam calls come from data brokers selling your phone number. Disappear wipes your number from 400+ broker directories.\n"
             "• **Masked Virtual Phone Lines**: Use Disappear phone relays for signups so spam never reaches your personal phone.\n"
             "• **Instant Line Scorch**: If a virtual line receives spam, burn it in 1 click and replace it with a clean line."
         )
     elif any(k in msg for k in ["stalker", "dox", "doxxed", "doxxing", "harass", "safety", "threat", "ex-partner"]):
         reply = (
             "🛡️ **Stalker & Doxxing Protection**:\n\n"
-            "• **Complete PII Eradication**: We remove your home address, family member names, phone numbers, and location history from public search engines and 47+ people-search sites.\n"
+            "• **Complete PII Eradication**: We remove your home address, family member names, phone numbers, and location history from public search engines and 400+ people-search sites.\n"
             "• **Human Analyst Priority**: High-risk or sensitive removal requests are escalated to our **Human Privacy Analyst Team** to ensure 100% compliance."
         )
     elif any(k in msg for k in ["cancel", "cancellation", "refund", "guarantee", "stop"]):
