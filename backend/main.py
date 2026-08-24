@@ -3517,47 +3517,78 @@ async def create_support_ticket(
         db.commit()
         
         # --- SECURE EMAIL DISPATCH TO customer.service@disappearco.com ---
-        resend_key = os.getenv("RESEND_API_KEY")
-        email_dispatched = False
-        if resend_key:
-            try:
-                async with httpx.AsyncClient() as client:
-                    resend_resp = await client.post(
-                        "https://api.resend.com/emails",
-                        headers={"Authorization": f"Bearer {resend_key}"},
-                        json={
-                            "from": "Disappear System <onboarding@resend.dev>",
-                            "to": "customer.service@disappearco.com",
-                            "subject": f"DISAPPEAR SUPPORT TICKET [{support_req.category}]: {support_req.subject}",
-                            "text": (
-                                f"SECURE SUPPORT TICKET DISPATCH\n"
-                                f"--------------------------------------------------\n"
-                                f"USER ID:          {target_uid}\n"
-                                f"REGISTERED EMAIL: {target_email}\n"
-                                f"CATEGORY:         {support_req.category}\n"
-                                f"SUBJECT:          {support_req.subject}\n"
-                                f"TIMESTAMP:        {datetime.utcnow().isoformat()}Z\n"
-                                f"--------------------------------------------------\n\n"
-                                f"CUSTOMER MESSAGE:\n"
-                                f"{support_req.message}\n\n"
-                                f"--------------------------------------------------\n"
-                                f"Disappear PaaS Automated Support Uplink"
-                            )
-                        },
-                        timeout=15.0
-                    )
-                    if resend_resp.status_code in [200, 201, 202]:
-                        email_dispatched = True
-                    else:
-                        logger.warning(f"RESEND_DISPATCH_WARNING: Status {resend_resp.status_code} - {resend_resp.text}")
-            except Exception as email_err:
-                logger.error(f"EMAIL_DISPATCH_FAILED: {str(email_err)}")
+        resend_key = (os.getenv("RESEND_API_KEY") or "").strip()
+        if not resend_key:
+            logger.error("RESEND_API_KEY_MISSING: Environment variable RESEND_API_KEY is missing on Railway!")
+            raise HTTPException(
+                status_code=503, 
+                detail="EMAIL_SERVICE_UNCONFIGURED: RESEND_API_KEY environment variable is not configured on backend server."
+            )
 
-        return {
-            "status": "TRANSMITTED", 
-            "email_dispatched": email_dispatched, 
-            "id": random.randint(1000, 9999)
-        }
+        try:
+            async with httpx.AsyncClient() as client:
+                resend_resp = await client.post(
+                    "https://api.resend.com/emails",
+                    headers={
+                        "Authorization": f"Bearer {resend_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "from": "Disappear System <onboarding@resend.dev>",
+                        "to": ["customer.service@disappearco.com"],
+                        "subject": f"DISAPPEAR SUPPORT TICKET [{support_req.category}]: {support_req.subject}",
+                        "text": (
+                            f"SECURE SUPPORT TICKET DISPATCH\n"
+                            f"--------------------------------------------------\n"
+                            f"USER ID:          {target_uid}\n"
+                            f"REGISTERED EMAIL: {target_email}\n"
+                            f"CATEGORY:         {support_req.category}\n"
+                            f"SUBJECT:          {support_req.subject}\n"
+                            f"TIMESTAMP:        {datetime.utcnow().isoformat()}Z\n"
+                            f"--------------------------------------------------\n\n"
+                            f"CUSTOMER MESSAGE:\n"
+                            f"{support_req.message}\n\n"
+                            f"--------------------------------------------------\n"
+                            f"Disappear PaaS Automated Support Uplink"
+                        )
+                    },
+                    timeout=15.0
+                )
+
+                logger.info(f"RESEND_DISPATCH_RESPONSE: Status {resend_resp.status_code} - Body: {resend_resp.text}")
+
+                if resend_resp.status_code in [200, 201, 202]:
+                    res_data = resend_resp.json()
+                    email_id = res_data.get("id", str(random.randint(1000, 9999)))
+                    return {
+                        "status": "TRANSMITTED", 
+                        "email_dispatched": True, 
+                        "resend_id": email_id,
+                        "id": email_id
+                    }
+                else:
+                    err_body = resend_resp.text
+                    logger.error(f"RESEND_DISPATCH_REJECTED: Status {resend_resp.status_code} - {err_body}")
+                    err_msg = err_body
+                    try:
+                        parsed = resend_resp.json()
+                        err_msg = parsed.get("message") or parsed.get("name") or err_body
+                    except Exception:
+                        pass
+
+                    raise HTTPException(
+                        status_code=502, 
+                        detail=f"EMAIL_DELIVERY_REJECTED ({resend_resp.status_code}): {err_msg}"
+                    )
+        except HTTPException:
+            raise
+        except Exception as email_err:
+            logger.error(f"EMAIL_DISPATCH_EXCEPTION: {str(email_err)}")
+            raise HTTPException(
+                status_code=500, 
+                detail=f"EMAIL_DELIVERY_FAILED: {str(email_err)}"
+            )
+
     except HTTPException:
         raise
     except Exception as e:
