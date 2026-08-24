@@ -1627,13 +1627,10 @@ async def complete_manual_scrub(
 async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Synchronizes dashboard using user_id from query or header"""
     target_user_id = user_id or x_user_id
-    if target_user_id == "user_mike803":
-        target_user_id = "user_7956"
-        
     profile = None
     if target_user_id:
         try:
-            profile = db.query(DBProfile).filter(DBProfile.id == target_user_id).first()
+            profile = db.query(DBProfile).filter(or_(DBProfile.id == target_user_id, DBProfile.email == target_user_id)).first()
         except Exception:
             profile = None
     if not profile:
@@ -3569,8 +3566,8 @@ async def get_user_sms_inbox(user_id: Optional[str] = None, db: Session = Depend
         return {"status": "success", "inbox": []}
 
     raw_uid = user_id.strip()
-    profile = db.query(DBProfile).filter(or_(DBProfile.id == raw_uid, DBProfile.email == raw_uid, DBProfile.id == "user_7956" if "mike" in raw_uid or "7956" in raw_uid else False)).first()
-    target_uid = profile.id if profile else ("user_7956" if "7956" in raw_uid or "mike" in raw_uid else ("user_3010" if "3010" in raw_uid or "mary" in raw_uid else raw_uid))
+    profile = db.query(DBProfile).filter(or_(DBProfile.id == raw_uid, DBProfile.email == raw_uid)).first()
+    target_uid = profile.id if profile else raw_uid
 
     # Fetch user's actual phone aliases owned strictly by this account
     user_aliases = db.query(DBAlias).filter(

@@ -309,7 +309,8 @@ function App() {
   }, []);
 
   const fetchSmsInbox = useCallback(async () => {
-    const activeUserId = currentUserId || getSessionItem("disappear_user_id") || getSessionItem("disappear_user_email") || "user_7956";
+    const activeUserId = currentUserId || getSessionItem("disappear_user_id");
+    if (!activeUserId) return;
     try {
       const res = await secureRequest(`${API_BASE_URL}/api/v1/sms-inbox/${activeUserId}`);
       if (res.ok) {
@@ -819,22 +820,7 @@ function App() {
         syncDefenseData();
     }
 
-    const savedUid = getSessionItem("disappear_user_id");
-    const savedEmail = getSessionItem("disappear_user_email");
-
-    // CACHE FIREWALL: Only purge if an explicitly different non-Mike email is logged in
-    if (savedUid && (savedUid === "user_mike803" || savedUid === "user_7956")) {
-      if (savedEmail && savedEmail.trim().toLowerCase() !== "mike803@verizon.net") {
-        clearSessionStorage();
-        setCurrentUserId(null);
-        setShowLanding(true);
-        setShowShield(false);
-        setShow2FA(false);
-        return;
-      }
-    }
-
-    if (session === "active" && !isExpired && savedUid) {
+    if (session === "active" && !isExpired && savedUid && savedUid !== "undefined") {
         setSessionItem("disappear_last_active", now.toString());
         setSessionItem("disappear_session", "active");
         setSessionItem("disappear_user_id", savedUid);
@@ -843,15 +829,12 @@ function App() {
         setShowShield(true);
         setProgress(100);
     } else {
-        // Auto-restore Mike's primary profile (user_7956) if no explicit customer session exists for this tab
-        const masterUid = savedUid && savedUid !== "undefined" ? savedUid : "user_7956";
-        setSessionItem("disappear_session", "active");
-        setSessionItem("disappear_user_id", masterUid);
-        setSessionItem("disappear_user_email", "mike803@verizon.net");
-        setCurrentUserId(masterUid);
-        setShowLanding(false);
-        setShowShield(true);
-        setProgress(100);
+        // ZERO FALLBACK GUARANTEE: If no explicit session exists, strictly lock screen and clear state
+        clearSessionStorage();
+        setCurrentUserId(null);
+        setShowLanding(true);
+        setShowShield(false);
+        setShow2FA(false);
     }
   }, []);
 
