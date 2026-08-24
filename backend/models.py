@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from sqlalchemy import create_engine, Column, String, DateTime, Integer, text, Boolean, Float
+from sqlalchemy import create_engine, Column, String, DateTime, Integer, text, Boolean, Float, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
