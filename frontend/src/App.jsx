@@ -273,7 +273,7 @@ function App() {
     setIsValidatingCoupon(true);
     setCouponMsg("");
     try {
-      const basePrice = billingCycle === 'annual' ? 7.95 : 9.99;
+      const basePrice = billingCycle === 'annual' ? 15.99 : 19.99;
       const res = await fetch(`${API_BASE_URL}/coupons/validate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -3446,22 +3446,65 @@ const handleEmergencyBurn = async () => {
                           )}
                         </div>
 
+                        {/* --- EXPLICIT DISCOUNTED TOTAL SUMMARY CARD --- */}
+                        {appliedCoupon && (
+                          <div style={{
+                            background: 'rgba(16, 185, 129, 0.08)',
+                            border: '1px solid #10B981',
+                            borderRadius: '10px',
+                            padding: '14px 16px',
+                            marginTop: '16px',
+                            marginBottom: '5px',
+                            textAlign: 'left',
+                            boxShadow: '0 0 15px rgba(16, 185, 129, 0.2)'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                              <span style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: 'bold', letterSpacing: '0.5px' }}>COUPON APPLIED:</span>
+                              <span style={{ fontSize: '0.82rem', color: '#34D399', fontWeight: 'bold', background: 'rgba(16,185,129,0.2)', border: '1px solid #10B981', padding: '2px 8px', borderRadius: '4px' }}>
+                                🎟️ {appliedCoupon.code || couponInput.toUpperCase()} ({appliedCoupon.discount_percent || appliedCoupon.discount_pct || 0}% OFF)
+                              </span>
+                            </div>
+                            
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.84rem', marginBottom: '4px' }}>
+                              <span style={{ color: '#CBD5E1' }}>Regular Price:</span>
+                              <span style={{ color: '#94A3B8', textDecoration: 'line-through' }}>
+                                ${(appliedCoupon.original_price || (billingCycle === 'annual' ? 15.99 : 19.99)).toFixed(2)}/mo
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.84rem', marginBottom: '6px' }}>
+                              <span style={{ color: '#34D399', fontWeight: 'bold' }}>Coupon Savings:</span>
+                              <span style={{ color: '#34D399', fontWeight: 'bold' }}>
+                                -${(appliedCoupon.savings || ((appliedCoupon.original_price || (billingCycle === 'annual' ? 15.99 : 19.99)) - appliedCoupon.final_price)).toFixed(2)}/mo
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.95rem', paddingTop: '8px', borderTop: '1px dashed rgba(16,185,129,0.3)', marginTop: '4px' }}>
+                              <strong style={{ color: '#FFF' }}>DISCOUNTED TOTAL:</strong>
+                              <strong style={{ color: '#34D399', fontSize: '1.15rem' }}>
+                                ${appliedCoupon.final_price.toFixed(2)}/mo
+                              </strong>
+                            </div>
+                          </div>
+                        )}
+
                         <button 
                           className="main-button" 
                           style={{ 
                             width: '100%', 
-                            marginTop: '25px', 
+                            marginTop: '20px', 
                             display: 'flex', 
+                            flexDirection: 'column',
                             justifyContent: 'center', 
                             alignItems: 'center', 
-                            gap: '10px',
-                            background: 'linear-gradient(135deg, #00D2FF 0%, #0072FF 100%)',
+                            gap: '4px',
+                            background: appliedCoupon ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)' : 'linear-gradient(135deg, #00D2FF 0%, #0072FF 100%)',
                             color: '#ffffff',
                             fontWeight: 'bold',
                             fontSize: '1.05rem',
                             padding: '16px',
                             borderRadius: '8px',
-                            boxShadow: '0 0 20px rgba(0, 210, 255, 0.45)',
+                            boxShadow: appliedCoupon ? '0 0 25px rgba(16, 185, 129, 0.45)' : '0 0 20px rgba(0, 210, 255, 0.45)',
                             border: '1px solid rgba(255, 255, 255, 0.4)',
                             cursor: 'pointer',
                             letterSpacing: '1px',
@@ -3469,8 +3512,26 @@ const handleEmergencyBurn = async () => {
                           }} 
                           onClick={handleFinalPurchase}
                         >
-                          {isMinting ? <><span className="cyberpunk-spinner"></span> INITIATING...</> : appliedCoupon ? `⚡ CONFIRM & INITIATE ($${appliedCoupon.final_price.toFixed(2)}/mo)` : '⚡ CONFIRM & INITIATE'}
+                          {isMinting ? (
+                            <><span className="cyberpunk-spinner"></span> INITIATING...</>
+                          ) : appliedCoupon ? (
+                            <>
+                              <span>⚡ CONFIRM & INITIATE ($${appliedCoupon.final_price.toFixed(2)}/mo)</span>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 'normal', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                ✔ REFLECTS APPLIED COUPON DISCOUNT
+                              </span>
+                            </>
+                          ) : (
+                            '⚡ CONFIRM & INITIATE'
+                          )}
                         </button>
+                        
+                        {appliedCoupon && (
+                          <p style={{ fontSize: '0.78rem', color: '#34D399', margin: '8px 0 0 0', textAlign: 'center', fontWeight: 'bold' }}>
+                            ✔ Coupon Applied: -${(appliedCoupon.savings || ((appliedCoupon.original_price || (billingCycle === 'annual' ? 15.99 : 19.99)) - appliedCoupon.final_price)).toFixed(2)}/mo savings applied to your order ({appliedCoupon.code || couponInput.toUpperCase()})
+                          </p>
+                        )}
+
                         <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => window.location.hash = "pricing"}>BACK</button>
                       </div>
                     </div>
