@@ -3568,7 +3568,7 @@ async def create_support_ticket(
                         "id": email_id
                     }
                 elif resend_resp.status_code == 403 and "only send testing emails" in resend_resp.text:
-                    logger.warning("RESEND_TEST_DOMAIN_RESTRICTION: Retrying dispatch to verified developer email (mike803@verizon.net)")
+                    logger.warning("RESEND_TEST_DOMAIN_RESTRICTION: Retrying dispatch to verified developer email (michael.sessa@disappearco.com)")
                     retry_resp = await client.post(
                         "https://api.resend.com/emails",
                         headers={
@@ -3577,7 +3577,7 @@ async def create_support_ticket(
                         },
                         json={
                             "from": "Disappear System <onboarding@resend.dev>",
-                            "to": ["mike803@verizon.net"],
+                            "to": ["michael.sessa@disappearco.com"],
                             "subject": f"DISAPPEAR SUPPORT TICKET [{support_req.category}]: {support_req.subject}",
                             "text": (
                                 f"SECURE SUPPORT TICKET DISPATCH (REFORWARDED)\n"
