@@ -520,7 +520,7 @@ input[type="checkbox"] {
 /* 11. MOBILE RESPONSIVE OVERRIDES */
 @media (max-width: 768px) {
   .app-container {
-    padding: 60px 15px 220px 15px !important;
+    padding: 60px 15px max(240px, calc(200px + env(safe-area-inset-bottom, 0px))) 15px !important;
   }
 
   .brand-name {
@@ -553,6 +553,7 @@ input[type="checkbox"] {
     height: auto !important;
     flex-direction: column;
     gap: 8px !important;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px)) !important;
   }
 
   .footer-divider {
@@ -568,6 +569,32 @@ input[type="checkbox"] {
   align-items: center;
 }
 
+.responsive-2col-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+
+.responsive-card-details {
+  display: flex;
+  gap: 25px;
+  border-top: 1px solid #222;
+  padding-top: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.sms-thread-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #1e293b;
+  gap: 8px;
+}
+
 @media (max-width: 580px) {
   .flex-responsive-row {
     flex-direction: column !important;
@@ -576,6 +603,21 @@ input[type="checkbox"] {
   .flex-responsive-row input,
   .flex-responsive-row button {
     width: 100% !important;
+  }
+  .responsive-2col-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .responsive-card-details {
+    gap: 12px !important;
+    justify-content: space-between !important;
+  }
+  .sms-thread-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  .sms-thread-header > div:last-child {
+    width: 100% !important;
+    justify-content: flex-end !important;
   }
 }
 
