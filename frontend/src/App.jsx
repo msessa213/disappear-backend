@@ -150,7 +150,7 @@ function App() {
   const [showFaqModal, setShowFaqModal] = useState(false); 
   const [showManualModal, setShowManualModal] = useState(false);
   const [activeFaqNode, setActiveFaqNode] = useState(null);
-  const [supportData, setSupportData] = useState({ subject: "TECHNICAL_ERR", message: "" });
+  const [supportData, setSupportData] = useState({ category: "GENERAL_INQUIRY", subject: "TECHNICAL_ERR", message: "" });
 
   // --- CATEGORY-SPECIFIC STATES ---
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -1261,16 +1261,22 @@ function App() {
   };
 
   const handleSendTicket = async () => {
-    if (!supportData.message) { triggerToast("⚠️ PLEASE ENTER A MESSAGE DESCRIPTION"); return; }
+    if (!supportData.message || !supportData.message.trim()) { 
+      triggerToast("⚠️ PLEASE ENTER A DETAILED INQUIRY DESCRIPTION"); 
+      return; 
+    }
     try {
-        const activeUserId = currentUserId || getSessionItem("disappear_user_id");
-        const activeEmail = targetProfile.email || getSessionItem("disappear_user_email");
+        const activeUserId = currentUserId || getSessionItem("disappear_user_id") || "UNAUTHENTICATED";
+        const activeEmail = targetProfile.email || getSessionItem("disappear_user_email") || "NOT_PROVIDED";
         const payload = {
-          ...supportData,
-          user_id: activeUserId || "UNAUTHENTICATED",
-          email: activeEmail || "NOT_PROVIDED"
+          category: supportData.category || "GENERAL_INQUIRY",
+          subject: supportData.subject || "TECHNICAL_INQUIRY",
+          message: supportData.message.trim(),
+          user_id: activeUserId,
+          email: activeEmail
         };
-        const res = await secureRequest(`${API_BASE_URL}/support/ticket?user_id=${activeUserId || ''}`, {
+
+        const res = await secureRequest(`${API_BASE_URL}/support/ticket?user_id=${activeUserId}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload)
@@ -1278,12 +1284,15 @@ function App() {
         const data = await res.json().catch(() => ({}));
         if (res.ok) {
             triggerToast("✅ TICKET TRANSMITTED TO CUSTOMER SERVICE");
-            setSupportData({ subject: "TECHNICAL_ERR", message: "" });
+            setSupportData({ category: "GENERAL_INQUIRY", subject: "TECHNICAL_ERR", message: "" });
             setShowSupportModal(false);
         } else {
-            triggerToast(`❌ ${data.detail || "FAILED TO TRANSMIT SUPPORT TICKET"}`);
+            console.error("SUPPORT_TICKET_API_ERROR:", data);
+            const errDetail = typeof data.detail === 'string' ? data.detail : (Array.isArray(data.detail) ? data.detail[0]?.msg : "FAILED TO TRANSMIT SUPPORT TICKET");
+            triggerToast(`❌ ${errDetail}`);
         }
     } catch (err) { 
+        console.error("SUPPORT_TICKET_NETWORK_ERROR:", err);
         triggerToast("❌ NETWORK ERROR: COULD NOT TRANSMIT TICKET"); 
     }
   };
@@ -2208,7 +2217,7 @@ const handleEmergencyBurn = async () => {
 
                       <div style={{ marginTop: '25px' }}>
                         <p className="field-label">ISSUE CATEGORY</p>
-                        <select className="mask-btn" style={{width: '100%', background: '#000', color: 'white', marginBottom: '15px'}} value={supportData.subject} onChange={(e) => setSupportData({...supportData, subject: e.target.value})}>
+                        <select className="mask-btn" style={{width: '100%', background: '#000', color: 'white', marginBottom: '15px'}} value={supportData.category} onChange={(e) => setSupportData({...supportData, category: e.target.value, subject: e.target.value})}>
                           <option value="PAYMENT_ERR">PAYMENT_ISSUE</option>
                           <option value="NODE_ERR">NODE_FAILURE</option>
                           <option value="PURGE_ERR">PURGE_TIMEOUT</option>
@@ -3617,7 +3626,7 @@ const handleEmergencyBurn = async () => {
           <div className="price-box" onClick={e => e.stopPropagation()}>
             <h3 className="tiger-text">SUPPORT UPLINK</h3>
             <p className="field-label">ISSUE CATEGORY</p>
-            <select className="mask-btn" style={{width: '100%', background: '#000', color: 'white', marginBottom: '15px'}} value={supportData.subject} onChange={(e) => setSupportData({...supportData, subject: e.target.value})}>
+            <select className="mask-btn" style={{width: '100%', background: '#000', color: 'white', marginBottom: '15px'}} value={supportData.category} onChange={(e) => setSupportData({...supportData, category: e.target.value, subject: e.target.value})}>
               <option value="PAYMENT_ERR">PAYMENT_ISSUE</option>
               <option value="NODE_ERR">NODE_FAILURE</option>
               <option value="PURGE_ERR">PURGE_TIMEOUT</option>

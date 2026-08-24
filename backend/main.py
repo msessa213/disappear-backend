@@ -450,8 +450,8 @@ class TargetEmailRequest(BaseModel):
 
 # NEW: Support Request Schema
 class SupportRequest(BaseModel):
-    category: str
-    subject: str
+    category: str = "GENERAL_INQUIRY"
+    subject: str = "TECHNICAL_INQUIRY"
     message: str
     user_id: Optional[str] = None
     email: Optional[str] = None
