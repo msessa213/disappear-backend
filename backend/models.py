@@ -127,6 +127,7 @@ class DBScrubLog(Base):
 class DBPurgeLog(Base):
     __tablename__ = "purge_logs_v1"
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, index=True, nullable=True)
     action_type = Column(String)
     node_id = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)

@@ -1122,14 +1122,44 @@ function App() {
     }
   };
 
-  const handleSecureLogout = () => {
-    clearSessionStorage();
+  const clearAllUserDataState = useCallback(() => {
     setCurrentUserId(null);
     setSmsInbox([]);
     setPhones([]);
     setEmails([]);
     setCards([]);
     setAuditLog([]);
+    setPaymentMethods([]);
+    setTargetEmails({ primary: "", additional: [], slots: 1, used: 0 });
+    setReferralData({
+      code: "",
+      link: "",
+      count: 0,
+      next_milestone_needed: 5,
+      progress_pct: 0,
+      free_months_earned: 0,
+      free_months_redeemed: 0
+    });
+    setTargetProfile({
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      email: "",
+      password: "",
+      phone: "",
+      address: "",
+      city: "",
+      state: "",
+      zip: "",
+      dob: "",
+      termsAccepted: false,
+      smsConsentAccepted: false
+    });
+  }, []);
+
+  const handleSecureLogout = () => {
+    clearSessionStorage();
+    clearAllUserDataState();
     setShowShield(false);
     setShowAdmin(false);
     setShowAdminLogin(false);
@@ -1547,6 +1577,7 @@ const handleEmergencyBurn = async () => {
       });
       if (res.ok) {
         const data = await res.json();
+        clearAllUserDataState();
         setSessionItem("disappear_session", "active");
         if (data.user_id) {
           setSessionItem("disappear_user_id", data.user_id);
@@ -1798,6 +1829,8 @@ const handleEmergencyBurn = async () => {
             }
             activeUserId = profileData.profile_id;
             setSessionItem("disappear_user_id", activeUserId);
+            clearAllUserDataState();
+            setCurrentUserId(activeUserId);
             setShowOnboardingWelcomeModal(true);
             triggerToast("PROFILE CREATED — CHECK EMAIL & PHONE VERIFICATION");
             

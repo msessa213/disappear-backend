@@ -279,6 +279,7 @@ def safe_add_column(table: str, column: str, col_type: str):
         pass
 
 
+safe_add_column("purge_logs_v1", "user_id", "VARCHAR")
 safe_add_column("shield_profiles_v3", "extra_email_slots", "INTEGER DEFAULT 0")
 safe_add_column("shield_assets_v3", "user_id", "VARCHAR")
 safe_add_column("shield_aliases_v3", "user_id", "VARCHAR")
@@ -1864,86 +1865,34 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
 
     random.seed(time.time())
 
-    # 2. Real Purge & Scrub History (Consolidated Data Removals)
+    # 2. Real Purge & Scrub History (Consolidated Data Removals - Strictly Scoped to user_id == uid)
     from datetime import timedelta
     cutoff_date = datetime.utcnow() - timedelta(days=30)
     
-    # Collect all user-specific identifiers (user_id, email, phone, and virtual line alias numbers)
-    user_aliases = db.query(DBAlias).filter(DBAlias.user_id == uid).all()
-    user_identifiers = [uid]
-    if profile.email:
-        user_identifiers.append(profile.email)
-    if profile.phone:
-        user_identifiers.append(profile.phone)
-    for a in user_aliases:
-        if a.content:
-            user_identifiers.append(a.content)
-            clean_ac = "".join(filter(str.isdigit, a.content))
-            if clean_ac and len(clean_ac) >= 4:
-                user_identifiers.append(f"VIRTUAL_LINE_{clean_ac[-4:]}")
-                user_identifiers.append(clean_ac[-4:])
-
-    purge_filters = []
-    for ident in user_identifiers:
-        if ident:
-            purge_filters.append(DBPurgeLog.node_id.like(f"%{ident}%"))
-            purge_filters.append(DBPurgeLog.action_type.like(f"%{ident}%"))
-
     purge_entries = []
     try:
-        if purge_filters:
-            purge_entries = (
-                db.query(DBPurgeLog)
-                .filter(
-                    DBPurgeLog.timestamp >= cutoff_date,
-                    or_(*purge_filters)
-                )
-                .order_by(desc(DBPurgeLog.timestamp))
-                .all()
+        purge_entries = (
+            db.query(DBPurgeLog)
+            .filter(
+                DBPurgeLog.timestamp >= cutoff_date,
+                or_(DBPurgeLog.user_id == uid, DBPurgeLog.node_id.like(f"{uid}_%"))
             )
+            .order_by(desc(DBPurgeLog.timestamp))
+            .all()
+        )
     except Exception as p_err:
         logger.warning(f"Purge log query skipped: {p_err}")
 
-    # Fetch & Auto-Seed User Scrub Logs for all 135 Data Brokers
+    # Fetch User Scrub Logs strictly scoped to user_id == uid
     scrub_entries = []
     try:
         existing_scrubs = db.query(DBScrubLog).filter(DBScrubLog.user_id == uid).all()
-        existing_set = {s.broker_name for s in existing_scrubs}
-        missing_brokers = [b for b in BROKERS if b not in existing_set]
-        if missing_brokers:
-            for b in missing_brokers:
-                is_auto = b in AUTOMATED_BROKERS
-                db.add(DBScrubLog(
-                    user_id=uid,
-                    broker_name=b,
-                    status="PROCESSING" if is_auto else "MANUAL_PENDING",
-                    removal_type="AUTOMATED" if is_auto else "MANUAL",
-                    timestamp=datetime.utcnow()
-                ))
-            db.commit()
-            existing_scrubs = db.query(DBScrubLog).filter(DBScrubLog.user_id == uid).all()
-
-        # Instantly advance 3 automated removals if none removed yet
-        removed_count = sum(1 for s in existing_scrubs if s.status == "REMOVED")
-        if removed_count == 0:
-            processing_items = [s for s in existing_scrubs if s.status == "PROCESSING"][:4]
-            for item in processing_items:
-                item.status = "REMOVED"
-                item.timestamp = datetime.utcnow()
-                ref_code = f"HASH_{secrets.token_hex(3).upper()}"
-                db.add(DBPurgeLog(
-                    action_type=f"DATA_BROKER_REMOVAL_VERIFIED [{item.broker_name}] ({ref_code})",
-                    node_id=f"{uid}_AUTOMATED_SCRUB"
-                ))
-            db.commit()
-            existing_scrubs = db.query(DBScrubLog).filter(DBScrubLog.user_id == uid).all()
-
         scrub_entries = existing_scrubs
     except Exception as s_err:
-        logger.warning(f"Scrub log query/seed skipped: {s_err}")
+        logger.warning(f"Scrub log query skipped: {s_err}")
     
     # Calculate Data Broker Scrub Statistics
-    total_b_count = len(scrub_entries) if scrub_entries else len(BROKERS)
+    total_b_count = len(scrub_entries)
     removed_b_count = sum(1 for s in scrub_entries if s.status == "REMOVED")
     processing_b_count = sum(1 for s in scrub_entries if s.status in ["PROCESSING", "SUBPOENA_FILED"])
     manual_b_count = sum(1 for s in scrub_entries if s.status == "MANUAL_PENDING")
@@ -1970,18 +1919,6 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
         "timestamp": format_iso_z(s.timestamp)
     } for s in scrub_entries]
 
-    # Ensure initial audit logs exist for customer accounts
-    if not purge_entries and not scrub_entries:
-        try:
-            init_log1 = DBPurgeLog(action_type="PII_THREAT_SCAN_COMPLETED", node_id=f"{uid}_SHIELD_SCANNER")
-            init_log2 = DBPurgeLog(action_type="DATA_BROKER_REMOVALS_DISPATCHED", node_id=f"{uid}_GLOBAL_SCRUB")
-            init_log3 = DBPurgeLog(action_type="ACCOUNT_DEFENSE_ACTIVE", node_id=f"{uid}_VAULT_CORE")
-            db.add_all([init_log1, init_log2, init_log3])
-            db.commit()
-            purge_entries = [init_log3, init_log2, init_log1]
-        except Exception as ex:
-            logger.warning(f"Audit log init skipped: {ex}")
-
     history_list = []
     for entry in purge_entries:
         ts = format_iso_z(entry.timestamp)
@@ -2005,7 +1942,7 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
     # Sort consolidated audit history by timestamp descending
     history_list.sort(key=lambda x: x["timestamp"], reverse=True)
 
-    # 3. Virtual Cards (Consolidated)
+    # 3. Virtual Cards (Strictly Scoped to DBCard.user_id == uid)
     cards = []
     try:
         cards_entities = db.query(DBCard).filter(DBCard.user_id == uid).order_by(DBCard.created_at.desc()).all()
@@ -2022,14 +1959,10 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
     except Exception as e:
         logger.error(f"Sync Cards Error: {e}")
 
-    # 4. Aliases (Email & Phone - Consolidated strictly scoped to user_id == uid)
+    # 4. Aliases (Email & Phone - Strictly Scoped to DBAlias.user_id == uid)
     aliases_list = []
     try:
-        if uid in ['user_7956', 'user_mike803'] or (profile and profile.email and profile.email.lower() == 'mike803@verizon.net'):
-            aliases_entities = db.query(DBAlias).filter(or_(DBAlias.user_id == uid, DBAlias.user_id == 'user_7956', DBAlias.user_id == 'user_mike803')).order_by(DBAlias.created_at.desc()).all()
-        else:
-            aliases_entities = db.query(DBAlias).filter(DBAlias.user_id == uid).order_by(DBAlias.created_at.desc()).all()
-
+        aliases_entities = db.query(DBAlias).filter(DBAlias.user_id == uid).order_by(DBAlias.created_at.desc()).all()
         aliases_list = [{
             "id": a.id,
             "user_id": a.user_id,
@@ -2694,11 +2627,12 @@ async def marqeta_webhook(request: Request, db: Session = Depends(get_db)):
 # --- PII CONTROL ROUTES ---
 
 @app.get("/aliases/data")
-async def get_aliases(x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
-    """Retrieves all active aliases for separate rendering"""
-    profile = db.query(DBProfile).filter(DBProfile.id == x_user_id).first() if x_user_id else db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
-    uid = profile.id if profile else None
-    aliases = db.query(DBAlias).filter(DBAlias.user_id == uid).order_by(DBAlias.created_at.desc()).all()
+async def get_aliases(x_user_id: Optional[str] = Header(None), user_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
+    """Retrieves all active aliases strictly scoped to the requesting user_id"""
+    active_uid = user_id or x_user_id
+    if not active_uid:
+        return {"aliases": []}
+    aliases = db.query(DBAlias).filter(DBAlias.user_id == active_uid).order_by(DBAlias.created_at.desc()).all()
     return {"aliases": aliases if aliases else []}
 
 
@@ -3876,8 +3810,14 @@ async def get_user_sms_inbox(user_id: Optional[str] = None, db: Session = Depend
     alias_map = {("".join(filter(str.isdigit, a.content or ""))[-4:] if a.content else ""): a.content for a in user_aliases if a.content}
     user_alias_digits = {d for d in alias_map.keys() if len(d) >= 4}
 
-    # Fetch all recent SMS logs
+    # Fetch all recent SMS logs strictly scoped to this user
     all_sms_logs = db.query(DBPurgeLog).filter(
+        or_(
+            DBPurgeLog.user_id == target_uid,
+            DBPurgeLog.user_id == raw_uid,
+            DBPurgeLog.node_id.like(f"{target_uid}_%"),
+            DBPurgeLog.node_id.like(f"{raw_uid}_%")
+        ),
         or_(
             DBPurgeLog.action_type.ilike("%SMS_%"),
             DBPurgeLog.action_type.ilike("%SMS%"),
@@ -3888,8 +3828,11 @@ async def get_user_sms_inbox(user_id: Optional[str] = None, db: Session = Depend
     inbox = []
     for log in all_sms_logs:
         nid = log.node_id or ""
-        # Strictly match if node_id belongs to target_uid OR matches one of user's 4-digit phone aliases
-        is_owner = nid.startswith(f"{target_uid}_") or nid.startswith(f"{raw_uid}_") or any(d in nid for d in user_alias_digits)
+        is_owner = (
+            log.user_id in [target_uid, raw_uid] or 
+            nid.startswith(f"{target_uid}_") or 
+            nid.startswith(f"{raw_uid}_")
+        )
         if not is_owner:
             continue
 
