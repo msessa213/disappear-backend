@@ -2272,8 +2272,8 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
             "automatic_tax": {"enabled": True},
             "billing_address_collection": "required",
             "allow_promotion_codes": True,
-            "success_url": f"{return_url}?payment=success",
-            "cancel_url": f"{return_url}?payment=cancel",
+            "success_url": f"{return_url}?payment=success&user_id={user_id}&session_id={{CHECKOUT_SESSION_ID}}",
+            "cancel_url": f"{return_url}?payment=cancel&user_id={user_id}",
         }
 
         if customer_id:
@@ -2313,8 +2313,8 @@ async def create_credit_refill_session(request: Request, req: CreditRefillReques
                 'quantity': 1,
             }],
             mode='payment',
-            success_url='https://www.disappearco.com/#vault?refill=success',
-            cancel_url='https://www.disappearco.com/#vault',
+            success_url=f'https://www.disappearco.com/?payment=success&refill=success&user_id={user_id}',
+            cancel_url=f'https://www.disappearco.com/?payment=cancel&user_id={user_id}',
             metadata={
                 'user_id': user_id,
                 'type': 'credit_refill',
@@ -2513,8 +2513,8 @@ async def create_setup_session(req: SetupSessionRequest, request: Request, user_
             payment_method_types=['card'],
             mode="setup",
             customer=profile.stripe_customer_id,
-            success_url=f"{req.return_url}?setup=success",
-            cancel_url=f"{req.return_url}?setup=cancel",
+            success_url=f"{req.return_url}?setup=success&user_id={profile.id}",
+            cancel_url=f"{req.return_url}?setup=cancel&user_id={profile.id}",
         )
         return {"url": session.url}
     except Exception as e:

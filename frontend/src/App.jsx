@@ -37,7 +37,11 @@ const API_BASE_URL = isExplicitLocalDev ? LOCAL_API : "";
 // Zero reading or writing to global localStorage to guarantee cross-tab session independence.
 const getSessionItem = (key) => {
   try {
-    return sessionStorage.getItem(key) || "";
+    const val = sessionStorage.getItem(key);
+    if (val && val !== "undefined") return val;
+    const localVal = localStorage.getItem(key);
+    if (localVal && localVal !== "undefined") return localVal;
+    return "";
   } catch (e) {
     return "";
   }
@@ -46,18 +50,23 @@ const getSessionItem = (key) => {
 const setSessionItem = (key, value) => {
   try {
     sessionStorage.setItem(key, value);
+    localStorage.setItem(key, value);
   } catch (e) {}
 };
 
 const removeSessionItem = (key) => {
   try {
     sessionStorage.removeItem(key);
+    localStorage.removeItem(key);
   } catch (e) {}
 };
 
 const clearSessionStorage = () => {
   try {
     sessionStorage.clear();
+    localStorage.removeItem("disappear_session");
+    localStorage.removeItem("disappear_user_id");
+    localStorage.removeItem("disappear_last_active");
   } catch (e) {}
 };
 
@@ -823,8 +832,6 @@ function App() {
 
   // PERSISTENCE & PAYMENT SYNC
   useEffect(() => {
-    const session = getSessionItem("disappear_session");
-    const lastActive = getSessionItem("disappear_last_active");
     const query = new URLSearchParams(window.location.search);
     const isNative = Capacitor.isNativePlatform();
 
@@ -840,13 +847,15 @@ function App() {
       const cleanRef = refCode.trim();
       setSessionItem("disappear_ref_code", cleanRef);
       setSessionItem("disappear_referral_code", cleanRef);
-      try { localStorage.setItem("disappear_ref_code", cleanRef); } catch (e) {}
     }
 
-    // Check for session timeout (e.g., 30 minutes of inactivity)
     const TIMEOUT_DURATION = 1800000; // 30 minutes
     const now = Date.now();
     let isExpired = false;
+
+    let session = getSessionItem("disappear_session");
+    let lastActive = getSessionItem("disappear_last_active");
+    let savedUid = getSessionItem("disappear_user_id");
 
     if (session === "active" && lastActive) {
       const timeSinceLastActive = now - parseInt(lastActive, 10);
@@ -855,44 +864,60 @@ function App() {
         removeSessionItem("disappear_user_id");
         removeSessionItem("disappear_last_active");
         isExpired = true;
+        session = "";
+        savedUid = "";
       }
     }
 
-    if (query.get("payment") === "success") {
+    // --- DIRECT POST-PAYMENT ROUTING GUARANTEE ---
+    const queryPayment = query.get("payment");
+    const querySetup = query.get("setup");
+    const queryUid = query.get("user_id");
+
+    if (queryPayment === "success" || querySetup === "success") {
+      const activeUid = queryUid || savedUid || getSessionItem("disappear_user_id");
+      if (activeUid && activeUid !== "undefined") {
         setSessionItem("disappear_session", "active");
         setSessionItem("disappear_last_active", now.toString());
+        setSessionItem("disappear_user_id", activeUid);
+        setCurrentUserId(activeUid);
         setShowLanding(false);
+        setShowPricing(false);
+        setShowCheckout(false);
         setShowShield(true);
         setProgress(100);
         
-        triggerToast("CREDIT AUTHORIZED: SECURE NODE EXPANDED");
-        window.history.replaceState({}, document.title, "/");
-        syncDefenseData();
+        triggerToast("⚡ PAYMENT AUTHORIZED — WELCOME TO YOUR ACTIVE DISAPPEAR SHIELD VAULT");
+        window.history.replaceState({}, document.title, window.location.pathname);
+        syncDefenseData(activeUid);
+        return;
+      }
     }
 
-    if (query.get("setup") === "success") {
-        triggerToast("FUNDING SOURCE LINKED SUCCESSFULLY");
-        window.history.replaceState({}, document.title, "/");
-        syncDefenseData();
+    if (querySetup === "success") {
+      triggerToast("FUNDING SOURCE LINKED SUCCESSFULLY");
+      window.history.replaceState({}, document.title, window.location.pathname);
+      syncDefenseData();
+      return;
     }
-
-    const savedUid = getSessionItem("disappear_user_id");
 
     if (session === "active" && !isExpired && savedUid && savedUid !== "undefined") {
-        setSessionItem("disappear_last_active", now.toString());
-        setSessionItem("disappear_session", "active");
-        setSessionItem("disappear_user_id", savedUid);
-        setCurrentUserId(savedUid);
-        setShowLanding(false);
-        setShowShield(true);
-        setProgress(100);
+      setSessionItem("disappear_last_active", now.toString());
+      setSessionItem("disappear_session", "active");
+      setSessionItem("disappear_user_id", savedUid);
+      setCurrentUserId(savedUid);
+      setShowLanding(false);
+      setShowPricing(false);
+      setShowCheckout(false);
+      setShowShield(true);
+      setProgress(100);
     } else {
-        // ZERO FALLBACK GUARANTEE: If no explicit session exists, strictly lock screen and clear state
-        clearSessionStorage();
-        setCurrentUserId(null);
-        setShowLanding(true);
-        setShowShield(false);
-        setShow2FA(false);
+      // ZERO FALLBACK GUARANTEE: If no explicit session exists, strictly lock screen and clear state
+      clearSessionStorage();
+      setCurrentUserId(null);
+      setShowLanding(true);
+      setShowShield(false);
+      setShow2FA(false);
     }
   }, []);
 
