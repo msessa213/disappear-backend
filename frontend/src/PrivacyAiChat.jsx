@@ -1,7 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 export default function PrivacyAiChat({ apiBaseUrl }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(() => {
+    try {
+      return sessionStorage.getItem("disappear_ai_chat_open") === "true";
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const toggleChat = (openState) => {
+    setIsOpen(openState);
+    try {
+      sessionStorage.setItem("disappear_ai_chat_open", openState ? "true" : "false");
+    } catch (e) {}
+  };
+
   const [inputMsg, setInputMsg] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState([
@@ -74,15 +88,15 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
 
   return (
     <div className="privacy-ai-chat-container">
-      {/* Modern Streamlined Floating Trigger Badge (Minimized by Default) */}
+      {/* 1. Sleek Floating Trigger Badge (Visible ONLY when Minimized) */}
       {!isOpen && (
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={() => toggleChat(true)}
           title="Open AI Privacy Assistant"
           aria-label="Open AI Privacy Assistant"
           className="ai-chat-trigger-btn"
           style={{
-            background: 'rgba(5, 11, 20, 0.92)',
+            background: 'rgba(5, 11, 20, 0.94)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
             color: '#FFFFFF',
@@ -111,7 +125,6 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
             e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 71, 171, 0.45)';
           }}
         >
-          {/* Glowing Shield Icon Circle */}
           <div style={{
             width: '34px',
             height: '34px',
@@ -147,13 +160,13 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
         </button>
       )}
 
-      {/* Floating Chat Modal */}
+      {/* 2. Floating Chat Modal Window (Rendered ONLY when Expanded) */}
       {isOpen && (
         <div
           className="ai-chat-modal-floating"
           style={{
             position: 'fixed',
-            bottom: '80px',
+            bottom: '25px',
             right: '25px',
             width: '360px',
             maxWidth: 'calc(100vw - 30px)',
@@ -187,7 +200,7 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={() => toggleChat(false)}
                 title="Minimize Chat"
                 aria-label="Minimize Chat"
                 style={{
@@ -207,7 +220,7 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
                 —
               </button>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={() => toggleChat(false)}
                 title="Close Chat"
                 aria-label="Close Chat"
                 style={{
