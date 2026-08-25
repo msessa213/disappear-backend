@@ -3438,6 +3438,53 @@ const handleEmergencyBurn = async () => {
                       <div className="price-box">
                         <h3 className="tiger-text">TARGET PROFILE DATA</h3>
 
+                        {/* --- PROMINENT ADDY.IO EMAIL VERIFICATION CALLOUT BANNER --- */}
+                        <div style={{
+                          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(217, 119, 6, 0.28) 100%)',
+                          border: '2px solid #F59E0B',
+                          borderRadius: '10px',
+                          padding: '16px 18px',
+                          marginBottom: '18px',
+                          boxShadow: '0 0 25px rgba(245, 158, 11, 0.35)',
+                          textAlign: 'left'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '1.3rem' }}>⚠️</span>
+                            <h4 style={{ color: '#FCD34D', margin: 0, fontSize: '0.92rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                              ACTION REQUIRED: VERIFY YOUR EMAIL ADDRESS
+                            </h4>
+                          </div>
+
+                          <p style={{ color: '#F8FAFC', fontSize: '0.82rem', margin: '0 0 10px 0', lineHeight: '1.5' }}>
+                            Check your inbox for the verification email from <code>noreply@addy.io</code> and confirm your address to activate your secure email relays and complete your privacy shield setup.
+                          </p>
+
+                          <div style={{ fontSize: '0.78rem', color: '#00D2FF', background: 'rgba(5, 11, 20, 0.8)', padding: '8px 12px', borderRadius: '6px', borderLeft: '3px solid #00D2FF', marginBottom: '12px', lineHeight: '1.4' }}>
+                            💡 <strong>Note:</strong> Clicking your verification link authorizes forwarding. You do <u>not</u> need to log into Addy.io—simply close that tab once verified!
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                            <button 
+                              type="button" 
+                              className="main-button" 
+                              style={{ padding: '8px 14px', fontSize: '0.76rem', fontWeight: 'bold', background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', border: 'none', color: '#FFF', cursor: 'pointer', boxShadow: '0 0 12px rgba(245, 158, 11, 0.4)' }}
+                              onClick={handleResendAddyVerification}
+                              disabled={isResendingAddyVerification}
+                            >
+                              {isResendingAddyVerification ? "DISPATCHING..." : "📩 RESEND VERIFICATION EMAIL"}
+                            </button>
+                            <button 
+                              type="button" 
+                              className="reset-btn" 
+                              style={{ padding: '8px 14px', fontSize: '0.76rem', fontWeight: 'bold', borderColor: '#F59E0B', color: '#FCD34D', cursor: 'pointer' }}
+                              onClick={() => checkAddyRecipientStatus(true)}
+                              disabled={isCheckingAddyStatus}
+                            >
+                              {isCheckingAddyStatus ? "CHECKING..." : "🔄 CHECK VERIFICATION STATUS"}
+                            </button>
+                          </div>
+                        </div>
+
                         {/* LEGAL NAME & DATA REMOVAL TARGET NOTICE BANNER */}
                         <div style={{
                           background: 'rgba(0, 210, 255, 0.08)',
@@ -3789,6 +3836,53 @@ const handleEmergencyBurn = async () => {
                 <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.15rem', color: '#00D2FF', letterSpacing: '0.5px' }}>DATA REMOVAL TARGET NOTICE</h3>
               </div>
               <button type="button" className="reset-btn" style={{ padding: '2px 8px', fontSize: '0.75rem' }} onClick={() => setShowDataRemovalNoticeModal(false)}>✕ CLOSE</button>
+            </div>
+
+            {/* --- PROMINENT ADDY.IO EMAIL VERIFICATION CALLOUT BANNER --- */}
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(217, 119, 6, 0.28) 100%)',
+              border: '2px solid #F59E0B',
+              borderRadius: '10px',
+              padding: '16px 18px',
+              marginBottom: '18px',
+              boxShadow: '0 0 25px rgba(245, 158, 11, 0.35)',
+              textAlign: 'left'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '1.3rem' }}>⚠️</span>
+                <h4 style={{ color: '#FCD34D', margin: 0, fontSize: '0.92rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                  ACTION REQUIRED: VERIFY YOUR EMAIL ADDRESS
+                </h4>
+              </div>
+
+              <p style={{ color: '#F8FAFC', fontSize: '0.82rem', margin: '0 0 10px 0', lineHeight: '1.5' }}>
+                Check your inbox for the verification email from <code>noreply@addy.io</code> and confirm your address to activate your secure email relays and complete your privacy shield setup.
+              </p>
+
+              <div style={{ fontSize: '0.78rem', color: '#00D2FF', background: 'rgba(5, 11, 20, 0.8)', padding: '8px 12px', borderRadius: '6px', borderLeft: '3px solid #00D2FF', marginBottom: '12px', lineHeight: '1.4' }}>
+                💡 <strong>Note:</strong> Clicking your verification link authorizes forwarding. You do <u>not</u> need to log into Addy.io—simply close that tab once verified!
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button 
+                  type="button" 
+                  className="main-button" 
+                  style={{ padding: '8px 14px', fontSize: '0.76rem', fontWeight: 'bold', background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', border: 'none', color: '#FFF', cursor: 'pointer', boxShadow: '0 0 12px rgba(245, 158, 11, 0.4)' }}
+                  onClick={handleResendAddyVerification}
+                  disabled={isResendingAddyVerification}
+                >
+                  {isResendingAddyVerification ? "DISPATCHING..." : "📩 RESEND VERIFICATION EMAIL"}
+                </button>
+                <button 
+                  type="button" 
+                  className="reset-btn" 
+                  style={{ padding: '8px 14px', fontSize: '0.76rem', fontWeight: 'bold', borderColor: '#F59E0B', color: '#FCD34D', cursor: 'pointer' }}
+                  onClick={() => checkAddyRecipientStatus(true)}
+                  disabled={isCheckingAddyStatus}
+                >
+                  {isCheckingAddyStatus ? "CHECKING..." : "🔄 CHECK VERIFICATION STATUS"}
+                </button>
+              </div>
             </div>
 
             <div style={{ padding: '14px', background: 'rgba(0, 210, 255, 0.08)', border: '1px solid rgba(0, 210, 255, 0.3)', borderRadius: '8px', marginBottom: '18px' }}>
