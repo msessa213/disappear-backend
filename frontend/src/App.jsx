@@ -3684,6 +3684,23 @@ const handleEmergencyBurn = async () => {
                             <input className="mask-btn full-row" placeholder="Nickname / Public Record Alias (e.g. Common Short Names / Former Names)" value={targetProfile.nickname || ""} onChange={(e) => setTargetProfile({...targetProfile, nickname: e.target.value})} />
                             <input className="mask-btn full-row" placeholder="Last Name (Legal Name)" value={targetProfile.lastName || targetProfile.last_name || ""} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value, last_name: e.target.value})} />
                             <input type="email" name="disappear_signup_email_clean" autoComplete="off" data-lpignore="true" className="mask-btn full-row" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
+                            
+                            {/* --- ADDY.IO VERIFICATION ADVANCE NOTICE CALLOUT --- */}
+                            <div style={{
+                              gridColumn: '1 / -1',
+                              background: 'rgba(0, 210, 255, 0.06)',
+                              border: '1px solid rgba(0, 210, 255, 0.25)',
+                              borderRadius: '6px',
+                              padding: '10px 14px',
+                              marginTop: '2px',
+                              marginBottom: '4px',
+                              fontSize: '0.78rem',
+                              color: '#E2E8F0',
+                              lineHeight: '1.45',
+                              textAlign: 'left'
+                            }}>
+                              ℹ️ <strong>Quick Note on Setup:</strong> After creating your account, you will receive a one-time verification email from <code>addy.io</code> to confirm your email forwarding address. You'll also be able to manage or re-trigger this verification anytime inside your Vault profile settings.
+                            </div>
                             <input type="password" name="disappear_signup_password_clean" autoComplete="new-password" data-lpignore="true" className="mask-btn full-row" placeholder="Account Password (min 6 characters)" value={targetProfile.password} onChange={(e) => setTargetProfile({...targetProfile, password: e.target.value})} />
                             <input type="password" name="disappear_signup_confirm_password_clean" autoComplete="new-password" data-lpignore="true" className="mask-btn full-row" placeholder="Confirm Account Password" value={signupConfirmPassword} onChange={(e) => setSignupConfirmPassword(e.target.value)} />
                             <input className="mask-btn full-row" placeholder="Real Phone Number (For SMS Forwarding)" value={targetProfile.phone} onChange={(e) => setTargetProfile({...targetProfile, phone: e.target.value})} />
