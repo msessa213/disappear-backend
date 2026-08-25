@@ -165,6 +165,7 @@ function App() {
   const [activeReplyId, setActiveReplyId] = useState(null);
   const [replyRecipient, setReplyRecipient] = useState("");
   const [replyBody, setReplyBody] = useState("");
+  const [selectedSenderAlias, setSelectedSenderAlias] = useState("");
   const [isSendingSms, setIsSendingSms] = useState(false);
   const [showComposeSms, setShowComposeSms] = useState(false);
   const [expandedThreads, setExpandedThreads] = useState({});
@@ -942,9 +943,10 @@ function App() {
     }
   };
 
-  const handleSendSmsReply = async (targetTo, bodyText) => {
+  const handleSendSmsReply = async (targetTo, bodyText, fromPhoneOverride) => {
     const rawTo = (targetTo || replyRecipient || "").trim();
     const body = (bodyText || replyBody || "").trim();
+    const senderFrom = (fromPhoneOverride || selectedSenderAlias || "").trim();
 
     // Instantly clear text and close reply card UI on button press
     setReplyBody("");
@@ -983,7 +985,12 @@ function App() {
       const res = await secureRequest(`${API_BASE_URL}/api/v1/send-sms`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: activeUserId, to_phone: formattedTo, message: body })
+        body: JSON.stringify({ 
+          user_id: activeUserId, 
+          to_phone: formattedTo, 
+          message: body,
+          from_phone: senderFrom || undefined
+        })
       });
       const data = await res.json();
       if (res.ok) {
@@ -2528,7 +2535,40 @@ const handleEmergencyBurn = async () => {
 
                     {showComposeSms && (
                       <div style={{ background: '#090d16', border: '1px solid #00D2FF', padding: '12px', borderRadius: '6px', marginBottom: '12px' }}>
-                        <div style={{ fontSize: '0.75rem', color: '#00D2FF', fontWeight: 'bold', marginBottom: '8px' }}>✉️ SEND NEW SMS FROM VIRTUAL LINE</div>
+                        <div style={{ fontSize: '0.75rem', color: '#00D2FF', fontWeight: 'bold', marginBottom: '10px' }}>✉️ SEND NEW SMS FROM ALIAS LINE</div>
+                        
+                        <div style={{ marginBottom: '10px' }}>
+                          <label style={{ fontSize: '0.70rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            SEND FROM ALIAS / NUMBER:
+                          </label>
+                          <select
+                            value={selectedSenderAlias}
+                            onChange={(e) => setSelectedSenderAlias(e.target.value)}
+                            style={{ 
+                              width: '100%', 
+                              padding: '8px 10px', 
+                              fontSize: '0.80rem', 
+                              background: '#030712', 
+                              border: '1px solid #00D2FF', 
+                              color: '#00D2FF', 
+                              fontWeight: 'bold',
+                              borderRadius: '4px',
+                              boxSizing: 'border-box' 
+                            }}
+                          >
+                            <option value="">-- DEFAULT MASTER LINE (+15855802036) --</option>
+                            {(phones && phones.length > 0 ? phones : (aliases || []).filter(a => a.type === 'phone')).map((p, pIdx) => {
+                              const numVal = p.content || p.number || p;
+                              const labelVal = p.label ? `${p.label} (${numVal})` : numVal;
+                              return (
+                                <option key={p.id || pIdx} value={numVal}>
+                                  📱 {labelVal}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </div>
+
                         <input
                           type="text"
                           placeholder="Recipient Phone (+18135551234)"
@@ -2545,8 +2585,8 @@ const handleEmergencyBurn = async () => {
                         <button
                           className="main-button"
                           type="button"
-                          style={{ padding: '5px 12px', fontSize: '0.75rem', width: '100%' }}
-                          onClick={() => handleSendSmsReply(replyRecipient, replyBody)}
+                          style={{ padding: '6px 12px', fontSize: '0.75rem', width: '100%', fontWeight: 'bold' }}
+                          onClick={() => handleSendSmsReply(replyRecipient, replyBody, selectedSenderAlias)}
                         >
                           📤 SEND SMS
                         </button>

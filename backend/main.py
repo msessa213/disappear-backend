@@ -3917,10 +3917,11 @@ class SMSReplyRequest(BaseModel):
     user_id: str
     to_phone: str
     message: str
+    from_phone: Optional[str] = None
 
 @app.post("/api/v1/send-sms")
 async def send_user_sms_reply(req: SMSReplyRequest, db: Session = Depends(get_db)):
-    """Allows a user to send an SMS reply from their virtual line to any recipient"""
+    """Allows a user to send an SMS reply from their virtual line or active alias to any recipient"""
     if not req.to_phone or not req.message.strip():
         raise HTTPException(status_code=400, detail="Recipient phone number and message body are required.")
     
@@ -3939,14 +3940,16 @@ async def send_user_sms_reply(req: SMSReplyRequest, db: Session = Depends(get_db
     if not twilio_client:
         raise HTTPException(status_code=503, detail="TWILIO_CLIENT_UNAVAILABLE: Twilio client is not initialized in Railway.")
 
-    success = send_sms(to_phone_number=target_to, message_body=req.message.strip())
+    sender_num = format_to_e164(req.from_phone) if req.from_phone and req.from_phone.strip() else None
+    success = send_sms(to_phone_number=target_to, message_body=req.message.strip(), from_phone_number=sender_num)
     if success:
         if profile:
             profile.relay_credits = max(0, (profile.relay_credits or 500) - 1)
             db.commit()
         try:
             db.add(DBPurgeLog(
-                action_type=f"SMS_SENT [To {target_to}]: {req.message.strip()}",
+                user_id=req.user_id,
+                action_type=f"SMS_SENT [From {sender_num or 'MASTER_LINE'} To {target_to}]: {req.message.strip()}",
                 node_id=f"{req.user_id}_OUTBOUND_SMS"
             ))
             db.commit()
