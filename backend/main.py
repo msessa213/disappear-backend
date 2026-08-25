@@ -987,6 +987,7 @@ async def get_admin_stats(db: Session = Depends(get_db), admin_key: str = Depend
         "last_purge": datetime.now().strftime("%Y-%m-%d %H:%M")
     }
 
+@app.get("/admin/users/list")
 @app.get("/api/admin/users/list")
 async def list_admin_users(
     query: Optional[str] = Query(None),
@@ -1031,6 +1032,7 @@ class AdminSetReferralCountRequest(BaseModel):
     count: int = 4
 
 
+@app.post("/admin/users/set-referrals")
 @app.post("/api/admin/users/set-referrals")
 async def admin_set_referral_count(
     req: AdminSetReferralCountRequest,
