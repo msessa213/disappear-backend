@@ -74,54 +74,56 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
 
   return (
     <div className="privacy-ai-chat-container">
-      {/* Modern Streamlined Floating Toggle Button */}
+      {/* Modern Streamlined Floating Trigger Badge (Minimized by Default) */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
           title="Open AI Privacy Assistant"
+          aria-label="Open AI Privacy Assistant"
+          className="ai-chat-trigger-btn"
           style={{
-            background: 'rgba(5, 11, 20, 0.88)',
+            background: 'rgba(5, 11, 20, 0.92)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
             color: '#FFFFFF',
-            border: '1px solid rgba(0, 210, 255, 0.4)',
+            border: '1px solid rgba(0, 210, 255, 0.45)',
             borderRadius: '50px',
-            padding: '8px 18px 8px 10px',
-            fontSize: '0.85rem',
+            padding: '6px 14px 6px 8px',
+            fontSize: '0.8rem',
             fontWeight: '600',
-            letterSpacing: '0.8px',
+            letterSpacing: '0.5px',
             cursor: 'pointer',
-            boxShadow: '0 8px 32px rgba(0, 71, 171, 0.4), inset 0 1px 0 rgba(255,255,255,0.15)',
+            boxShadow: '0 8px 32px rgba(0, 71, 171, 0.45), inset 0 1px 0 rgba(255,255,255,0.2)',
             display: 'flex',
             alignItems: 'center',
-            gap: '12px',
+            gap: '10px',
             transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
             position: 'relative'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-3px)';
-            e.currentTarget.style.borderColor = 'rgba(0, 210, 255, 0.8)';
+            e.currentTarget.style.borderColor = 'rgba(0, 210, 255, 0.85)';
             e.currentTarget.style.boxShadow = '0 12px 35px rgba(0, 210, 255, 0.6)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.borderColor = 'rgba(0, 210, 255, 0.4)';
-            e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 71, 171, 0.4)';
+            e.currentTarget.style.borderColor = 'rgba(0, 210, 255, 0.45)';
+            e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 71, 171, 0.45)';
           }}
         >
-          {/* Sleek Vector Shield Badge */}
+          {/* Glowing Shield Icon Circle */}
           <div style={{
-            width: '38px',
-            height: '38px',
+            width: '34px',
+            height: '34px',
             borderRadius: '50%',
             background: 'linear-gradient(135deg, #0047AB, #00D2FF)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 0 14px rgba(0, 210, 255, 0.6)',
+            boxShadow: '0 0 12px rgba(0, 210, 255, 0.6)',
             position: 'relative'
           }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
               <path d="m9 12 2 2 4-4"/>
             </svg>
@@ -129,17 +131,18 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
               position: 'absolute',
               top: '0px',
               right: '0px',
-              width: '9px',
-              height: '9px',
+              width: '8px',
+              height: '8px',
               backgroundColor: '#10B981',
               borderRadius: '50%',
-              border: '2px solid #050B14'
+              border: '2px solid #050B14',
+              boxShadow: '0 0 6px #10B981'
             }} />
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
-            <span style={{ fontSize: '0.82rem', fontWeight: '700', color: '#FFFFFF', letterSpacing: '0.5px' }}>AI Privacy Shield</span>
-            <span style={{ fontSize: '0.68rem', color: '#00D2FF', opacity: 0.9 }}>Ask any question</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#FFFFFF', letterSpacing: '0.5px', lineHeight: '1.2' }}>AI Privacy Shield</span>
+            <span style={{ fontSize: '0.65rem', color: '#00D2FF', opacity: 0.9 }}>Ask any question</span>
           </div>
         </button>
       )}
@@ -152,10 +155,10 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
             position: 'fixed',
             bottom: '80px',
             right: '25px',
-            width: '370px',
+            width: '360px',
             maxWidth: 'calc(100vw - 30px)',
-            height: '540px',
-            maxHeight: 'calc(100vh - 110px)',
+            height: '520px',
+            maxHeight: 'calc(100vh - 100px)',
             backgroundColor: '#0A0E17',
             border: '1px solid var(--tiger-blue, #0047AB)',
             borderRadius: '16px',
@@ -167,10 +170,10 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
             fontFamily: "'Inter', -apple-system, sans-serif"
           }}
         >
-          {/* Header */}
+          {/* Header Bar with Minimize & Close Buttons */}
           <div
             style={{
-              padding: '14px 18px',
+              padding: '12px 16px',
               background: 'linear-gradient(90deg, #050B14, #002A66)',
               borderBottom: '1px solid rgba(0, 71, 171, 0.4)',
               display: 'flex',
@@ -180,21 +183,50 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ display: 'inline-block', width: '10px', height: '10px', backgroundColor: '#10B981', borderRadius: '50%', boxShadow: '0 0 10px #10B981' }}></span>
-              <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#FFFFFF', letterSpacing: '1px' }}>AI PRIVACY AGENT</span>
+              <span style={{ fontWeight: 'bold', fontSize: '0.85rem', color: '#FFFFFF', letterSpacing: '1px' }}>AI PRIVACY AGENT</span>
             </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#94A3B8',
-                fontSize: '1.2rem',
-                cursor: 'pointer',
-                padding: '0 5px'
-              }}
-            >
-              ✕
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                onClick={() => setIsOpen(false)}
+                title="Minimize Chat"
+                aria-label="Minimize Chat"
+                style={{
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  borderRadius: '6px',
+                  color: '#94A3B8',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  width: '26px',
+                  height: '26px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                —
+              </button>
+              <button
+                onClick={() => setIsOpen(false)}
+                title="Close Chat"
+                aria-label="Close Chat"
+                style={{
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  borderRadius: '6px',
+                  color: '#94A3B8',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  width: '26px',
+                  height: '26px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                ✕
+              </button>
+            </div>
           </div>
 
           {/* Quick Prompts Bar */}

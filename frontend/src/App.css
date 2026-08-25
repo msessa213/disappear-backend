@@ -1193,3 +1193,19 @@ input[type="checkbox"] {
   gap: 10px !important;
   align-items: flex-start !important;
 }
+
+/* FLOATING MINIMIZABLE CHATBOT (NON-INTRUSIVE CYBERPUNK BADGE) */
+.privacy-ai-chat-container {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  z-index: 999999;
+  pointer-events: auto;
+}
+
+@media (max-width: 600px) {
+  .privacy-ai-chat-container {
+    bottom: 20px;
+    right: 15px;
+  }
+}

@@ -703,7 +703,9 @@ async def login_agent(request: Request, login_req: LoginRequest, db: Session = D
         "status": "AUTHORIZED",
         "user_id": profile.id,
         "first_name": profile.first_name or "Agent",
-        "email": profile.email
+        "email": profile.email,
+        "addy_verified": bool(getattr(profile, 'addy_verified', False)),
+        "addy_status": "VERIFIED" if bool(getattr(profile, 'addy_verified', False)) else "PENDING_VERIFICATION"
     }
 
 

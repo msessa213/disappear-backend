@@ -214,8 +214,12 @@ function App() {
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   const [addyRecipientStatus, setAddyRecipientStatus] = useState(() => {
-    const activeUid = getSessionItem("disappear_user_id");
-    return activeUid ? (getSessionItem(`disappear_addy_verified_${activeUid}`) || null) : null;
+    const activeUid = getSessionItem("disappear_user_id") || (typeof localStorage !== 'undefined' ? localStorage.getItem("disappear_user_id") : null);
+    if (activeUid) {
+      const cached = getSessionItem(`disappear_addy_verified_${activeUid}`) || (typeof localStorage !== 'undefined' ? localStorage.getItem(`disappear_addy_verified_${activeUid}`) : null);
+      if (cached === "VERIFIED") return "VERIFIED";
+    }
+    return null;
   });
   const [addyRecipientEmail, setAddyRecipientEmail] = useState("");
   const [isCheckingAddyStatus, setIsCheckingAddyStatus] = useState(false);
@@ -421,7 +425,10 @@ function App() {
           }
           if (data.profile.addy_verified || data.profile.addy_status === "VERIFIED") {
               setAddyRecipientStatus("VERIFIED");
-              if (activeUserId) setSessionItem(`disappear_addy_verified_${activeUserId}`, "VERIFIED");
+              if (activeUserId) {
+                  setSessionItem(`disappear_addy_verified_${activeUserId}`, "VERIFIED");
+                  try { localStorage.setItem(`disappear_addy_verified_${activeUserId}`, "VERIFIED"); } catch(e){}
+              }
           }
       }
 
@@ -1446,6 +1453,7 @@ function App() {
         if (isVerified) {
           setAddyRecipientStatus("VERIFIED");
           setSessionItem(`disappear_addy_verified_${activeUserId}`, "VERIFIED");
+          try { localStorage.setItem(`disappear_addy_verified_${activeUserId}`, "VERIFIED"); } catch(e){}
         } else if (addyRecipientStatus !== "VERIFIED") {
           setAddyRecipientStatus("PENDING_VERIFICATION");
         }
