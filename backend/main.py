@@ -3866,15 +3866,18 @@ async def get_user_sms_inbox(user_id: Optional[str] = None, db: Session = Depend
 
         if "[From " in msg:
             try:
-                from_part = msg.split("[From ")[1].split("]")[0]
-                from_phone = from_part.strip()
+                from_part = msg.split("[From ")[1]
+                if " To " in from_part:
+                    from_phone = from_part.split(" To ")[0].strip()
+                else:
+                    from_phone = from_part.split("]")[0].strip()
             except Exception:
                 pass
 
         if "[To " in msg:
             try:
-                to_part = msg.split("[To ")[1].split("]")[0]
-                to_phone = to_part.strip()
+                to_part = msg.split("[To ")[1]
+                to_phone = to_part.split("]")[0].strip()
             except Exception:
                 pass
 
@@ -3941,6 +3944,7 @@ async def send_user_sms_reply(req: SMSReplyRequest, db: Session = Depends(get_db
         raise HTTPException(status_code=503, detail="TWILIO_CLIENT_UNAVAILABLE: Twilio client is not initialized in Railway.")
 
     sender_num = format_to_e164(req.from_phone) if req.from_phone and req.from_phone.strip() else None
+    sender_display = sender_num if sender_num else "+15855802036"
     success = send_sms(to_phone_number=target_to, message_body=req.message.strip(), from_phone_number=sender_num)
     if success:
         if profile:
@@ -3949,13 +3953,13 @@ async def send_user_sms_reply(req: SMSReplyRequest, db: Session = Depends(get_db
         try:
             db.add(DBPurgeLog(
                 user_id=req.user_id,
-                action_type=f"SMS_SENT [From {sender_num or 'MASTER_LINE'} To {target_to}]: {req.message.strip()}",
+                action_type=f"SMS_SENT [From {sender_display} To {target_to}]: {req.message.strip()}",
                 node_id=f"{req.user_id}_OUTBOUND_SMS"
             ))
             db.commit()
         except Exception:
             pass
-        return {"status": "success", "detail": f"Message sent successfully to {target_to}"}
+        return {"status": "success", "detail": f"Message sent successfully to {target_to}", "from_phone": sender_display}
     else:
         raise HTTPException(status_code=500, detail="TWILIO_DELIVERY_FAILED: Carrier rejected message or sender number is unverified.")
 

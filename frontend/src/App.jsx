@@ -943,6 +943,27 @@ function App() {
     }
   };
 
+  const getAliasLabel = (phoneNum) => {
+    if (!phoneNum) return "";
+    const cleanNum = phoneNum.replace(/\D/g, "");
+    if (!cleanNum) return "";
+
+    const phoneObj = (phones || []).find(p => {
+      const num = (p.content || p.number || p || "").replace(/\D/g, "");
+      return num && (num === cleanNum || cleanNum.endsWith(num) || num.endsWith(cleanNum));
+    });
+    if (phoneObj && phoneObj.label) return ` [${phoneObj.label}]`;
+
+    const aliasObj = (aliases || []).find(a => {
+      if (a.type !== "phone") return false;
+      const num = (a.content || a.number || "").replace(/\D/g, "");
+      return num && (num === cleanNum || cleanNum.endsWith(num) || num.endsWith(cleanNum));
+    });
+    if (aliasObj && aliasObj.label) return ` [${aliasObj.label}]`;
+
+    return "";
+  };
+
   const handleSendSmsReply = async (targetTo, bodyText, fromPhoneOverride) => {
     const rawTo = (targetTo || replyRecipient || "").trim();
     const body = (bodyText || replyBody || "").trim();
@@ -996,11 +1017,13 @@ function App() {
       if (res.ok) {
         triggerToast(`✅ SMS DELIVERED TO ${formattedTo}!`);
         
-        // Prepend sent SMS to inbox state for 100% instant visual confirmation
+        const actualSender = data.from_phone || senderFrom || "+15855802036";
         const newOutboundItem = {
           id: `out_${Date.now()}`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          message: `OUTBOUND [To ${formattedTo}]: ${body}`,
+          message: `OUTBOUND [From ${actualSender} To ${formattedTo}]: ${body}`,
+          from_phone: actualSender,
+          to_phone: formattedTo,
           line: "OUTBOUND_SMS"
         };
         setSmsInbox(prev => [newOutboundItem, ...prev]);
@@ -2683,9 +2706,14 @@ const handleEmergencyBurn = async () => {
                                 {/* NEWEST MESSAGE ALWAYS SHOWN AT TOP */}
                                 {newestMessage && (
                                   <div key={newestMessage.id} style={{ background: newestMessage.message.startsWith("OUTBOUND") ? '#051815' : '#030712', padding: '8px 10px', borderRadius: '5px', border: newestMessage.message.startsWith("OUTBOUND") ? '1px solid #059669' : '1px solid #1e293b', fontSize: '0.78rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                                         <span style={{ fontSize: '0.65rem', color: '#10B981', fontWeight: 'bold' }}>LATEST MESSAGE</span>
+                                        {newestMessage.from_phone && (
+                                          <span style={{ fontSize: '0.65rem', color: '#00D2FF', background: 'rgba(0, 210, 255, 0.12)', padding: '1px 6px', borderRadius: '3px', border: '1px solid rgba(0, 210, 255, 0.3)', fontWeight: 'bold' }}>
+                                            📤 FROM: {newestMessage.from_phone}{getAliasLabel(newestMessage.from_phone)}
+                                          </span>
+                                        )}
                                         {newestMessage.to_phone && (
                                           <span style={{ fontSize: '0.65rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
                                             📥 TO: {newestMessage.to_phone}
@@ -2715,18 +2743,32 @@ const handleEmergencyBurn = async () => {
                                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px', paddingLeft: '8px', borderLeft: '2px solid #1e293b' }}>
                                         {olderMessages.map(sms => (
                                           <div key={sms.id} style={{ background: sms.message.startsWith("OUTBOUND") ? '#051815' : '#030712', padding: '6px 8px', borderRadius: '4px', border: sms.message.startsWith("OUTBOUND") ? '1px solid #059669' : '1px solid #111827', fontSize: '0.75rem' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                                              <div style={{ color: sms.message.startsWith("OUTBOUND") ? '#34D399' : '#E2E8F0', flex: 1 }}>{sms.message}</div>
-                                              <button
-                                                type="button"
-                                                style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '0.72rem', cursor: 'pointer', padding: '0 2px', marginLeft: '6px' }}
-                                                onClick={(e) => handleDeleteSmsMessage(sms.id, e)}
-                                                title="Delete message"
-                                              >
-                                                🗑️
-                                              </button>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap', gap: '4px' }}>
+                                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                                {sms.from_phone && (
+                                                  <span style={{ fontSize: '0.62rem', color: '#00D2FF', background: 'rgba(0, 210, 255, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(0, 210, 255, 0.3)', fontWeight: 'bold' }}>
+                                                    📤 FROM: {sms.from_phone}{getAliasLabel(sms.from_phone)}
+                                                  </span>
+                                                )}
+                                                {sms.to_phone && (
+                                                  <span style={{ fontSize: '0.62rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
+                                                    📥 TO: {sms.to_phone}
+                                                  </span>
+                                                )}
+                                              </div>
+                                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <span style={{ color: '#64748B', fontSize: '0.65rem' }}>{sms.timestamp}</span>
+                                                <button
+                                                  type="button"
+                                                  style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '0.72rem', cursor: 'pointer', padding: '0 2px', marginLeft: '6px' }}
+                                                  onClick={(e) => handleDeleteSmsMessage(sms.id, e)}
+                                                  title="Delete message"
+                                                >
+                                                  🗑️
+                                                </button>
+                                              </div>
                                             </div>
-                                            <div style={{ color: '#64748B', fontSize: '0.65rem', textAlign: 'right' }}>{sms.timestamp}</div>
+                                            <div style={{ color: sms.message.startsWith("OUTBOUND") ? '#34D399' : '#E2E8F0' }}>{sms.message}</div>
                                           </div>
                                         ))}
                                       </div>
