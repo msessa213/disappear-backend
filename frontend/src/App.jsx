@@ -3261,9 +3261,10 @@ const handleEmergencyBurn = async () => {
 
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
                   <p className="tool-label tiger-text" style={{ textAlign: 'center' }}>SYSTEM SUPPORT NODE</p>
-                  <div className="responsive-2col-grid" style={{ marginTop: '10px' }}>
-                    <button className="reset-btn" style={{ fontSize: '0.95rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setShowSupportModal(true)}>OPEN_TICKET</button>
-                    <button className="reset-btn" style={{ fontSize: '0.95rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setShowFaqModal(true)}>ACCESS FAQ</button>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginTop: '10px' }}>
+                    <button className="reset-btn" style={{ fontSize: '0.85rem', padding: '10px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setShowSupportModal(true)}>🎟️ OPEN TICKET</button>
+                    <button className="reset-btn" style={{ fontSize: '0.85rem', padding: '10px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setShowFaqModal(true)}>❓ ACCESS FAQ</button>
+                    <button className="reset-btn" style={{ fontSize: '0.85rem', padding: '10px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#00D2FF', borderColor: '#00D2FF' }} onClick={() => window.dispatchEvent(new CustomEvent('open-ai-chat'))}>🤖 ASK AI SPECIALIST</button>
                   </div>
                   <div style={{ marginTop: '20px', fontSize: '0.9rem', color: '#cbd5e1', textAlign: 'center' }}>
                     <p className="faq-link" onClick={() => setShowManualModal(true)} style={{cursor: 'pointer', textDecoration: 'underline'}}> Operation Manual </p>
