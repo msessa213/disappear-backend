@@ -1430,18 +1430,23 @@ function App() {
       const res = await secureRequest(`${API_BASE_URL}/aliases/recipient-status?user_id=${activeUserId}`);
       if (res.ok) {
         const data = await res.json();
-        setAddyRecipientStatus(data.status || (data.verified ? "VERIFIED" : "PENDING_VERIFICATION"));
-        setAddyRecipientEmail(data.email || "");
+        const isVerified = Boolean(data.verified || data.status === "VERIFIED");
+        setAddyRecipientStatus(isVerified ? "VERIFIED" : "PENDING_VERIFICATION");
+        if (data.email) setAddyRecipientEmail(data.email);
+        
         if (showToastNotice) {
-          if (data.verified) {
-            triggerToast("✅ EMAIL RECIPIENT VERIFIED & ACTIVE!");
+          if (isVerified) {
+            triggerToast("✅ VERIFIED: EMAIL ALIAS FORWARDING UNLOCKED!");
           } else {
-            triggerToast("⚠️ EMAIL VERIFICATION PENDING — CHECK INBOX/SPAM");
+            triggerToast("⚠️ VERIFICATION PENDING: CHECK INBOX FOR ADDY.IO EMAIL");
           }
         }
       }
     } catch (err) {
       console.error("Failed checking Addy recipient status:", err);
+      if (showToastNotice) {
+        triggerToast("❌ COULD NOT CONNECT TO VERIFICATION SERVER");
+      }
     } finally {
       setIsCheckingAddyStatus(false);
     }
@@ -1449,22 +1454,31 @@ function App() {
 
   const handleResendAddyVerification = async () => {
     const activeUserId = currentUserId || getSessionItem("disappear_user_id");
-    if (!activeUserId) return;
+    if (!activeUserId) {
+      triggerToast("⚠️ PLEASE REGISTER / LOGIN TO RESEND VERIFICATION");
+      return;
+    }
     setIsResendingAddyVerification(true);
-    triggerToast("DISPATCHING FRESH VERIFICATION LINK...");
+    triggerToast("⏳ DISPATCHING FRESH VERIFICATION LINK...");
     try {
       const res = await secureRequest(`${API_BASE_URL}/aliases/resend-recipient-verification?user_id=${activeUserId}`, {
         method: "POST"
       });
       const data = await res.json();
       if (res.ok) {
-        triggerToast("✅ FRESH VERIFICATION LINK SENT! CHECK YOUR INBOX & SPAM");
+        triggerToast("Verification email resent!");
         checkAddyRecipientStatus(false);
       } else {
-        triggerToast(`❌ ${data.detail || "FAILED TO RESEND LINK"}`);
+        const errMsg = typeof data.detail === 'string' ? data.detail : "FAILED TO RESEND VERIFICATION EMAIL";
+        if (data.status === "ALREADY_VERIFIED") {
+          setAddyRecipientStatus("VERIFIED");
+          triggerToast("✅ EMAIL IS ALREADY VERIFIED & ACTIVE!");
+        } else {
+          triggerToast(`❌ ${errMsg}`);
+        }
       }
     } catch (err) {
-      triggerToast("NETWORK ERROR RESENDING VERIFICATION");
+      triggerToast("❌ NETWORK ERROR RESENDING VERIFICATION");
     } finally {
       setIsResendingAddyVerification(false);
     }
@@ -2458,7 +2472,18 @@ const handleEmergencyBurn = async () => {
                 
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative', border: '1px solid var(--tiger-blue)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-                    <span className="tool-label" style={{ margin: 0, textAlign: 'left', fontWeight: 'bold' }}>EMAIL PROTECTION</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span className="tool-label" style={{ margin: 0, textAlign: 'left', fontWeight: 'bold' }}>EMAIL PROTECTION</span>
+                      {addyRecipientStatus === "VERIFIED" ? (
+                        <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10B981', border: '1px solid #10B981', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                          ✅ VERIFIED & ACTIVE
+                        </span>
+                      ) : (
+                        <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#FCD34D', border: '1px solid #F59E0B', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                          ⚠️ VERIFICATION PENDING
+                        </span>
+                      )}
+                    </div>
                     <button 
                       type="button"
                       className="main-button" 
@@ -2526,20 +2551,58 @@ const handleEmergencyBurn = async () => {
                         <button 
                           type="button" 
                           className="main-button" 
-                          style={{ padding: '10px 18px', fontSize: '0.82rem', fontWeight: 'bold', background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', border: 'none', color: '#FFF', boxShadow: '0 0 15px rgba(245, 158, 11, 0.4)', cursor: 'pointer' }}
+                          style={{ 
+                            padding: '10px 18px', 
+                            fontSize: '0.82rem', 
+                            fontWeight: 'bold', 
+                            background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', 
+                            border: 'none', 
+                            color: '#FFF', 
+                            boxShadow: '0 0 15px rgba(245, 158, 11, 0.4)', 
+                            cursor: 'pointer',
+                            opacity: isResendingAddyVerification ? 0.7 : 1,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
                           onClick={handleResendAddyVerification}
                           disabled={isResendingAddyVerification}
                         >
-                          {isResendingAddyVerification ? "DISPATCHING..." : "📩 RESEND VERIFICATION EMAIL"}
+                          {isResendingAddyVerification ? (
+                            <>
+                              <span className="cyberpunk-spinner" style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid #FFF', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></span>
+                              DISPATCHING...
+                            </>
+                          ) : (
+                            '📩 RESEND VERIFICATION EMAIL'
+                          )}
                         </button>
                         <button 
                           type="button" 
                           className="reset-btn" 
-                          style={{ padding: '10px 16px', fontSize: '0.82rem', fontWeight: 'bold', borderColor: '#F59E0B', color: '#FCD34D', cursor: 'pointer' }}
+                          style={{ 
+                            padding: '10px 16px', 
+                            fontSize: '0.82rem', 
+                            fontWeight: 'bold', 
+                            borderColor: '#F59E0B', 
+                            color: '#FCD34D', 
+                            cursor: 'pointer',
+                            opacity: isCheckingAddyStatus ? 0.7 : 1,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
                           onClick={() => checkAddyRecipientStatus(true)}
                           disabled={isCheckingAddyStatus}
                         >
-                          {isCheckingAddyStatus ? "CHECKING..." : "🔄 RE-CHECK VERIFICATION STATUS"}
+                          {isCheckingAddyStatus ? (
+                            <>
+                              <span className="cyberpunk-spinner" style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid #FCD34D', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></span>
+                              CHECKING STATUS...
+                            </>
+                          ) : (
+                            '🔄 CHECK VERIFICATION STATUS'
+                          )}
                         </button>
                       </div>
                     </div>
@@ -3491,53 +3554,6 @@ const handleEmergencyBurn = async () => {
                     <div className="pricing-card">
                       <div className="price-box">
                         <h3 className="tiger-text">TARGET PROFILE DATA</h3>
-
-                        {/* --- PROMINENT ADDY.IO EMAIL VERIFICATION CALLOUT BANNER --- */}
-                        <div style={{
-                          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(217, 119, 6, 0.28) 100%)',
-                          border: '2px solid #F59E0B',
-                          borderRadius: '10px',
-                          padding: '16px 18px',
-                          marginBottom: '18px',
-                          boxShadow: '0 0 25px rgba(245, 158, 11, 0.35)',
-                          textAlign: 'left'
-                        }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                            <span style={{ fontSize: '1.3rem' }}>⚠️</span>
-                            <h4 style={{ color: '#FCD34D', margin: 0, fontSize: '0.92rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
-                              ACTION REQUIRED: VERIFY YOUR EMAIL ADDRESS
-                            </h4>
-                          </div>
-
-                          <p style={{ color: '#F8FAFC', fontSize: '0.82rem', margin: '0 0 10px 0', lineHeight: '1.5' }}>
-                            Check your inbox for the verification email from <code>noreply@addy.io</code> and confirm your address to activate your secure email relays and complete your privacy shield setup.
-                          </p>
-
-                          <div style={{ fontSize: '0.78rem', color: '#00D2FF', background: 'rgba(5, 11, 20, 0.8)', padding: '8px 12px', borderRadius: '6px', borderLeft: '3px solid #00D2FF', marginBottom: '12px', lineHeight: '1.4' }}>
-                            💡 <strong>Note:</strong> Clicking your verification link authorizes forwarding. You do <u>not</u> need to log into Addy.io—simply close that tab once verified!
-                          </div>
-
-                          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                            <button 
-                              type="button" 
-                              className="main-button" 
-                              style={{ padding: '8px 14px', fontSize: '0.76rem', fontWeight: 'bold', background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', border: 'none', color: '#FFF', cursor: 'pointer', boxShadow: '0 0 12px rgba(245, 158, 11, 0.4)' }}
-                              onClick={handleResendAddyVerification}
-                              disabled={isResendingAddyVerification}
-                            >
-                              {isResendingAddyVerification ? "DISPATCHING..." : "📩 RESEND VERIFICATION EMAIL"}
-                            </button>
-                            <button 
-                              type="button" 
-                              className="reset-btn" 
-                              style={{ padding: '8px 14px', fontSize: '0.76rem', fontWeight: 'bold', borderColor: '#F59E0B', color: '#FCD34D', cursor: 'pointer' }}
-                              onClick={() => checkAddyRecipientStatus(true)}
-                              disabled={isCheckingAddyStatus}
-                            >
-                              {isCheckingAddyStatus ? "CHECKING..." : "🔄 CHECK VERIFICATION STATUS"}
-                            </button>
-                          </div>
-                        </div>
 
                         {/* LEGAL NAME & DATA REMOVAL TARGET NOTICE BANNER */}
                         <div style={{
