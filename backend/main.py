@@ -3249,23 +3249,57 @@ def attribute_referral_signup(new_user_id: str, referrer_ref_code_or_id: str, db
     ).first()
 
     if not already_credited:
+        now = datetime.utcnow()
         db.add(DBPurgeLog(
             action_type="REFERRAL_CREDITED",
             node_id=f"REFERRED_{new_user_id}",
-            timestamp=datetime.utcnow()
+            timestamp=now
         ))
-        referrer.referral_count = (referrer.referral_count or 0) + 1
-        referrer.bonus_credits = (referrer.bonus_credits or 0) + 250
-        referrer.relay_credits = (referrer.relay_credits or 500) + 250
-        referrer.relay_credits_total = (referrer.relay_credits_total or 500) + 250
         
+        referrer.referral_count = (referrer.referral_count or 0) + 1
+        
+        # Calculate monthly referrals in current calendar month
+        first_day_of_month = datetime(now.year, now.month, 1)
+        monthly_ref_count = db.query(DBPurgeLog).filter(
+            DBPurgeLog.action_type == "REFERRAL_CREDITED",
+            DBPurgeLog.timestamp >= first_day_of_month,
+            DBPurgeLog.node_id.in_([
+                f"REFERRED_{p.id}" for p in db.query(DBProfile.id).filter(DBProfile.referred_by == referrer.referral_code).all()
+            ] if referrer.referral_code else [])
+        ).count() + 1
+
+        # REWARD RULE:
+        # Every 5 referrals grants 250 Relay Credits.
+        # For the FIRST 5 referrals achieved in any calendar month, the user ALSO gets 1 Free Month ($19.99 Stripe Credit).
+        # Subsequent groups of 5 referrals in that same month grant 250 Relay Credits.
         if (referrer.referral_count % 5) == 0:
-            referrer.free_months_earned = (referrer.free_months_earned or 0) + 1
+            referrer.bonus_credits = (referrer.bonus_credits or 0) + 250
+            referrer.relay_credits = (referrer.relay_credits or 500) + 250
+            referrer.relay_credits_total = (referrer.relay_credits_total or 500) + 250
+            logger.info(f"REFERRAL_CREDITS_AWARDED: Referrer '{referrer.id}' awarded +250 Credits for reaching {referrer.referral_count} referrals.")
+            
+            if monthly_ref_count <= 5:
+                referrer.free_months_earned = (referrer.free_months_earned or 0) + 1
+                logger.info(f"FIRST_5_OF_MONTH_REWARD: Referrer '{referrer.id}' unlocked 1 Free Month!")
+                if referrer.stripe_customer_id:
+                    try:
+                        import stripe
+                        stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+                        if stripe.api_key:
+                            stripe.Customer.create_balance_transaction(
+                                referrer.stripe_customer_id,
+                                amount=-1999,  # $19.99 credit = 1 free month
+                                currency="usd",
+                                description="1 Free Month Service Reward (First 5 Referrals of Month)"
+                            )
+                            logger.info(f"STRIPE_REWARD_APPLIED: $19.99 credit applied to {referrer.stripe_customer_id}")
+                    except Exception as st_err:
+                        logger.error(f"STRIPE_REWARD_ERROR: Failed to apply credit to {referrer.stripe_customer_id}: {st_err}")
 
         try:
             db.add(referrer)
             db.commit()
-            logger.info(f"REFERRAL_CREDITED_SUCCESSFULLY: Referrer '{referrer.id}' ({referrer.referral_code}) incremented to {referrer.referral_count} for user '{new_user_id}'")
+            logger.info(f"REFERRAL_CREDITED_SUCCESSFULLY: Referrer '{referrer.id}' total_count={referrer.referral_count}, monthly_count={monthly_ref_count} for user '{new_user_id}'")
             return True
         except Exception as ref_err:
             db.rollback()
