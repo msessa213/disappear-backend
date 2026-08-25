@@ -3924,26 +3924,55 @@ class SMSReplyRequest(BaseModel):
 
 @app.post("/api/v1/send-sms")
 async def send_user_sms_reply(req: SMSReplyRequest, db: Session = Depends(get_db)):
-    """Allows a user to send an SMS reply from their virtual line or active alias to any recipient"""
+    """Allows a user to send an SMS reply from their virtual line or authorized active alias to any recipient"""
     if not req.to_phone or not req.message.strip():
         raise HTTPException(status_code=400, detail="Recipient phone number and message body are required.")
     
+    if not req.user_id:
+        raise HTTPException(status_code=401, detail="AUTHENTICATION_REQUIRED: User ID is missing.")
+
+    profile = db.query(DBProfile).filter(DBProfile.id == req.user_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="USER_NOT_FOUND: Valid profile is required to dispatch SMS.")
+
+    if profile.relay_credits is not None and profile.relay_credits <= 0:
+        raise HTTPException(status_code=403, detail="RELAY_CREDITS_EXHAUSTED: Monthly relay credits depleted. Please click REFILL CREDITS in your Vault Dashboard.")
+
     target_to = format_to_e164(req.to_phone)
     if not target_to:
         raise HTTPException(status_code=400, detail="INVALID_PHONE_NUMBER: Please enter a valid 10-digit phone number.")
 
-    profile = db.query(DBProfile).filter(DBProfile.id == req.user_id).first() if req.user_id else None
-    if not profile:
-        profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+    sender_num = format_to_e164(req.from_phone) if req.from_phone and req.from_phone.strip() else None
 
-    if profile and profile.relay_credits is not None and profile.relay_credits <= 0:
-        raise HTTPException(status_code=403, detail="RELAY_CREDITS_EXHAUSTED: Monthly relay credits depleted. Please click REFILL CREDITS in your Vault Dashboard.")
-        
+    # STRICT ALIAS OWNERSHIP ENFORCEMENT & SPOOFING PREVENTION
+    if sender_num:
+        default_master_e164 = format_to_e164("+15855802036")
+        is_default_master = (sender_num == default_master_e164)
+
+        if not is_default_master:
+            user_aliases = db.query(DBAlias).filter(
+                DBAlias.user_id == req.user_id,
+                DBAlias.type == "phone"
+            ).all()
+
+            matched_alias = None
+            for alias_entry in user_aliases:
+                clean_alias = format_to_e164(alias_entry.content)
+                if clean_alias and clean_alias == sender_num:
+                    matched_alias = alias_entry
+                    break
+
+            if not matched_alias:
+                logger.warning(f"UNAUTHORIZED_ALIAS_ATTEMPT: User '{req.user_id}' attempted to spoof/send SMS from unauthorized number '{sender_num}'")
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"UNAUTHORIZED_ALIAS_ACCESS: The requested sender number '{sender_num}' is not assigned to your user account."
+                )
+
     from services.twilio_service import send_sms, twilio_client
     if not twilio_client:
         raise HTTPException(status_code=503, detail="TWILIO_CLIENT_UNAVAILABLE: Twilio client is not initialized in Railway.")
 
-    sender_num = format_to_e164(req.from_phone) if req.from_phone and req.from_phone.strip() else None
     sender_display = sender_num if sender_num else "+15855802036"
     success = send_sms(to_phone_number=target_to, message_body=req.message.strip(), from_phone_number=sender_num)
     if success:
