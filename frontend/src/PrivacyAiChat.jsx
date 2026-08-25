@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 export default function PrivacyAiChat({ apiBaseUrl }) {
-  // Completely hidden by default (isOpen = false). Zero floating badges on load.
   const [isOpen, setIsOpen] = useState(false);
   const [inputMsg, setInputMsg] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -80,185 +79,210 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
     { label: "⚡ Emergency Burn", query: "What is Emergency Burn?" }
   ];
 
-  // If closed, return null so zero elements or floating badges are rendered
-  if (!isOpen) return null;
-
   return (
     <div className="privacy-ai-chat-container">
-      <div
-        className="ai-chat-modal-floating"
-        style={{
-          position: 'fixed',
-          bottom: '25px',
-          right: '25px',
-          width: '360px',
-          maxWidth: 'calc(100vw - 30px)',
-          height: '520px',
-          maxHeight: 'calc(100vh - 100px)',
-          backgroundColor: '#0A0E17',
-          border: '1px solid var(--tiger-blue, #0047AB)',
-          borderRadius: '16px',
-          boxShadow: '0 0 45px rgba(0, 210, 255, 0.4), 0 20px 50px rgba(0,0,0,0.95)',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          zIndex: 999999,
-          fontFamily: "'Inter', -apple-system, sans-serif"
-        }}
-      >
-        {/* Header Bar with Prominent Close Button */}
-        <div
-          style={{
-            padding: '12px 16px',
-            background: 'linear-gradient(90deg, #050B14, #002A66)',
-            borderBottom: '1px solid rgba(0, 71, 171, 0.4)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}
+      {/* 1. Responsive Floating Trigger Badge (Desktop Pill / Mobile Icon Circle) */}
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          title="Open AI Privacy Assistant"
+          aria-label="Open AI Privacy Assistant"
+          className="ai-chat-trigger-btn"
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ display: 'inline-block', width: '10px', height: '10px', backgroundColor: '#10B981', borderRadius: '50%', boxShadow: '0 0 10px #10B981' }}></span>
-            <span style={{ fontWeight: 'bold', fontSize: '0.85rem', color: '#FFFFFF', letterSpacing: '1px' }}>AI PRIVACY AGENT</span>
+          <div className="ai-chat-badge-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+            <span className="ai-chat-status-dot" />
           </div>
-          <button
-            onClick={() => setIsOpen(false)}
-            title="Close Chat"
-            aria-label="Close Chat"
+
+          <div className="ai-chat-badge-text">
+            <span className="ai-chat-badge-title">AI Privacy Shield</span>
+            <span className="ai-chat-badge-subtitle">Ask any question</span>
+          </div>
+        </button>
+      )}
+
+      {/* 2. Floating Chat Modal Window */}
+      {isOpen && (
+        <div className="ai-chat-modal-floating">
+          {/* Header Bar with Minimize & Close Buttons */}
+          <div
             style={{
-              background: 'rgba(255,255,255,0.1)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '6px',
-              color: '#FFFFFF',
-              fontSize: '0.8rem',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              padding: '3px 8px',
+              padding: '12px 16px',
+              background: 'linear-gradient(90deg, #050B14, #002A66)',
+              borderBottom: '1px solid rgba(0, 71, 171, 0.4)',
               display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
+              justifyContent: 'space-between',
+              alignItems: 'center'
             }}
           >
-            ✕ CLOSE
-          </button>
-        </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ display: 'inline-block', width: '10px', height: '10px', backgroundColor: '#10B981', borderRadius: '50%', boxShadow: '0 0 10px #10B981' }}></span>
+              <span style={{ fontWeight: 'bold', fontSize: '0.85rem', color: '#FFFFFF', letterSpacing: '1px' }}>AI PRIVACY AGENT</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                onClick={() => setIsOpen(false)}
+                title="Minimize Chat"
+                aria-label="Minimize Chat"
+                style={{
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  borderRadius: '6px',
+                  color: '#94A3B8',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  width: '26px',
+                  height: '26px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                —
+              </button>
+              <button
+                onClick={() => setIsOpen(false)}
+                title="Close Chat"
+                aria-label="Close Chat"
+                style={{
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  borderRadius: '6px',
+                  color: '#94A3B8',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  width: '26px',
+                  height: '26px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          </div>
 
-        {/* Quick Prompts Bar */}
-        <div style={{ padding: '10px 12px', display: 'flex', gap: '6px', overflowX: 'auto', borderBottom: '1px solid rgba(255,255,255,0.05)', backgroundColor: '#05070D' }}>
-          {quickPrompts.map((p, idx) => (
-            <button
-              key={idx}
-              onClick={() => handleSendMessage(p.query)}
+          {/* Quick Prompts Bar */}
+          <div style={{ padding: '10px 12px', display: 'flex', gap: '6px', overflowX: 'auto', borderBottom: '1px solid rgba(255,255,255,0.05)', backgroundColor: '#05070D' }}>
+            {quickPrompts.map((p, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleSendMessage(p.query)}
+                style={{
+                  whiteSpace: 'nowrap',
+                  background: 'rgba(0, 71, 171, 0.15)',
+                  border: '1px solid rgba(0, 210, 255, 0.3)',
+                  color: '#00D2FF',
+                  borderRadius: '12px',
+                  padding: '5px 10px',
+                  fontSize: '0.75rem',
+                  cursor: 'pointer'
+                }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Chat Messages */}
+          <div
+            style={{
+              flex: 1,
+              padding: '16px',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              backgroundColor: '#050811'
+            }}
+          >
+            {messages.map((m, idx) => (
+              <div
+                key={idx}
+                style={{
+                  alignSelf: m.sender === 'user' ? 'flex-end' : 'flex-start',
+                  maxWidth: '85%',
+                  padding: '10px 14px',
+                  borderRadius: m.sender === 'user' ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
+                  backgroundColor: m.sender === 'user' ? '#0047AB' : '#111827',
+                  color: m.sender === 'user' ? '#FFFFFF' : '#E2E8F0',
+                  fontSize: '0.85rem',
+                  lineHeight: '1.45',
+                  border: m.sender === 'ai' ? '1px solid rgba(255, 255, 255, 0.08)' : 'none',
+                  boxShadow: m.sender === 'user' ? '0 0 10px rgba(0,71,171,0.4)' : 'none',
+                  whiteSpace: 'pre-wrap'
+                }}
+              >
+                {m.text}
+              </div>
+            ))}
+            {isTyping && (
+              <div
+                style={{
+                  alignSelf: 'flex-start',
+                  padding: '8px 14px',
+                  borderRadius: '14px',
+                  backgroundColor: '#111827',
+                  color: '#00D2FF',
+                  fontSize: '0.8rem',
+                  fontStyle: 'italic'
+                }}
+              >
+                AI Assistant is typing...
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input Area */}
+          <div
+            style={{
+              padding: '12px',
+              backgroundColor: '#0A0E17',
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+              display: 'flex',
+              gap: '8px'
+            }}
+          >
+            <input
+              type="text"
+              placeholder="Ask a question about privacy, pricing..."
+              value={inputMsg}
+              onChange={(e) => setInputMsg(e.target.value)}
+              onKeyDown={handleKeyPress}
               style={{
-                whiteSpace: 'nowrap',
-                background: 'rgba(0, 71, 171, 0.15)',
-                border: '1px solid rgba(0, 210, 255, 0.3)',
-                color: '#00D2FF',
-                borderRadius: '12px',
-                padding: '5px 10px',
-                fontSize: '0.75rem',
+                flex: 1,
+                backgroundColor: '#05070D',
+                border: '1px solid rgba(0, 71, 171, 0.4)',
+                borderRadius: '8px',
+                padding: '10px 12px',
+                color: '#FFFFFF',
+                fontSize: '0.85rem',
+                outline: 'none'
+              }}
+            />
+            <button
+              onClick={() => handleSendMessage()}
+              style={{
+                backgroundColor: '#0047AB',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '0 14px',
+                color: '#FFFFFF',
+                fontWeight: 'bold',
+                fontSize: '0.85rem',
                 cursor: 'pointer'
               }}
             >
-              {p.label}
+              SEND
             </button>
-          ))}
+          </div>
         </div>
-
-        {/* Chat Messages */}
-        <div
-          style={{
-            flex: 1,
-            padding: '16px',
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-            backgroundColor: '#050811'
-          }}
-        >
-          {messages.map((m, idx) => (
-            <div
-              key={idx}
-              style={{
-                alignSelf: m.sender === 'user' ? 'flex-end' : 'flex-start',
-                maxWidth: '85%',
-                padding: '10px 14px',
-                borderRadius: m.sender === 'user' ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
-                backgroundColor: m.sender === 'user' ? '#0047AB' : '#111827',
-                color: m.sender === 'user' ? '#FFFFFF' : '#E2E8F0',
-                fontSize: '0.85rem',
-                lineHeight: '1.45',
-                border: m.sender === 'ai' ? '1px solid rgba(255, 255, 255, 0.08)' : 'none',
-                boxShadow: m.sender === 'user' ? '0 0 10px rgba(0,71,171,0.4)' : 'none',
-                whiteSpace: 'pre-wrap'
-              }}
-            >
-              {m.text}
-            </div>
-          ))}
-          {isTyping && (
-            <div
-              style={{
-                alignSelf: 'flex-start',
-                padding: '8px 14px',
-                borderRadius: '14px',
-                backgroundColor: '#111827',
-                color: '#00D2FF',
-                fontSize: '0.8rem',
-                fontStyle: 'italic'
-              }}
-            >
-              AI Assistant is typing...
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input Area */}
-        <div
-          style={{
-            padding: '12px',
-            backgroundColor: '#0A0E17',
-            borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-            display: 'flex',
-            gap: '8px'
-          }}
-        >
-          <input
-            type="text"
-            placeholder="Ask a question about privacy, pricing..."
-            value={inputMsg}
-            onChange={(e) => setInputMsg(e.target.value)}
-            onKeyDown={handleKeyPress}
-            style={{
-              flex: 1,
-              backgroundColor: '#05070D',
-              border: '1px solid rgba(0, 71, 171, 0.4)',
-              borderRadius: '8px',
-              padding: '10px 12px',
-              color: '#FFFFFF',
-              fontSize: '0.85rem',
-              outline: 'none'
-            }}
-          />
-          <button
-            onClick={() => handleSendMessage()}
-            style={{
-              backgroundColor: '#0047AB',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '0 14px',
-              color: '#FFFFFF',
-              fontWeight: 'bold',
-              fontSize: '0.85rem',
-              cursor: 'pointer'
-            }}
-          >
-            SEND
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -1194,7 +1194,7 @@ input[type="checkbox"] {
   align-items: flex-start !important;
 }
 
-/* FLOATING MINIMIZABLE CHATBOT (NON-INTRUSIVE CYBERPUNK BADGE) */
+/* FLOATING MINIMIZABLE CHATBOT (RESPONSIVE CYBERPUNK BADGE) */
 .privacy-ai-chat-container {
   position: fixed;
   bottom: 25px;
@@ -1203,9 +1203,108 @@ input[type="checkbox"] {
   pointer-events: auto;
 }
 
-@media (max-width: 600px) {
+.ai-chat-trigger-btn {
+  background: rgba(5, 11, 20, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #FFFFFF;
+  border: 1px solid rgba(0, 210, 255, 0.45);
+  border-radius: 50px;
+  padding: 6px 14px 6px 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: 0 8px 32px rgba(0, 71, 171, 0.45), inset 0 1px 0 rgba(255,255,255,0.2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.ai-chat-trigger-btn:hover {
+  transform: translateY(-3px);
+  border-color: rgba(0, 210, 255, 0.85);
+  box-shadow: 0 12px 35px rgba(0, 210, 255, 0.6);
+}
+
+.ai-chat-badge-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0047AB, #00D2FF);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 12px rgba(0, 210, 255, 0.6);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.ai-chat-status-dot {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  width: 8px;
+  height: 8px;
+  background-color: #10B981;
+  border-radius: 50%;
+  border: 2px solid #050B14;
+  box-shadow: 0 0 6px #10B981;
+}
+
+.ai-chat-badge-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.ai-chat-badge-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+.ai-chat-badge-subtitle {
+  font-size: 0.65rem;
+  color: #00D2FF;
+  opacity: 0.9;
+}
+
+/* MOBILE OPTIMIZATION (<= 768px): COLLAPSE TO COMPACT FLOATING CIRCLE ICON */
+@media (max-width: 768px) {
   .privacy-ai-chat-container {
-    bottom: 20px;
+    bottom: 15px;
     right: 15px;
+  }
+  
+  .ai-chat-trigger-btn {
+    padding: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    justify-content: center;
+    box-shadow: 0 6px 20px rgba(0, 71, 171, 0.6);
+  }
+
+  .ai-chat-badge-text {
+    display: none !important;
+  }
+
+  .ai-chat-badge-icon {
+    width: 42px;
+    height: 42px;
+    box-shadow: none;
+  }
+
+  .ai-chat-modal-floating {
+    bottom: 15px !important;
+    right: 15px !important;
+    width: calc(100vw - 30px) !important;
+    max-height: calc(100vh - 80px) !important;
   }
 }
