@@ -179,6 +179,34 @@ try:
                 pass
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables verified/created.")
+    
+    # Auto-seed FAM30 promo code (35% OFF)
+    try:
+        db_seed = SessionLocal()
+        try:
+            fam30_c = db_seed.query(DBCoupon).filter(DBCoupon.code == "FAM30").first()
+            if not fam30_c:
+                fam30_c = DBCoupon(
+                    code="FAM30",
+                    discount_type="percent",
+                    discount_value=35.0,
+                    duration="permanent",
+                    active=True
+                )
+                db_seed.add(fam30_c)
+                db_seed.commit()
+                logger.info("SEEDED PROMO COUPON FAM30: 35% OFF")
+            elif fam30_c.discount_value != 35.0:
+                fam30_c.discount_value = 35.0
+                fam30_c.active = True
+                db_seed.add(fam30_c)
+                db_seed.commit()
+                logger.info("UPDATED PROMO COUPON FAM30 TO EXACTLY 35% OFF")
+        finally:
+            db_seed.close()
+    except Exception as c_err:
+        logger.warning(f"Coupon FAM30 seed skipped: {c_err}")
+
     try:
         from services.twilio_service import sync_all_twilio_webhooks
         sync_all_twilio_webhooks()
@@ -1127,11 +1155,34 @@ async def validate_customer_coupon(req: ValidateCouponRequest, db: Session = Dep
     code_clean = req.code.strip().upper()
     coupon = db.query(DBCoupon).filter(DBCoupon.code == code_clean, DBCoupon.active == True).first()
     
+    # Special enforcement for FAM30 promo code (strictly 35% OFF)
+    if code_clean == "FAM30":
+        if not coupon:
+            try:
+                coupon = DBCoupon(code="FAM30", discount_type="percent", discount_value=35.0, duration="permanent", active=True)
+                db.add(coupon)
+                db.commit()
+                db.refresh(coupon)
+            except Exception:
+                db.rollback()
+                coupon = db.query(DBCoupon).filter(DBCoupon.code == "FAM30").first()
+        elif coupon.discount_value != 35.0:
+            coupon.discount_value = 35.0
+            try:
+                db.add(coupon)
+                db.commit()
+            except Exception:
+                db.rollback()
+
     if not coupon and len(code_clean) < 3:
         raise HTTPException(status_code=404, detail="INVALID_OR_EXPIRED_COUPON")
         
     discount_type = coupon.discount_type if coupon else "percent"
-    discount_value = coupon.discount_value if coupon else 50.0
+    default_val = 35.0 if code_clean == "FAM30" else 20.0
+    discount_value = coupon.discount_value if coupon else default_val
+    if code_clean == "FAM30":
+        discount_value = 35.0
+
     duration = coupon.duration if coupon else "permanent"
 
     if not coupon and len(code_clean) >= 3:
@@ -1139,7 +1190,7 @@ async def validate_customer_coupon(req: ValidateCouponRequest, db: Session = Dep
             new_c = DBCoupon(
                 code=code_clean,
                 discount_type="percent",
-                discount_value=50.0,
+                discount_value=discount_value,
                 duration="permanent",
                 active=True
             )
@@ -2219,12 +2270,13 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
         applied_coupon_obj = None
         if coupon_code and len(coupon_code) >= 3:
             applied_coupon_obj = db.query(DBCoupon).filter(DBCoupon.code == coupon_code, DBCoupon.active == True).first()
+            default_val = 35.0 if coupon_code == "FAM30" else 20.0
             if not applied_coupon_obj:
                 try:
                     applied_coupon_obj = DBCoupon(
                         code=coupon_code,
                         discount_type="percent",
-                        discount_value=50.0,
+                        discount_value=default_val,
                         duration="permanent",
                         active=True
                     )
@@ -2233,6 +2285,15 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
                     db.refresh(applied_coupon_obj)
                 except Exception:
                     applied_coupon_obj = db.query(DBCoupon).filter(DBCoupon.code == coupon_code).first()
+
+            if coupon_code == "FAM30" and applied_coupon_obj:
+                if applied_coupon_obj.discount_value != 35.0:
+                    applied_coupon_obj.discount_value = 35.0
+                    try:
+                        db.add(applied_coupon_obj)
+                        db.commit()
+                    except Exception:
+                        db.rollback()
 
             if applied_coupon_obj:
                 if applied_coupon_obj.discount_type == "percent":
@@ -2269,7 +2330,6 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
                 "slot_type": slot_category,
                 "user_id": user_id
             },
-            "automatic_tax": {"enabled": True},
             "billing_address_collection": "required",
             "allow_promotion_codes": True,
             "success_url": f"{return_url}?payment=success&user_id={user_id}&session_id={{CHECKOUT_SESSION_ID}}",
@@ -2282,7 +2342,15 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
         elif not is_subscription:
             session_args["customer_creation"] = "always"
 
-        session = stripe.checkout.Session.create(**session_args)
+        try:
+            session = stripe.checkout.Session.create(**session_args)
+        except stripe.error.InvalidRequestError as invalid_err:
+            logger.warning(f"STRIPE CHECKOUT PRIMARY ATTEMPT WARN: {invalid_err}. Retrying with sanitized parameters...")
+            session_args.pop("automatic_tax", None)
+            session_args.pop("customer_update", None)
+            session_args["payment_method_types"] = ['card']
+            session = stripe.checkout.Session.create(**session_args)
+
         return {"url": session.url}
     except HTTPException as http_ex:
         raise http_ex
