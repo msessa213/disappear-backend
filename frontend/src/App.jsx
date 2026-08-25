@@ -32,15 +32,13 @@ const isExplicitLocalDev = typeof window !== 'undefined' &&
 
 const API_BASE_URL = isExplicitLocalDev ? LOCAL_API : "";
 
-// --- TAB ISOLATION STORAGE ENGINE ---
+// --- TAB ISOLATION & SECURE SESSION STORAGE ENGINE ---
 // Uses sessionStorage so each browser tab/window maintains its own strictly isolated session sandbox.
-// Zero reading or writing to global localStorage to guarantee cross-tab session independence.
+// Zero reading of auth credentials from global localStorage to prevent ghost logins on page refresh.
 const getSessionItem = (key) => {
   try {
     const val = sessionStorage.getItem(key);
     if (val && val !== "undefined") return val;
-    const localVal = localStorage.getItem(key);
-    if (localVal && localVal !== "undefined") return localVal;
     return "";
   } catch (e) {
     return "";
@@ -50,7 +48,6 @@ const getSessionItem = (key) => {
 const setSessionItem = (key, value) => {
   try {
     sessionStorage.setItem(key, value);
-    localStorage.setItem(key, value);
   } catch (e) {}
 };
 
@@ -67,6 +64,8 @@ const clearSessionStorage = () => {
     localStorage.removeItem("disappear_session");
     localStorage.removeItem("disappear_user_id");
     localStorage.removeItem("disappear_last_active");
+    localStorage.removeItem("disappear_user_email");
+    localStorage.removeItem("disappear_jwt");
   } catch (e) {}
 };
 
@@ -853,16 +852,15 @@ function App() {
     const now = Date.now();
     let isExpired = false;
 
-    let session = getSessionItem("disappear_session");
-    let lastActive = getSessionItem("disappear_last_active");
-    let savedUid = getSessionItem("disappear_user_id");
+    // Check sessionStorage ONLY for active tab session (Strict Session Isolation)
+    let session = sessionStorage.getItem("disappear_session") || "";
+    let lastActive = sessionStorage.getItem("disappear_last_active") || "";
+    let savedUid = sessionStorage.getItem("disappear_user_id") || "";
 
     if (session === "active" && lastActive) {
       const timeSinceLastActive = now - parseInt(lastActive, 10);
       if (timeSinceLastActive > TIMEOUT_DURATION) {
-        removeSessionItem("disappear_session");
-        removeSessionItem("disappear_user_id");
-        removeSessionItem("disappear_last_active");
+        clearSessionStorage();
         isExpired = true;
         session = "";
         savedUid = "";
@@ -875,11 +873,11 @@ function App() {
     const queryUid = query.get("user_id");
 
     if (queryPayment === "success" || querySetup === "success") {
-      const activeUid = queryUid || savedUid || getSessionItem("disappear_user_id");
+      const activeUid = queryUid || savedUid || sessionStorage.getItem("disappear_user_id");
       if (activeUid && activeUid !== "undefined") {
-        setSessionItem("disappear_session", "active");
-        setSessionItem("disappear_last_active", now.toString());
-        setSessionItem("disappear_user_id", activeUid);
+        sessionStorage.setItem("disappear_session", "active");
+        sessionStorage.setItem("disappear_last_active", now.toString());
+        sessionStorage.setItem("disappear_user_id", activeUid);
         setCurrentUserId(activeUid);
         setShowLanding(false);
         setShowPricing(false);
@@ -901,10 +899,12 @@ function App() {
       return;
     }
 
-    if (session === "active" && !isExpired && savedUid && savedUid !== "undefined") {
-      setSessionItem("disappear_last_active", now.toString());
-      setSessionItem("disappear_session", "active");
-      setSessionItem("disappear_user_id", savedUid);
+    // STRICT SESSION VALIDATION ON MOUNT:
+    // Only restore vault if sessionStorage explicitly contains active session and valid user_id
+    if (session === "active" && !isExpired && savedUid && savedUid !== "undefined" && savedUid.length > 3) {
+      sessionStorage.setItem("disappear_last_active", now.toString());
+      sessionStorage.setItem("disappear_session", "active");
+      sessionStorage.setItem("disappear_user_id", savedUid);
       setCurrentUserId(savedUid);
       setShowLanding(false);
       setShowPricing(false);
@@ -912,12 +912,21 @@ function App() {
       setShowShield(true);
       setProgress(100);
     } else {
-      // ZERO FALLBACK GUARANTEE: If no explicit session exists, strictly lock screen and clear state
+      // DEFAULT TO PUBLIC LANDING / HOME PAGE ON UNVERIFIED VISITS & REFRESHES
       clearSessionStorage();
       setCurrentUserId(null);
       setShowLanding(true);
       setShowShield(false);
+      setShowPricing(false);
+      setShowCheckout(false);
       setShow2FA(false);
+
+      // Auto-scroll window to top hero section
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      try {
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      } catch (e) {}
     }
   }, []);
 
