@@ -2171,7 +2171,7 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
         elif "subscription_annual" in etype:
             item_name = "Disappear Elite Operative (Annual Subscription)"
             item_description = "Full Access to 400+ Data Broker Removals, Email Relays, and Phone Lines (Billed Annually)"
-            unit_amount = 15999  # $159.99 (equals $13.33/mo)
+            unit_amount = 21738  # $217.38/yr (Reflects $22.50 flat savings compared to 12 x $19.99 = $239.88)
             purchase_key = "subscription_annual"
             slot_category = "ANNUAL_SUBSCRIPTION"
         # TARGET EMAIL SLOT
