@@ -3159,7 +3159,7 @@ const handleEmergencyBurn = async () => {
 
                 {/* --- LIVE DATA BROKER SCRUB QUEUE & MONITOR --- */}
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
-                  <p className="tool-label" style={{ textAlign: 'center', marginBottom: '12px' }}>🛡️ DATA BROKER PURGE QUEUE (33+ REGISTRIES)</p>
+                  <p className="tool-label" style={{ textAlign: 'center', marginBottom: '12px' }}>🛡️ DATA BROKER PURGE QUEUE ({scrubStats.total_brokers || 410} REGISTRIES)</p>
                   
                   {/* Overall Purge Cycle Status Banner */}
                   <div style={{
@@ -3172,11 +3172,11 @@ const handleEmergencyBurn = async () => {
                     textAlign: 'left'
                   }}>
                     <div style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                      {scrubStats.removed === 0 ? "🟡 INITIAL PRIVACY PURGE QUEUED | REMOVALS IN PROGRESS" : `🟢 ACTIVE PURGE CYCLE | ${scrubStats.removed} OF ${scrubStats.total_brokers || 33} BROKERS SCRUBBED`}
+                      {scrubStats.removed === 0 ? `🟡 INITIAL PRIVACY PURGE QUEUED | REMOVALS IN PROGRESS (${scrubStats.total_brokers || 410} TARGETS)` : `🟢 ACTIVE PURGE CYCLE | ${scrubStats.removed} OF ${scrubStats.total_brokers || 410} BROKERS SCRUBBED`}
                     </div>
                     <div style={{ fontSize: '0.75rem', opacity: 0.9, lineHeight: '1.4' }}>
                       {scrubStats.removed === 0 
-                        ? "Your target profile has been dispatched to 33+ major data broker opt-out endpoints. Automated crawlers and human privacy analysts are actively processing opt-out filings."
+                        ? `Your target profile has been dispatched to ${scrubStats.total_brokers || 410} major data broker opt-out endpoints. Automated crawlers and human privacy analysts are actively processing opt-out filings.`
                         : `Continuous background scrubbers have finalized ${scrubStats.removed} verified removals (${scrubStats.progress_pct}% complete).`}
                     </div>
 
