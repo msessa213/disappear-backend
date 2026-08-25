@@ -1,18 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 export default function PrivacyAiChat({ apiBaseUrl }) {
-  const [isOpen, setIsOpen] = useState(() => {
+  // 3-Stage Widget State:
+  // Stage 1 = Minimized Pill Badge (Default)
+  // Stage 2 = Expanded Preview / Greeting Widget Card
+  // Stage 3 = Full Interactive Chat Box Window
+  const [chatStage, setChatStage] = useState(() => {
     try {
-      return sessionStorage.getItem("disappear_ai_chat_open") === "true";
+      const saved = sessionStorage.getItem("disappear_ai_chat_stage");
+      return saved ? parseInt(saved, 10) : 1;
     } catch (e) {
-      return false;
+      return 1;
     }
   });
 
-  const toggleChat = (openState) => {
-    setIsOpen(openState);
+  const changeStage = (stageNum) => {
+    setChatStage(stageNum);
     try {
-      sessionStorage.setItem("disappear_ai_chat_open", openState ? "true" : "false");
+      sessionStorage.setItem("disappear_ai_chat_stage", String(stageNum));
     } catch (e) {}
   };
 
@@ -32,10 +37,10 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
   };
 
   useEffect(() => {
-    if (isOpen) {
+    if (chatStage === 3) {
       scrollToBottom();
     }
-  }, [messages, isOpen]);
+  }, [messages, chatStage]);
 
   const handleSendMessage = async (textToSend) => {
     const text = textToSend || inputMsg;
@@ -88,10 +93,12 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
 
   return (
     <div className="privacy-ai-chat-container">
-      {/* 1. Sleek Floating Trigger Badge (Visible ONLY when Minimized) */}
-      {!isOpen && (
+      {/* ========================================================================= */}
+      {/* STAGE 1: DEFAULT MINIMIZED FLOATING PILL BADGE                           */}
+      {/* ========================================================================= */}
+      {chatStage === 1 && (
         <button
-          onClick={() => toggleChat(true)}
+          onClick={() => changeStage(2)}
           title="Open AI Privacy Assistant"
           aria-label="Open AI Privacy Assistant"
           className="ai-chat-trigger-btn"
@@ -160,8 +167,132 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
         </button>
       )}
 
-      {/* 2. Floating Chat Modal Window (Rendered ONLY when Expanded) */}
-      {isOpen && (
+      {/* ========================================================================= */}
+      {/* STAGE 2: EXPANDED INTERMEDIATE PREVIEW / GREETING WIDGET CARD            */}
+      {/* ========================================================================= */}
+      {chatStage === 2 && (
+        <div
+          className="ai-chat-preview-card"
+          style={{
+            position: 'fixed',
+            bottom: '25px',
+            right: '25px',
+            width: '330px',
+            maxWidth: 'calc(100vw - 30px)',
+            backgroundColor: '#0A0E17',
+            border: '1px solid var(--tiger-blue, #0047AB)',
+            borderRadius: '16px',
+            boxShadow: '0 0 35px rgba(0, 210, 255, 0.35), 0 15px 40px rgba(0,0,0,0.9)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            zIndex: 999999,
+            fontFamily: "'Inter', -apple-system, sans-serif"
+          }}
+        >
+          {/* Card Header Bar */}
+          <div style={{
+            padding: '12px 14px',
+            background: 'linear-gradient(90deg, #050B14, #002A66)',
+            borderBottom: '1px solid rgba(0, 71, 171, 0.4)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ display: 'inline-block', width: '9px', height: '9px', backgroundColor: '#10B981', borderRadius: '50%', boxShadow: '0 0 8px #10B981' }}></span>
+              <span style={{ fontWeight: 'bold', fontSize: '0.8rem', color: '#FFFFFF', letterSpacing: '0.8px' }}>AI PRIVACY SHIELD</span>
+            </div>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                onClick={() => changeStage(1)}
+                title="Minimize to badge"
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', color: '#94A3B8', fontSize: '0.85rem', cursor: 'pointer', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >—</button>
+              <button
+                onClick={() => changeStage(1)}
+                title="Close widget"
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px', color: '#94A3B8', fontSize: '0.85rem', cursor: 'pointer', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >✕</button>
+            </div>
+          </div>
+
+          {/* Greeting Content */}
+          <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px', backgroundColor: '#050811' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #0047AB, #00D2FF)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 10px rgba(0,210,255,0.5)', flexShrink: 0 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  <path d="m9 12 2 2 4-4"/>
+                </svg>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#FFF' }}>Disappear AI Specialist</div>
+                <div style={{ fontSize: '0.7rem', color: '#10B981' }}>● Online & Standing By</div>
+              </div>
+            </div>
+
+            <p style={{ fontSize: '0.78rem', color: '#94A3B8', margin: 0, lineHeight: '1.4' }}>
+              Have questions about <strong>400+ data broker purges</strong>, <strong>burner relays</strong>, or <strong>pricing</strong>? Ask our AI assistant now.
+            </p>
+
+            {/* Quick Option Pills */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+              {quickPrompts.slice(0, 3).map((p, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    handleSendMessage(p.query);
+                    changeStage(3);
+                  }}
+                  style={{
+                    background: 'rgba(0, 71, 171, 0.2)',
+                    border: '1px solid rgba(0, 210, 255, 0.35)',
+                    color: '#00D2FF',
+                    borderRadius: '8px',
+                    padding: '4px 8px',
+                    fontSize: '0.7rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Primary Action Button */}
+            <button
+              onClick={() => changeStage(3)}
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '8px',
+                background: 'linear-gradient(135deg, #0047AB, #00D2FF)',
+                border: 'none',
+                color: '#FFFFFF',
+                fontWeight: 'bold',
+                fontSize: '0.82rem',
+                letterSpacing: '0.5px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(0, 71, 171, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                marginTop: '2px'
+              }}
+            >
+              <span>💬 START FULL CHAT SESSION</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* STAGE 3: FULL INTERACTIVE CHAT WINDOW                                    */}
+      {/* ========================================================================= */}
+      {chatStage === 3 && (
         <div
           className="ai-chat-modal-floating"
           style={{
@@ -183,7 +314,7 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
             fontFamily: "'Inter', -apple-system, sans-serif"
           }}
         >
-          {/* Header Bar with Minimize & Close Buttons */}
+          {/* Header Bar with Back/Minimize & Close Buttons */}
           <div
             style={{
               padding: '12px 16px',
@@ -200,9 +331,9 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <button
-                onClick={() => toggleChat(false)}
-                title="Minimize Chat"
-                aria-label="Minimize Chat"
+                onClick={() => changeStage(2)}
+                title="Back to Preview"
+                aria-label="Back to Preview"
                 style={{
                   background: 'rgba(255,255,255,0.08)',
                   border: '1px solid rgba(255,255,255,0.15)',
@@ -220,9 +351,9 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
                 —
               </button>
               <button
-                onClick={() => toggleChat(false)}
-                title="Close Chat"
-                aria-label="Close Chat"
+                onClick={() => changeStage(1)}
+                title="Close to Badge"
+                aria-label="Close to Badge"
                 style={{
                   background: 'rgba(255,255,255,0.08)',
                   border: '1px solid rgba(255,255,255,0.15)',
