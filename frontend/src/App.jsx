@@ -2457,7 +2457,29 @@ const handleEmergencyBurn = async () => {
                 </div>
                 
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative', border: '1px solid var(--tiger-blue)' }}>
-                  <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>EMAIL PROTECTION</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                    <span className="tool-label" style={{ margin: 0, textAlign: 'left', fontWeight: 'bold' }}>EMAIL PROTECTION</span>
+                    <button 
+                      type="button"
+                      className="main-button" 
+                      style={{ 
+                        padding: '8px 14px', 
+                        fontSize: '0.80rem', 
+                        fontWeight: 'bold', 
+                        letterSpacing: '0.5px',
+                        background: 'linear-gradient(135deg, #00D2FF 0%, #0072FF 100%)',
+                        border: 'none',
+                        color: '#ffffff',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        boxShadow: '0 0 12px rgba(0, 210, 255, 0.35)',
+                        whiteSpace: 'nowrap'
+                      }} 
+                      onClick={() => { setShowEmailModal(true); checkAddyRecipientStatus(false); }}
+                    >
+                      + GENERATE EMAIL ALIAS
+                    </button>
+                  </div>
                   
                   {/* --- UNMISSABLE ADDY.IO EMAIL VERIFICATION CALLOUT BANNER --- */}
                   {addyRecipientStatus === "PENDING_VERIFICATION" && (
@@ -2544,7 +2566,6 @@ const handleEmergencyBurn = async () => {
                       </div>
                     ))}
                   </div>
-                  <button className="reset-btn" style={{marginTop: '15px', width: '100%', borderStyle: 'dashed'}} onClick={() => { setShowEmailModal(true); checkAddyRecipientStatus(false); }}> + GENERATE EMAIL ALIAS </button>
                 </div>
 
                 {/* --- RELAY SHIELD CREDITS METER CARD --- */}
@@ -2591,7 +2612,29 @@ const handleEmergencyBurn = async () => {
                 </div>
 
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
-                  <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>PHONE PROTECTION & SMS RELAY</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                    <span className="tool-label" style={{ margin: 0, textAlign: 'left', fontWeight: 'bold' }}>PHONE PROTECTION & SMS RELAY</span>
+                    <button 
+                      type="button"
+                      className="main-button" 
+                      style={{ 
+                        padding: '8px 14px', 
+                        fontSize: '0.80rem', 
+                        fontWeight: 'bold', 
+                        letterSpacing: '0.5px',
+                        background: 'linear-gradient(135deg, #00D2FF 0%, #0072FF 100%)',
+                        border: 'none',
+                        color: '#ffffff',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        boxShadow: '0 0 12px rgba(0, 210, 255, 0.35)',
+                        whiteSpace: 'nowrap'
+                      }} 
+                      onClick={() => setShowPhoneModal(true)}
+                    >
+                      + GENERATE PHONE ALIAS
+                    </button>
+                  </div>
                   
                   {/* Destination Forwarding Mobile Phone Setup */}
                   <div style={{ background: 'rgba(0,210,255,0.03)', border: '1px solid rgba(0,210,255,0.2)', padding: '14px', borderRadius: '8px', marginBottom: '18px', textAlign: 'left' }}>
@@ -2640,7 +2683,6 @@ const handleEmergencyBurn = async () => {
                       </div>
                     ))}
                   </div>
-                  <button className="reset-btn" style={{marginTop: '15px', width: '100%', borderStyle: 'dashed'}} onClick={() => setShowPhoneModal(true)}> + GENERATE PHONE ALIAS </button>
 
                   {/* Live In-App SMS Vault Inbox */}
                   <div style={{ background: '#05070E', border: '1px solid #334155', padding: '15px', borderRadius: '8px', marginTop: '20px', textAlign: 'left' }}>
