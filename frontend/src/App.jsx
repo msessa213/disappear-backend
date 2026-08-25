@@ -3383,12 +3383,17 @@ const handleEmergencyBurn = async () => {
                     <div className="pricing-card">
                       <div className="price-box">
                         <div className="billing-toggle" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', width: '100%', marginBottom: '15px' }}>
-                          <button className={billingCycle === 'monthly' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('monthly')}>Monthly</button>
-                          <button className={billingCycle === 'annual' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('annual')}>Annual</button>
+                          <button className={billingCycle === 'monthly' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('monthly')} style={{ padding: '8px 10px', fontSize: '0.82rem' }}>Monthly ($19.99/mo)</button>
+                          <button className={billingCycle === 'annual' ? 'mask-btn active-toggle' : 'mask-btn'} onClick={() => setBillingCycle('annual')} style={{ padding: '8px 10px', fontSize: '0.82rem' }}>
+                            Annual ($229.88/yr) <span style={{ fontSize: '0.68rem', color: '#34D399', display: 'block', fontWeight: 'bold' }}>SAVE $10.00 FLAT</span>
+                          </button>
                         </div>
                         <h3 className="tiger-text">ELITE PRIVACY PLAN</h3>
-                        <div className="price-amount">${billingCycle === 'monthly' ? '19.99' : '15.99'}</div>
-                        <p style={{fontSize: '0.85rem', color: 'var(--text-dim)', marginBottom: '20px', textAlign: 'center'}}>Cancel or adjust subscription directly inside your dashboard in a single click.</p>
+                        <div className="price-amount">${billingCycle === 'monthly' ? '19.99' : '229.88'}</div>
+                        <div style={{ fontSize: '0.82rem', color: '#00D2FF', fontWeight: 'bold', marginBottom: '12px', textAlign: 'center' }}>
+                          {billingCycle === 'monthly' ? '/ month (Cancel Anytime)' : '/ year ($19.15/mo - Reflects Flat $10.00 Annual Discount!)'}
+                        </div>
+                        <p style={{fontSize: '0.82rem', color: 'var(--text-dim)', marginBottom: '18px', textAlign: 'center'}}>Cancel or adjust subscription directly inside your dashboard in a single click.</p>
                         <button className="main-button" style={{width: '100%'}} onClick={() => window.location.hash = "checkout"}>PROCEED</button>
                         <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => { window.history.replaceState(null, "", window.location.pathname + window.location.search); setShowLanding(true); setShowPricing(false); }}>CANCEL</button>
                       </div>
@@ -3401,7 +3406,7 @@ const handleEmergencyBurn = async () => {
                         <div className="pricing-features-list">
                           <div>
                             <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>✓</span>
-                            <span style={{ fontSize: '0.88rem', color: '#cbd5e1' }}><strong>6 Active Slots:</strong> Provision secure emails or phone relays.</span>
+                            <span style={{ fontSize: '0.88rem', color: '#cbd5e1' }}><strong>5 Active Slots:</strong> Provision secure emails or phone relays.</span>
                           </div>
                           <div>
                             <span style={{ color: 'var(--tiger-blue)', fontWeight: 'bold' }}>✓</span>
@@ -3575,41 +3580,82 @@ const handleEmergencyBurn = async () => {
                           )}
                         </div>
 
-                        {/* --- EXPLICIT DISCOUNTED TOTAL SUMMARY CARD --- */}
+                        {/* --- EXPLICIT ORDER SUMMARY & ANNUAL DISCOUNT CARD --- */}
+                        <div style={{
+                          background: 'rgba(5, 11, 24, 0.95)',
+                          border: '1px solid rgba(0, 210, 255, 0.35)',
+                          borderRadius: '10px',
+                          padding: '16px',
+                          marginTop: '20px',
+                          marginBottom: '15px',
+                          textAlign: 'left',
+                          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.4)'
+                        }}>
+                          <div style={{ fontSize: '0.78rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px', marginBottom: '10px' }}>
+                            💳 ORDER SUBSCRIPTION SUMMARY ({billingCycle.toUpperCase()})
+                          </div>
+
+                          {billingCycle === 'annual' ? (
+                            <>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem', color: '#CBD5E1', marginBottom: '6px' }}>
+                                <span>Standard Monthly Rate (12 x $19.99/mo):</span>
+                                <span style={{ textDecoration: 'line-through', color: '#94A3B8' }}>$239.88 / yr</span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem', color: '#34D399', fontWeight: 'bold', marginBottom: '8px' }}>
+                                <span>Annual Plan Flat Discount:</span>
+                                <span>-$10.00 FLAT SAVINGS</span>
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', fontWeight: 'bold', color: '#FFF', paddingTop: '8px', borderTop: '1px dashed rgba(0,210,255,0.3)' }}>
+                                <span>Discounted Annual Total:</span>
+                                <span style={{ color: '#00D2FF', fontSize: '1.15rem' }}>$229.88 / yr</span>
+                              </div>
+                              <div style={{ fontSize: '0.72rem', color: '#38BDF8', marginTop: '4px', textAlign: 'right' }}>
+                                (Equivalent to $19.15/mo billed annually)
+                              </div>
+                            </>
+                          ) : (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', fontWeight: 'bold', color: '#FFF' }}>
+                              <span>Monthly Total (Cancel Anytime):</span>
+                              <span style={{ color: '#00D2FF', fontSize: '1.15rem' }}>$19.99 / mo</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* --- EXPLICIT DISCOUNTED TOTAL SUMMARY CARD FOR COUPONS --- */}
                         {appliedCoupon && (
                           <div style={{
                             background: 'rgba(16, 185, 129, 0.08)',
                             border: '1px solid #10B981',
                             borderRadius: '10px',
                             padding: '14px 16px',
-                            marginTop: '16px',
-                            marginBottom: '5px',
+                            marginTop: '10px',
+                            marginBottom: '15px',
                             textAlign: 'left',
                             boxShadow: '0 0 15px rgba(16, 185, 129, 0.2)'
                           }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                              <span style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: 'bold', letterSpacing: '0.5px' }}>COUPON APPLIED:</span>
+                              <span style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: 'bold', letterSpacing: '0.5px' }}>PROMO COUPON APPLIED:</span>
                               <span style={{ fontSize: '0.82rem', color: '#34D399', fontWeight: 'bold', background: 'rgba(16,185,129,0.2)', border: '1px solid #10B981', padding: '2px 8px', borderRadius: '4px' }}>
                                 🎟️ {appliedCoupon.code || couponInput.toUpperCase()} ({appliedCoupon.discount_percent || appliedCoupon.discount_pct || 0}% OFF)
                               </span>
                             </div>
                             
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.84rem', marginBottom: '4px' }}>
-                              <span style={{ color: '#CBD5E1' }}>Regular Price:</span>
+                              <span style={{ color: '#CBD5E1' }}>Pre-Coupon Subtotal:</span>
                               <span style={{ color: '#94A3B8', textDecoration: 'line-through' }}>
-                                ${(appliedCoupon.original_price || (billingCycle === 'annual' ? 15.99 : 19.99)).toFixed(2)}/mo
+                                ${(appliedCoupon.original_price || (billingCycle === 'annual' ? 19.15 : 19.99)).toFixed(2)}/mo
                               </span>
                             </div>
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.84rem', marginBottom: '6px' }}>
                               <span style={{ color: '#34D399', fontWeight: 'bold' }}>Coupon Savings:</span>
                               <span style={{ color: '#34D399', fontWeight: 'bold' }}>
-                                -${(appliedCoupon.savings || ((appliedCoupon.original_price || (billingCycle === 'annual' ? 15.99 : 19.99)) - appliedCoupon.final_price)).toFixed(2)}/mo
+                                -${(appliedCoupon.savings || ((appliedCoupon.original_price || (billingCycle === 'annual' ? 19.15 : 19.99)) - appliedCoupon.final_price)).toFixed(2)}/mo
                               </span>
                             </div>
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.95rem', paddingTop: '8px', borderTop: '1px dashed rgba(16,185,129,0.3)', marginTop: '4px' }}>
-                              <strong style={{ color: '#FFF' }}>DISCOUNTED TOTAL:</strong>
+                              <strong style={{ color: '#FFF' }}>FINAL DISCOUNTED TOTAL:</strong>
                               <strong style={{ color: '#34D399', fontSize: '1.15rem' }}>
                                 ${appliedCoupon.final_price.toFixed(2)}/mo
                               </strong>
@@ -3621,7 +3667,7 @@ const handleEmergencyBurn = async () => {
                           className="main-button" 
                           style={{ 
                             width: '100%', 
-                            marginTop: '20px', 
+                            marginTop: '15px', 
                             display: 'flex', 
                             flexDirection: 'column',
                             justifyContent: 'center', 
@@ -3645,19 +3691,31 @@ const handleEmergencyBurn = async () => {
                             <><span className="cyberpunk-spinner"></span> INITIATING...</>
                           ) : appliedCoupon ? (
                             <>
-                              <span>⚡ CONFIRM & INITIATE ($${appliedCoupon.final_price.toFixed(2)}/mo)</span>
+                              <span>⚡ CONFIRM & INITIATE (${appliedCoupon.final_price.toFixed(2)}/mo)</span>
                               <span style={{ fontSize: '0.72rem', fontWeight: 'normal', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                 ✔ REFLECTS APPLIED COUPON DISCOUNT
                               </span>
                             </>
+                          ) : billingCycle === 'annual' ? (
+                            <>
+                              <span>⚡ CONFIRM & INITIATE ($229.88/yr)</span>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 'normal', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                ✔ INCLUDES $10.00 FLAT ANNUAL DISCOUNT
+                              </span>
+                            </>
                           ) : (
-                            '⚡ CONFIRM & INITIATE'
+                            <>
+                              <span>⚡ CONFIRM & INITIATE ($19.99/mo)</span>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 'normal', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                ✔ MONTHLY SUBSCRIPTION (CANCEL ANYTIME)
+                              </span>
+                            </>
                           )}
                         </button>
                         
                         {appliedCoupon && (
                           <p style={{ fontSize: '0.78rem', color: '#34D399', margin: '8px 0 0 0', textAlign: 'center', fontWeight: 'bold' }}>
-                            ✔ Coupon Applied: -${(appliedCoupon.savings || ((appliedCoupon.original_price || (billingCycle === 'annual' ? 15.99 : 19.99)) - appliedCoupon.final_price)).toFixed(2)}/mo savings applied to your order ({appliedCoupon.code || couponInput.toUpperCase()})
+                            ✔ Coupon Applied: -${(appliedCoupon.savings || ((appliedCoupon.original_price || (billingCycle === 'annual' ? 19.15 : 19.99)) - appliedCoupon.final_price)).toFixed(2)}/mo savings applied to your order ({appliedCoupon.code || couponInput.toUpperCase()})
                           </p>
                         )}
 
