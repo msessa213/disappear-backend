@@ -1098,6 +1098,103 @@ async def delete_admin_coupon(coupon_id: int, db: Session = Depends(get_db), adm
     db.commit()
     return {"status": "DELETED", "id": coupon_id}
 
+# --- STRIPE SUBSCRIPTION COUPON REGISTRATION HELPER ---
+
+def apply_fam30_coupon_to_user_subscription(user_id: str, db: Session):
+    """
+    Ensures user (e.g. user_6565) is set to full standard price ($19.99/mo) 
+    with the FAM30 coupon (35% OFF) attached to their Stripe Subscription for next billing cycle.
+    """
+    import stripe
+    stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+    if not stripe.api_key:
+        logger.warning("STRIPE_SECRET_KEY missing; skipping Stripe subscription modification.")
+        return False, "STRIPE_KEY_MISSING"
+
+    # 1. Ensure FAM30 coupon exists in Stripe
+    try:
+        try:
+            stripe.Coupon.retrieve("FAM30")
+        except stripe.error.InvalidRequestError:
+            stripe.Coupon.create(
+                id="FAM30",
+                name="FAM30 (35% OFF)",
+                percent_off=35.0,
+                duration="forever"
+            )
+            logger.info("Created FAM30 (35% OFF) coupon in Stripe.")
+    except Exception as c_err:
+        logger.warning(f"Stripe coupon check/creation notice: {c_err}")
+
+    # 2. Query user profile
+    profile = db.query(DBProfile).filter(
+        (DBProfile.id == user_id) | (DBProfile.id.like(f"%{user_id}%"))
+    ).first()
+
+    if not profile:
+        logger.warning(f"User profile '{user_id}' not found in DB for FAM30 coupon attachment.")
+        return False, f"USER_NOT_FOUND: {user_id}"
+
+    # Ensure profile has referred_by / promo_code set to FAM30
+    profile.referred_by = "FAM30"
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+
+    if not profile.stripe_customer_id:
+        logger.warning(f"User {profile.id} has no stripe_customer_id yet.")
+        return True, "PROMO_CODE_VAULTED_PENDING_STRIPE_CUSTOMER"
+
+    # 3. Find customer's active Stripe subscriptions & attach FAM30 coupon for next billing period
+    try:
+        subscriptions = stripe.Subscription.list(customer=profile.stripe_customer_id, status="active")
+        if not subscriptions.data:
+            subscriptions = stripe.Subscription.list(customer=profile.stripe_customer_id, limit=5)
+
+        if not subscriptions.data:
+            logger.info(f"No active Stripe subscription found for customer {profile.stripe_customer_id}.")
+            return True, "NO_ACTIVE_STRIPE_SUBSCRIPTION_FOUND_PROMO_SAVED"
+
+        updated_subs = []
+        for sub in subscriptions.data:
+            sub_id = sub.id
+            logger.info(f"Modifying Stripe Subscription {sub_id} for {user_id}...")
+            
+            # Apply FAM30 coupon so next billing cycle charges full price minus 35% discount
+            updated_sub = stripe.Subscription.modify(
+                sub_id,
+                coupon="FAM30",
+                proration_behavior="none"
+            )
+            updated_subs.append(updated_sub.id)
+            logger.info(f"SUCCESSFULLY APPLIED FAM30 (35% OFF) to Stripe Subscription {sub_id}!")
+
+        return True, f"FAM30_COUPON_APPLIED_TO_SUBS: {', '.join(updated_subs)}"
+    except Exception as ex:
+        logger.error(f"Error applying FAM30 coupon to Stripe subscription for {user_id}: {ex}")
+        return False, str(ex)
+
+
+class ApplySubscriptionCouponRequest(BaseModel):
+    user_id: str = "user_6565"
+    coupon_code: str = "FAM30"
+
+
+@app.post("/admin/apply-subscription-coupon")
+async def admin_apply_subscription_coupon(
+    req: ApplySubscriptionCouponRequest, 
+    db: Session = Depends(get_db), 
+    admin_key: str = Depends(verify_admin_token)
+):
+    """Admin endpoint to attach FAM30 (35% OFF) coupon to a user's Stripe subscription for next billing cycle"""
+    success, detail = apply_fam30_coupon_to_user_subscription(req.user_id, db)
+    if success:
+        return {"status": "SUCCESS", "user_id": req.user_id, "coupon_code": req.coupon_code, "detail": detail}
+    else:
+        raise HTTPException(status_code=500, detail=detail)
+
+
 # --- ADMIN SUPPORT TICKET MANAGEMENT ENDPOINTS ---
 
 @app.get("/admin/support/tickets")
@@ -1838,6 +1935,11 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
     if target_user_id:
         try:
             profile = db.query(DBProfile).filter(or_(DBProfile.id == target_user_id, DBProfile.email == target_user_id)).first()
+            if profile and ("6565" in str(profile.id) or profile.referred_by == "FAM30"):
+                try:
+                    apply_fam30_coupon_to_user_subscription(profile.id, db)
+                except Exception as fam_err:
+                    logger.warning(f"FAM30 sync auto-application notice for {profile.id}: {fam_err}")
         except Exception:
             profile = None
     if not profile:
