@@ -4376,7 +4376,26 @@ async def twilio_incoming_sms(
         logger.warning(f"TWILIO_SMS_NO_DESTINATION: Captured SMS in Vault for line {To} owned by {target_uid}, but no physical mobile phone is linked.")
         return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response/>', media_type="application/xml")
         
-    message_content = f"DISAPPEAR SMS [From {From}]: {Body}"
+    def format_phone_display(raw_num: str) -> str:
+        if not raw_num: return "Unknown"
+        digits = "".join(filter(str.isdigit, raw_num))
+        if len(digits) == 11 and digits.startswith("1"):
+            return f"+1 ({digits[1:4]}) {digits[4:7]}-{digits[7:]}"
+        elif len(digits) == 10:
+            return f"+1 ({digits[0:3]}) {digits[3:6]}-{digits[6:]}"
+        return raw_num
+
+    sender_display = format_phone_display(From)
+    recipient_line_display = format_phone_display(To)
+    alias_name = alias.label if (alias and alias.label) else (f"Virtual Line {clean_to[-4:]}" if clean_to else "Relay Slot")
+
+    message_content = (
+        f"📱 DISAPPEAR RELAY SMS\n"
+        f"• FROM: {sender_display}\n"
+        f"• FOR LINE: {recipient_line_display} ({alias_name})\n"
+        f"──────────────────\n"
+        f"{Body}"
+    )
     
     # Credit Firewall check: Protect baseline margin & prevent runaway telecom costs
     current_credits = getattr(profile, 'relay_credits', 500) if profile else 500
