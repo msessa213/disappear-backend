@@ -4299,7 +4299,14 @@ async def send_user_sms_reply(req: SMSReplyRequest, db: Session = Depends(get_db
             db.commit()
         except Exception:
             pass
-        return {"status": "success", "detail": f"Message sent successfully to {target_to}", "from_phone": sender_display}
+        return {
+            "status": "success",
+            "detail": f"Message sent successfully from {sender_display} to {target_to}",
+            "from_phone": sender_display,
+            "to_phone": target_to,
+            "message": req.message.strip(),
+            "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        }
     else:
         raise HTTPException(status_code=500, detail="TWILIO_DELIVERY_FAILED: Carrier rejected message or sender number is unverified.")
 

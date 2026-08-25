@@ -1061,9 +1061,9 @@ function App() {
       });
       const data = await res.json();
       if (res.ok) {
-        triggerToast(`✅ SMS DELIVERED TO ${formattedTo}!`);
-        
         const actualSender = data.from_phone || senderFrom || "+15855802036";
+        triggerToast(`✅ SMS DELIVERED! (From: ${actualSender} ➔ To: ${formattedTo})`);
+        
         const newOutboundItem = {
           id: `out_${Date.now()}`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
