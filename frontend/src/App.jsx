@@ -1229,8 +1229,18 @@ function App() {
     if (window.location.hash) {
       window.history.replaceState(null, "", window.location.pathname + window.location.search);
     }
+    
+    // Auto-Scroll to Top of Home Landing Page
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    try {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    } catch (e) {}
+
     triggerToast("🚪 SECURE LOGOUT COMPLETE");
   };
+
+  const handleLogout = handleSecureLogout;
 
   const handleRefillCredits = async () => {
     setIsRefillingCredits(true);
