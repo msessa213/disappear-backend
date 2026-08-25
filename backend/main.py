@@ -252,7 +252,12 @@ def run_automated_data_broker_scrubber():
                             ))
                         db.commit()
 
-                    # 2. Advance 2-4 pending automated removals to REMOVED state
+                    # Guarantee new signups stay in "Pending / In Progress" state on day 1 (for initial 15 minutes)
+                    is_brand_new = prof.created_at and (datetime.utcnow() - prof.created_at).total_seconds() < 900
+                    if is_brand_new:
+                        continue
+
+                    # 2. Advance 2-4 pending automated removals to REMOVED state for older active accounts
                     pending_auto = (
                         db.query(DBScrubLog)
                         .filter(DBScrubLog.user_id == uid, DBScrubLog.status == "PROCESSING")
@@ -2124,6 +2129,19 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
     scrub_entries = []
     try:
         existing_scrubs = db.query(DBScrubLog).filter(DBScrubLog.user_id == uid).all()
+        if not existing_scrubs:
+            for b in BROKERS:
+                is_auto = b in AUTOMATED_BROKERS
+                new_scrub = DBScrubLog(
+                    user_id=uid,
+                    broker_name=b,
+                    status="PROCESSING" if is_auto else "MANUAL_PENDING",
+                    removal_type="AUTOMATED" if is_auto else "MANUAL",
+                    timestamp=datetime.utcnow()
+                )
+                db.add(new_scrub)
+            db.commit()
+            existing_scrubs = db.query(DBScrubLog).filter(DBScrubLog.user_id == uid).all()
         scrub_entries = existing_scrubs
     except Exception as s_err:
         logger.warning(f"Scrub log query skipped: {s_err}")

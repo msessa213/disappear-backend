@@ -318,6 +318,16 @@ function App() {
   const [progress, setProgress] = useState(15);
   const [showToast, setShowToast] = useState("");
   
+  const [scrubStats, setScrubStats] = useState({
+    total_brokers: 33,
+    removed: 0,
+    processing: 25,
+    manual_pending: 8,
+    progress_pct: 0
+  });
+  const [dataBrokers, setDataBrokers] = useState([]);
+  const [brokerFilter, setBrokerFilter] = useState("ALL");
+
   const [targetEmails, setTargetEmails] = useState({ primary: "", additional: [], slots: 1, used: 0 });
   const [newTargetEmail, setNewTargetEmail] = useState("");
   const [referralData, setReferralData] = useState({
@@ -491,7 +501,15 @@ function App() {
         setReferralData(prev => isStructurallyEqual(prev, data.referrals) ? prev : data.referrals);
       }
 
-      // 10. Sync Live SMS Inbox
+      // 10. Map Live Data Broker Scrub Statistics & Registry List
+      if (data.scrub_stats) {
+        setScrubStats(prev => isStructurallyEqual(prev, data.scrub_stats) ? prev : data.scrub_stats);
+      }
+      if (Array.isArray(data.data_brokers)) {
+        setDataBrokers(prev => isStructurallyEqual(prev, data.data_brokers) ? prev : data.data_brokers);
+      }
+
+      // 11. Sync Live SMS Inbox
       fetchSmsInbox();
       fetchSmsInbox();
     } catch (err) { 
@@ -3136,6 +3154,128 @@ const handleEmergencyBurn = async () => {
                   
                   <div style={{ fontSize: '0.82rem', color: '#94A3B8', textAlign: 'center', marginTop: '12px', fontWeight: 'bold' }}>
                     EXTRA EMAIL SLOTS USED: {targetEmails.used} / {targetEmails.slots}
+                  </div>
+                </div>
+
+                {/* --- LIVE DATA BROKER SCRUB QUEUE & MONITOR --- */}
+                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
+                  <p className="tool-label" style={{ textAlign: 'center', marginBottom: '12px' }}>🛡️ DATA BROKER PURGE QUEUE (33+ REGISTRIES)</p>
+                  
+                  {/* Overall Purge Cycle Status Banner */}
+                  <div style={{
+                    background: scrubStats.removed === 0 ? 'rgba(245, 158, 11, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+                    border: scrubStats.removed === 0 ? '1px solid #F59E0B' : '1px solid #10B981',
+                    color: scrubStats.removed === 0 ? '#FCD34D' : '#10B981',
+                    padding: '12px 14px',
+                    borderRadius: '8px',
+                    marginBottom: '14px',
+                    textAlign: 'left'
+                  }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '4px', letterSpacing: '0.5px' }}>
+                      {scrubStats.removed === 0 ? "🟡 INITIAL PRIVACY PURGE QUEUED | REMOVALS IN PROGRESS" : `🟢 ACTIVE PURGE CYCLE | ${scrubStats.removed} OF ${scrubStats.total_brokers || 33} BROKERS SCRUBBED`}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', opacity: 0.9, lineHeight: '1.4' }}>
+                      {scrubStats.removed === 0 
+                        ? "Your target profile has been dispatched to 33+ major data broker opt-out endpoints. Automated crawlers and human privacy analysts are actively processing opt-out filings."
+                        : `Continuous background scrubbers have finalized ${scrubStats.removed} verified removals (${scrubStats.progress_pct}% complete).`}
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div style={{ width: '100%', height: '8px', background: 'rgba(0,0,0,0.5)', borderRadius: '4px', overflow: 'hidden', marginTop: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      <div style={{ width: `${scrubStats.progress_pct || 0}%`, height: '100%', background: 'linear-gradient(90deg, #F59E0B, #10B981)', borderRadius: '4px', transition: 'width 0.4s ease' }} />
+                    </div>
+                  </div>
+
+                  {/* Summary Metric Counters */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '14px' }}>
+                    <div style={{ background: '#05070D', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '8px 10px', borderRadius: '6px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.65rem', color: '#FCD34D', display: 'block', fontWeight: 'bold' }}>IN PROGRESS</span>
+                      <strong style={{ fontSize: '1rem', color: '#FFF' }}>{scrubStats.processing || 0}</strong>
+                    </div>
+                    <div style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.3)', padding: '8px 10px', borderRadius: '6px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.65rem', color: '#00D2FF', display: 'block', fontWeight: 'bold' }}>MANUAL QUEUED</span>
+                      <strong style={{ fontSize: '1rem', color: '#FFF' }}>{scrubStats.manual_pending || 0}</strong>
+                    </div>
+                    <div style={{ background: '#05070D', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '8px 10px', borderRadius: '6px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.65rem', color: '#10B981', display: 'block', fontWeight: 'bold' }}>SCRUBBED</span>
+                      <strong style={{ fontSize: '1rem', color: '#FFF' }}>{scrubStats.removed || 0}</strong>
+                    </div>
+                  </div>
+
+                  {/* Filter Toggles */}
+                  <div style={{ display: 'flex', gap: '5px', marginBottom: '12px' }}>
+                    {["ALL", "PROCESSING", "REMOVED"].map(f => (
+                      <button
+                        key={f}
+                        onClick={() => setBrokerFilter(f)}
+                        style={{
+                          flex: 1,
+                          padding: '6px 0',
+                          fontSize: '0.75rem',
+                          fontWeight: 'bold',
+                          borderRadius: '4px',
+                          border: brokerFilter === f ? '1px solid #00D2FF' : '1px solid #1e293b',
+                          background: brokerFilter === f ? 'rgba(0, 71, 171, 0.3)' : '#05070D',
+                          color: brokerFilter === f ? '#00D2FF' : '#94A3B8',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {f === "PROCESSING" ? "IN PROGRESS" : f}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Data Broker Items Grid List */}
+                  <div style={{ maxHeight: '240px', overflowY: 'auto', background: '#05070D', border: '1px solid rgba(0,210,255,0.2)', borderRadius: '8px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {(dataBrokers || [])
+                      .filter(b => {
+                        if (brokerFilter === "REMOVED") return b.status === "REMOVED";
+                        if (brokerFilter === "PROCESSING") return b.status !== "REMOVED";
+                        return true;
+                      })
+                      .map((b, bIdx) => {
+                        const isRemoved = b.status === "REMOVED";
+                        const isSubpoena = b.status === "SUBPOENA_FILED";
+                        const isManual = b.status === "MANUAL_PENDING";
+
+                        let badgeColor = "#FCD34D";
+                        let badgeBg = "rgba(245, 158, 11, 0.15)";
+                        let badgeBorder = "rgba(245, 158, 11, 0.4)";
+                        let statusText = "🟡 REMOVAL IN PROGRESS";
+
+                        if (isRemoved) {
+                          badgeColor = "#10B981";
+                          badgeBg = "rgba(16, 185, 129, 0.15)";
+                          badgeBorder = "rgba(16, 185, 129, 0.4)";
+                          statusText = "✅ SCRUBBED & VERIFIED";
+                        } else if (isSubpoena) {
+                          badgeColor = "#C084FC";
+                          badgeBg = "rgba(192, 132, 252, 0.15)";
+                          badgeBorder = "rgba(192, 132, 252, 0.4)";
+                          statusText = "📜 SUBPOENA DISPATCHED";
+                        } else if (isManual) {
+                          badgeColor = "#00D2FF";
+                          badgeBg = "rgba(0, 210, 255, 0.15)";
+                          badgeBorder = "rgba(0, 210, 255, 0.4)";
+                          statusText = "⏳ LEGAL OPT-OUT QUEUED";
+                        }
+
+                        return (
+                          <div key={b.id || bIdx} style={{ background: '#0a0f1d', border: '1px solid #1e293b', borderRadius: '6px', padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ textAlign: 'left' }}>
+                              <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: '#FFFFFF', letterSpacing: '0.5px', display: 'block' }}>
+                                {b.broker_name.toUpperCase()}
+                              </span>
+                              <span style={{ fontSize: '0.68rem', color: '#94A3B8' }}>
+                                {b.removal_type === "AUTOMATED" ? "🤖 AUTOMATED DIRECT OPT-OUT" : "👤 HUMAN ANALYST DISPATCH"}
+                              </span>
+                            </div>
+                            <span style={{ fontSize: '0.68rem', color: badgeColor, background: badgeBg, border: `1px solid ${badgeBorder}`, padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                              {statusText}
+                            </span>
+                          </div>
+                        );
+                      })}
                   </div>
                 </div>
 
