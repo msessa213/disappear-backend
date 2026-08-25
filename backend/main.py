@@ -2561,32 +2561,6 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
                 # --- REFERRAL MILESTONE REWARD LOGIC ---
                 if profile.referred_by:
                     attribute_referral_signup(profile.id, profile.referred_by, db)
-
-                            # Milestone threshold check: Every 5 successful referrals unlocks 1 free month
-                            if referrer.referral_count % 5 == 0:
-                                referrer.free_months_earned = (referrer.free_months_earned or 0) + 1
-                                logger.info(f"REFERRAL_MILESTONE: Referrer '{referrer.id}' reached {referrer.referral_count} referrals! Earned 1 free month (Total: {referrer.free_months_earned})")
-
-                                # Apply Stripe balance transaction reward ($19.99 credit = 1 free billing cycle)
-                                if referrer.stripe_customer_id:
-                                    try:
-                                        stripe.Customer.create_balance_transaction(
-                                            referrer.stripe_customer_id,
-                                            amount=-1999,  # $19.99 credit applied to Stripe customer profile
-                                            currency="usd",
-                                            description="1 Free Month Service Reward (5 Successful Referrals Milestone)"
-                                        )
-                                        logger.info(f"STRIPE_REWARD_APPLIED: $19.99 credit balance transaction applied to referrer Stripe Customer {referrer.stripe_customer_id}")
-                                    except Exception as st_err:
-                                        logger.error(f"STRIPE_REWARD_ERROR: Failed to apply balance credit to {referrer.stripe_customer_id}: {st_err}")
-
-                                db.add(DBPurgeLog(
-                                    action_type="REFERRAL_MILESTONE_UNLOCKED",
-                                    node_id=f"REFERRER_{referrer.id}_REWARD_{referrer.free_months_earned}",
-                                    timestamp=datetime.utcnow()
-                                ))
-
-                            db.add(referrer)
                 
             else:
                 action = "COOLDOWN_BYPASS_PURCHASED"
@@ -3264,7 +3238,7 @@ def attribute_referral_signup(new_user_id: str, referrer_ref_code_or_id: str, db
             DBPurgeLog.action_type == "REFERRAL_CREDITED",
             DBPurgeLog.timestamp >= first_day_of_month,
             DBPurgeLog.node_id.in_([
-                f"REFERRED_{p.id}" for p in db.query(DBProfile.id).filter(DBProfile.referred_by == referrer.referral_code).all()
+                f"REFERRED_{p[0]}" for p in db.query(DBProfile.id).filter(DBProfile.referred_by == referrer.referral_code).all()
             ] if referrer.referral_code else [])
         ).count() + 1
 
