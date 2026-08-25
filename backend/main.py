@@ -987,6 +987,92 @@ async def get_admin_stats(db: Session = Depends(get_db), admin_key: str = Depend
         "last_purge": datetime.now().strftime("%Y-%m-%d %H:%M")
     }
 
+@app.get("/admin/users/list")
+async def list_admin_users(
+    query: Optional[str] = Query(None),
+    limit: int = Query(50),
+    db: Session = Depends(get_db),
+    admin_key: str = Depends(verify_admin_token)
+):
+    """Admin Endpoint: List recent profiles with referral metadata"""
+    q = db.query(DBProfile)
+    if query:
+        clean_q = query.strip()
+        q = q.filter(
+            or_(
+                DBProfile.id.ilike(f"%{clean_q}%"),
+                DBProfile.email.ilike(f"%{clean_q}%"),
+                DBProfile.first_name.ilike(f"%{clean_q}%"),
+                DBProfile.last_name.ilike(f"%{clean_q}%"),
+                DBProfile.referral_code.ilike(f"%{clean_q}%"),
+                DBProfile.referred_by.ilike(f"%{clean_q}%")
+            )
+        )
+    profiles = q.order_by(desc(DBProfile.created_at)).limit(limit).all()
+    results = []
+    for p in profiles:
+        results.append({
+            "id": p.id,
+            "email": p.email,
+            "first_name": p.first_name,
+            "last_name": p.last_name,
+            "referral_code": p.referral_code,
+            "referred_by": p.referred_by,
+            "referral_count": p.referral_count or 0,
+            "free_months_earned": p.free_months_earned or 0,
+            "kyc_status": p.kyc_status,
+            "created_at": p.created_at.strftime("%Y-%m-%d %H:%M") if p.created_at else None
+        })
+    return {"total": len(results), "users": results}
+
+
+class AdminSetReferralCountRequest(BaseModel):
+    user_id: str
+    count: int = 4
+
+
+@app.post("/admin/users/set-referrals")
+async def admin_set_referral_count(
+    req: AdminSetReferralCountRequest,
+    db: Session = Depends(get_db),
+    admin_key: str = Depends(verify_admin_token)
+):
+    """Admin Endpoint: Updates referral_count for a profile in the DB"""
+    prof = db.query(DBProfile).filter(
+        or_(
+            DBProfile.id == req.user_id,
+            DBProfile.email.ilike(req.user_id.strip()),
+            DBProfile.referral_code == req.user_id.strip().upper()
+        )
+    ).first()
+    if not prof:
+        raise HTTPException(status_code=404, detail=f"User {req.user_id} not found")
+
+    old_count = prof.referral_count or 0
+    prof.referral_count = req.count
+    if req.count >= 5 and old_count < 5:
+        prof.free_months_earned = (prof.free_months_earned or 0) + 1
+        prof.bonus_credits = (prof.bonus_credits or 0) + 250
+        prof.relay_credits = (prof.relay_credits or 500) + 250
+
+    try:
+        db.add(prof)
+        db.commit()
+        db.refresh(prof)
+        logger.info(f"ADMIN_REFERRAL_COUNT_UPDATED: Set referral_count for {prof.id} ({prof.email}) from {old_count} to {prof.referral_count}")
+        return {
+            "status": "SUCCESS",
+            "user_id": prof.id,
+            "email": prof.email,
+            "referral_code": prof.referral_code,
+            "old_referral_count": old_count,
+            "new_referral_count": prof.referral_count
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/admin/test-sms")
 async def test_sms_sending(req: SMSTestRequest, admin_key: str = Depends(verify_admin_token)):
     """Admin endpoint to test Twilio SMS sending functionality."""
