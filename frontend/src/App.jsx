@@ -979,13 +979,6 @@ function App() {
     });
     if (phoneObj && phoneObj.label) return ` [${phoneObj.label}]`;
 
-    const aliasObj = (aliases || []).find(a => {
-      if (a.type !== "phone") return false;
-      const num = (a.content || a.number || "").replace(/\D/g, "");
-      return num && (num === cleanNum || cleanNum.endsWith(num) || num.endsWith(cleanNum));
-    });
-    if (aliasObj && aliasObj.label) return ` [${aliasObj.label}]`;
-
     return "";
   };
 
@@ -2670,7 +2663,7 @@ const handleEmergencyBurn = async () => {
                             }}
                           >
                             <option value="">-- DEFAULT MASTER LINE (+15855802036) --</option>
-                            {(phones && phones.length > 0 ? phones : (aliases || []).filter(a => a.type === 'phone')).map((p, pIdx) => {
+                            {(phones || []).map((p, pIdx) => {
                               const numVal = p.content || p.number || p;
                               const labelVal = p.label ? `${p.label} (${numVal})` : numVal;
                               return (
