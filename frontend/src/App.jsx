@@ -2421,6 +2421,71 @@ const handleEmergencyBurn = async () => {
                 
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative', border: '1px solid var(--tiger-blue)' }}>
                   <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>EMAIL PROTECTION</p>
+                  
+                  {/* --- UNMISSABLE ADDY.IO EMAIL VERIFICATION CALLOUT BANNER --- */}
+                  {addyRecipientStatus === "PENDING_VERIFICATION" && (
+                    <div style={{
+                      background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(217, 119, 6, 0.3) 100%)',
+                      border: '2px solid #F59E0B',
+                      borderRadius: '12px',
+                      padding: '18px 20px',
+                      marginBottom: '20px',
+                      textAlign: 'left',
+                      boxShadow: '0 0 30px rgba(245, 158, 11, 0.4)',
+                      boxSizing: 'border-box'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '1.5rem' }}>📩</span>
+                        <div>
+                          <h4 style={{ margin: 0, color: '#FCD34D', fontSize: '1.05rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                            ACTION REQUIRED: VERIFY YOUR EMAIL ADDRESS
+                          </h4>
+                          <p style={{ margin: '2px 0 0 0', color: '#FFF', fontSize: '0.82rem', fontWeight: 'bold' }}>
+                            Verification Link Sent To: <span style={{ color: '#00D2FF', textDecoration: 'underline' }}>{addyRecipientEmail || "Your Registered Email"}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <p style={{ color: '#E2E8F0', fontSize: '0.85rem', lineHeight: '1.5', margin: '0 0 12px 0' }}>
+                        Your email alias forwarding is <strong>currently pending verification</strong> from Addy.io. Please open your email inbox (and check <strong>Spam/Junk</strong> folder) for an email from <code>noreply@addy.io</code> and click <strong>"Verify Email Address"</strong>.
+                      </p>
+
+                      <div style={{ 
+                        background: 'rgba(5, 11, 20, 0.85)', 
+                        borderLeft: '4px solid #F59E0B', 
+                        padding: '10px 14px', 
+                        borderRadius: '6px', 
+                        marginBottom: '14px',
+                        fontSize: '0.80rem',
+                        color: '#00D2FF',
+                        lineHeight: '1.45'
+                      }}>
+                        💡 <strong>IMPORTANT VERIFICATION NOTE:</strong> Clicking your email verification link authorizes forwarding. If prompted on the verification page, <u>you do NOT need to log into Addy.io</u>—simply close that browser tab and return to Disappear!
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <button 
+                          type="button" 
+                          className="main-button" 
+                          style={{ padding: '10px 18px', fontSize: '0.82rem', fontWeight: 'bold', background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', border: 'none', color: '#FFF', boxShadow: '0 0 15px rgba(245, 158, 11, 0.4)', cursor: 'pointer' }}
+                          onClick={handleResendAddyVerification}
+                          disabled={isResendingAddyVerification}
+                        >
+                          {isResendingAddyVerification ? "DISPATCHING..." : "📩 RESEND VERIFICATION EMAIL"}
+                        </button>
+                        <button 
+                          type="button" 
+                          className="reset-btn" 
+                          style={{ padding: '10px 16px', fontSize: '0.82rem', fontWeight: 'bold', borderColor: '#F59E0B', color: '#FCD34D', cursor: 'pointer' }}
+                          onClick={() => checkAddyRecipientStatus(true)}
+                          disabled={isCheckingAddyStatus}
+                        >
+                          {isCheckingAddyStatus ? "CHECKING..." : "🔄 RE-CHECK VERIFICATION STATUS"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="alias-manager-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
                     {emails.map((e) => (
                       <div key={e.id} style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.25)', padding: '14px 16px', borderRadius: '10px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
@@ -3204,95 +3269,6 @@ const handleEmergencyBurn = async () => {
               <div className="onboarding-flow">
                 {(show2FA || (!showPricing && !showCheckout && !isScanning)) && (
                   <div className="fade-in" style={{ maxWidth: '480px', margin: '0 auto', width: '100%' }}>
-                    {/* --- HERO CALL TO ACTION & PII SCRUB INFORMATION --- */}
-                    <div style={{
-                      background: 'linear-gradient(145deg, rgba(9, 13, 22, 0.95) 0%, rgba(3, 7, 18, 0.98) 100%)',
-                      border: '1px solid #00D2FF',
-                      borderRadius: '16px',
-                      padding: '24px 20px',
-                      marginBottom: '25px',
-                      boxShadow: '0 0 35px rgba(0, 210, 255, 0.25)',
-                      textAlign: 'left',
-                      boxSizing: 'border-box'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                        <span style={{ fontSize: '1.6rem' }}>🛡️</span>
-                        <div>
-                          <h2 className="tiger-text" style={{ margin: 0, fontSize: '1.2rem', letterSpacing: '0.5px' }}>
-                            RECLAIM YOUR PRIVACY & ERASE YOUR TRAIL
-                          </h2>
-                          <p style={{ color: '#00D2FF', fontSize: '0.78rem', margin: '4px 0 0 0', fontWeight: 'bold' }}>
-                            Proprietary PII (Personally Identifiable Information) Scrubbing Engine // Global Data Broker Coverage
-                          </p>
-                        </div>
-                      </div>
-
-                      <p style={{ fontSize: '0.84rem', color: '#E2E8F0', lineHeight: '1.55', marginBottom: '18px' }}>
-                        Your identity is a target. In 2026, data brokers weaponize your <strong>PII (Personally Identifiable Information)</strong> for profit. <strong>Disappear</strong> is the tactical identity security counter-measure brought to you by <strong>DFS 213 LLC</strong> to scorch your digital trail and replace exposure with synthetic privacy.
-                      </p>
-
-                      {/* Hero CTA Button */}
-                      <button 
-                        type="button"
-                        className="main-button"
-                        style={{ 
-                          width: '100%', 
-                          padding: '16px', 
-                          fontSize: '1.05rem', 
-                          fontWeight: 'bold', 
-                          letterSpacing: '1px',
-                          background: 'linear-gradient(135deg, #00D2FF 0%, #0047AB 100%)',
-                          boxShadow: '0 0 25px rgba(0, 210, 255, 0.4)',
-                          border: 'none',
-                          cursor: 'pointer'
-                        }}
-                        onClick={() => {
-                          triggerToast("⚡ NEW CUSTOMERS: SIGN UP HERE TO INITIATE YOUR IDENTITY SCRUB");
-                          window.location.hash = "pricing";
-                        }}
-                      >
-                        ⚡ INITIATE IDENTITY SCRUB
-                      </button>
-
-                      {/* NEW CUSTOMERS SIGN UP HERE DIRECT LINK / SUBTEXT */}
-                      <div style={{ textAlign: 'center', marginTop: '10px', marginBottom: '18px' }}>
-                        <span 
-                          style={{ 
-                            color: '#FFD700', 
-                            fontSize: '0.84rem', 
-                            fontWeight: 'bold', 
-                            cursor: 'pointer', 
-                            textDecoration: 'underline',
-                            letterSpacing: '0.5px'
-                          }}
-                          onClick={() => {
-                            triggerToast("⚡ NEW CUSTOMERS SIGN UP HERE");
-                            window.location.hash = "pricing";
-                          }}
-                        >
-                          👉 NEW CUSTOMERS SIGN UP HERE TO INITIATE SCRUB
-                        </span>
-                      </div>
-
-                      {/* PII (Personally Identifiable Information) Explanation Box */}
-                      <div style={{ 
-                        background: '#050B14', 
-                        border: '1px solid #1E293B', 
-                        borderRadius: '10px', 
-                        padding: '14px 16px' 
-                      }}>
-                        <h4 style={{ color: '#00D2FF', margin: '0 0 6px 0', fontSize: '0.86rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          🛡️ WHAT IS PII (PERSONALLY IDENTIFIABLE INFORMATION) & WHY SCRUBBING PROTECTS YOU:
-                        </h4>
-                        <p style={{ fontSize: '0.80rem', color: '#CBD5E1', margin: '0 0 8px 0', lineHeight: '1.45' }}>
-                          <strong>PII (Personally Identifiable Information)</strong> encompasses your <strong>real legal name, physical home address, personal phone number, date of birth, family/relative connections, and email history</strong>.
-                        </p>
-                        <p style={{ fontSize: '0.76rem', color: '#94A3B8', margin: 0, lineHeight: '1.4' }}>
-                          Public data brokers (such as Whitepages, Spokeo, BeenVerified, and LexisNexis) collect and sell your PII online to telemarketers, scammers, doxxers, and background search sites. Disappear's automated engine and human privacy analysts legally force these registries to eradicate your PII permanently.
-                        </p>
-                      </div>
-                    </div>
-
                     <div className="pricing-card" style={{ width: '100%' }}>
                       <div className="price-box" style={{ padding: '30px 25px' }}>
                       <div className="billing-toggle" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', width: '100%', marginBottom: '20px' }}>
