@@ -1271,30 +1271,12 @@ async def validate_customer_coupon(req: ValidateCouponRequest, db: Session = Dep
             except Exception:
                 db.rollback()
 
-    if not coupon and len(code_clean) < 3:
+    if not coupon:
         raise HTTPException(status_code=404, detail="INVALID_OR_EXPIRED_COUPON")
         
-    discount_type = coupon.discount_type if coupon else "percent"
-    default_val = 35.0 if code_clean == "FAM30" else 20.0
-    discount_value = coupon.discount_value if coupon else default_val
-    if code_clean == "FAM30":
-        discount_value = 35.0
-
-    duration = coupon.duration if coupon else "permanent"
-
-    if not coupon and len(code_clean) >= 3:
-        try:
-            new_c = DBCoupon(
-                code=code_clean,
-                discount_type="percent",
-                discount_value=discount_value,
-                duration="permanent",
-                active=True
-            )
-            db.add(new_c)
-            db.commit()
-        except Exception:
-            db.rollback()
+    discount_type = coupon.discount_type
+    discount_value = 35.0 if code_clean == "FAM30" else coupon.discount_value
+    duration = coupon.duration
 
     original = req.original_price if req.original_price else 19.99
     discount_amount = 0.0
@@ -2371,33 +2353,28 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
         
         applied_coupon_obj = None
         if coupon_code and len(coupon_code) >= 3:
-            applied_coupon_obj = db.query(DBCoupon).filter(DBCoupon.code == coupon_code, DBCoupon.active == True).first()
-            default_val = 35.0 if coupon_code == "FAM30" else 20.0
-            if not applied_coupon_obj:
-                try:
-                    applied_coupon_obj = DBCoupon(
-                        code=coupon_code,
-                        discount_type="percent",
-                        discount_value=default_val,
-                        duration="permanent",
-                        active=True
-                    )
-                    db.add(applied_coupon_obj)
-                    db.commit()
-                    db.refresh(applied_coupon_obj)
-                except Exception:
-                    applied_coupon_obj = db.query(DBCoupon).filter(DBCoupon.code == coupon_code).first()
-
-            if coupon_code == "FAM30" and applied_coupon_obj:
-                if applied_coupon_obj.discount_value != 35.0:
+            if coupon_code == "FAM30":
+                applied_coupon_obj = db.query(DBCoupon).filter(DBCoupon.code == "FAM30").first()
+                if not applied_coupon_obj:
+                    try:
+                        applied_coupon_obj = DBCoupon(code="FAM30", discount_type="percent", discount_value=35.0, duration="permanent", active=True)
+                        db.add(applied_coupon_obj)
+                        db.commit()
+                        db.refresh(applied_coupon_obj)
+                    except Exception:
+                        db.rollback()
+                        applied_coupon_obj = db.query(DBCoupon).filter(DBCoupon.code == "FAM30").first()
+                elif applied_coupon_obj.discount_value != 35.0:
                     applied_coupon_obj.discount_value = 35.0
                     try:
                         db.add(applied_coupon_obj)
                         db.commit()
                     except Exception:
                         db.rollback()
+            else:
+                applied_coupon_obj = db.query(DBCoupon).filter(DBCoupon.code == coupon_code, DBCoupon.active == True).first()
 
-            if applied_coupon_obj:
+            if applied_coupon_obj and applied_coupon_obj.active:
                 if applied_coupon_obj.discount_type == "percent":
                     discount_factor = max(0.0, 1.0 - (applied_coupon_obj.discount_value / 100.0))
                     unit_amount = max(50, int(unit_amount * discount_factor))
