@@ -213,7 +213,10 @@ function App() {
   const [confirmPasswordInput, setConfirmPasswordInput] = useState("");
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
-  const [addyRecipientStatus, setAddyRecipientStatus] = useState(null);
+  const [addyRecipientStatus, setAddyRecipientStatus] = useState(() => {
+    const activeUid = getSessionItem("disappear_user_id");
+    return activeUid ? (getSessionItem(`disappear_addy_verified_${activeUid}`) || null) : null;
+  });
   const [addyRecipientEmail, setAddyRecipientEmail] = useState("");
   const [isCheckingAddyStatus, setIsCheckingAddyStatus] = useState(false);
   const [isResendingAddyVerification, setIsResendingAddyVerification] = useState(false);
@@ -415,6 +418,10 @@ function App() {
                   };
                   return isStructurallyEqual(prev, updated) ? prev : updated;
               });
+          }
+          if (data.profile.addy_verified || data.profile.addy_status === "VERIFIED") {
+              setAddyRecipientStatus("VERIFIED");
+              if (activeUserId) setSessionItem(`disappear_addy_verified_${activeUserId}`, "VERIFIED");
           }
       }
 
@@ -1431,7 +1438,12 @@ function App() {
       if (res.ok) {
         const data = await res.json();
         const isVerified = Boolean(data.verified || data.status === "VERIFIED");
-        setAddyRecipientStatus(isVerified ? "VERIFIED" : "PENDING_VERIFICATION");
+        if (isVerified) {
+          setAddyRecipientStatus("VERIFIED");
+          setSessionItem(`disappear_addy_verified_${activeUserId}`, "VERIFIED");
+        } else if (addyRecipientStatus !== "VERIFIED") {
+          setAddyRecipientStatus("PENDING_VERIFICATION");
+        }
         if (data.email) setAddyRecipientEmail(data.email);
         
         if (showToastNotice) {

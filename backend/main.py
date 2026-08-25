@@ -175,9 +175,19 @@ try:
         with engine.begin() as conn:
             try:
                 conn.execute(text("SET default_transaction_read_only = off;"))
+                conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS addy_verified BOOLEAN DEFAULT FALSE;"))
             except Exception:
                 pass
     Base.metadata.create_all(bind=engine)
+    try:
+        with engine.begin() as conn:
+            if engine.dialect.name != "postgresql":
+                try:
+                    conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN addy_verified BOOLEAN DEFAULT 0;"))
+                except Exception:
+                    pass
+    except Exception:
+        pass
     logger.info("Database tables verified/created.")
     
     # Auto-seed FAM30 promo code (35% OFF)
@@ -2196,7 +2206,9 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
             "relay_credits_total": getattr(profile, 'relay_credits_total', 500) if getattr(profile, 'relay_credits_total', None) is not None else 500,
             "threat_level": "NOMINAL",
             "uptime": "99.998%",
-            "active_nodes": total_used 
+            "active_nodes": total_used,
+            "addy_verified": bool(getattr(profile, 'addy_verified', False)),
+            "addy_status": "VERIFIED" if bool(getattr(profile, 'addy_verified', False)) else "PENDING_VERIFICATION"
         },
         "recent_audit": logs,
         "map_nodes": map_nodes,
@@ -2960,11 +2972,15 @@ async def kill_alias(alias_id: str, db: Session = Depends(get_db)):
 
 @app.get("/aliases/recipient-status")
 async def check_addy_recipient_status(user_id: Optional[str] = None, db: Session = Depends(get_db)):
-    """Checks whether the user's destination email address is verified on Addy.io"""
+    """Checks whether the user's destination email address is verified on Addy.io with persistent DB caching"""
     profile = db.query(DBProfile).filter(DBProfile.id == user_id).first() if user_id else None
     if not profile or not profile.email or profile.email.endswith("@disappearco.com"):
         return {"status": "UNKNOWN", "verified": False, "email": profile.email if profile else ""}
     
+    # 1. Fast persistent cache check: If already verified in DB, return VERIFIED immediately
+    if bool(getattr(profile, 'addy_verified', False)):
+        return {"status": "VERIFIED", "verified": True, "email": profile.email}
+
     raw_key = (os.getenv("ADDY_API_KEY") or os.getenv("ADDY_KEY") or os.getenv("ADDY_IO_KEY") or os.getenv("ANONADDY_API_KEY") or "").strip()
     if not raw_key:
         raw_key = "addy_io_dPdJs2PJZQLQV87dSP14P7di8YuLQOE06tDlidRlf6d08223"
@@ -2978,6 +2994,13 @@ async def check_addy_recipient_status(user_id: Optional[str] = None, db: Session
                 for r in recipients:
                     if r.get("email", "").lower() == profile.email.lower():
                         is_verified = bool(r.get("email_verified_at"))
+                        if is_verified:
+                            profile.addy_verified = True
+                            try:
+                                db.add(profile)
+                                db.commit()
+                            except Exception:
+                                db.rollback()
                         return {
                             "status": "VERIFIED" if is_verified else "PENDING_VERIFICATION",
                             "verified": is_verified,
@@ -2986,7 +3009,12 @@ async def check_addy_recipient_status(user_id: Optional[str] = None, db: Session
     except Exception as ex:
         logger.warning(f"Addy recipient status check error: {ex}")
     
-    return {"status": "PENDING_VERIFICATION", "verified": False, "email": profile.email}
+    is_currently_verified = bool(getattr(profile, 'addy_verified', False))
+    return {
+        "status": "VERIFIED" if is_currently_verified else "PENDING_VERIFICATION", 
+        "verified": is_currently_verified, 
+        "email": profile.email
+    }
 
 
 @app.post("/aliases/resend-recipient-verification")
