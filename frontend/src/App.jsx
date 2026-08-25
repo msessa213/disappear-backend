@@ -606,13 +606,18 @@ function App() {
     const urlParams = new URLSearchParams(window.location.search);
     const refCode = urlParams.get('ref') || urlParams.get('referral_code') || urlParams.get('referral');
     if (refCode) {
-      // 1. Save Referral Code to session storage for payout credit
-      setSessionItem("disappear_referral_code", refCode);
-      
-      // 2. FORCE LOGOUT / CLEAR ACTIVE SESSION so visitor starts with a clean, blank slate
+      const cleanRef = refCode.trim().toUpperCase();
+      // 1. Clear previous active auth session so visitor starts with a clean slate
       removeSessionItem("disappear_session");
       removeSessionItem("disappear_user_id");
-      sessionStorage.clear();
+
+      // 2. Save Referral Code to BOTH localStorage & sessionStorage for full session persistence
+      setSessionItem("disappear_referral_code", cleanRef);
+      setSessionItem("disappear_ref_code", cleanRef);
+      try {
+        localStorage.setItem("disappear_referral_code", cleanRef);
+        localStorage.setItem("disappear_ref_code", cleanRef);
+      } catch (e) {}
 
       // 3. WIPE ALL INPUT STATES TO ENSURE 100% BLANK FORMS
       setLoginEmail("");

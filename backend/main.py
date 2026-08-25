@@ -2560,26 +2560,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
 
                 # --- REFERRAL MILESTONE REWARD LOGIC ---
                 if profile.referred_by:
-                    ref_code = profile.referred_by.strip().upper()
-                    referrer = db.query(DBProfile).filter(DBProfile.referral_code == ref_code).first()
-                    if not referrer:
-                        referrer = db.query(DBProfile).filter(DBProfile.id == profile.referred_by).first()
-
-                    if referrer and referrer.id != profile.id:
-                        already_credited = db.query(DBPurgeLog).filter(
-                            DBPurgeLog.action_type == "REFERRAL_CREDITED",
-                            DBPurgeLog.node_id == f"REFERRED_{profile.id}"
-                        ).first()
-
-                        if not already_credited:
-                            db.add(DBPurgeLog(
-                                action_type="REFERRAL_CREDITED",
-                                node_id=f"REFERRED_{profile.id}",
-                                timestamp=datetime.utcnow()
-                            ))
-
-                            referrer.referral_count = (referrer.referral_count or 0) + 1
-                            logger.info(f"REFERRAL_SUCCESS: Referrer '{referrer.id}' count incremented to {referrer.referral_count} from referred signup '{profile.id}'")
+                    attribute_referral_signup(profile.id, profile.referred_by, db)
 
                             # Milestone threshold check: Every 5 successful referrals unlocks 1 free month
                             if referrer.referral_count % 5 == 0:
@@ -3239,6 +3220,60 @@ async def generate_card(request: Request, card_req: CardRequest, user_id: Option
         raise HTTPException(status_code=502, detail="Secure card generation failed at the upstream provider.")
 
 
+# --- REFERRAL ATTRIBUTION ENGINE ---
+
+def attribute_referral_signup(new_user_id: str, referrer_ref_code_or_id: str, db: Session):
+    """
+    Safely and idempotently attributes a referral signup to the referrer.
+    Increments referrer's referral_count by 1 and grants bonus credits.
+    Guarantees that each referred user is credited EXACTLY ONCE using DBPurgeLog lock.
+    """
+    if not new_user_id or not referrer_ref_code_or_id:
+        return False
+
+    clean_ref = referrer_ref_code_or_id.strip().upper()
+    referrer = db.query(DBProfile).filter(
+        or_(
+            DBProfile.referral_code.ilike(clean_ref),
+            DBProfile.id == clean_ref,
+            DBProfile.email.ilike(clean_ref)
+        )
+    ).first()
+
+    if not referrer or referrer.id == new_user_id:
+        return False
+
+    already_credited = db.query(DBPurgeLog).filter(
+        DBPurgeLog.action_type == "REFERRAL_CREDITED",
+        DBPurgeLog.node_id == f"REFERRED_{new_user_id}"
+    ).first()
+
+    if not already_credited:
+        db.add(DBPurgeLog(
+            action_type="REFERRAL_CREDITED",
+            node_id=f"REFERRED_{new_user_id}",
+            timestamp=datetime.utcnow()
+        ))
+        referrer.referral_count = (referrer.referral_count or 0) + 1
+        referrer.bonus_credits = (referrer.bonus_credits or 0) + 250
+        referrer.relay_credits = (referrer.relay_credits or 500) + 250
+        referrer.relay_credits_total = (referrer.relay_credits_total or 500) + 250
+        
+        if (referrer.referral_count % 5) == 0:
+            referrer.free_months_earned = (referrer.free_months_earned or 0) + 1
+
+        try:
+            db.add(referrer)
+            db.commit()
+            logger.info(f"REFERRAL_CREDITED_SUCCESSFULLY: Referrer '{referrer.id}' ({referrer.referral_code}) incremented to {referrer.referral_count} for user '{new_user_id}'")
+            return True
+        except Exception as ref_err:
+            db.rollback()
+            logger.error(f"Failed committing referral credit: {ref_err}")
+            return False
+    return True
+
+
 @app.post("/financials/profile")
 @app.post("/financials/profile/")
 @limiter.limit("20/minute")
@@ -3358,9 +3393,12 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
             referred_by=resolved_referred_by
         )
         db.add(new_profile)
-        
-        # NOTE: Scrub logs are ONLY seeded upon confirmed Stripe payment (checkout.session.completed)
         db.commit()
+
+        # Attribute referral credit to referrer DBProfile
+        if resolved_referred_by:
+            attribute_referral_signup(profile_id, resolved_referred_by, db)
+            
         return {"status": "success", "profile_id": profile_id, "kyc_status": kyc_status, "aml_flagged": aml_flagged}
     except HTTPException:
         db.rollback()
