@@ -3306,8 +3306,100 @@ const handleEmergencyBurn = async () => {
                   borderRadius: '12px',
                   textAlign: 'left'
                 }}>
-                  <p className="tool-label" style={{ textAlign: 'center', color: '#00D2FF', marginBottom: '10px' }}>🔐 USER PROFILE & PASSWORD SECURITY</p>
+                  <p className="tool-label" style={{ textAlign: 'center', color: '#00D2FF', marginBottom: '14px' }}>🔐 USER PROFILE & PASSWORD SECURITY</p>
                   
+                  {/* --- ADDY.IO EMAIL VERIFICATION STATUS & NOTICE CARD --- */}
+                  <div style={{
+                    background: addyRecipientStatus === "VERIFIED" ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.12)',
+                    border: addyRecipientStatus === "VERIFIED" ? '1px solid #10B981' : '1px solid #F59E0B',
+                    borderRadius: '8px',
+                    padding: '12px 14px',
+                    marginBottom: '16px',
+                    textAlign: 'left'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: addyRecipientStatus === "VERIFIED" ? '0px' : '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '0.85rem' }}>{addyRecipientStatus === "VERIFIED" ? "✅" : "⚠️"}</span>
+                        <span style={{ 
+                          color: addyRecipientStatus === "VERIFIED" ? '#10B981' : '#FCD34D', 
+                          fontSize: '0.80rem', 
+                          fontWeight: 'bold', 
+                          letterSpacing: '0.5px' 
+                        }}>
+                          {addyRecipientStatus === "VERIFIED" 
+                            ? "✅ Addy.io Email Verified & Active" 
+                            : "⚠️ Addy.io Email Unverified"}
+                        </span>
+                      </div>
+
+                      {addyRecipientStatus !== "VERIFIED" && (
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            className="main-button"
+                            style={{
+                              padding: '5px 10px',
+                              fontSize: '0.72rem',
+                              fontWeight: 'bold',
+                              background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                              border: 'none',
+                              color: '#FFF',
+                              cursor: 'pointer',
+                              opacity: isResendingAddyVerification ? 0.7 : 1,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                            onClick={handleResendAddyVerification}
+                            disabled={isResendingAddyVerification}
+                          >
+                            {isResendingAddyVerification ? (
+                              <>
+                                <span className="cyberpunk-spinner" style={{ display: 'inline-block', width: '10px', height: '10px', border: '2px solid #FFF', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></span>
+                                RESENDING...
+                              </>
+                            ) : (
+                              '📩 RESEND VERIFICATION'
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            className="reset-btn"
+                            style={{
+                              padding: '5px 10px',
+                              fontSize: '0.72rem',
+                              fontWeight: 'bold',
+                              borderColor: '#F59E0B',
+                              color: '#FCD34D',
+                              cursor: 'pointer',
+                              opacity: isCheckingAddyStatus ? 0.7 : 1,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                            onClick={() => checkAddyRecipientStatus(true)}
+                            disabled={isCheckingAddyStatus}
+                          >
+                            {isCheckingAddyStatus ? (
+                              <>
+                                <span className="cyberpunk-spinner" style={{ display: 'inline-block', width: '10px', height: '10px', border: '2px solid #FCD34D', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></span>
+                                CHECKING...
+                              </>
+                            ) : (
+                              '🔄 CHECK STATUS'
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {addyRecipientStatus !== "VERIFIED" && (
+                      <p style={{ color: '#F8FAFC', fontSize: '0.76rem', margin: 0, lineHeight: '1.45' }}>
+                        Your email relay forwarding is currently locked until you confirm the verification email sent from <code>noreply@addy.io</code> to <strong>{addyRecipientEmail || targetProfile.email || getSessionItem("disappear_user_email") || "your registered email"}</strong>.
+                      </p>
+                    )}
+                  </div>
+
                   <p style={{ fontSize: '0.78rem', color: '#94A3B8', marginBottom: '15px', lineHeight: '1.4' }}>
                     Enter your registered account email to receive a 6-digit SMS verification code on your registered mobile phone.
                   </p>
