@@ -5086,11 +5086,22 @@ class NoCacheStaticFiles(StaticFiles):
     async def get_response(self, path: str, scope):
         target_path = path
         full_path = os.path.join(self.directory, path)
-        if not os.path.exists(full_path) and path.startswith("index-") and path.endswith(".js"):
-            files = [f for f in os.listdir(self.directory) if f.startswith("index-") and f.endswith(".js")]
-            if files:
-                target_path = files[0]
-        response = await super().get_response(target_path, scope)
+        if not os.path.exists(full_path) and os.path.exists(self.directory):
+            ext = os.path.splitext(path)[1]
+            prefix = path.split("-")[0] if "-" in path else ""
+            candidates = [f for f in os.listdir(self.directory) if f.endswith(ext) and (not prefix or f.startswith(prefix))]
+            if not candidates:
+                candidates = [f for f in os.listdir(self.directory) if f.endswith(ext)]
+            if candidates:
+                target_path = candidates[0]
+
+        try:
+            response = await super().get_response(target_path, scope)
+        except Exception:
+            index_js = [f for f in os.listdir(self.directory) if f.startswith("index-") and f.endswith(".js")]
+            target_path = index_js[0] if index_js else path
+            response = await super().get_response(target_path, scope)
+
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
