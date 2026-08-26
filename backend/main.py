@@ -3405,9 +3405,17 @@ async def kill_alias(alias_id: str, db: Session = Depends(get_db)):
 
 
 @app.get("/aliases/recipient-status")
-async def check_addy_recipient_status(user_id: Optional[str] = None, db: Session = Depends(get_db)):
-    """Checks whether the user's destination email address is verified on Addy.io with persistent DB caching"""
-    profile = db.query(DBProfile).filter(DBProfile.id == user_id).first() if user_id else None
+async def get_addy_recipient_status(user_id: Optional[str] = None, db: Session = Depends(get_db)):
+    """Checks if the customer's recipient email is verified on Addy.io"""
+    profile = None
+    if user_id:
+        profile = db.query(DBProfile).filter(
+            or_(
+                DBProfile.id == user_id,
+                DBProfile.email.ilike(user_id)
+            )
+        ).first()
+
     if not profile or not profile.email or profile.email.endswith("@disappearco.com"):
         return {"status": "UNKNOWN", "verified": False, "email": profile.email if profile else ""}
     
@@ -3454,7 +3462,15 @@ async def check_addy_recipient_status(user_id: Optional[str] = None, db: Session
 @app.post("/aliases/resend-recipient-verification")
 async def resend_addy_recipient_verification(user_id: Optional[str] = None, db: Session = Depends(get_db)):
     """Deletes stale recipient link and dispatches a fresh valid signed verification link from Addy.io"""
-    profile = db.query(DBProfile).filter(DBProfile.id == user_id).first() if user_id else None
+    profile = None
+    if user_id:
+        profile = db.query(DBProfile).filter(
+            or_(
+                DBProfile.id == user_id,
+                DBProfile.email.ilike(user_id)
+            )
+        ).first()
+
     if not profile or not profile.email or profile.email.endswith("@disappearco.com"):
         raise HTTPException(status_code=400, detail="INVALID_EMAIL: No valid personal customer email found.")
     
