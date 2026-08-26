@@ -892,6 +892,8 @@ function App() {
 
     const TIMEOUT_DURATION = 1800000; // 30 minutes
     const now = Date.now();
+    let isExpired = false;
+
     // Check both sessionStorage and localStorage for active persistent session
     let session = getSessionItem("disappear_session");
     let lastActive = getSessionItem("disappear_last_active");
