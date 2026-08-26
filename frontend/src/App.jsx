@@ -38,7 +38,9 @@ const API_BASE_URL = isExplicitLocalDev ? LOCAL_API : "";
 const getSessionItem = (key) => {
   try {
     const val = sessionStorage.getItem(key);
-    if (val && val !== "undefined") return val;
+    if (val && val !== "undefined" && val !== "null") return val;
+    const localVal = localStorage.getItem(key);
+    if (localVal && localVal !== "undefined" && localVal !== "null") return localVal;
     return "";
   } catch (e) {
     return "";
@@ -47,7 +49,10 @@ const getSessionItem = (key) => {
 
 const setSessionItem = (key, value) => {
   try {
-    sessionStorage.setItem(key, value);
+    if (value !== undefined && value !== null) {
+      sessionStorage.setItem(key, value);
+      localStorage.setItem(key, value);
+    }
   } catch (e) {}
 };
 
