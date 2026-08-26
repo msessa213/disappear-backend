@@ -81,6 +81,8 @@ try:
     # --- COMPREHENSIVE 400+ DATA BROKER DIRECTORY ---
     THREAT_TYPES = ["IDENTITY_QUERY_DEFLECTED", "PII_SCRUB_VERIFIED", "NODE_ENCRYPTED", "RECAPTURE_BLOCKED", "TRACE_PURGED"]
     DOMAINS = ["disappear.private", "shield.mask", "secure.node", "ghost.vault"]
+    STABLE_EMAIL = f"vault_{random.randint(1000, 9999)}@{random.choice(DOMAINS)}"
+    STABLE_PHONE = f"+1 (555) {random.randint(100, 999)}-{random.randint(1000, 9999)}"
     EXPANDED_BROKERS = [
         # Top Tier People Search Directories (1-50)
         'WHITEPAGES', 'BEENVERIFIED', 'TRUTHFINDER', 'INSTANTCHECKMATE', 'PEOPLELOOKER',
