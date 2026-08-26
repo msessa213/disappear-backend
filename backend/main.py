@@ -3401,6 +3401,8 @@ class AliasReplyRequest(BaseModel):
 
 @app.post("/aliases/reply")
 @app.post("/api/v1/alias-reply")
+@app.post("/api/email/send")
+@app.post("/v1/email/send")
 async def reply_via_alias(req: AliasReplyRequest, user_id: Optional[str] = Query(None), x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Dispatches outbound reply from customer's alias email back to recipient safely"""
     active_uid = (user_id or x_user_id or "").strip()

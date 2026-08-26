@@ -259,35 +259,36 @@ function App() {
 
   const handleSendAliasReply = async (e) => {
     if (e) e.preventDefault();
-    if (!replyAliasEmail || !replyRecipientEmail || !aliasReplyBody.trim()) {
+    const activeSenderAlias = replyAliasEmail || (emails && emails.length > 0 ? emails[0].content : "");
+    if (!activeSenderAlias || !replyRecipientEmail || !aliasReplyBody.trim()) {
       triggerToast("⚠️ PLEASE FILL IN ALIAS, RECIPIENT & MESSAGE");
       return;
     }
     setIsSendingAliasReply(true);
-    triggerToast("⏳ TRANSMITTING ALIAS REPLY...");
+    triggerToast("⏳ TRANSMITTING ALIAS EMAIL...");
     try {
       const activeUserId = currentUserId || getSessionItem("disappear_user_id");
-      const res = await secureRequest(`${API_BASE_URL}/aliases/reply?user_id=${encodeURIComponent(activeUserId)}`, {
+      const res = await secureRequest(`${API_BASE_URL}/api/email/send?user_id=${encodeURIComponent(activeUserId)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          alias_email: replyAliasEmail,
+          alias_email: activeSenderAlias,
           recipient_email: replyRecipientEmail,
-          subject: replySubject || "Re: Alias Transmission",
+          subject: replySubject || "Encrypted Alias Transmission",
           message_body: aliasReplyBody
         })
       });
       if (res.ok) {
-        triggerToast("✅ ALIAS REPLY DISPATCHED SUCCESSFULLY!");
+        triggerToast("✅ ALIAS EMAIL DISPATCHED SUCCESSFULLY!");
         setAliasReplyBody("");
         setShowAliasReplyModal(false);
         fetchAliasMessages();
       } else {
         const err = await res.json().catch(() => ({}));
-        triggerToast(`❌ REASON: ${err.detail || "FAILED TO TRANSMIT REPLY"}`);
+        triggerToast(`❌ REASON: ${err.detail || "FAILED TO TRANSMIT EMAIL"}`);
       }
     } catch (err) {
-      triggerToast("❌ NETWORK ERROR SENDING ALIAS REPLY");
+      triggerToast("❌ NETWORK ERROR SENDING ALIAS EMAIL");
     } finally {
       setIsSendingAliasReply(false);
     }
@@ -2738,16 +2739,32 @@ const handleEmergencyBurn = async () => {
                   <div style={{ background: '#05070E', border: '1px solid #334155', padding: '15px', borderRadius: '8px', marginTop: '18px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
                       <span style={{ fontSize: '0.82rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px' }}>
-                        📩 INBOUND ALIAS TRANSMISSIONS & REPLY ROUTING
+                        📩 INBOUND & OUTBOUND ALIAS TRANSMISSIONS
                       </span>
-                      <button 
-                        type="button"
-                        className="reset-btn"
-                        style={{ padding: '3px 10px', fontSize: '0.72rem', color: '#00D2FF', borderColor: '#00D2FF' }}
-                        onClick={fetchAliasMessages}
-                      >
-                        🔄 REFRESH MESSAGES
-                      </button>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <button 
+                          type="button"
+                          className="main-button"
+                          style={{ padding: '3px 10px', fontSize: '0.72rem', fontWeight: 'bold', background: 'linear-gradient(135deg, #10B981, #059669)' }}
+                          onClick={() => {
+                            setReplyAliasEmail(emails.length > 0 ? emails[0].content : "");
+                            setReplyRecipientEmail("");
+                            setReplySubject("");
+                            setAliasReplyBody("");
+                            setShowAliasReplyModal(true);
+                          }}
+                        >
+                          ➕ COMPOSE NEW EMAIL
+                        </button>
+                        <button 
+                          type="button"
+                          className="reset-btn"
+                          style={{ padding: '3px 10px', fontSize: '0.72rem', color: '#00D2FF', borderColor: '#00D2FF' }}
+                          onClick={fetchAliasMessages}
+                        >
+                          🔄 REFRESH
+                        </button>
+                      </div>
                     </div>
 
                     {aliasMessages.length === 0 ? (
@@ -4365,22 +4382,42 @@ const handleEmergencyBurn = async () => {
 
 
 
-      {/* --- ALIAS EMAIL REPLY MODAL DIALOG --- */}
+      {/* --- ALIAS EMAIL REPLY & COMPOSE MODAL DIALOG --- */}
       {showAliasReplyModal && (
         <div className="modal-overlay" style={{ zIndex: 60000 }} onClick={() => setShowAliasReplyModal(false)}>
           <div className="price-box" style={{ maxWidth: '520px', textAlign: 'left' }} onClick={e => e.stopPropagation()}>
-            <h3 className="tiger-text" style={{ margin: '0 0 14px 0', fontSize: '1.1rem' }}>✉️ REPLY VIA ENCRYPTED ALIAS</h3>
+            <h3 className="tiger-text" style={{ margin: '0 0 14px 0', fontSize: '1.1rem' }}>
+              {replyRecipientEmail ? "✉️ REPLY VIA ENCRYPTED ALIAS" : "✉️ COMPOSE OUTBOUND ALIAS EMAIL"}
+            </h3>
             
             <form onSubmit={handleSendAliasReply} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label style={{ fontSize: '0.75rem', color: '#00D2FF', fontWeight: 'bold' }}>FROM ALIAS ADDRESS</label>
-                <input
-                  type="text"
-                  readOnly
-                  className="mask-btn"
-                  style={{ width: '100%', color: '#FCD34D', fontWeight: 'bold', background: '#020617', marginTop: '4px', boxSizing: 'border-box' }}
-                  value={replyAliasEmail}
-                />
+                <label style={{ fontSize: '0.75rem', color: '#00D2FF', fontWeight: 'bold' }}>SELECT SENDER ALIAS IDENTITY</label>
+                {emails && emails.length > 0 ? (
+                  <select
+                    className="mask-btn"
+                    style={{ width: '100%', color: '#FCD34D', fontWeight: 'bold', background: '#020617', marginTop: '4px', boxSizing: 'border-box', height: '40px' }}
+                    value={replyAliasEmail || (emails[0] ? emails[0].content : "")}
+                    onChange={(e) => setReplyAliasEmail(e.target.value)}
+                    required
+                  >
+                    {emails.map((e) => (
+                      <option key={e.id} value={e.content}>
+                        {e.label ? `${e.label.toUpperCase()} (${e.content})` : e.content}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    className="mask-btn"
+                    style={{ width: '100%', color: '#FCD34D', fontWeight: 'bold', background: '#020617', marginTop: '4px', boxSizing: 'border-box' }}
+                    placeholder="e.g. alias@anonaddy.me"
+                    value={replyAliasEmail}
+                    onChange={(e) => setReplyAliasEmail(e.target.value)}
+                    required
+                  />
+                )}
               </div>
 
               <div>
