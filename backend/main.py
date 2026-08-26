@@ -75,7 +75,8 @@ async def health_status():
 # --- COMPREHENSIVE STARTUP ERROR HANDLING ---
 try:
     # --- IMPORT DATABASE FROM MODELS ---
-    from models import engine, SessionLocal, Base, DBCard, DBAlias, DBProfile, DBTargetEmail, DBScrubLog, DBPurgeLog, DBMarqetaEvent, DBBrokerMatch, DBCoupon, DBSupportTicket
+    from models import engine, SessionLocal, Base, DBCard, DBAlias, DBProfile, DBTargetEmail, DBScrubLog, DBPurgeLog, DBMarqetaEvent, DBBrokerMatch, DBCoupon, DBSupportTicket, DBAliasMessage
+    from fastapi import BackgroundTasks
     from services.twilio_service import send_sms, make_voice_call, twilio_client
     from services.redaction_service import RedactionService
     from services.match_engine import MatchEngine
@@ -3233,6 +3234,228 @@ async def get_aliases(x_user_id: Optional[str] = Header(None), user_id: Optional
     ).order_by(DBAlias.created_at.desc()).all()
     
     return {"aliases": aliases if aliases else []}
+
+
+def dispatch_alias_forwarding_email(recipient_real_email: str, alias_email: str, sender_email: str, subject: str, body_text: str) -> bool:
+    """Helper to dispatch email forwarding to real customer email or routing outbound alias messages"""
+    import smtplib
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+
+    sender = "forwarder@disappearco.com"
+    formatted_subject = f"[ALIAS {alias_email.upper()}] {subject}"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"></head>
+    <body style="margin: 0; padding: 0; background-color: #05070a; font-family: 'Segoe UI', sans-serif;">
+      <div style="max-width: 600px; margin: 20px auto; background: #0b0f19; border: 1px solid rgba(0, 210, 255, 0.3); border-radius: 14px; padding: 25px; color: #ffffff;">
+        <div style="border-bottom: 1px solid #1e293b; padding-bottom: 15px; margin-bottom: 20px;">
+          <h3 style="color: #00D2FF; margin: 0; font-size: 18px;">🛡️ ENCRYPTED ALIAS TRANSMISSION</h3>
+          <p style="color: #94A3B8; font-size: 12px; margin-top: 4px;">ALIAS: <strong style="color: #FCD34D;">{alias_email}</strong> | FROM: {sender_email}</p>
+        </div>
+        <div style="font-size: 14px; line-height: 1.6; color: #e2e8f0; white-space: pre-wrap;">
+{body_text}
+        </div>
+        <div style="margin-top: 30px; border-top: 1px solid #1e293b; padding-top: 15px; font-size: 11px; color: #64748B;">
+          🔒 Sent via Disappear Encrypted Identity Vault. Replies dispatched from your dashboard route back through {alias_email}.
+        </div>
+      </div>
+    </body>
+    </html>
+    """
+
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = formatted_subject
+        msg["From"] = f"Disappear Forwarder <{sender}>"
+        msg["To"] = recipient_real_email
+        msg.attach(MIMEText(body_text or "", "plain"))
+        msg.attach(MIMEText(html_content, "html"))
+
+        with smtplib.SMTP("127.0.0.1", 25, timeout=5) as server:
+            server.sendmail(sender, [recipient_real_email], msg.as_string())
+        return True
+    except Exception as ex:
+        logger.info(f"Local forwarding notice for {recipient_real_email}: {ex}")
+        return False
+
+
+@app.post("/api/email/inbound")
+@app.post("/v1/email/inbound")
+async def handle_inbound_email_webhook(request: Request, bg_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """FastAPI lightweight webhook handler for incoming alias emails. Parses recipient alias, logs message, and forwards asynchronously to user's real email."""
+    try:
+        content_type = request.headers.get("content-type", "")
+        data = {}
+        if "application/json" in content_type:
+            data = await request.json()
+        else:
+            form = await request.form()
+            data = {k: v for k, v in form.items()}
+        
+        recipient_raw = str(data.get("recipient") or data.get("to") or data.get("envelope", {}).get("to") or "").strip().lower()
+        sender_raw = str(data.get("sender") or data.get("from") or data.get("envelope", {}).get("from") or "unknown@sender.com").strip().lower()
+        subject = str(data.get("subject") or "Encrypted Alias Transmission").strip()
+        body_text = str(data.get("text") or data.get("body_text") or data.get("plain") or "").strip()
+        body_html = str(data.get("html") or data.get("body_html") or "").strip()
+
+        match = re.search(r'[\w\.-]+@[\w\.-]+', recipient_raw)
+        recipient_alias = match.group(0).lower() if match else recipient_raw
+
+        if not recipient_alias:
+            return {"status": "SKIPPED", "detail": "No valid recipient email address found in payload."}
+
+        alias = db.query(DBAlias).filter(DBAlias.content.ilike(recipient_alias)).first()
+        profile = None
+
+        if alias and alias.user_id:
+            profile = db.query(DBProfile).filter(
+                or_(
+                    DBProfile.id == alias.user_id,
+                    DBProfile.email.ilike(alias.user_id.lower())
+                )
+            ).first()
+
+        if not profile:
+            profile = db.query(DBProfile).filter(DBProfile.email.ilike(recipient_alias)).first()
+
+        user_id = profile.id if profile else (alias.user_id if alias else "UNBOUND_ALIAS")
+
+        import uuid
+        msg_id = f"msg_{uuid.uuid4().hex[:12]}"
+        alias_msg = DBAliasMessage(
+            id=msg_id,
+            user_id=user_id,
+            alias_email=recipient_alias,
+            sender_email=sender_raw,
+            recipient_email=profile.email if profile else recipient_alias,
+            subject=subject,
+            body_text=body_text[:5000],
+            body_html=body_html[:10000],
+            direction="INBOUND",
+            forwarded=bool(profile and profile.email)
+        )
+        db.add(alias_msg)
+        db.commit()
+
+        if profile and profile.email and not profile.email.endswith("@disappearco.com"):
+            bg_tasks.add_task(
+                dispatch_alias_forwarding_email, 
+                recipient_real_email=profile.email, 
+                alias_email=recipient_alias, 
+                sender_email=sender_raw, 
+                subject=subject, 
+                body_text=body_text
+            )
+
+        return {
+            "status": "FORWARDED" if (profile and profile.email) else "STORED",
+            "message_id": msg_id,
+            "alias": recipient_alias,
+            "forwarded_to": profile.email if profile else None
+        }
+    except Exception as ex:
+        logger.error(f"Inbound email webhook error: {ex}")
+        return {"status": "PROCESSED_WITH_WARNINGS", "detail": str(ex)}
+
+
+@app.get("/aliases/messages")
+@app.get("/api/v1/aliases/messages")
+async def get_alias_messages(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    """Retrieves inbound/outbound forwarded email messages for user's active aliases with strict exact tenant isolation"""
+    active_uid = (user_id or x_user_id or "").strip()
+    if not active_uid or active_uid in ["undefined", "null", "", "anonymous_agent", "UNAUTHENTICATED"]:
+        return {"messages": []}
+
+    profile = db.query(DBProfile).filter(
+        or_(
+            DBProfile.id == active_uid,
+            DBProfile.email.ilike(active_uid.lower())
+        )
+    ).first()
+
+    if not profile:
+        return {"messages": []}
+
+    query_user_ids = list(set([profile.id, profile.email, profile.email.lower()]))
+
+    user_aliases = db.query(DBAlias).filter(DBAlias.user_id.in_(query_user_ids)).all()
+    alias_emails = [a.content.lower() for a in user_aliases if a.content and "@" in a.content]
+
+    filters = [DBAliasMessage.user_id.in_(query_user_ids)]
+    if alias_emails:
+        filters.append(DBAliasMessage.alias_email.in_(alias_emails))
+
+    messages = db.query(DBAliasMessage).filter(or_(*filters)).order_by(desc(DBAliasMessage.created_at)).limit(100).all()
+    return {"messages": messages if messages else []}
+
+
+class AliasReplyRequest(BaseModel):
+    alias_email: str
+    recipient_email: str
+    subject: Optional[str] = "Re: Alias Transmission"
+    message_body: str
+
+
+@app.post("/aliases/reply")
+@app.post("/api/v1/alias-reply")
+async def reply_via_alias(req: AliasReplyRequest, user_id: Optional[str] = Query(None), x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    """Dispatches outbound reply from customer's alias email back to recipient safely"""
+    active_uid = (user_id or x_user_id or "").strip()
+    if not active_uid or active_uid in ["undefined", "null", "", "anonymous_agent", "UNAUTHENTICATED"]:
+        raise HTTPException(status_code=401, detail="Authentication required to send alias replies.")
+
+    profile = db.query(DBProfile).filter(
+        or_(
+            DBProfile.id == active_uid,
+            DBProfile.email.ilike(active_uid.lower())
+        )
+    ).first()
+
+    if not profile:
+        raise HTTPException(status_code=404, detail="User profile not located.")
+
+    alias_clean = req.alias_email.strip().lower()
+    recipient_clean = req.recipient_email.strip().lower()
+
+    if not alias_clean or not recipient_clean or not req.message_body.strip():
+        raise HTTPException(status_code=400, detail="Missing required parameters: alias_email, recipient_email, message_body.")
+
+    import uuid
+    outbound_id = f"msg_out_{uuid.uuid4().hex[:12]}"
+    outbound_msg = DBAliasMessage(
+        id=outbound_id,
+        user_id=profile.id,
+        alias_email=alias_clean,
+        sender_email=alias_clean,
+        recipient_email=recipient_clean,
+        subject=req.subject or "Re: Alias Transmission",
+        body_text=req.message_body,
+        direction="OUTBOUND",
+        forwarded=True
+    )
+    db.add(outbound_msg)
+    db.commit()
+
+    try:
+        dispatch_alias_forwarding_email(
+            recipient_real_email=recipient_clean,
+            alias_email=alias_clean,
+            sender_email=alias_clean,
+            subject=req.subject or "Re: Alias Transmission",
+            body_text=req.message_body
+        )
+    except Exception as ex:
+        logger.warning(f"Alias outbound dispatch notice: {ex}")
+
+    return {
+        "status": "SENT",
+        "message_id": outbound_id,
+        "alias_email": alias_clean,
+        "recipient_email": recipient_clean
+    }
 
 
 @app.post("/aliases/mint")

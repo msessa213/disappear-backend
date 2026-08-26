@@ -176,4 +176,18 @@ class DBSupportTicket(Base):
     message = Column(Text)
     status = Column(String, default="OPEN")
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class DBAliasMessage(Base):
+    __tablename__ = "shield_alias_messages_v1"
+    id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, index=True, nullable=False)
+    alias_email = Column(String, index=True, nullable=False)
+    sender_email = Column(String, nullable=False)
+    recipient_email = Column(String, nullable=False)
+    subject = Column(String, nullable=True)
+    body_text = Column(Text, nullable=True)
+    body_html = Column(Text, nullable=True)
+    direction = Column(String, default="INBOUND") # "INBOUND" or "OUTBOUND"
+    forwarded = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

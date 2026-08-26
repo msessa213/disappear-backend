@@ -235,6 +235,64 @@ function App() {
   const [isCheckingAddyStatus, setIsCheckingAddyStatus] = useState(false);
   const [isResendingAddyVerification, setIsResendingAddyVerification] = useState(false);
 
+  const [aliasMessages, setAliasMessages] = useState([]);
+  const [replyAliasEmail, setReplyAliasEmail] = useState("");
+  const [replyRecipientEmail, setReplyRecipientEmail] = useState("");
+  const [replySubject, setReplySubject] = useState("");
+  const [aliasReplyBody, setAliasReplyBody] = useState("");
+  const [showAliasReplyModal, setShowAliasReplyModal] = useState(false);
+  const [isSendingAliasReply, setIsSendingAliasReply] = useState(false);
+
+  const fetchAliasMessages = useCallback(async () => {
+    try {
+      const activeUserId = currentUserId || getSessionItem("disappear_user_id");
+      if (!activeUserId) return;
+      const res = await secureRequest(`${API_BASE_URL}/aliases/messages?user_id=${encodeURIComponent(activeUserId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAliasMessages(data.messages || []);
+      }
+    } catch (e) {
+      console.warn("Failed fetching alias messages:", e);
+    }
+  }, [secureRequest, currentUserId]);
+
+  const handleSendAliasReply = async (e) => {
+    if (e) e.preventDefault();
+    if (!replyAliasEmail || !replyRecipientEmail || !aliasReplyBody.trim()) {
+      triggerToast("⚠️ PLEASE FILL IN ALIAS, RECIPIENT & MESSAGE");
+      return;
+    }
+    setIsSendingAliasReply(true);
+    triggerToast("⏳ TRANSMITTING ALIAS REPLY...");
+    try {
+      const activeUserId = currentUserId || getSessionItem("disappear_user_id");
+      const res = await secureRequest(`${API_BASE_URL}/aliases/reply?user_id=${encodeURIComponent(activeUserId)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          alias_email: replyAliasEmail,
+          recipient_email: replyRecipientEmail,
+          subject: replySubject || "Re: Alias Transmission",
+          message_body: aliasReplyBody
+        })
+      });
+      if (res.ok) {
+        triggerToast("✅ ALIAS REPLY DISPATCHED SUCCESSFULLY!");
+        setAliasReplyBody("");
+        setShowAliasReplyModal(false);
+        fetchAliasMessages();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        triggerToast(`❌ REASON: ${err.detail || "FAILED TO TRANSMIT REPLY"}`);
+      }
+    } catch (err) {
+      triggerToast("❌ NETWORK ERROR SENDING ALIAS REPLY");
+    } finally {
+      setIsSendingAliasReply(false);
+    }
+  };
+
   const [relayCredits, setRelayCredits] = useState(500);
   const [relayCreditsTotal, setRelayCreditsTotal] = useState(500);
   const [isRefillingCredits, setIsRefillingCredits] = useState(false);
@@ -519,12 +577,13 @@ function App() {
         setDataBrokers(prev => isStructurallyEqual(prev, data.data_brokers) ? prev : data.data_brokers);
       }
 
-      // 11. Sync Live SMS Inbox
+      // 11. Sync Live SMS Inbox & Alias Messages
       fetchSmsInbox();
+      fetchAliasMessages();
     } catch (err) { 
         console.warn("Network interrupted. Attempting silent reconnect on next cycle...");
     }
-  }, [pushNotification, selectedFundingSource, hasLoadedPhone, fetchSmsInbox]);
+  }, [pushNotification, selectedFundingSource, hasLoadedPhone, fetchSmsInbox, fetchAliasMessages]);
 
   // --- DYNAMIC SEO & METADATA ENGINE ---
   useEffect(() => {
@@ -2674,6 +2733,74 @@ const handleEmergencyBurn = async () => {
                       </div>
                     ))}
                   </div>
+
+                  {/* --- INBOUND ALIAS EMAIL MESSAGES & REPLY ROUTING UI CARD --- */}
+                  <div style={{ background: '#05070E', border: '1px solid #334155', padding: '15px', borderRadius: '8px', marginTop: '18px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                      <span style={{ fontSize: '0.82rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px' }}>
+                        📩 INBOUND ALIAS TRANSMISSIONS & REPLY ROUTING
+                      </span>
+                      <button 
+                        type="button"
+                        className="reset-btn"
+                        style={{ padding: '3px 10px', fontSize: '0.72rem', color: '#00D2FF', borderColor: '#00D2FF' }}
+                        onClick={fetchAliasMessages}
+                      >
+                        🔄 REFRESH MESSAGES
+                      </button>
+                    </div>
+
+                    {aliasMessages.length === 0 ? (
+                      <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, textAlign: 'center', padding: '12px', fontStyle: 'italic' }}>
+                        No forwarded alias emails logged yet. Messages sent to your encrypted email aliases will route here and to your inbox automatically.
+                      </p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '280px', overflowY: 'auto' }}>
+                        {aliasMessages.map(msg => (
+                          <div key={msg.id} style={{ background: msg.direction === 'OUTBOUND' ? '#031a10' : '#090d16', border: msg.direction === 'OUTBOUND' ? '1px solid #10b981' : '1px solid #1e293b', borderRadius: '8px', padding: '10px 12px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: '0.68rem', background: msg.direction === 'OUTBOUND' ? '#064e3b' : '#1e3a8a', color: msg.direction === 'OUTBOUND' ? '#34d399' : '#60a5fa', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                  {msg.direction || 'INBOUND'}
+                                </span>
+                                <span style={{ fontSize: '0.78rem', color: '#FCD34D', fontWeight: 'bold' }}>
+                                  {msg.direction === 'OUTBOUND' ? `TO: ${msg.recipient_email}` : `FROM: ${msg.sender_email}`}
+                                </span>
+                                <span style={{ fontSize: '0.70rem', color: '#00D2FF' }}>
+                                  (ALIAS: {msg.alias_email})
+                                </span>
+                              </div>
+                              <span style={{ fontSize: '0.68rem', color: '#64748B' }}>
+                                {msg.created_at ? new Date(msg.created_at).toLocaleString() : ''}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '0.80rem', color: '#FFFFFF', fontWeight: 'bold', marginBottom: '4px' }}>
+                              {msg.subject || 'No Subject'}
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: '#CBD5E1', lineHeight: '1.4', whiteSpace: 'pre-wrap', maxHeight: '80px', overflowY: 'auto' }}>
+                              {msg.body_text || 'Encrypted email content.'}
+                            </div>
+                            <div style={{ marginTop: '8px', textAlign: 'right' }}>
+                              <button
+                                type="button"
+                                className="reset-btn"
+                                style={{ padding: '3px 10px', fontSize: '0.70rem', color: '#10B981', borderColor: '#10B981' }}
+                                onClick={() => {
+                                  setReplyAliasEmail(msg.alias_email);
+                                  setReplyRecipientEmail(msg.direction === 'OUTBOUND' ? msg.recipient_email : msg.sender_email);
+                                  setReplySubject(`Re: ${msg.subject || 'Alias Transmission'}`);
+                                  setReplyBody("");
+                                  setShowAliasReplyModal(true);
+                                }}
+                              >
+                                ✉️ REPLY VIA {msg.alias_email}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* --- RELAY SHIELD CREDITS METER CARD --- */}
@@ -4237,6 +4364,85 @@ const handleEmergencyBurn = async () => {
       )}
 
 
+
+      {/* --- ALIAS EMAIL REPLY MODAL DIALOG --- */}
+      {showAliasReplyModal && (
+        <div className="modal-overlay" style={{ zIndex: 60000 }} onClick={() => setShowAliasReplyModal(false)}>
+          <div className="price-box" style={{ maxWidth: '520px', textAlign: 'left' }} onClick={e => e.stopPropagation()}>
+            <h3 className="tiger-text" style={{ margin: '0 0 14px 0', fontSize: '1.1rem' }}>✉️ REPLY VIA ENCRYPTED ALIAS</h3>
+            
+            <form onSubmit={handleSendAliasReply} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '0.75rem', color: '#00D2FF', fontWeight: 'bold' }}>FROM ALIAS ADDRESS</label>
+                <input
+                  type="text"
+                  readOnly
+                  className="mask-btn"
+                  style={{ width: '100%', color: '#FCD34D', fontWeight: 'bold', background: '#020617', marginTop: '4px', boxSizing: 'border-box' }}
+                  value={replyAliasEmail}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>RECIPIENT EMAIL ADDRESS</label>
+                <input
+                  type="email"
+                  className="mask-btn"
+                  style={{ width: '100%', color: '#FFF', marginTop: '4px', boxSizing: 'border-box' }}
+                  placeholder="recipient@domain.com"
+                  value={replyRecipientEmail}
+                  onChange={(e) => setReplyRecipientEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>SUBJECT</label>
+                <input
+                  type="text"
+                  className="mask-btn"
+                  style={{ width: '100%', color: '#FFF', marginTop: '4px', boxSizing: 'border-box' }}
+                  placeholder="Re: Subject"
+                  value={replySubject}
+                  onChange={(e) => setReplySubject(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>MESSAGE BODY</label>
+                <textarea
+                  className="mask-btn"
+                  style={{ width: '100%', color: '#FFF', marginTop: '4px', height: '100px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'sans-serif' }}
+                  placeholder="Type your reply message..."
+                  value={aliasReplyBody}
+                  onChange={(e) => setAliasReplyBody(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <button
+                  type="submit"
+                  className="main-button"
+                  style={{ flex: 1, padding: '12px', fontSize: '0.85rem' }}
+                  disabled={isSendingAliasReply}
+                >
+                  {isSendingAliasReply ? "TRANSMITTING..." : "📤 DISPATCH ALIAS REPLY"}
+                </button>
+                <button
+                  type="button"
+                  className="reset-btn"
+                  style={{ padding: '12px 18px', fontSize: '0.85rem' }}
+                  onClick={() => setShowAliasReplyModal(false)}
+                >
+                  CANCEL
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* --- DATA REMOVAL TARGET NOTICE MODAL (POPUP ON SIGN IN) --- */}
       {showDataRemovalNoticeModal && (
