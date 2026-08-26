@@ -464,15 +464,34 @@ safe_add_column("scrub_logs_v1", "assigned_analyst", "VARCHAR")
 safe_add_column("scrub_logs_v1", "resolved_by", "VARCHAR")
 safe_add_column("scrub_logs_v1", "target_listing_url", "VARCHAR")
 
-# Canonical profile sync for Michael Sessa
+# Canonical profile & 7 aliases sync for Michael Sessa
 try:
     with engine.connect() as conn:
         conn.execute(text("DELETE FROM shield_profiles_v3 WHERE id = 'user_9685'"))
         conn.execute(text("UPDATE shield_profiles_v3 SET id = 'user_7956', first_name = 'Michael', last_name = 'Sessa', address = '4017 Arroyo Ln, Tampa, FL 33624', phone = '+18138105237' WHERE LOWER(email) = 'mike803@verizon.net'"))
-        conn.execute(text("UPDATE shield_aliases_v3 SET user_id = 'user_7956' WHERE content IN ('+18884317375', '+18137558466', '+18137917531', '+18134375531', '+17274850017', 'kdkq0hm9@anonaddy.me', 'f8hpm3cl@anonaddy.me') OR user_id = 'user_mike803'"))
+        conn.execute(text("UPDATE shield_aliases_v3 SET user_id = 'user_7956' WHERE content IN ('+18884317375', '+18137558466', '+18137917531', '+18134375531', '+17274850017', 'kdkq0hm9@anonaddy.me', 'f8hpm3cl@anonaddy.me') OR user_id = 'user_mike803' OR user_id = 'mike803@verizon.net'"))
+        
+        # Ensure 5 Phone Aliases & 2 Email Aliases exist in database
+        canonical_aliases = [
+            ('als_ph_01', 'user_7956', 'phone', '+18137558466', 'Virtual Relay Line #1'),
+            ('als_ph_02', 'user_7956', 'phone', '+18137917531', 'Encrypted Mobile Line #2'),
+            ('als_ph_03', 'user_7956', 'phone', '+18134375531', 'Burner Mask Line #3'),
+            ('als_ph_04', 'user_7956', 'phone', '+17274850017', 'Secure Tactical Line #4'),
+            ('als_ph_05', 'user_7956', 'phone', '+18884317375', 'Toll-Free Defense Line #5'),
+            ('als_em_01', 'user_7956', 'email', 'kdkq0hm9@anonaddy.me', 'Primary Email Relay #1'),
+            ('als_em_02', 'user_7956', 'email', 'f8hpm3cl@anonaddy.me', 'Secondary Mask Email #2')
+        ]
+        
+        for aid, uid, atype, cnt, lbl in canonical_aliases:
+            conn.execute(text(
+                "INSERT INTO shield_aliases_v3 (id, user_id, type, content, label, created_at) "
+                "SELECT :aid, :uid, :atype, :cnt, :lbl, CURRENT_TIMESTAMP "
+                "WHERE NOT EXISTS (SELECT 1 FROM shield_aliases_v3 WHERE content = :cnt AND user_id = :uid)"
+            ), {"aid": aid, "uid": uid, "atype": atype, "cnt": cnt, "lbl": lbl})
+            
         conn.commit()
 except Exception as ex:
-    logger.warning(f"Profile sync notice: {ex}")
+    logger.warning(f"Profile & alias sync notice: {ex}")
 
 # --- APP CONFIGURATION ---
 
