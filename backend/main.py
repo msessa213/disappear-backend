@@ -5102,6 +5102,9 @@ class NoCacheStaticFiles(StaticFiles):
             target_path = index_js[0] if index_js else path
             response = await super().get_response(target_path, scope)
 
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
@@ -5123,7 +5126,10 @@ if os.path.exists(frontend_dist_path):
             raise HTTPException(status_code=404, detail="API route not found")
         index_file = os.path.join(frontend_dist_path, "index.html")
         if os.path.exists(index_file):
-            return FileResponse(index_file, headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"})
+            return FileResponse(index_file, headers={
+                "Access-Control-Allow-Origin": "*",
+                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
+            })
         raise HTTPException(status_code=404, detail="Frontend build missing")
 
 
