@@ -390,9 +390,9 @@ function App() {
     } catch(e) {}
   }, [currentUserId]);
 
-  const syncDefenseData = useCallback(async () => {
+  const syncDefenseData = useCallback(async (overrideUserId = null) => {
     try {
-      const activeUserId = currentUserId || getSessionItem("disappear_user_id");
+      const activeUserId = overrideUserId || currentUserId || getSessionItem("disappear_user_id") || getSessionItem("disappear_user_email");
       if (!activeUserId) return;
       
       setSessionItem("disappear_last_active", Date.now().toString());
@@ -405,7 +405,7 @@ function App() {
       }
       
       // 1. Consolidated Sync Handshake
-      const res = await secureRequest(`${API_BASE_URL}/dashboard/sync?user_id=${activeUserId}&t=${Date.now()}`);
+      const res = await secureRequest(`${API_BASE_URL}/dashboard/sync?user_id=${encodeURIComponent(activeUserId)}&t=${Date.now()}`);
       if (!res.ok) throw new Error("Sync failed");
       const data = await res.json();
 
@@ -1731,7 +1731,7 @@ const handleEmergencyBurn = async () => {
         setProgress(100);
         checkAndShowNoticeModal(data.user_id);
         triggerToast(`WELCOME BACK, ${(data.first_name || 'OPERATIVE').toUpperCase()}`);
-        syncDefenseData();
+        syncDefenseData(data.user_id);
       } else {
         const data = await res.json().catch(() => ({}));
         triggerToast(`❌ ${data.detail || "INVALID LOGIN CREDENTIALS"}`);

@@ -2337,11 +2337,28 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
 
     # Sort consolidated audit history by timestamp descending
     history_list.sort(key=lambda x: x["timestamp"], reverse=True)
+    uid = profile.id
+    uid_identifiers = list(set([uid, profile.id, profile.email, profile.email.lower()]))
+        
+    active_cards = db.query(DBCard).filter(DBCard.user_id.in_(uid_identifiers)).count()
+    active_aliases = db.query(DBAlias).filter(DBAlias.user_id.in_(uid_identifiers)).count()
+    total_used = active_cards + active_aliases
+        
+    bonus = profile.bonus_credits or 0
+    phone_bonus = profile.phone_line_bonus or 0
+    
+    # SEPARATE LIMITS
+    vcc_email_capacity = MAX_IDENTITY_CREDITS + bonus
+    phone_capacity = BASE_PHONE_LIMIT + phone_bonus
+    
+    # NEW: DECOUPLED USAGE METRICS
+    used_vcc_email = active_cards + db.query(DBAlias).filter(DBAlias.user_id.in_(uid_identifiers), DBAlias.type == 'email').count()
+    used_phones = db.query(DBAlias).filter(DBAlias.user_id.in_(uid_identifiers), DBAlias.type == 'phone').count()
 
-    # 3. Virtual Cards (Strictly Scoped to DBCard.user_id == uid)
+    # 3. Virtual Cards (Multi-Identifier Scoped)
     cards = []
     try:
-        cards_entities = db.query(DBCard).filter(DBCard.user_id == uid).order_by(DBCard.created_at.desc()).all()
+        cards_entities = db.query(DBCard).filter(DBCard.user_id.in_(uid_identifiers)).order_by(DBCard.created_at.desc()).all()
         cards = [{
             "id": c.id,
             "user_id": c.user_id,
@@ -2355,10 +2372,10 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
     except Exception as e:
         logger.error(f"Sync Cards Error: {e}")
 
-    # 4. Aliases (Email & Phone - Strictly Scoped to DBAlias.user_id == uid)
+    # 4. Aliases (Email & Phone - Multi-Identifier Scoped)
     aliases_list = []
     try:
-        aliases_entities = db.query(DBAlias).filter(DBAlias.user_id == uid).order_by(DBAlias.created_at.desc()).all()
+        aliases_entities = db.query(DBAlias).filter(DBAlias.user_id.in_(uid_identifiers)).order_by(DBAlias.created_at.desc()).all()
         aliases_list = [{
             "id": a.id,
             "user_id": a.user_id,
@@ -2373,9 +2390,9 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
     # 5. Target Emails (Consolidated)
     target_emails = {"primary": "", "additional": [], "slots": 1, "used": 0}
     try:
-        current_extra_count = db.query(DBTargetEmail).filter(DBTargetEmail.profile_id == uid).count()
+        current_extra_count = db.query(DBTargetEmail).filter(DBTargetEmail.profile_id.in_(uid_identifiers)).count()
         allowed_extras = 1 + (profile.extra_email_slots or 0)
-        emails_entities = db.query(DBTargetEmail).filter(DBTargetEmail.profile_id == uid).all()
+        emails_entities = db.query(DBTargetEmail).filter(DBTargetEmail.profile_id.in_(uid_identifiers)).all()
         target_emails = {
             "primary": profile.email,
             "additional": [{"id": te.id, "email": te.email} for te in emails_entities],
@@ -3000,11 +3017,34 @@ async def marqeta_webhook(request: Request, db: Session = Depends(get_db)):
 
 @app.get("/aliases/data")
 async def get_aliases(x_user_id: Optional[str] = Header(None), user_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
-    """Retrieves all active aliases strictly scoped to the requesting user_id"""
-    active_uid = user_id or x_user_id
+    """Retrieves all active aliases strictly scoped to the requesting user_id or associated email"""
+    active_uid = (user_id or x_user_id or "").strip()
     if not active_uid:
         return {"aliases": []}
-    aliases = db.query(DBAlias).filter(DBAlias.user_id == active_uid).order_by(DBAlias.created_at.desc()).all()
+
+    profile = db.query(DBProfile).filter(
+        or_(
+            DBProfile.id == active_uid,
+            DBProfile.email.ilike(active_uid),
+            DBProfile.id.ilike(f"%{active_uid}%")
+        )
+    ).first()
+
+    query_user_ids = [active_uid]
+    if profile:
+        if profile.id and profile.id not in query_user_ids:
+            query_user_ids.append(profile.id)
+        if profile.email and profile.email not in query_user_ids:
+            query_user_ids.append(profile.email)
+            query_user_ids.append(profile.email.lower())
+
+    aliases = db.query(DBAlias).filter(
+        or_(
+            DBAlias.user_id.in_(query_user_ids),
+            DBAlias.user_id.ilike(active_uid)
+        )
+    ).order_by(DBAlias.created_at.desc()).all()
+    
     return {"aliases": aliases if aliases else []}
 
 
