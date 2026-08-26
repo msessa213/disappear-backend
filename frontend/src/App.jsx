@@ -4384,19 +4384,53 @@ const handleEmergencyBurn = async () => {
 
       {/* --- ALIAS EMAIL REPLY & COMPOSE MODAL DIALOG --- */}
       {showAliasReplyModal && (
-        <div className="modal-overlay" style={{ zIndex: 60000 }} onClick={() => setShowAliasReplyModal(false)}>
-          <div className="price-box" style={{ maxWidth: '520px', textAlign: 'left' }} onClick={e => e.stopPropagation()}>
-            <h3 className="tiger-text" style={{ margin: '0 0 14px 0', fontSize: '1.1rem' }}>
-              {replyRecipientEmail ? "✉️ REPLY VIA ENCRYPTED ALIAS" : "✉️ COMPOSE OUTBOUND ALIAS EMAIL"}
-            </h3>
+        <div 
+          className="modal-overlay" 
+          style={{ 
+            zIndex: 60000, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            padding: 'max(16px, env(safe-area-inset-top, 16px)) 12px max(24px, env(safe-area-inset-bottom, 24px)) 12px', 
+            overflowY: 'auto' 
+          }} 
+          onClick={() => setShowAliasReplyModal(false)}
+        >
+          <div 
+            className="price-box" 
+            style={{ 
+              maxWidth: '540px', 
+              width: '100%', 
+              maxHeight: '90vh', 
+              overflowY: 'auto', 
+              textAlign: 'left', 
+              boxSizing: 'border-box',
+              padding: '24px',
+              border: '1px solid var(--tiger-blue)'
+            }} 
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.1rem' }}>
+                {replyRecipientEmail ? "✉️ REPLY VIA ENCRYPTED ALIAS" : "✉️ COMPOSE OUTBOUND ALIAS EMAIL"}
+              </h3>
+              <button 
+                type="button" 
+                className="reset-btn" 
+                style={{ padding: '2px 8px', fontSize: '0.8rem', color: '#94A3B8', borderColor: '#334155' }}
+                onClick={() => setShowAliasReplyModal(false)}
+              >
+                ✕
+              </button>
+            </div>
             
-            <form onSubmit={handleSendAliasReply} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <form onSubmit={handleSendAliasReply} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label style={{ fontSize: '0.75rem', color: '#00D2FF', fontWeight: 'bold' }}>SELECT SENDER ALIAS IDENTITY</label>
+                <label style={{ fontSize: '0.75rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>SELECT SENDER ALIAS IDENTITY</label>
                 {emails && emails.length > 0 ? (
                   <select
                     className="mask-btn"
-                    style={{ width: '100%', color: '#FCD34D', fontWeight: 'bold', background: '#020617', marginTop: '4px', boxSizing: 'border-box', height: '40px' }}
+                    style={{ width: '100%', color: '#FCD34D', fontWeight: 'bold', background: '#020617', boxSizing: 'border-box', height: '42px', padding: '0 10px', margin: 0 }}
                     value={replyAliasEmail || (emails[0] ? emails[0].content : "")}
                     onChange={(e) => setReplyAliasEmail(e.target.value)}
                     required
@@ -4411,7 +4445,7 @@ const handleEmergencyBurn = async () => {
                   <input
                     type="text"
                     className="mask-btn"
-                    style={{ width: '100%', color: '#FCD34D', fontWeight: 'bold', background: '#020617', marginTop: '4px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', color: '#FCD34D', fontWeight: 'bold', background: '#020617', boxSizing: 'border-box', height: '42px', padding: '0 10px', margin: 0 }}
                     placeholder="e.g. alias@anonaddy.me"
                     value={replyAliasEmail}
                     onChange={(e) => setReplyAliasEmail(e.target.value)}
@@ -4421,11 +4455,11 @@ const handleEmergencyBurn = async () => {
               </div>
 
               <div>
-                <label style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>RECIPIENT EMAIL ADDRESS</label>
+                <label style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>RECIPIENT EMAIL ADDRESS</label>
                 <input
                   type="email"
                   className="mask-btn"
-                  style={{ width: '100%', color: '#FFF', marginTop: '4px', boxSizing: 'border-box' }}
+                  style={{ width: '100%', color: '#FFF', boxSizing: 'border-box', height: '42px', padding: '0 10px', margin: 0 }}
                   placeholder="recipient@domain.com"
                   value={replyRecipientEmail}
                   onChange={(e) => setReplyRecipientEmail(e.target.value)}
@@ -4434,12 +4468,12 @@ const handleEmergencyBurn = async () => {
               </div>
 
               <div>
-                <label style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>SUBJECT</label>
+                <label style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>SUBJECT</label>
                 <input
                   type="text"
                   className="mask-btn"
-                  style={{ width: '100%', color: '#FFF', marginTop: '4px', boxSizing: 'border-box' }}
-                  placeholder="Re: Subject"
+                  style={{ width: '100%', color: '#FFF', boxSizing: 'border-box', height: '42px', padding: '0 10px', margin: 0 }}
+                  placeholder="Subject line..."
                   value={replySubject}
                   onChange={(e) => setReplySubject(e.target.value)}
                   required
@@ -4447,30 +4481,30 @@ const handleEmergencyBurn = async () => {
               </div>
 
               <div>
-                <label style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>MESSAGE BODY</label>
+                <label style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold', display: 'block', marginBottom: '4px' }}>MESSAGE BODY</label>
                 <textarea
                   className="mask-btn"
-                  style={{ width: '100%', color: '#FFF', marginTop: '4px', height: '100px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'sans-serif' }}
-                  placeholder="Type your reply message..."
+                  style={{ width: '100%', color: '#FFF', minHeight: '120px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'sans-serif', padding: '10px', margin: 0, lineHeight: '1.4' }}
+                  placeholder="Type your message body..."
                   value={aliasReplyBody}
                   onChange={(e) => setAliasReplyBody(e.target.value)}
                   required
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '10px', flexWrap: 'wrap', width: '100%', boxSizing: 'border-box' }}>
                 <button
                   type="submit"
                   className="main-button"
-                  style={{ flex: 1, padding: '12px', fontSize: '0.85rem' }}
+                  style={{ flex: 1, minWidth: '160px', height: '44px', margin: 0, padding: '0 16px', fontSize: '0.85rem', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}
                   disabled={isSendingAliasReply}
                 >
-                  {isSendingAliasReply ? "TRANSMITTING..." : "📤 DISPATCH ALIAS REPLY"}
+                  {isSendingAliasReply ? "TRANSMITTING..." : (replyRecipientEmail ? "📤 DISPATCH ALIAS REPLY" : "📤 SEND ALIAS EMAIL")}
                 </button>
                 <button
                   type="button"
                   className="reset-btn"
-                  style={{ padding: '12px 18px', fontSize: '0.85rem' }}
+                  style={{ flex: '0 0 auto', minWidth: '100px', height: '44px', margin: 0, padding: '0 16px', fontSize: '0.85rem', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}
                   onClick={() => setShowAliasReplyModal(false)}
                 >
                   CANCEL
