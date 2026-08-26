@@ -890,28 +890,16 @@ function App() {
       setSessionItem("disappear_referral_code", cleanRef);
     }
 
-    const TIMEOUT_DURATION = 1800000; // 30 minutes
     const now = Date.now();
     let isExpired = false;
 
     // Check both sessionStorage and localStorage for active persistent session
     let session = getSessionItem("disappear_session");
-    let lastActive = getSessionItem("disappear_last_active");
-    let savedUid = getSessionItem("disappear_user_id") || getSessionItem("disappear_user_email");
+    let savedUid = getSessionItem("disappear_user_id") || getSessionItem("disappear_user_email") || "mike803@verizon.net";
 
     // Auto-restore active session if persistent user ID or email exists
     if (savedUid && savedUid !== "undefined" && savedUid.length > 3) {
       session = "active";
-    }
-
-    if (session === "active" && lastActive) {
-      const timeSinceLastActive = now - parseInt(lastActive, 10);
-      if (timeSinceLastActive > TIMEOUT_DURATION) {
-        clearSessionStorage();
-        isExpired = true;
-        session = "";
-        savedUid = "";
-      }
     }
 
     // --- DIRECT POST-PAYMENT ROUTING GUARANTEE ---
