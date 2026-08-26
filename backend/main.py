@@ -57,7 +57,10 @@ async def root():
     frontend_dist_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "dist")
     index_file = os.path.join(frontend_dist_path, "index.html")
     if os.path.exists(index_file):
-        return FileResponse(index_file)
+        return FileResponse(index_file, headers={
+            "Access-Control-Allow-Origin": "*",
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
+        })
     if startup_error_message:
         return {"status": "degraded", "error": startup_error_message}
     return {"status": "online"}
