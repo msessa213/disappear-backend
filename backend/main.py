@@ -2324,14 +2324,10 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
             logger.error(f"[SYNC_DEBUG] FORCE_RECORD_RECOVERY_FAILED for {target_user_id}: {rec_err}")
             profile = None
 
-    # Fallback safeguard: If target_user_id was missing or unresolvable, return the primary persistent profile
-    if not profile:
-        profile = db.query(DBProfile).order_by(desc(DBProfile.created_at)).first()
-
     if profile:
         logger.info(f"[SYNC_DEBUG] SYNC_FOUND_PROFILE: Returning profile ID={profile.id}, Email={profile.email}, Name={profile.first_name} {profile.last_name}")
     else:
-        logger.warning(f"[SYNC_DEBUG] SYNC_NO_PROFILE: Database completely empty. Returning default payload.")
+        logger.warning(f"[SYNC_DEBUG] SYNC_NO_PROFILE: Unauthenticated or missing user_id. Returning default empty payload.")
 
     if not profile:
         return {

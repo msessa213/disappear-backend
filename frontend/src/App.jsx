@@ -422,7 +422,7 @@ function App() {
           setCredits(prev => isStructurallyEqual(prev, newCredits) ? prev : newCredits);
 
           // PERMANENT PERSISTENCE SAFEGUARD: Re-hydrate Target Profile State directly from PostgreSQL
-          if (data.profile.first_name || data.profile.email || data.profile.address) {
+          if (data.profile && (data.profile.first_name || data.profile.last_name || data.profile.email || data.profile.address)) {
               setTargetProfile(prev => {
                   const updated = {
                       ...prev,
