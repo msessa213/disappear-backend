@@ -183,20 +183,29 @@ function App() {
   const [showSignupTargetNoticeModal, setShowSignupTargetNoticeModal] = useState(false);
 
   const checkAndShowNoticeModal = (uid) => {
-    const targetId = uid || currentUserId || getSessionItem("disappear_user_id");
+    const targetId = uid || currentUserId || getSessionItem("disappear_user_id") || getSessionItem("disappear_user_email");
     if (!targetId) return;
-    const isAcked = getSessionItem(`disappear_notice_acked_${targetId}`) || localStorage.getItem(`disappear_notice_acked_${targetId}`);
-    if (isAcked !== "true") {
+    const isAcked = getSessionItem(`disappear_notice_acked_${targetId}`) || 
+                    localStorage.getItem(`disappear_notice_acked_${targetId}`) ||
+                    getSessionItem("disappear_notice_acked_global") ||
+                    localStorage.getItem("disappear_notice_acked_global");
+    const isVerified = addyRecipientStatus === "VERIFIED" || 
+                       getSessionItem(`disappear_addy_verified_${targetId}`) === "VERIFIED" ||
+                       localStorage.getItem(`disappear_addy_verified_${targetId}`) === "VERIFIED";
+
+    if (isAcked !== "true" && !isVerified) {
       setShowDataRemovalNoticeModal(true);
     }
   };
 
   const acknowledgeNoticeModal = () => {
-    const targetId = currentUserId || getSessionItem("disappear_user_id");
+    const targetId = currentUserId || getSessionItem("disappear_user_id") || getSessionItem("disappear_user_email");
     if (targetId) {
       setSessionItem(`disappear_notice_acked_${targetId}`, "true");
-      localStorage.setItem(`disappear_notice_acked_${targetId}`, "true");
+      try { localStorage.setItem(`disappear_notice_acked_${targetId}`, "true"); } catch(e){}
     }
+    setSessionItem("disappear_notice_acked_global", "true");
+    try { localStorage.setItem("disappear_notice_acked_global", "true"); } catch(e){}
     setShowDataRemovalNoticeModal(false);
   };
 
@@ -4231,14 +4240,14 @@ const handleEmergencyBurn = async () => {
 
       {/* --- DATA REMOVAL TARGET NOTICE MODAL (POPUP ON SIGN IN) --- */}
       {showDataRemovalNoticeModal && (
-        <div className="modal-overlay" style={{ zIndex: 60050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(16px, env(safe-area-inset-top, 16px)) 12px max(24px, env(safe-area-inset-bottom, 24px)) 12px', overflowY: 'auto' }} onClick={() => setShowDataRemovalNoticeModal(false)}>
+        <div className="modal-overlay" style={{ zIndex: 60050, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'max(16px, env(safe-area-inset-top, 16px)) 12px max(24px, env(safe-area-inset-bottom, 24px)) 12px', overflowY: 'auto' }} onClick={acknowledgeNoticeModal}>
           <div style={{ maxWidth: '540px', width: '100%', maxHeight: '82vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '24px 20px', textAlign: 'left', boxSizing: 'border-box', border: '1px solid #00D2FF', boxShadow: '0 10px 40px rgba(0,0,0,0.95), 0 0 35px rgba(0, 210, 255, 0.35)', borderRadius: '16px', background: 'linear-gradient(145deg, #090d16 0%, #030712 100%)', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '1.4rem' }}>🛡️</span>
                 <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.15rem', color: '#00D2FF', letterSpacing: '0.5px' }}>DATA REMOVAL TARGET NOTICE</h3>
               </div>
-              <button type="button" className="reset-btn" style={{ padding: '2px 8px', fontSize: '0.75rem' }} onClick={() => setShowDataRemovalNoticeModal(false)}>✕ CLOSE</button>
+              <button type="button" className="reset-btn" style={{ padding: '2px 8px', fontSize: '0.75rem' }} onClick={acknowledgeNoticeModal}>✕ CLOSE</button>
             </div>
 
             {/* --- PROMINENT ADDY.IO EMAIL VERIFICATION CALLOUT BANNER --- */}
