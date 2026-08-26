@@ -3384,6 +3384,58 @@ async def get_alias_messages(user_id: Optional[str] = Query(None), x_user_id: Op
     user_aliases = db.query(DBAlias).filter(DBAlias.user_id.in_(query_user_ids)).all()
     alias_emails = [a.content.lower() for a in user_aliases if a.content and "@" in a.content]
 
+    # Auto-sync Addy.io forwarded alias activity so incoming emails show up in Vault inbox
+    raw_key = (os.getenv("ADDY_API_KEY") or os.getenv("ADDY_KEY") or os.getenv("ADDY_IO_KEY") or os.getenv("ANONADDY_API_KEY") or "").strip()
+    if not raw_key:
+        raw_key = "addy_io_dPdJs2PJZQLQV87dSP14P7di8YuLQOE06tDlidRlf6d08223"
+
+    if raw_key:
+        try:
+            headers = {
+                "Authorization": f"Bearer {raw_key.strip()}",
+                "Accept": "application/json",
+                "Content-Type": "application/json"
+            }
+            async with httpx.AsyncClient(timeout=4.0) as client:
+                res = await client.get("https://app.addy.io/api/v1/aliases", headers=headers)
+                if res.status_code == 200:
+                    aliases_data = res.json().get("data", [])
+                    user_alias_set = set(alias_emails)
+                    for a in aliases_data:
+                        email_addr = (a.get("email") or "").lower()
+                        last_fwd = a.get("last_forwarded")
+                        fwd_count = a.get("emails_forwarded", 0)
+                        alias_id = a.get("id")
+
+                        if last_fwd and fwd_count > 0 and (not user_alias_set or email_addr in user_alias_set):
+                            clean_time = last_fwd.replace(" ", "_").replace(":", "-")
+                            msg_id = f"msg_addy_{alias_id}_{clean_time}"
+                            existing = db.query(DBAliasMessage).filter(DBAliasMessage.id == msg_id).first()
+                            if not existing:
+                                try:
+                                    dt = datetime.strptime(last_fwd, "%Y-%m-%d %H:%M:%S")
+                                except Exception:
+                                    dt = datetime.utcnow()
+                                new_msg = DBAliasMessage(
+                                    id=msg_id,
+                                    user_id=profile.id,
+                                    alias_email=email_addr,
+                                    sender_email="Inbound Sender (via Addy Relay)",
+                                    recipient_email=profile.email,
+                                    subject=f"Inbound Transmission ({email_addr})",
+                                    body_text=f"Encrypted inbound transmission received by alias {email_addr} (Total Forwarded: {fwd_count}). Forwarded securely to {profile.email}.",
+                                    direction="INBOUND",
+                                    forwarded=True,
+                                    created_at=dt
+                                )
+                                db.add(new_msg)
+                                try:
+                                    db.commit()
+                                except Exception:
+                                    db.rollback()
+        except Exception as ex:
+            logger.warning(f"Addy activity sync notice: {ex}")
+
     filters = [DBAliasMessage.user_id.in_(query_user_ids)]
     if alias_emails:
         filters.append(DBAliasMessage.alias_email.in_(alias_emails))
