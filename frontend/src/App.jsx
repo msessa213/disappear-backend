@@ -243,7 +243,13 @@ function App() {
   const [showAliasReplyModal, setShowAliasReplyModal] = useState(false);
   const [isSendingAliasReply, setIsSendingAliasReply] = useState(false);
 
+  const isSyncingRef = useRef(false);
+  const isFetchingSmsRef = useRef(false);
+  const isFetchingMessagesRef = useRef(false);
+
   const fetchAliasMessages = useCallback(async () => {
+    if (isFetchingMessagesRef.current) return;
+    isFetchingMessagesRef.current = true;
     try {
       const activeUserId = currentUserId || getSessionItem("disappear_user_id");
       if (!activeUserId) return;
@@ -254,6 +260,8 @@ function App() {
       }
     } catch (e) {
       console.warn("Failed fetching alias messages:", e);
+    } finally {
+      isFetchingMessagesRef.current = false;
     }
   }, [secureRequest, currentUserId]);
 
@@ -450,9 +458,11 @@ function App() {
   }, []);
 
   const fetchSmsInbox = useCallback(async () => {
-    const activeUserId = currentUserId || getSessionItem("disappear_user_id");
-    if (!activeUserId) return;
+    if (isFetchingSmsRef.current) return;
+    isFetchingSmsRef.current = true;
     try {
+      const activeUserId = currentUserId || getSessionItem("disappear_user_id");
+      if (!activeUserId) return;
       const res = await secureRequest(`${API_BASE_URL}/api/v1/sms-inbox/${activeUserId}`);
       if (res.ok) {
         const data = await res.json();
@@ -460,6 +470,8 @@ function App() {
       }
     } catch (e) {
       console.error("SMS Inbox error", e);
+    } finally {
+      isFetchingSmsRef.current = false;
     }
   }, [currentUserId, updateSmsInboxSafely]);
 
@@ -473,6 +485,8 @@ function App() {
   }, [currentUserId]);
 
   const syncDefenseData = useCallback(async (overrideUserId = null) => {
+    if (isSyncingRef.current) return;
+    isSyncingRef.current = true;
     try {
       const activeUserId = overrideUserId || currentUserId || getSessionItem("disappear_user_id") || getSessionItem("disappear_user_email");
       if (!activeUserId) return;
@@ -601,6 +615,8 @@ function App() {
       fetchAliasMessages();
     } catch (err) { 
         console.warn("Network interrupted. Attempting silent reconnect on next cycle...");
+    } finally {
+        isSyncingRef.current = false;
     }
   }, [pushNotification, selectedFundingSource, hasLoadedPhone, fetchSmsInbox, fetchAliasMessages]);
 
