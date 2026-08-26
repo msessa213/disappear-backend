@@ -261,12 +261,11 @@ function App() {
 
   const handleRefreshAliasData = async () => {
     setIsRefreshingAliasData(true);
-    triggerToast("🔄 REFRESHING ALIAS VAULT & MESSAGES...");
+    triggerToast("🔄 REFRESHING ALIAS INBOX...");
     try {
       await Promise.all([
         syncDefenseData(),
-        fetchAliasMessages(),
-        checkAddyRecipientStatus(true)
+        fetchAliasMessages()
       ]);
       triggerToast("✅ ALIAS INBOX & MESSAGES REFRESHED");
     } catch (e) {
