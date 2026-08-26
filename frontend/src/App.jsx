@@ -891,7 +891,7 @@ function App() {
 
     // Check both sessionStorage and localStorage for active persistent session
     let session = getSessionItem("disappear_session");
-    let savedUid = getSessionItem("disappear_user_id") || getSessionItem("disappear_user_email") || "mike803@verizon.net";
+    let savedUid = getSessionItem("disappear_user_id") || getSessionItem("disappear_user_email") || "";
 
     // Auto-restore active session if persistent user ID or email exists
     if (savedUid && savedUid !== "undefined" && savedUid.length > 3) {
