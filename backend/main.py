@@ -1687,8 +1687,10 @@ def parse_address_location(address_str: str):
 
 
 @app.get("/admin/ops/backlog")
+@app.get("/admin/manual-requests")
+@app.get("/api/admin/manual-requests")
 async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = Depends(verify_admin_token)):
-    """Retrieves list of pending manual & automated data removal tasks ONLY for paid APPROVED accounts"""
+    """Global Admin Operations Command Center: Aggregates all manual & automated removal requests across all platform users, ordered by most recent first"""
     # 1. Guarantee core paid profiles exist and have APPROVED status
     p1 = db.query(DBProfile).filter(DBProfile.id == "user_7956").first()
     if not p1:
@@ -1704,54 +1706,61 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
     else:
         p2.kyc_status = "APPROVED"
 
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
 
-    paid_profiles = db.query(DBProfile).filter(
-        DBProfile.kyc_status == "APPROVED",
+    # 2. Global Profile Aggregation: Fetch all platform profiles excluding test/example accounts
+    all_profiles = db.query(DBProfile).filter(
         DBProfile.id.not_in(["user_ref_01", "user_ref_02"]),
         ~DBProfile.email.ilike("%@example.com"),
-        ~DBProfile.email.ilike("%@test.com"),
-        ~DBProfile.email.ilike("%msessa2@gmail.com"),
-        ~DBProfile.email.ilike("%123 main st%")
+        ~DBProfile.email.ilike("%@test.com")
     ).all()
 
-    approved_user_ids = [p.id for p in paid_profiles]
-    if not approved_user_ids:
-        return {"manual_processing_required": [], "automated_backlog": [], "completed_tasks": []}
+    profiles_map = {p.id: p for p in all_profiles}
+    user_ids = list(profiles_map.keys())
 
-    existing_scrubs = db.query(DBScrubLog).filter(DBScrubLog.user_id.in_(approved_user_ids)).all()
-    scrub_key_map = {(s.user_id, s.broker_name.upper()): s for s in existing_scrubs}
+    # 3. Seed manual scrub entries for all active profiles if missing
+    if user_ids:
+        existing_scrubs = db.query(DBScrubLog).filter(DBScrubLog.user_id.in_(user_ids)).all()
+        scrub_key_map = {(s.user_id, s.broker_name.upper()): s for s in existing_scrubs}
 
-    new_scrubs = []
-    target_brokers = ["LEXISNEXIS", "BEENVERIFIED", "WHITEPAGES", "SPOKEO", "RADARIS", "TRUTHFINDER", "PEOPLELOOKER", "FASTPEOPLESEARCH", "SMARTBACKGROUNDCHECKS"]
-    now = datetime.utcnow()
+        new_scrubs = []
+        target_brokers = ["LEXISNEXIS", "BEENVERIFIED", "WHITEPAGES", "SPOKEO", "RADARIS", "TRUTHFINDER", "PEOPLELOOKER", "FASTPEOPLESEARCH", "SMARTBACKGROUNDCHECKS"]
+        now = datetime.utcnow()
 
-    for p in paid_profiles:
-        for b_name in target_brokers:
-            s = scrub_key_map.get((p.id, b_name))
-            if not s:
-                new_scrubs.append(DBScrubLog(user_id=p.id, broker_name=b_name, status="MANUAL_PENDING", removal_type="MANUAL", timestamp=now))
-            elif s.status not in ["PROCESSING", "MANUAL_PENDING", "PENDING"]:
-                s.status = "MANUAL_PENDING"
-                s.timestamp = now
+        for p in all_profiles:
+            for b_name in target_brokers:
+                s = scrub_key_map.get((p.id, b_name))
+                if not s:
+                    new_scrubs.append(DBScrubLog(user_id=p.id, broker_name=b_name, status="MANUAL_PENDING", removal_type="MANUAL", timestamp=now))
 
-    if new_scrubs:
-        db.add_all(new_scrubs)
-    db.commit()
+        if new_scrubs:
+            db.add_all(new_scrubs)
+            try:
+                db.commit()
+            except Exception:
+                db.rollback()
 
+    # 4. Global Aggregation: Query ALL manual & automated tasks across ALL platform users (ordered by most recent first)
     open_tasks = db.query(DBScrubLog).filter(
-        DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"]),
-        DBScrubLog.user_id.in_(approved_user_ids)
-    ).limit(150).all()
+        DBScrubLog.status.in_(["PROCESSING", "MANUAL_PENDING", "PENDING"])
+    ).order_by(desc(DBScrubLog.timestamp)).all()
 
-    user_ids = {task.user_id for task in open_tasks if task.user_id}
     completed_logs = db.query(DBScrubLog).filter(
-        DBScrubLog.status == "REMOVED",
-        DBScrubLog.user_id.in_(approved_user_ids)
-    ).limit(50).all()
-    user_ids.update({task.user_id for task in completed_logs if task.user_id})
+        DBScrubLog.status == "REMOVED"
+    ).order_by(desc(DBScrubLog.timestamp)).all()
 
-    profiles_map = {p.id: p for p in paid_profiles}
+    # Hydrate any missing profile user IDs
+    missing_user_ids = ({task.user_id for task in open_tasks if task.user_id and task.user_id not in profiles_map} |
+                         {task.user_id for task in completed_logs if task.user_id and task.user_id not in profiles_map})
+    if missing_user_ids:
+        extra_profiles = db.query(DBProfile).filter(DBProfile.id.in_(list(missing_user_ids))).all()
+        for p in extra_profiles:
+            profiles_map[p.id] = p
+
+    paid_profiles = list(profiles_map.values())
 
     manual_set = {b.upper() for b in MANUAL_BROKERS}
     automated_backlog = []
