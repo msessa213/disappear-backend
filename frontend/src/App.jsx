@@ -892,12 +892,15 @@ function App() {
 
     const TIMEOUT_DURATION = 1800000; // 30 minutes
     const now = Date.now();
-    let isExpired = false;
+    // Check both sessionStorage and localStorage for active persistent session
+    let session = getSessionItem("disappear_session");
+    let lastActive = getSessionItem("disappear_last_active");
+    let savedUid = getSessionItem("disappear_user_id") || getSessionItem("disappear_user_email");
 
-    // Check sessionStorage ONLY for active tab session (Strict Session Isolation)
-    let session = sessionStorage.getItem("disappear_session") || "";
-    let lastActive = sessionStorage.getItem("disappear_last_active") || "";
-    let savedUid = sessionStorage.getItem("disappear_user_id") || "";
+    // Auto-restore active session if persistent user ID or email exists
+    if (savedUid && savedUid !== "undefined" && savedUid.length > 3) {
+      session = "active";
+    }
 
     if (session === "active" && lastActive) {
       const timeSinceLastActive = now - parseInt(lastActive, 10);
@@ -915,11 +918,11 @@ function App() {
     const queryUid = query.get("user_id");
 
     if (queryPayment === "success" || querySetup === "success") {
-      const activeUid = queryUid || savedUid || sessionStorage.getItem("disappear_user_id");
+      const activeUid = queryUid || savedUid || getSessionItem("disappear_user_id") || getSessionItem("disappear_user_email");
       if (activeUid && activeUid !== "undefined") {
-        sessionStorage.setItem("disappear_session", "active");
-        sessionStorage.setItem("disappear_last_active", now.toString());
-        sessionStorage.setItem("disappear_user_id", activeUid);
+        setSessionItem("disappear_session", "active");
+        setSessionItem("disappear_last_active", now.toString());
+        setSessionItem("disappear_user_id", activeUid);
         setCurrentUserId(activeUid);
         setShowLanding(false);
         setShowPricing(false);
@@ -941,21 +944,21 @@ function App() {
       return;
     }
 
-    // STRICT SESSION VALIDATION ON MOUNT:
-    // Only restore vault if sessionStorage explicitly contains active session and valid user_id
+    // PERSISTENT SESSION VALIDATION ON MOUNT:
+    // Automatically restore vault if persistent session or saved user ID exists
     if (session === "active" && !isExpired && savedUid && savedUid !== "undefined" && savedUid.length > 3) {
-      sessionStorage.setItem("disappear_last_active", now.toString());
-      sessionStorage.setItem("disappear_session", "active");
-      sessionStorage.setItem("disappear_user_id", savedUid);
+      setSessionItem("disappear_last_active", now.toString());
+      setSessionItem("disappear_session", "active");
+      setSessionItem("disappear_user_id", savedUid);
       setCurrentUserId(savedUid);
       setShowLanding(false);
       setShowPricing(false);
       setShowCheckout(false);
       setShowShield(true);
       setProgress(100);
+      syncDefenseData(savedUid);
     } else {
-      // DEFAULT TO PUBLIC LANDING / HOME PAGE ON UNVERIFIED VISITS & REFRESHES
-      clearSessionStorage();
+      // DEFAULT TO PUBLIC LANDING PAGE ONLY WHEN NO USER CREDENTIALS EXIST
       setCurrentUserId(null);
       setShowLanding(true);
       setShowShield(false);
@@ -970,7 +973,7 @@ function App() {
         document.body.scrollTop = 0;
       } catch (e) {}
     }
-  }, []);
+  }, [syncDefenseData]);
 
 
 
