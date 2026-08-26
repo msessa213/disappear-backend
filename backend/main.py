@@ -464,15 +464,15 @@ safe_add_column("scrub_logs_v1", "assigned_analyst", "VARCHAR")
 safe_add_column("scrub_logs_v1", "resolved_by", "VARCHAR")
 safe_add_column("scrub_logs_v1", "target_listing_url", "VARCHAR")
 
-# Clean dummy user_9685 profile and link all Mike's aliases to user_7956
+# Canonical profile sync for Michael Sessa
 try:
     with engine.connect() as conn:
         conn.execute(text("DELETE FROM shield_profiles_v3 WHERE id = 'user_9685'"))
-        conn.execute(text("UPDATE shield_profiles_v3 SET id = 'user_7956' WHERE LOWER(email) = 'mike803@verizon.net'"))
+        conn.execute(text("UPDATE shield_profiles_v3 SET id = 'user_7956', first_name = 'Michael', last_name = 'Sessa', address = '4017 Arroyo Ln, Tampa, FL 33624', phone = '+18138105237' WHERE LOWER(email) = 'mike803@verizon.net'"))
         conn.execute(text("UPDATE shield_aliases_v3 SET user_id = 'user_7956' WHERE content IN ('+18884317375', '+18137558466', '+18137917531', '+18134375531', '+17274850017', 'kdkq0hm9@anonaddy.me', 'f8hpm3cl@anonaddy.me') OR user_id = 'user_mike803'"))
         conn.commit()
 except Exception as ex:
-    logger.warning(f"Dummy profile purge / alias sync: {ex}")
+    logger.warning(f"Profile sync notice: {ex}")
 
 # --- APP CONFIGURATION ---
 
