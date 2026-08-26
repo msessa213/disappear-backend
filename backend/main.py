@@ -3361,7 +3361,7 @@ async def handle_inbound_email_webhook(request: Request, bg_tasks: BackgroundTas
         return {"status": "PROCESSED_WITH_WARNINGS", "detail": str(ex)}
 
 
-def sync_addy_activity_background(profile_id: str, profile_email: str, alias_emails: list):
+async def sync_addy_activity_background(profile_id: str, profile_email: str, alias_emails: list):
     """Background task to pull Addy alias activity asynchronously without delaying HTTP response threads."""
     raw_key = (os.getenv("ADDY_API_KEY") or os.getenv("ADDY_KEY") or os.getenv("ADDY_IO_KEY") or os.getenv("ANONADDY_API_KEY") or "").strip()
     if not raw_key:
@@ -3377,8 +3377,8 @@ def sync_addy_activity_background(profile_id: str, profile_email: str, alias_ema
             "Accept": "application/json",
             "Content-Type": "application/json"
         }
-        with httpx.Client(timeout=3.0) as client:
-            res = client.get("https://app.addy.io/api/v1/aliases", headers=headers)
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            res = await client.get("https://app.addy.io/api/v1/aliases", headers=headers)
             if res.status_code == 200:
                 aliases_data = res.json().get("data", [])
                 user_alias_set = set(alias_emails)
@@ -3427,34 +3427,38 @@ def sync_addy_activity_background(profile_id: str, profile_email: str, alias_ema
 @app.get("/api/v1/aliases/messages")
 async def get_alias_messages(bg_tasks: BackgroundTasks, user_id: Optional[str] = Query(None), x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
     """Retrieves inbound/outbound forwarded email messages for user's active aliases with strict exact tenant isolation and instant <15ms response latency"""
-    active_uid = (user_id or x_user_id or "").strip()
-    if not active_uid or active_uid in ["undefined", "null", "", "anonymous_agent", "UNAUTHENTICATED"]:
+    try:
+        active_uid = (user_id or x_user_id or "").strip()
+        if not active_uid or active_uid in ["undefined", "null", "", "anonymous_agent", "UNAUTHENTICATED"]:
+            return {"messages": []}
+
+        profile = db.query(DBProfile).filter(
+            or_(
+                DBProfile.id == active_uid,
+                DBProfile.email.ilike(active_uid.lower())
+            )
+        ).first()
+
+        if not profile:
+            return {"messages": []}
+
+        query_user_ids = list(set([profile.id, profile.email, profile.email.lower()]))
+
+        user_aliases = db.query(DBAlias).filter(DBAlias.user_id.in_(query_user_ids)).all()
+        alias_emails = [a.content.lower() for a in user_aliases if a.content and "@" in a.content]
+
+        # Asynchronous non-blocking background execution of Addy activity sync
+        bg_tasks.add_task(sync_addy_activity_background, profile.id, profile.email, alias_emails)
+
+        filters = [DBAliasMessage.user_id.in_(query_user_ids)]
+        if alias_emails:
+            filters.append(DBAliasMessage.alias_email.in_(alias_emails))
+
+        messages = db.query(DBAliasMessage).filter(or_(*filters)).order_by(desc(DBAliasMessage.created_at)).limit(100).all()
+        return {"messages": messages if messages else []}
+    except Exception as ex:
+        logger.error(f"get_alias_messages unexpected error: {ex}")
         return {"messages": []}
-
-    profile = db.query(DBProfile).filter(
-        or_(
-            DBProfile.id == active_uid,
-            DBProfile.email.ilike(active_uid.lower())
-        )
-    ).first()
-
-    if not profile:
-        return {"messages": []}
-
-    query_user_ids = list(set([profile.id, profile.email, profile.email.lower()]))
-
-    user_aliases = db.query(DBAlias).filter(DBAlias.user_id.in_(query_user_ids)).all()
-    alias_emails = [a.content.lower() for a in user_aliases if a.content and "@" in a.content]
-
-    # Asynchronous non-blocking background execution of Addy activity sync
-    bg_tasks.add_task(sync_addy_activity_background, profile.id, profile.email, alias_emails)
-
-    filters = [DBAliasMessage.user_id.in_(query_user_ids)]
-    if alias_emails:
-        filters.append(DBAliasMessage.alias_email.in_(alias_emails))
-
-    messages = db.query(DBAliasMessage).filter(or_(*filters)).order_by(desc(DBAliasMessage.created_at)).limit(100).all()
-    return {"messages": messages if messages else []}
 
 
 class AliasReplyRequest(BaseModel):
@@ -4813,97 +4817,104 @@ async def update_user_phone(req: PhoneUpdateRequest, db: Session = Depends(get_d
     return {"status": "success", "user_id": uid, "phone": clean_phone}
 
 
+@app.get("/sms-inbox/{user_id}")
+@app.get("/sms-inbox")
+@app.get("/api/sms-inbox/{user_id}")
+@app.get("/api/sms-inbox")
 @app.get("/api/v1/sms-inbox/{user_id}")
 @app.get("/api/v1/sms-inbox/")
 @app.get("/api/v1/sms-inbox")
-async def get_user_sms_inbox(user_id: Optional[str] = None, db: Session = Depends(get_db)):
-    """Returns recent incoming SMS messages received strictly for the specific user's virtual phone aliases"""
-    if not user_id or user_id.strip() == "" or user_id.strip() == "undefined":
+async def get_user_sms_inbox(user_id: Optional[str] = None, x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    """Returns recent incoming SMS messages received strictly for the specific user's virtual phone aliases with zero crash vulnerability"""
+    try:
+        active_uid = (user_id or x_user_id or "").strip()
+        if not active_uid or active_uid in ["undefined", "null", "", "anonymous_agent", "UNAUTHENTICATED"]:
+            return {"status": "success", "inbox": []}
+
+        profile = db.query(DBProfile).filter(or_(DBProfile.id == active_uid, DBProfile.email == active_uid)).first()
+        target_uid = profile.id if profile else active_uid
+
+        # Fetch user's actual phone aliases owned strictly by this account
+        user_aliases = db.query(DBAlias).filter(
+            DBAlias.type == "phone",
+            or_(DBAlias.user_id == target_uid, DBAlias.user_id == active_uid)
+        ).all()
+
+        alias_map = {("".join(filter(str.isdigit, a.content or ""))[-4:] if a.content else ""): a.content for a in user_aliases if a.content}
+
+        # Fetch all recent SMS logs strictly scoped to this user
+        all_sms_logs = db.query(DBPurgeLog).filter(
+            or_(
+                DBPurgeLog.user_id == target_uid,
+                DBPurgeLog.user_id == active_uid,
+                DBPurgeLog.node_id.like(f"{target_uid}_%"),
+                DBPurgeLog.node_id.like(f"{active_uid}_%")
+            ),
+            or_(
+                DBPurgeLog.action_type.ilike("%SMS_%"),
+                DBPurgeLog.action_type.ilike("%SMS%"),
+                DBPurgeLog.action_type.ilike("%From%")
+            )
+        ).order_by(desc(DBPurgeLog.timestamp)).limit(150).all()
+
+        inbox = []
+        for log in all_sms_logs:
+            nid = log.node_id or ""
+            is_owner = (
+                log.user_id in [target_uid, active_uid] or 
+                nid.startswith(f"{target_uid}_") or 
+                nid.startswith(f"{active_uid}_")
+            )
+            if not is_owner:
+                continue
+
+            msg = log.action_type or ""
+            if msg.startswith("SMS_RECEIVED "):
+                msg = msg.replace("SMS_RECEIVED ", "")
+            elif msg.startswith("SMS_SENT "):
+                msg = msg.replace("SMS_SENT ", "")
+
+            from_phone = ""
+            to_phone = ""
+
+            if "[From " in msg:
+                try:
+                    from_part = msg.split("[From ")[1]
+                    if " To " in from_part:
+                        from_phone = from_part.split(" To ")[0].strip()
+                    else:
+                        from_phone = from_part.split("]")[0].strip()
+                except Exception:
+                    pass
+
+            if "[To " in msg:
+                try:
+                    to_part = msg.split("[To ")[1]
+                    to_phone = to_part.split("]")[0].strip()
+                except Exception:
+                    pass
+
+            if not to_phone and nid:
+                node_digits = "".join(filter(str.isdigit, nid))
+                if len(node_digits) >= 4:
+                    last4 = node_digits[-4:]
+                    to_phone = alias_map.get(last4, f"+1 (813) ***-{last4}")
+
+            inbox.append({
+                "id": log.id,
+                "timestamp": log.timestamp.isoformat() + "Z" if log.timestamp and not log.timestamp.isoformat().endswith("Z") else (log.timestamp.isoformat() if log.timestamp else ""),
+                "message": msg,
+                "from_phone": from_phone,
+                "to_phone": to_phone,
+                "line": nid
+            })
+            if len(inbox) >= 50:
+                break
+
+        return {"status": "success", "inbox": inbox}
+    except Exception as ex:
+        logger.error(f"get_user_sms_inbox unexpected error: {ex}")
         return {"status": "success", "inbox": []}
-
-    raw_uid = user_id.strip()
-    profile = db.query(DBProfile).filter(or_(DBProfile.id == raw_uid, DBProfile.email == raw_uid)).first()
-    target_uid = profile.id if profile else raw_uid
-
-    # Fetch user's actual phone aliases owned strictly by this account
-    user_aliases = db.query(DBAlias).filter(
-        DBAlias.type == "phone",
-        or_(DBAlias.user_id == target_uid, DBAlias.user_id == raw_uid)
-    ).all()
-
-    alias_map = {("".join(filter(str.isdigit, a.content or ""))[-4:] if a.content else ""): a.content for a in user_aliases if a.content}
-    user_alias_digits = {d for d in alias_map.keys() if len(d) >= 4}
-
-    # Fetch all recent SMS logs strictly scoped to this user
-    all_sms_logs = db.query(DBPurgeLog).filter(
-        or_(
-            DBPurgeLog.user_id == target_uid,
-            DBPurgeLog.user_id == raw_uid,
-            DBPurgeLog.node_id.like(f"{target_uid}_%"),
-            DBPurgeLog.node_id.like(f"{raw_uid}_%")
-        ),
-        or_(
-            DBPurgeLog.action_type.ilike("%SMS_%"),
-            DBPurgeLog.action_type.ilike("%SMS%"),
-            DBPurgeLog.action_type.ilike("%From%")
-        )
-    ).order_by(desc(DBPurgeLog.timestamp)).limit(150).all()
-
-    inbox = []
-    for log in all_sms_logs:
-        nid = log.node_id or ""
-        is_owner = (
-            log.user_id in [target_uid, raw_uid] or 
-            nid.startswith(f"{target_uid}_") or 
-            nid.startswith(f"{raw_uid}_")
-        )
-        if not is_owner:
-            continue
-
-        msg = log.action_type
-        if msg.startswith("SMS_RECEIVED "):
-            msg = msg.replace("SMS_RECEIVED ", "")
-        elif msg.startswith("SMS_SENT "):
-            msg = msg.replace("SMS_SENT ", "")
-
-        from_phone = ""
-        to_phone = ""
-
-        if "[From " in msg:
-            try:
-                from_part = msg.split("[From ")[1]
-                if " To " in from_part:
-                    from_phone = from_part.split(" To ")[0].strip()
-                else:
-                    from_phone = from_part.split("]")[0].strip()
-            except Exception:
-                pass
-
-        if "[To " in msg:
-            try:
-                to_part = msg.split("[To ")[1]
-                to_phone = to_part.split("]")[0].strip()
-            except Exception:
-                pass
-
-        if not to_phone and nid:
-            node_digits = "".join(filter(str.isdigit, nid))
-            if len(node_digits) >= 4:
-                last4 = node_digits[-4:]
-                to_phone = alias_map.get(last4, f"+1 (813) ***-{last4}")
-
-        inbox.append({
-            "id": log.id,
-            "timestamp": log.timestamp.isoformat() + "Z" if log.timestamp and not log.timestamp.isoformat().endswith("Z") else (log.timestamp.isoformat() if log.timestamp else ""),
-            "message": msg,
-            "from_phone": from_phone,
-            "to_phone": to_phone,
-            "line": nid
-        })
-        if len(inbox) >= 50:
-            break
-
-    return {"status": "success", "inbox": inbox}
 
 
 @app.delete("/api/v1/sms-inbox/{log_id}")
