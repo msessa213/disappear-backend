@@ -2315,68 +2315,308 @@ def consolidate_orphaned_user_records(db: Session, target_email: str = None):
 
 @app.get("/dashboard/sync")
 async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
-    """Synchronizes dashboard using user_id from query or header with bulletproof Master Email Lookup and automatic recovery"""
-    target_user_id = (user_id or x_user_id or "").strip()
-    logger.info(f"[SYNC_DEBUG] Incoming sync request | Query user_id='{user_id}' | Header x_user_id='{x_user_id}' | Resolved target_user_id='{target_user_id}'")
-    
+    """Synchronizes dashboard using user_id from query or header with bulletproof Master Email Lookup and zero crash vulnerability"""
+    try:
+        target_user_id = (user_id or x_user_id or "").strip()
+        
+        profile = None
+        if target_user_id and target_user_id not in ["undefined", "null", "", "anonymous_agent", "UNAUTHENTICATED"]:
+            try:
+                # MASTER EMAIL LOOKUP OVERRIDE: Search by email FIRST if input contains '@' or matches an email
+                if "@" in target_user_id:
+                    profile = db.query(DBProfile).filter(DBProfile.email.ilike(target_user_id.lower())).first()
 
+                if not profile:
+                    profile = db.query(DBProfile).filter(
+                        or_(
+                            DBProfile.id == target_user_id,
+                            DBProfile.email.ilike(target_user_id.lower()),
+                            DBProfile.referral_code == target_user_id.upper()
+                        )
+                    ).first()
+            except Exception as q_err:
+                logger.warning(f"[SYNC_DEBUG] Profile query notice for {target_user_id}: {q_err}")
+                profile = None
 
-    profile = None
-    if target_user_id and target_user_id not in ["undefined", "null", "", "anonymous_agent", "UNAUTHENTICATED"]:
-        try:
-            # MASTER EMAIL LOOKUP OVERRIDE: Search by email FIRST if input contains '@' or matches an email
-            if "@" in target_user_id:
-                profile = db.query(DBProfile).filter(DBProfile.email.ilike(target_user_id.lower())).first()
+        # FORCE RECORD RECOVERY: If user is authenticated via session token, auto-generate/link profile if missing
+        if not profile and target_user_id and target_user_id not in ["undefined", "null", "", "anonymous_agent", "UNAUTHENTICATED"]:
+            try:
+                import uuid
+                logger.info(f"[SYNC_DEBUG] FORCE_RECORD_RECOVERY: Auto-creating DBProfile for authenticated identifier '{target_user_id}'")
+                is_email = "@" in target_user_id
+                rec_email = target_user_id.lower() if is_email else f"{target_user_id}@disappear.private"
+                rec_id = target_user_id if not is_email else f"user_{str(uuid.uuid4())[:8]}"
+                
+                profile = DBProfile(
+                    id=rec_id,
+                    email=rec_email,
+                    first_name="Operative",
+                    last_name="Active",
+                    kyc_status="APPROVED",
+                    created_at=datetime.utcnow()
+                )
+                db.add(profile)
+                db.commit()
+                db.refresh(profile)
+                logger.info(f"[SYNC_DEBUG] FORCE_RECORD_RECOVERY_SUCCESS: Profile created ID={profile.id}, Email={profile.email}")
+            except Exception as rec_err:
+                logger.error(f"[SYNC_DEBUG] FORCE_RECORD_RECOVERY_FAILED for {target_user_id}: {rec_err}")
+                profile = None
 
-            if not profile:
-                profile = db.query(DBProfile).filter(
-                    or_(
-                        DBProfile.id == target_user_id,
-                        DBProfile.email.ilike(target_user_id.lower()),
-                        DBProfile.referral_code == target_user_id.upper()
-                    )
-                ).first()
+        if not profile:
+            return {
+                "profile": {
+                    "phone": "",
+                    "email_alias": "relay@disappearco.com",
+                    "phone_alias": "+18137917531",
+                    "vcc_email_total": 6,
+                    "phone_total": 2,
+                    "used_vcc_email": 0,
+                    "used_phones": 0,
+                    "credits_used": 0,
+                    "credits_available": 6,
+                    "threat_level": "NOMINAL",
+                    "uptime": "99.998%",
+                    "active_nodes": 0
+                },
+                "recent_audit": [],
+                "map_nodes": [],
+                "system_status": "ENCRYPTED_TUNNEL_STABLE",
+                "history": [],
+                "cards": [],
+                "aliases": [],
+                "target_emails": {"primary": "", "additional": [], "slots": 1, "used": 0},
+                "payment_methods": [],
+                "referrals": {
+                    "code": "REFDEFAULT",
+                    "link": "https://disappearco.com/",
+                    "count": 0,
+                    "next_milestone_needed": 5,
+                    "progress_pct": 0,
+                    "free_months_earned": 0,
+                    "free_months_redeemed": 0
+                }
+            }
 
-            if profile and ("6565" in str(profile.id) or profile.referred_by == "FAM30"):
-                try:
-                    apply_fam30_coupon_to_user_subscription(profile.id, db)
-                except Exception as fam_err:
-                    logger.warning(f"FAM30 sync auto-application notice for {profile.id}: {fam_err}")
-        except Exception as q_err:
-            logger.warning(f"[SYNC_DEBUG] Profile query failed for {target_user_id}: {q_err}")
-            profile = None
-
-    # FORCE RECORD RECOVERY: If user is authenticated via session token, auto-generate/link profile if missing
-    if not profile and target_user_id and target_user_id not in ["undefined", "null", "", "anonymous_agent", "UNAUTHENTICATED"]:
-        try:
-            import uuid
-            logger.info(f"[SYNC_DEBUG] FORCE_RECORD_RECOVERY: Auto-creating DBProfile for authenticated identifier '{target_user_id}'")
-            is_email = "@" in target_user_id
-            rec_email = target_user_id.lower() if is_email else f"{target_user_id}@disappear.private"
-            rec_id = target_user_id if not is_email else f"user_{str(uuid.uuid4())[:8]}"
+        uid = profile.id
+        uid_identifiers = list(set([uid, profile.id, profile.email, profile.email.lower()]))
             
-            profile = DBProfile(
-                id=rec_id,
-                email=rec_email,
-                first_name="Operative",
-                last_name="Active",
-                kyc_status="APPROVED",
-                created_at=datetime.utcnow()
+        active_cards = db.query(DBCard).filter(DBCard.user_id.in_(uid_identifiers)).count()
+        active_aliases = db.query(DBAlias).filter(DBAlias.user_id.in_(query_user_ids if 'query_user_ids' in locals() else uid_identifiers)).count()
+        total_used = active_cards + active_aliases
+            
+        bonus = profile.bonus_credits or 0
+        phone_bonus = profile.phone_line_bonus or 0
+        
+        # SEPARATE LIMITS
+        vcc_email_capacity = MAX_IDENTITY_CREDITS + bonus
+        phone_capacity = BASE_PHONE_LIMIT + phone_bonus
+        
+        # DECOUPLED USAGE METRICS
+        used_vcc_email = active_cards + db.query(DBAlias).filter(DBAlias.user_id.in_(uid_identifiers), DBAlias.type == 'email').count()
+        used_phones = db.query(DBAlias).filter(DBAlias.user_id.in_(uid_identifiers), DBAlias.type == 'phone').count()
+        
+        now = datetime.now()
+        minute_seed = now.minute + now.hour
+        random.seed(minute_seed)
+        
+        logs = []
+        for i in range(5):
+            logs.append({
+                "broker": random.choice(BROKERS), 
+                "action": random.choice(THREAT_TYPES), 
+                "time": now.strftime("%H:%M") + f":{10*i:02d}"
+            })
+        
+        map_nodes = []
+        for i in range(18):
+            map_nodes.append({
+                "id": i, 
+                "x": random.randint(5, 95), 
+                "y": random.randint(10, 85), 
+                "status": "active" if i % 4 != 0 else "intercepting"
+            })
+
+        random.seed(time.time())
+
+        # 2. Real Purge & Scrub History (Consolidated Data Removals - Strictly Scoped to user_id == uid)
+        from datetime import timedelta
+        cutoff_date = datetime.utcnow() - timedelta(days=30)
+        
+        purge_entries = []
+        try:
+            purge_entries = (
+                db.query(DBPurgeLog)
+                .filter(
+                    DBPurgeLog.timestamp >= cutoff_date,
+                    or_(DBPurgeLog.user_id.in_(uid_identifiers), DBPurgeLog.node_id.like(f"{uid}_%"))
+                )
+                .order_by(desc(DBPurgeLog.timestamp))
+                .all()
             )
-            db.add(profile)
-            db.commit()
-            db.refresh(profile)
-            logger.info(f"[SYNC_DEBUG] FORCE_RECORD_RECOVERY_SUCCESS: Profile created ID={profile.id}, Email={profile.email}")
-        except Exception as rec_err:
-            logger.error(f"[SYNC_DEBUG] FORCE_RECORD_RECOVERY_FAILED for {target_user_id}: {rec_err}")
-            profile = None
+        except Exception as p_err:
+            logger.warning(f"Purge log query notice: {p_err}")
 
-    if profile:
-        logger.info(f"[SYNC_DEBUG] SYNC_FOUND_PROFILE: Returning profile ID={profile.id}, Email={profile.email}, Name={profile.first_name} {profile.last_name}")
-    else:
-        logger.warning(f"[SYNC_DEBUG] SYNC_NO_PROFILE: Unauthenticated or missing user_id. Returning default empty payload.")
+        # Fetch User Scrub Logs strictly scoped to user_id in uid_identifiers
+        scrub_entries = []
+        try:
+            existing_scrubs = db.query(DBScrubLog).filter(DBScrubLog.user_id.in_(uid_identifiers)).all()
+            if not existing_scrubs:
+                new_scrubs = [
+                    DBScrubLog(
+                        user_id=uid,
+                        broker_name=b,
+                        status="PROCESSING" if b in AUTOMATED_BROKERS else "MANUAL_PENDING",
+                        removal_type="AUTOMATED" if b in AUTOMATED_BROKERS else "MANUAL",
+                        timestamp=datetime.utcnow()
+                    )
+                    for b in BROKERS
+                ]
+                db.bulk_save_objects(new_scrubs)
+                try:
+                    db.commit()
+                except Exception:
+                    db.rollback()
+                existing_scrubs = db.query(DBScrubLog).filter(DBScrubLog.user_id.in_(uid_identifiers)).all()
+            scrub_entries = existing_scrubs
+        except Exception as s_err:
+            logger.warning(f"Scrub log query notice: {s_err}")
+        
+        # Calculate Data Broker Scrub Statistics
+        total_b_count = len(scrub_entries)
+        removed_b_count = sum(1 for s in scrub_entries if s.status == "REMOVED")
+        processing_b_count = sum(1 for s in scrub_entries if s.status in ["PROCESSING", "SUBPOENA_FILED"])
+        manual_b_count = sum(1 for s in scrub_entries if s.status == "MANUAL_PENDING")
 
-    if not profile:
+        scrub_stats = {
+            "total_brokers": total_b_count,
+            "removed": removed_b_count,
+            "processing": processing_b_count,
+            "manual_pending": manual_b_count,
+            "progress_pct": round((removed_b_count / float(total_b_count)) * 100, 1) if total_b_count > 0 else 0
+        }
+
+        def format_iso_z(dt_obj):
+            if not dt_obj:
+                dt_obj = datetime.utcnow()
+            s = dt_obj.isoformat()
+            return s if s.endswith("Z") else f"{s}Z"
+
+        data_brokers_list = [{
+            "id": s.id,
+            "broker_name": s.broker_name,
+            "status": s.status,
+            "removal_type": s.removal_type,
+            "timestamp": format_iso_z(s.timestamp)
+        } for s in scrub_entries]
+
+        history_list = []
+        for entry in purge_entries:
+            ts = format_iso_z(entry.timestamp)
+            history_list.append({
+                "id": entry.id or random.randint(1000, 9999),
+                "action": entry.action_type,
+                "node": entry.node_id,
+                "timestamp": ts
+            })
+
+        for scrub in scrub_entries:
+            action_name = f"DATA_REMOVAL [{scrub.status}]: {scrub.broker_name.upper()}"
+            ts = format_iso_z(scrub.timestamp)
+            history_list.append({
+                "id": f"scrub_{scrub.id}",
+                "action": action_name,
+                "node": f"{scrub.removal_type}_REMOVAL_NODE",
+                "timestamp": ts
+            })
+
+        # Sort consolidated audit history by timestamp descending
+        history_list.sort(key=lambda x: x["timestamp"], reverse=True)
+
+        user_cards = db.query(DBCard).filter(DBCard.user_id.in_(uid_identifiers)).all()
+        cards = [{
+            "id": c.id, 
+            "label": c.label, 
+            "number": c.number, 
+            "expiry": c.expiry, 
+            "cvv": c.cvv
+        } for c in user_cards]
+
+        aliases_query = db.query(DBAlias).filter(DBAlias.user_id.in_(uid_identifiers)).all()
+        aliases_list = [{
+            "id": a.id, 
+            "type": a.type, 
+            "content": a.content, 
+            "label": a.label, 
+            "forward_to": getattr(a, 'forward_to', None) or profile.email
+        } for a in aliases_query]
+
+        target_emails_query = db.query(DBTargetEmail).filter(DBTargetEmail.profile_id == profile.id).all()
+        target_emails = {
+            "primary": profile.email,
+            "additional": [{"id": e.id, "email": e.email} for e in target_emails_query],
+            "slots": 1 + (profile.extra_email_slots or 0),
+            "used": len(target_emails_query)
+        }
+
+        # Referral Stats Calculations
+        ref_code = profile.referral_code or "REFDEFAULT"
+        ref_count = profile.referral_count or 0
+        next_needed = max(0, 5 - (ref_count % 5))
+        progress_pct = int(((ref_count % 5) / 5.0) * 100)
+        
+        referrals_data = {
+            "code": ref_code,
+            "link": f"https://disappearco.com/?ref={ref_code}",
+            "count": ref_count,
+            "next_milestone_needed": next_needed,
+            "progress_pct": progress_pct,
+            "free_months_earned": profile.free_months_earned or 0,
+            "free_months_redeemed": profile.free_months_redeemed or 0
+        }
+
+        payment_methods = []
+
+        return {
+            "profile": {
+                "first_name": profile.first_name or "",
+                "middle_name": profile.middle_name or "",
+                "last_name": profile.last_name or "",
+                "email": profile.email or "",
+                "phone": profile.phone or "",
+                "address": profile.address or "",
+                "dob": profile.dob or "",
+                "kyc_status": profile.kyc_status or "UNPAID",
+                "email_alias": STABLE_EMAIL,
+                "phone_alias": STABLE_PHONE,
+                "vcc_email_total": vcc_email_capacity,
+                "phone_total": phone_capacity,
+                "used_vcc_email": used_vcc_email,
+                "used_phones": used_phones,
+                "credits_used": total_used,
+                "credits_available": max(0, vcc_email_capacity - total_used),
+                "relay_credits": getattr(profile, 'relay_credits', 500) if getattr(profile, 'relay_credits', None) is not None else 500,
+                "relay_credits_total": getattr(profile, 'relay_credits_total', 500) if getattr(profile, 'relay_credits_total', None) is not None else 500,
+                "threat_level": "NOMINAL",
+                "uptime": "99.998%",
+                "active_nodes": total_used,
+                "addy_verified": bool(getattr(profile, 'addy_verified', False)),
+                "addy_status": "VERIFIED" if bool(getattr(profile, 'addy_verified', False)) else "PENDING_VERIFICATION"
+            },
+            "recent_audit": logs,
+            "map_nodes": map_nodes,
+            "system_status": "ENCRYPTED_TUNNEL_STABLE",
+            "history": history_list,
+            "cards": cards,
+            "aliases": aliases_list,
+            "target_emails": target_emails,
+            "payment_methods": payment_methods,
+            "referrals": referrals_data,
+            "scrub_stats": scrub_stats,
+            "data_brokers": data_brokers_list
+        }
+    except Exception as sync_ex:
+        logger.error(f"sync_dashboard unexpected error: {sync_ex}")
         return {
             "profile": {
                 "phone": "",
@@ -2410,290 +2650,6 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
                 "free_months_redeemed": 0
             }
         }
-
-    uid = profile.id
-        
-    active_cards = db.query(DBCard).filter(DBCard.user_id == uid).count()
-    active_aliases = db.query(DBAlias).filter(DBAlias.user_id == uid).count()
-    total_used = active_cards + active_aliases
-        
-    bonus = profile.bonus_credits or 0
-    phone_bonus = profile.phone_line_bonus or 0
-    
-    # SEPARATE LIMITS
-    vcc_email_capacity = MAX_IDENTITY_CREDITS + bonus
-    phone_capacity = BASE_PHONE_LIMIT + phone_bonus
-    
-    # NEW: DECOUPLED USAGE METRICS
-    used_vcc_email = active_cards + db.query(DBAlias).filter(DBAlias.user_id == uid, DBAlias.type == 'email').count()
-    used_phones = db.query(DBAlias).filter(DBAlias.user_id == uid, DBAlias.type == 'phone').count()
-    
-    now = datetime.now()
-    minute_seed = now.minute + now.hour
-    random.seed(minute_seed)
-    
-    logs = []
-    for i in range(5):
-        logs.append({
-            "broker": random.choice(BROKERS), 
-            "action": random.choice(THREAT_TYPES), 
-            "time": now.strftime("%H:%M") + f":{10*i:02d}"
-        })
-    
-    map_nodes = []
-    for i in range(18):
-        map_nodes.append({
-            "id": i, 
-            "x": random.randint(5, 95), 
-            "y": random.randint(10, 85), 
-            "status": "active" if i % 4 != 0 else "intercepting"
-        })
-
-    random.seed(time.time())
-
-    # 2. Real Purge & Scrub History (Consolidated Data Removals - Strictly Scoped to user_id == uid)
-    from datetime import timedelta
-    cutoff_date = datetime.utcnow() - timedelta(days=30)
-    
-    purge_entries = []
-    try:
-        purge_entries = (
-            db.query(DBPurgeLog)
-            .filter(
-                DBPurgeLog.timestamp >= cutoff_date,
-                or_(DBPurgeLog.user_id == uid, DBPurgeLog.node_id.like(f"{uid}_%"))
-            )
-            .order_by(desc(DBPurgeLog.timestamp))
-            .all()
-        )
-    except Exception as p_err:
-        logger.warning(f"Purge log query skipped: {p_err}")
-
-    # Fetch User Scrub Logs strictly scoped to user_id == uid
-    scrub_entries = []
-    try:
-        existing_scrubs = db.query(DBScrubLog).filter(DBScrubLog.user_id == uid).all()
-        if not existing_scrubs:
-            new_scrubs = [
-                DBScrubLog(
-                    user_id=uid,
-                    broker_name=b,
-                    status="PROCESSING" if b in AUTOMATED_BROKERS else "MANUAL_PENDING",
-                    removal_type="AUTOMATED" if b in AUTOMATED_BROKERS else "MANUAL",
-                    timestamp=datetime.utcnow()
-                )
-                for b in BROKERS
-            ]
-            db.bulk_save_objects(new_scrubs)
-            db.commit()
-            existing_scrubs = db.query(DBScrubLog).filter(DBScrubLog.user_id == uid).all()
-        scrub_entries = existing_scrubs
-    except Exception as s_err:
-        logger.warning(f"Scrub log query skipped: {s_err}")
-    
-    # Calculate Data Broker Scrub Statistics
-    total_b_count = len(scrub_entries)
-    removed_b_count = sum(1 for s in scrub_entries if s.status == "REMOVED")
-    processing_b_count = sum(1 for s in scrub_entries if s.status in ["PROCESSING", "SUBPOENA_FILED"])
-    manual_b_count = sum(1 for s in scrub_entries if s.status == "MANUAL_PENDING")
-
-    scrub_stats = {
-        "total_brokers": total_b_count,
-        "removed": removed_b_count,
-        "processing": processing_b_count,
-        "manual_pending": manual_b_count,
-        "progress_pct": round((removed_b_count / float(total_b_count)) * 100, 1) if total_b_count > 0 else 0
-    }
-
-    def format_iso_z(dt_obj):
-        if not dt_obj:
-            dt_obj = datetime.utcnow()
-        s = dt_obj.isoformat()
-        return s if s.endswith("Z") else f"{s}Z"
-
-    data_brokers_list = [{
-        "id": s.id,
-        "broker_name": s.broker_name,
-        "status": s.status,
-        "removal_type": s.removal_type,
-        "timestamp": format_iso_z(s.timestamp)
-    } for s in scrub_entries]
-
-    history_list = []
-    for entry in purge_entries:
-        ts = format_iso_z(entry.timestamp)
-        history_list.append({
-            "id": entry.id or random.randint(1000, 9999),
-            "action": entry.action_type,
-            "node": entry.node_id,
-            "timestamp": ts
-        })
-
-    for scrub in scrub_entries:
-        action_name = f"DATA_REMOVAL [{scrub.status}]: {scrub.broker_name.upper()}"
-        ts = format_iso_z(scrub.timestamp)
-        history_list.append({
-            "id": f"scrub_{scrub.id}",
-            "action": action_name,
-            "node": f"{scrub.removal_type}_REMOVAL_NODE",
-            "timestamp": ts
-        })
-
-    # Sort consolidated audit history by timestamp descending
-    history_list.sort(key=lambda x: x["timestamp"], reverse=True)
-    uid = profile.id
-    uid_identifiers = list(set([uid, profile.id, profile.email, profile.email.lower()]))
-        
-    active_cards = db.query(DBCard).filter(DBCard.user_id.in_(uid_identifiers)).count()
-    active_aliases = db.query(DBAlias).filter(DBAlias.user_id.in_(uid_identifiers)).count()
-    total_used = active_cards + active_aliases
-        
-    bonus = profile.bonus_credits or 0
-    phone_bonus = profile.phone_line_bonus or 0
-    
-    # SEPARATE LIMITS
-    vcc_email_capacity = MAX_IDENTITY_CREDITS + bonus
-    phone_capacity = BASE_PHONE_LIMIT + phone_bonus
-    
-    # NEW: DECOUPLED USAGE METRICS
-    used_vcc_email = active_cards + db.query(DBAlias).filter(DBAlias.user_id.in_(uid_identifiers), DBAlias.type == 'email').count()
-    used_phones = db.query(DBAlias).filter(DBAlias.user_id.in_(uid_identifiers), DBAlias.type == 'phone').count()
-
-    # 3. Virtual Cards (Multi-Identifier Scoped)
-    cards = []
-    try:
-        cards_entities = db.query(DBCard).filter(DBCard.user_id.in_(uid_identifiers)).order_by(DBCard.created_at.desc()).all()
-        cards = [{
-            "id": c.id,
-            "user_id": c.user_id,
-            "label": c.label,
-            "number": c.number,
-            "expiry": c.expiry,
-            "cvv": c.cvv,
-            "funding_source": getattr(c, 'funding_source_id', '') or "",
-            "created_at": format_iso_z(c.created_at)
-        } for c in cards_entities]
-    except Exception as e:
-        logger.error(f"Sync Cards Error: {e}")
-
-    # 4. Aliases (Email & Phone - Multi-Identifier Scoped)
-    aliases_list = []
-    try:
-        aliases_entities = db.query(DBAlias).filter(DBAlias.user_id.in_(uid_identifiers)).order_by(DBAlias.created_at.desc()).all()
-        aliases_list = [{
-            "id": a.id,
-            "user_id": a.user_id,
-            "label": a.label,
-            "type": a.type,
-            "content": a.content,
-            "created_at": format_iso_z(a.created_at)
-        } for a in aliases_entities]
-    except Exception as e:
-        logger.error(f"Sync Aliases Error: {e}")
-
-    logger.info(f"[DIAGNOSTIC_SYNC] Target Identifier='{target_user_id}' | Profile ID='{profile.id}' | Profile Email='{profile.email}' | Name='{profile.first_name} {profile.last_name}' | Aliases Found={len(aliases_list)} | Cards Found={len(cards)} | Identifiers Searched={uid_identifiers}")
-
-    # 5. Target Emails (Consolidated)
-    target_emails = {"primary": "", "additional": [], "slots": 1, "used": 0}
-    try:
-        current_extra_count = db.query(DBTargetEmail).filter(DBTargetEmail.profile_id.in_(uid_identifiers)).count()
-        allowed_extras = 1 + (profile.extra_email_slots or 0)
-        emails_entities = db.query(DBTargetEmail).filter(DBTargetEmail.profile_id.in_(uid_identifiers)).all()
-        target_emails = {
-            "primary": profile.email,
-            "additional": [{"id": te.id, "email": te.email} for te in emails_entities],
-            "slots": allowed_extras,
-            "used": current_extra_count
-        }
-    except Exception as e:
-        logger.error(f"Sync Target Emails Error: {e}")
-
-    # 7. Referral Milestone Reward System
-    if not profile.referral_code:
-        try:
-            import uuid
-            profile.referral_code = f"REF{uuid.uuid4().hex[:8].upper()}"
-            db.commit()
-        except Exception as ref_err:
-            db.rollback()
-            logger.warning(f"Referral code auto-gen skipped: {ref_err}")
-
-    db_ref_count = 0
-    if profile.referral_code:
-        try:
-            ref_filters = [
-                DBProfile.referred_by.ilike(f"%{profile.referral_code}%"),
-                DBProfile.referred_by == profile.id,
-                DBProfile.referred_by.ilike(f"%{profile.id}%")
-            ]
-            if profile.email:
-                ref_filters.append(DBProfile.referred_by.ilike(f"%{profile.email}%"))
-
-            db_ref_count = db.query(DBProfile).filter(
-                or_(*ref_filters),
-                DBProfile.id != profile.id
-            ).count()
-        except Exception as ex_ref:
-            logger.warning(f"Referral query error: {ex_ref}")
-
-    ref_count = max(profile.referral_count or 0, db_ref_count)
-    if ref_count > (profile.referral_count or 0):
-        profile.referral_count = ref_count
-        db.commit()
-
-    next_needed = 5 - (ref_count % 5)
-    progress_pct = round(((ref_count % 5) / 5.0) * 100, 1)
-
-    referrals_data = {
-        "code": profile.referral_code,
-        "link": f"https://disappearco.com/?ref={profile.referral_code}",
-        "count": ref_count,
-        "next_milestone_needed": next_needed,
-        "progress_pct": progress_pct,
-        "free_months_earned": profile.free_months_earned or 0,
-        "free_months_redeemed": profile.free_months_redeemed or 0
-    }
-
-    payment_methods = []
-
-    return {
-        "profile": {
-            "first_name": profile.first_name or "",
-            "middle_name": profile.middle_name or "",
-            "last_name": profile.last_name or "",
-            "email": profile.email or "",
-            "phone": profile.phone or "",
-            "address": profile.address or "",
-            "dob": profile.dob or "",
-            "kyc_status": profile.kyc_status or "UNPAID",
-            "email_alias": STABLE_EMAIL,
-            "phone_alias": STABLE_PHONE,
-            "vcc_email_total": vcc_email_capacity,
-            "phone_total": phone_capacity,
-            "used_vcc_email": used_vcc_email,
-            "used_phones": used_phones,
-            "credits_used": total_used,
-            "credits_available": max(0, vcc_email_capacity - total_used),
-            "relay_credits": getattr(profile, 'relay_credits', 500) if getattr(profile, 'relay_credits', None) is not None else 500,
-            "relay_credits_total": getattr(profile, 'relay_credits_total', 500) if getattr(profile, 'relay_credits_total', None) is not None else 500,
-            "threat_level": "NOMINAL",
-            "uptime": "99.998%",
-            "active_nodes": total_used,
-            "addy_verified": bool(getattr(profile, 'addy_verified', False)),
-            "addy_status": "VERIFIED" if bool(getattr(profile, 'addy_verified', False)) else "PENDING_VERIFICATION"
-        },
-        "recent_audit": logs,
-        "map_nodes": map_nodes,
-        "system_status": "ENCRYPTED_TUNNEL_STABLE",
-        "history": history_list,
-        "cards": cards,
-        "aliases": aliases_list,
-        "target_emails": target_emails,
-        "payment_methods": payment_methods,
-        "referrals": referrals_data,
-        "scrub_stats": scrub_stats,
-        "data_brokers": data_brokers_list
-    }
 
 
 @app.get("/profile/emails")
