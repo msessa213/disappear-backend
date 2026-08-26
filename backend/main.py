@@ -2315,10 +2315,8 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
                 profile = db.query(DBProfile).filter(
                     or_(
                         DBProfile.id == target_user_id,
-                        DBProfile.email.ilike(target_user_id),
-                        DBProfile.referral_code == target_user_id.upper(),
-                        DBProfile.id.ilike(f"%{target_user_id}%"),
-                        DBProfile.email.ilike(f"%{target_user_id}%")
+                        DBProfile.email.ilike(target_user_id.lower()),
+                        DBProfile.referral_code == target_user_id.upper()
                     )
                 ).first()
 
@@ -3216,24 +3214,17 @@ async def get_aliases(x_user_id: Optional[str] = Header(None), user_id: Optional
     profile = db.query(DBProfile).filter(
         or_(
             DBProfile.id == active_uid,
-            DBProfile.email.ilike(active_uid),
-            DBProfile.id.ilike(f"%{active_uid}%")
+            DBProfile.email.ilike(active_uid.lower())
         )
     ).first()
 
-    query_user_ids = [active_uid]
-    if profile:
-        if profile.id and profile.id not in query_user_ids:
-            query_user_ids.append(profile.id)
-        if profile.email and profile.email not in query_user_ids:
-            query_user_ids.append(profile.email)
-            query_user_ids.append(profile.email.lower())
+    if not profile:
+        return {"aliases": []}
+
+    query_user_ids = list(set([profile.id, profile.email, profile.email.lower()]))
 
     aliases = db.query(DBAlias).filter(
-        or_(
-            DBAlias.user_id.in_(query_user_ids),
-            DBAlias.user_id.ilike(active_uid)
-        )
+        DBAlias.user_id.in_(query_user_ids)
     ).order_by(DBAlias.created_at.desc()).all()
     
     return {"aliases": aliases if aliases else []}

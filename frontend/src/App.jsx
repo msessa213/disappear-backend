@@ -66,11 +66,7 @@ const removeSessionItem = (key) => {
 const clearSessionStorage = () => {
   try {
     sessionStorage.clear();
-    localStorage.removeItem("disappear_session");
-    localStorage.removeItem("disappear_user_id");
-    localStorage.removeItem("disappear_last_active");
-    localStorage.removeItem("disappear_user_email");
-    localStorage.removeItem("disappear_jwt");
+    localStorage.clear();
   } catch (e) {}
 };
 
