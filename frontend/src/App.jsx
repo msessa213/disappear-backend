@@ -257,6 +257,25 @@ function App() {
     }
   }, [secureRequest, currentUserId]);
 
+  const [isRefreshingAliasData, setIsRefreshingAliasData] = useState(false);
+
+  const handleRefreshAliasData = async () => {
+    setIsRefreshingAliasData(true);
+    triggerToast("🔄 REFRESHING ALIAS VAULT & MESSAGES...");
+    try {
+      await Promise.all([
+        syncDefenseData(),
+        fetchAliasMessages(),
+        checkAddyRecipientStatus(true)
+      ]);
+      triggerToast("✅ ALIAS INBOX & MESSAGES REFRESHED");
+    } catch (e) {
+      console.warn("Error refreshing alias data:", e);
+    } finally {
+      setIsRefreshingAliasData(false);
+    }
+  };
+
   const handleSendAliasReply = async (e) => {
     if (e) e.preventDefault();
     const activeSenderAlias = replyAliasEmail || (emails && emails.length > 0 ? emails[0].content : "");
@@ -2759,10 +2778,11 @@ const handleEmergencyBurn = async () => {
                         <button 
                           type="button"
                           className="reset-btn"
-                          style={{ padding: '3px 10px', fontSize: '0.72rem', color: '#00D2FF', borderColor: '#00D2FF' }}
-                          onClick={fetchAliasMessages}
+                          style={{ padding: '3px 10px', fontSize: '0.72rem', color: '#00D2FF', borderColor: '#00D2FF', opacity: isRefreshingAliasData ? 0.6 : 1 }}
+                          onClick={handleRefreshAliasData}
+                          disabled={isRefreshingAliasData}
                         >
-                          🔄 REFRESH
+                          {isRefreshingAliasData ? "⏳ REFRESHING..." : "🔄 REFRESH"}
                         </button>
                       </div>
                     </div>

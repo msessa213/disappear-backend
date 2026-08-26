@@ -468,15 +468,23 @@ input[type="checkbox"] {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.95);
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.92);
   backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
-  align-items: center;
-  z-index: 20000;
-  padding: 20px;
+  align-items: flex-start;
+  z-index: 60000;
+  padding: max(20px, env(safe-area-inset-top, 20px)) 12px max(30px, env(safe-area-inset-bottom, 30px)) 12px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.modal-overlay .price-box {
+  max-height: calc(88vh - 40px);
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
 }
 
 .info-modal-content {
