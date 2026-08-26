@@ -3128,35 +3128,35 @@ const handleEmergencyBurn = async () => {
                         <strong style={{ color: '#00D2FF', fontFamily: 'monospace' }}>
                           {targetProfile.firstName || targetProfile.first_name || targetProfile.lastName || targetProfile.last_name 
                             ? `${targetProfile.firstName || targetProfile.first_name || ''} ${targetProfile.middleName || targetProfile.middle_name ? `${targetProfile.middleName || targetProfile.middle_name} ` : ''}${targetProfile.lastName || targetProfile.last_name || ''}`.trim() 
-                            : 'Mike Sessa'}
+                            : (getSessionItem("disappear_user_email") || 'Registered Operative')}
                         </strong>
                       </div>
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ color: '#94A3B8' }}>Primary Email:</span>
                         <span style={{ color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold' }}>
-                          {targetProfile.email || getSessionItem("disappear_user_email") || 'mike803@verizon.net'}
+                          {targetProfile.email || getSessionItem("disappear_user_email") || 'Awaiting Sync...'}
                         </span>
                       </div>
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ color: '#94A3B8' }}>SMS Forwarding Phone:</span>
                         <span style={{ color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold' }}>
-                          {targetProfile.phone || destinationPhone || '+18138105237'}
+                          {targetProfile.phone || destinationPhone || 'No Phone Linked'}
                         </span>
                       </div>
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ color: '#94A3B8' }}>Registered Address:</span>
                         <span style={{ color: '#CBD5E1', fontSize: '0.82rem', textAlign: 'right' }}>
-                          {targetProfile.address || '4017 Arroyo Ln, Tampa, FL 33624'}
+                          {targetProfile.address || 'Address Not Set'}
                         </span>
                       </div>
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ color: '#94A3B8' }}>Date of Birth:</span>
                         <span style={{ color: '#CBD5E1', fontFamily: 'monospace' }}>
-                          {targetProfile.dob || '04/08/1980'}
+                          {targetProfile.dob || 'DOB Not Set'}
                         </span>
                       </div>
                     </div>
@@ -4339,14 +4339,14 @@ const handleEmergencyBurn = async () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #0F172A', paddingBottom: '6px' }}>
                   <span style={{ color: '#94A3B8' }}>Target Address:</span>
                   <span style={{ color: '#E2E8F0', fontWeight: '500' }}>
-                    {targetProfile.address || '4017 Arroyo Ln, Tampa, FL 33624'}
+                    {targetProfile.address || 'Address Not Set'}
                   </span>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: '#94A3B8' }}>Date of Birth:</span>
                   <span style={{ color: '#E2E8F0', fontWeight: '500' }}>
-                    {targetProfile.dob || '04/08/1980'}
+                    {targetProfile.dob || 'DOB Not Set'}
                   </span>
                 </div>
               </div>
