@@ -2298,11 +2298,7 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
     target_user_id = (user_id or x_user_id or "").strip()
     logger.info(f"[SYNC_DEBUG] Incoming sync request | Query user_id='{user_id}' | Header x_user_id='{x_user_id}' | Resolved target_user_id='{target_user_id}'")
     
-    # Run automatic orphaned record consolidation on sync
-    try:
-        consolidate_orphaned_user_records(db, target_email=target_user_id if "@" in target_user_id else None)
-    except Exception:
-        pass
+
 
     profile = None
     if target_user_id and target_user_id not in ["undefined", "null", "", "anonymous_agent", "UNAUTHENTICATED"]:

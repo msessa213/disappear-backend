@@ -512,7 +512,6 @@ function App() {
 
       // 11. Sync Live SMS Inbox
       fetchSmsInbox();
-      fetchSmsInbox();
     } catch (err) { 
         console.warn("Network interrupted. Attempting silent reconnect on next cycle...");
     }
