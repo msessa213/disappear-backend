@@ -43,8 +43,9 @@ from sqlalchemy import event
 def set_sqlite_pragma(dbapi_connection, connection_record):
     if is_sqlite:
         cursor = dbapi_connection.cursor()
-        cursor.execute("PRAGMA synchronous = OFF")
+        cursor.execute("PRAGMA busy_timeout = 30000")
         cursor.execute("PRAGMA journal_mode = WAL")
+        cursor.execute("PRAGMA synchronous = NORMAL")
         cursor.close()
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

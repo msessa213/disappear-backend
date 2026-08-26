@@ -535,9 +535,20 @@ app.add_middleware(
 
 
 @app.options("/{full_path:path}")
-async def options_handler(full_path: str):
-    """Fallback OPTIONS preflight handler for CORS compatibility"""
-    return Response(status_code=200)
+async def options_handler(request: Request, full_path: str):
+    """Fallback OPTIONS preflight handler for mobile & web CORS compatibility"""
+    req_origin = request.headers.get("origin") or "*"
+    req_headers = request.headers.get("access-control-request-headers") or "*"
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": req_origin,
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": req_headers,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Max-Age": "86400",
+        }
+    )
 
 
 
