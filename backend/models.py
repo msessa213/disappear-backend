@@ -190,4 +190,4 @@ class DBAliasMessage(Base):
     body_html = Column(Text, nullable=True)
     direction = Column(String, default="INBOUND") # "INBOUND" or "OUTBOUND"
     forwarded = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
