@@ -5384,12 +5384,12 @@ if os.path.exists(frontend_dist_path):
 
     @app.get("/{full_path:path}")
     async def serve_spa_frontend(full_path: str):
-        if (full_path.startswith("api/") or 
-            full_path.startswith("auth/") or 
-            full_path.startswith("dashboard/") or 
-            full_path.startswith("twilio/") or 
-            full_path.startswith("v1/") or 
-            full_path in ["docs", "openapi.json", "redoc"]):
+        api_prefixes = (
+            "api/", "auth/", "dashboard/", "twilio/", "v1/", "aliases/", 
+            "sms-inbox/", "messages/", "vcc/", "profile/", "admin/", 
+            "scrub/", "email/", "stripe/"
+        )
+        if full_path.startswith(api_prefixes) or full_path in ["docs", "openapi.json", "redoc"]:
             raise HTTPException(status_code=404, detail="API route not found")
         index_file = os.path.join(frontend_dist_path, "index.html")
         if os.path.exists(index_file):
