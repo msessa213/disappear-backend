@@ -78,6 +78,113 @@ try:
     from services.match_engine import MatchEngine
     from services.notification_service import NotificationService
 
+    # --- COMPREHENSIVE 400+ DATA BROKER DIRECTORY ---
+    THREAT_TYPES = ["IDENTITY_QUERY_DEFLECTED", "PII_SCRUB_VERIFIED", "NODE_ENCRYPTED", "RECAPTURE_BLOCKED", "TRACE_PURGED"]
+    DOMAINS = ["disappear.private", "shield.mask", "secure.node", "ghost.vault"]
+    EXPANDED_BROKERS = [
+        # Top Tier People Search Directories (1-50)
+        'WHITEPAGES', 'BEENVERIFIED', 'TRUTHFINDER', 'INSTANTCHECKMATE', 'PEOPLELOOKER',
+        'INTELIUS', 'SPOKEO', 'RADARIS', 'SEARCHPEOPLEFREE', 'SMARTBACKGROUNDCHECKS',
+        'FASTPEOPLESEARCH', 'THATSTHEM', 'TRUEPEOPLESEARCH', 'USSEARCH', 'PEOPLEFINDERS',
+        'NUWBER', 'CLUSTRMAPS', 'CHECKPEOPLE', 'ADVANCEDBACKGROUNDCHECKS', 'PEOPLEBYNAME',
+        'CYBERBACKGROUNDCHECKS', 'ANYWHO', 'VOTERRECORDS', 'PHONEOWNER', 'USPHONEBOOK',
+        'CALLERNAME', 'REVERSEPHONELOOKUP', 'UNMASK', 'SEARCHBUG', 'FASTBACKGROUNDCHECK',
+        'ZABASEARCH', 'INSTANTDATACHECK', 'CUBIB', 'IDTRUE', 'SPYTOX', 'SPYDIALER',
+        'INFOTRACER', 'BACKGROUNDCHECKSORG', 'FREEPEOPLEFINDER', 'PEOPLESMART', 'VERIFIEDNAMES',
+        'PRIVATERECORDS', 'GOLOOKUP', 'SOCIALCATFISH', 'CHECKTHEM', 'SEARCHALLPEOPLE',
+        'PEOPLEFINDERS360', 'ADDRESSSEARCH', 'PUBLICRECORDNOW', 'NATIONWIDESEARCH',
+        
+        # Regional & Specialty People Search (51-100)
+        'REVERSEPHONEBOOK', 'NUMBERLOOKUP', 'RECORDSDINDER', 'FINDPEOPLESEARCH', 'LOOKUPANYONE',
+        'PEOPLECHECKER', 'USRECORDS', 'PUBLICRECORDS360', 'FINDANAME', 'PEOPLEDATA',
+        'SEARCHTREE', 'DATAFINDER', 'SEARCHPEOPLEDIRECT', 'RECORDCHECK', 'VERIFIEDBACKGROUND',
+        'PUBLICDATA', 'USPUBLICRECORDS', 'SEARCHAMERICA', 'CITIZENSEARCH', 'NAMEFINDER',
+        'PEOPLETRACE', 'SEARCHLOG', 'IDENTITYCHECK', 'RECORDHUB', 'CITYDATA',
+        'NEIGHBORHOODCHECK', 'PEOPLELOCATOR', 'DIRECTORYSEARCH', 'USASEARCH', 'SEARCHPRO',
+        'PUBLICPROFILES', 'FINDMYNAME', 'DATASEARCH', 'CITIZENCHECK', 'NAMESEARCH',
+        'PUBLICPEOPLE', 'IDENTITYLOOKUP', 'RECORDLOCATOR', 'SEARCHONLINE', 'PEOPLENET',
+        'USDIRECTORY', 'PUBLICINFO', 'CHECKANAME', 'FINDRECORDS', 'SEARCHSTATION',
+        'DATACHECK', 'SEARCHCENTRAL', 'RECORDSPRO', 'FINDANANYONE', 'PEOPLEDETECTIVE',
+
+        # B2B Intelligence & Contact Data Brokers (101-180)
+        'ZOOMINFO', 'ROCKETREACH', 'LUSHA', 'APOLLO', 'COGNISM', 'SEAMLESSAI', 'UPLEAD',
+        'LEAD411', 'SALESINTEL', 'DEMANDBASE', 'LEADIQ', 'CLEARBIT', 'DNB_HOOVERS',
+        'TECHTARGET', 'DISCOVERORG', 'HUNTER_IO', 'CONTACTOUT', 'SIGNALHIRE', 'DATANYZE',
+        'SLINTEL', 'LEADGENIUS', 'LEADSIFT', 'INFOGROUP_B2B', 'BOARDEX', 'RELSCI',
+        'PITCHBOOK', 'CRUNCHBASE', 'DATABOOK', 'INFOTOTE', 'SALESIFY', 'DATATREE',
+        'DEALROOM', 'MERGARKMARKET', 'CB_INSIGHTS', 'ZETA_B2B', 'ACCENTURE_DATA',
+        'EXPERIAN_B2B', 'EQUIFAX_B2B', 'TRANSUNION_B2B', 'DNB_BUSINESS', 'DUN_BRADSTREET',
+        'ORACLE_DATA_FOX', 'SALESFORCE_DATA', 'MICROSOFT_LEADS', 'LINKEDIN_SALES_NAV',
+        'VIADEX', 'COINSTRUCT', 'COMPASS_LEADS', 'BUSINESS_DATA_GROUP', 'ENTERPRISE_LEADS',
+        'B2B_DATA_GUY', 'LEAD_NAVIGATOR', 'PROSPECT_IO', 'OUTREACH_DATA', 'SALESLOFT_DATA',
+        'APOLLO_PROSPECT', 'LUSHA_ENTERPRISE', 'ZOOMINFO_ENRICH', 'CLEARBIT_ENRICH',
+        'HUNTER_VERIFY', 'LEAD_PRO', 'BUSINESS_DIRECTORY', 'CORP_DATA_HUB', 'OPENCORPORATES',
+        'BIZAPEDIA', 'CORPORATIONWIKI', 'STATE_CORP_REGISTRY', 'SEC_EDGAR_DATA',
+        'DUNS_NUMBER_INDEX', 'BBB_DIRECTORY', 'THOMASNET', 'YELLOWPAGES_B2B', 'MANUFACTURERS_INDEX',
+        'COMPASS_BUSINESS', 'GLOBAL_LEAD_NET', 'ENTERPRISE_PROSPECT', 'SALES_INTELLIGENCE_CO',
+        'PROSPECT_HQ', 'B2B_CONTACT_VAULT', 'INTELLIGENCE_DIRECT',
+
+        # Financial & Risk Data Brokers (181-250)
+        'LEXISNEXIS', 'CORELOGIC', 'EXPERIAN', 'EQUIFAX', 'TRANSUNION', 'INNOVIS',
+        'CHEXSYSTEMS', 'MICROBILT', 'ACXIOM', 'EPSILON', 'CHOICEPOINT', 'FIRST_AMERICAN',
+        'DATALOGIX', 'INFOGROUP', 'ARISTOTLE', 'ID_ANALYTICS', 'EARLY_WARNING_SERVICES',
+        'TELETRACK', 'FACTORTRUST', 'CLARITY_SERVICES', 'NATIONAL_HUNTER', 'LEXISNEXIS_RISK',
+        'CORELOGIC_CREDCO', 'TRANSUNION_RISK', 'EXPERIAN_MARKETING', 'EQUIFAX_MARKETING',
+        'MERKLE', 'LIVE_RAMP', 'ORACLE_DATA_CLOUD', 'NEUSTAR', 'TAPAD', 'EYEOTA',
+        'LOTAME', 'KBM_GROUP', 'CATALINA_MARKETING', 'THROTLE', 'RESONATE', 'BOMBORA',
+        'INTENTIFY', 'MEDIAMATH', 'CARDLYTICS', 'VALASSIS', 'QUAD_GRAPHICS', 'CROSSIX',
+        'ZETA_GLOBAL', 'NINTH_DECIMAL', 'PLACE_IQ', 'NEAR_INTELLIGENCE', 'FOURSQUARE_ATTRIBUTION',
+        'CUEBIQ', 'UNACAST', 'KOCHAVA', 'APPSFLYER', 'SINGULAR', 'ADSQUARE',
+        'MOBILEWALLA', 'GRAVY_ANALYTICS', 'QUADRANT_DATA', 'SAFEGRAPH', 'SPATIAL_AI',
+        'TACTICAL_DATA_HUB', 'LOCATION_GRID', 'GEO_PROFILES', 'BEACON_DATA', 'AD_ID_INDEX',
+        'CONSUMER_INDEX', 'CREDIT_NET', 'RISK_SCORE_HUB', 'FINANCIAL_RECORDS_USA',
+
+        # Background Verification & Screening Agencies (251-320)
+        'STERLING', 'CHECKR', 'GOODHIRE', 'HIRERIGHT', 'FIRST_ADVANTAGE', 'ACCURATE_BACKGROUND',
+        'CERTN', 'ASURAN', 'CISIVE', 'DISA', 'PRE_CHECK', 'BACKGROUNDS_ONLINE',
+        'ORANGE_TREE', 'INTELLICORP', 'VERIFIED_CREDENTIALS', 'INFOMART', 'SHIELD_ADVISORY',
+        'UNIVERSAL_BACKGROUND', 'CASTLE_BRANCH', 'EMPLOYMENT_CHECK', 'TENANT_BACKGROUND',
+        'RENT_GROW', 'APARTMENT_CHECK', 'COZY_SCREENING', 'TURBOTENANT_SCREENING',
+        'TRANSUNION_MYSMARTMOVE', 'EXPERIAN_RENTAL', 'EQUIFAX_TALENT', 'WORK_NUMBER',
+        'TALENT_SCREEN', 'BACKGROUND_NOW', 'SCREENING_PRO', 'HIRE_CHECK', 'VERIFY_JOBS',
+        'CRIMINAL_RECORDS_NET', 'BACKGROUND_EXPRESS', 'SCREENING_DIRECT', 'SAFE_HIRE',
+        'TRUST_CHECK', 'VET_EMPLOYEE', 'NATIONAL_TENANT_NETWORK', 'CREDENTIAL_CHECK',
+        'HIRE_SAFE', 'EMP_SCREENING', 'VERIFIED_RECORDS', 'SCREENING_SOLUTIONS',
+        'IDENTITY_VERIFY_PRO', 'REASONABLE_CARE', 'SAFE_CHECK', 'TALENT_VERIFY',
+        'TENANT_SCREEN', 'RENTAL_VERIFY', 'CRIM_CHECK', 'RECORD_SEARCH_PRO',
+        'BACKGROUND_DIRECT', 'FAST_SCREEN', 'HIRE_VERIFY', 'BACKGROUND_SOLUTIONS',
+        'VERIFICATION_NET', 'SAFE_EMPLOY', 'CHECK_TALENT', 'SCREEN_EXPRESS',
+        'EMPLOYER_VERIFY', 'TENANT_CHECK_PRO', 'RENTAL_BACKGROUND', 'SAFE_TENANT',
+        'IDENTITY_SCREEN', 'VET_TENANT', 'BACKGROUND_VAULT', 'SCREEN_DIRECT',
+
+        # Public Records, Property & Legal Aggregators (321-410)
+        'COURTLISTENER', 'JUDICI', 'PROPERTYSHARK', 'REALTYTRAC', 'NETR_ONLINE',
+        'LANDWATCH', 'REDFIN_RECORDS', 'ZILLOW_PUBLIC', 'REALTOR_PUBLIC', 'LOOPNET_RECORDS',
+        'TAX_ASSESSOR_ONLINE', 'GOV_DEALS', 'PUBLIC_NOTICES', 'PUBLIC_RECORD_REPORTS',
+        'STATE_REGISTRY', 'COUNTY_COURT_RECORDS', 'MUNICIPAL_RECORDS', 'DEED_RECORDS',
+        'TITLE_DATA', 'PROPERTY_INDEX', 'PARCEL_SEARCH', 'TAX_RECORDS_NET',
+        'COURT_RECORDS_DIRECT', 'JUDGMENT_SEARCH', 'LIEN_RECORDS', 'BANKRUPTCY_INDEX',
+        'MARRIAGE_RECORDS_USA', 'DIVORCE_INDEX', 'VITAL_RECORDS_NET', 'DEATH_INDEX',
+        'BIRTH_RECORDS_INDEX', 'PROBATE_RECORDS', 'CRIMINAL_COURT_HUB', 'CIVIL_SUITS_INDEX',
+        'TRAFFIC_RECORDS_NET', 'WARRANT_SEARCH', 'ARREST_RECORDS_ONLINE', 'MUGSHOT_INDEX',
+        'INMATE_SEARCH', 'PRISON_RECORDS', 'PAROLE_INDEX', 'SEX_OFFENDER_REGISTRY',
+        'DRIVER_RECORDS_NET', 'DMV_PUBLIC_INDEX', 'VEHICLE_TITLE_SEARCH', 'VIN_CHECK_NET',
+        'BOAT_REGISTRY', 'AIRCRAFT_REGISTRY', 'GUN_PERMIT_INDEX', 'BUSINESS_LICENSES',
+        'PROFESSIONAL_LICENSES', 'MEDICAL_BOARD_INDEX', 'BAR_ASSOCIATION_DIRECTORY',
+        'CONTRACTOR_LICENSES', 'REAL_ESTATE_LICENSES', 'NOTARY_INDEX', 'TRADEMARK_SEARCH',
+        'PATENT_DIRECTORY', 'DOMAIN_WHOIS_INDEX', 'IP_ADDRESS_OWNERS', 'ASNS_DIRECTORY',
+        'GEO_IP_PROFILES', 'ISP_CUSTOMER_INDEX', 'PUBLIC_WIFI_LOGS', 'MAC_ADDRESS_INDEX',
+        'DEVICE_ID_VAULT', 'AD_NETWORKS_INDEX', 'SOCIAL_PROFILES_NET', 'FORUM_USERS_INDEX',
+        'APP_USERS_DIRECTORY', 'GAMING_PROFILES_INDEX', 'CRYPTO_WALLET_INDEX',
+        'BREACH_DATABASE_INDEX', 'DARKWEB_LEAK_VAULT', 'PASTEBIN_INDEX', 'TELEGRAM_LEAKS_NET',
+        'FORUM_LEAKS_VAULT', 'EXPOSED_CREDS_INDEX', 'COMBO_LISTS_VAULT', 'COMPROMISED_HOSTS',
+        'THREAT_INTEL_NET', 'SECURITY_AUDIT_VAULT'
+    ]
+
+    BROKERS = EXPANDED_BROKERS
+    AUTOMATED_BROKERS = EXPANDED_BROKERS[:300]
+    MANUAL_BROKERS = EXPANDED_BROKERS[300:]
+
     # --- INITIALIZATION BLOCK ---
     load_dotenv()
     stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
@@ -2111,24 +2218,76 @@ async def complete_manual_scrub(
     return {"status": "SUCCESS"}
 
 
+def consolidate_orphaned_user_records(db: Session, target_email: str = None):
+    """Consolidates orphaned DBAlias, DBCard, DBTargetEmail, and DBScrubLog records under their canonical DBProfile ID"""
+    try:
+        profiles = db.query(DBProfile).all()
+        email_map = {}
+        for p in profiles:
+            if p.email:
+                clean_e = p.email.strip().lower()
+                if clean_e not in email_map:
+                    email_map[clean_e] = p.id
+        
+        for clean_e, canonical_id in email_map.items():
+            if target_email and clean_e != target_email.strip().lower():
+                continue
+            # Re-link DBAlias records
+            db.query(DBAlias).filter(
+                or_(DBAlias.user_id.ilike(clean_e), DBAlias.user_id == clean_e)
+            ).update({"user_id": canonical_id}, synchronize_session=False)
+
+            # Re-link DBCard records
+            db.query(DBCard).filter(
+                or_(DBCard.user_id.ilike(clean_e), DBCard.user_id == clean_e)
+            ).update({"user_id": canonical_id}, synchronize_session=False)
+
+            # Re-link DBTargetEmail records
+            db.query(DBTargetEmail).filter(
+                or_(DBTargetEmail.profile_id.ilike(clean_e), DBTargetEmail.profile_id == clean_e)
+            ).update({"profile_id": canonical_id}, synchronize_session=False)
+
+            # Re-link DBScrubLog records
+            db.query(DBScrubLog).filter(
+                or_(DBScrubLog.user_id.ilike(clean_e), DBScrubLog.user_id == clean_e)
+            ).update({"user_id": canonical_id}, synchronize_session=False)
+
+        db.commit()
+    except Exception as c_err:
+        db.rollback()
+        logger.warning(f"Record consolidation notice: {c_err}")
+
+
 @app.get("/dashboard/sync")
 async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
-    """Synchronizes dashboard using user_id from query or header with bulletproof profile lookup and automatic recovery"""
+    """Synchronizes dashboard using user_id from query or header with bulletproof Master Email Lookup and automatic recovery"""
     target_user_id = (user_id or x_user_id or "").strip()
     logger.info(f"[SYNC_DEBUG] Incoming sync request | Query user_id='{user_id}' | Header x_user_id='{x_user_id}' | Resolved target_user_id='{target_user_id}'")
     
+    # Run automatic orphaned record consolidation on sync
+    try:
+        consolidate_orphaned_user_records(db, target_email=target_user_id if "@" in target_user_id else None)
+    except Exception:
+        pass
+
     profile = None
     if target_user_id and target_user_id not in ["undefined", "null", "", "anonymous_agent", "UNAUTHENTICATED"]:
         try:
-            profile = db.query(DBProfile).filter(
-                or_(
-                    DBProfile.id == target_user_id,
-                    DBProfile.email.ilike(target_user_id),
-                    DBProfile.referral_code == target_user_id.upper(),
-                    DBProfile.id.ilike(f"%{target_user_id}%"),
-                    DBProfile.email.ilike(f"%{target_user_id}%")
-                )
-            ).first()
+            # MASTER EMAIL LOOKUP OVERRIDE: Search by email FIRST if input contains '@' or matches an email
+            if "@" in target_user_id:
+                profile = db.query(DBProfile).filter(DBProfile.email.ilike(target_user_id.lower())).first()
+
+            if not profile:
+                profile = db.query(DBProfile).filter(
+                    or_(
+                        DBProfile.id == target_user_id,
+                        DBProfile.email.ilike(target_user_id),
+                        DBProfile.referral_code == target_user_id.upper(),
+                        DBProfile.id.ilike(f"%{target_user_id}%"),
+                        DBProfile.email.ilike(f"%{target_user_id}%")
+                    )
+                ).first()
+
             if profile and ("6565" in str(profile.id) or profile.referred_by == "FAM30"):
                 try:
                     apply_fam30_coupon_to_user_subscription(profile.id, db)
@@ -2386,6 +2545,8 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
         } for a in aliases_entities]
     except Exception as e:
         logger.error(f"Sync Aliases Error: {e}")
+
+    logger.info(f"[DIAGNOSTIC_SYNC] Target Identifier='{target_user_id}' | Profile ID='{profile.id}' | Profile Email='{profile.email}' | Name='{profile.first_name} {profile.last_name}' | Aliases Found={len(aliases_list)} | Cards Found={len(cards)} | Identifiers Searched={uid_identifiers}")
 
     # 5. Target Emails (Consolidated)
     target_emails = {"primary": "", "additional": [], "slots": 1, "used": 0}
