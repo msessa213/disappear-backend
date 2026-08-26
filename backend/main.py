@@ -2883,7 +2883,7 @@ async def create_checkout_session(request: Request, db: Session = Depends(get_db
                 "user_id": user_id
             },
             "billing_address_collection": "required",
-            "allow_promotion_codes": True,
+            "allow_promotion_codes": False,
             "success_url": f"{return_url}?payment=success&user_id={user_id}&session_id={{CHECKOUT_SESSION_ID}}",
             "cancel_url": f"{return_url}?payment=cancel&user_id={user_id}",
         }
