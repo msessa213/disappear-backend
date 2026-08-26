@@ -3106,6 +3106,71 @@ const handleEmergencyBurn = async () => {
                   </div>
                 )}
 
+                {/* --- OPERATIVE PRIVACY PROFILE & REMOVAL IDENTITY --- */}
+                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
+                  <p className="tool-label" style={{ textAlign: 'center', marginBottom: '14px' }}>👤 OPERATIVE PRIVACY PROFILE & REMOVAL IDENTITY</p>
+                  
+                  <div style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.3)', borderRadius: '10px', padding: '16px', marginBottom: '12px', textAlign: 'left' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '8px' }}>
+                      <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                        TARGET REMOVAL PROFILE
+                      </span>
+                      <span style={{ fontSize: '0.68rem', color: '#10B981', background: 'rgba(16,185,129,0.12)', padding: '3px 8px', borderRadius: '4px', border: '1px solid rgba(16,185,129,0.3)', fontWeight: 'bold' }}>
+                        🟢 ACTIVE PROTECTION
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.86rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#94A3B8' }}>Legal Target Name:</span>
+                        <strong style={{ color: '#00D2FF', fontFamily: 'monospace' }}>
+                          {targetProfile.firstName || targetProfile.first_name || targetProfile.lastName || targetProfile.last_name 
+                            ? `${targetProfile.firstName || targetProfile.first_name || ''} ${targetProfile.middleName || targetProfile.middle_name ? `${targetProfile.middleName || targetProfile.middle_name} ` : ''}${targetProfile.lastName || targetProfile.last_name || ''}`.trim() 
+                            : 'Mike Sessa'}
+                        </strong>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#94A3B8' }}>Primary Email:</span>
+                        <span style={{ color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                          {targetProfile.email || getSessionItem("disappear_user_email") || 'mike803@verizon.net'}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#94A3B8' }}>SMS Forwarding Phone:</span>
+                        <span style={{ color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                          {targetProfile.phone || destinationPhone || '+18138105237'}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#94A3B8' }}>Registered Address:</span>
+                        <span style={{ color: '#CBD5E1', fontSize: '0.82rem', textAlign: 'right' }}>
+                          {targetProfile.address || '4017 Arroyo Ln, Tampa, FL 33624'}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#94A3B8' }}>Date of Birth:</span>
+                        <span style={{ color: '#CBD5E1', fontFamily: 'monospace' }}>
+                          {targetProfile.dob || '04/08/1980'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button 
+                    className="main-button" 
+                    style={{ width: '100%', fontSize: '0.82rem', padding: '10px 14px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
+                    onClick={() => {
+                      checkAndShowNoticeModal(currentUserId || getSessionItem("disappear_user_id"));
+                    }}
+                  >
+                    ⚙️ REVIEW / EDIT TARGET PROFILE
+                  </button>
+                </div>
+
                 <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
                   <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>DATA BROKER TARGETS</p>
                   
