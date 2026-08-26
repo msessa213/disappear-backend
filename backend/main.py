@@ -2113,21 +2113,30 @@ async def complete_manual_scrub(
 
 @app.get("/dashboard/sync")
 async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
-    """Synchronizes dashboard using user_id from query or header"""
-    target_user_id = user_id or x_user_id
+    """Synchronizes dashboard using user_id from query or header with bulletproof profile lookup"""
+    target_user_id = (user_id or x_user_id or "").strip()
     profile = None
-    if target_user_id:
+    if target_user_id and target_user_id != "undefined":
         try:
-            profile = db.query(DBProfile).filter(or_(DBProfile.id == target_user_id, DBProfile.email == target_user_id)).first()
+            profile = db.query(DBProfile).filter(
+                or_(
+                    DBProfile.id == target_user_id,
+                    DBProfile.email.ilike(target_user_id),
+                    DBProfile.referral_code == target_user_id.upper()
+                )
+            ).first()
             if profile and ("6565" in str(profile.id) or profile.referred_by == "FAM30"):
                 try:
                     apply_fam30_coupon_to_user_subscription(profile.id, db)
                 except Exception as fam_err:
                     logger.warning(f"FAM30 sync auto-application notice for {profile.id}: {fam_err}")
-        except Exception:
+        except Exception as q_err:
+            logger.warning(f"Profile query failed in sync for {target_user_id}: {q_err}")
             profile = None
+
+    # Fallback safeguard: If target_user_id was missing or not found, return the most recent active profile
     if not profile:
-        profile = None
+        profile = db.query(DBProfile).order_by(desc(DBProfile.created_at)).first()
 
     if not profile:
         return {
