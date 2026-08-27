@@ -4535,6 +4535,39 @@ const handleEmergencyBurn = async () => {
                             </div>
                           </div>
 
+                          {/* Step 4 */}
+                          <div style={{
+                            background: 'rgba(0, 71, 171, 0.08)',
+                            border: '1px solid rgba(0, 71, 171, 0.3)',
+                            borderRadius: '8px',
+                            padding: '14px 16px',
+                            display: 'flex',
+                            gap: '12px',
+                            alignItems: 'flex-start'
+                          }}>
+                            <div style={{
+                              background: 'var(--tiger-blue)',
+                              color: '#FFF',
+                              fontWeight: 'bold',
+                              fontSize: '0.8rem',
+                              borderRadius: '50%',
+                              minWidth: '24px',
+                              height: '24px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginTop: '2px'
+                            }}>4</div>
+                            <div>
+                              <div style={{ color: '#00D2FF', fontWeight: 'bold', fontSize: '0.88rem', marginBottom: '4px' }}>
+                                Continuous Data Removal
+                              </div>
+                              <div style={{ color: '#cbd5e1', fontSize: '0.8rem', lineHeight: '1.4' }}>
+                                Once signed up, your identity data removal begins immediately and remains continuously active as long as your subscription is active.
+                              </div>
+                            </div>
+                          </div>
+
                         </div>
                       </div>
                     </div>
