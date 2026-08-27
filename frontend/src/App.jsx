@@ -2147,7 +2147,7 @@ const handleEmergencyBurn = async () => {
     } catch (err) { triggerToast("PORTAL OFFLINE"); }
   };
 
-  if (showLanding || (!showShield && !show2FA && !showPricing && !showCheckout && !showAdmin && !showLegal)) {
+  if (showLanding && !showLegal && !showPricing && !showCheckout && !showAdmin && !show2FA && !showShield) {
     return (
       <div style={{ width: '100%', minHeight: '100vh', position: 'relative', background: '#000000' }}>
         {/* FLOATING AI PRIVACY ASSISTANT CHAT WIDGET */}
