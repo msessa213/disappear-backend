@@ -2147,31 +2147,49 @@ const handleEmergencyBurn = async () => {
     } catch (err) { triggerToast("PORTAL OFFLINE"); }
   };
 
+  if (showLanding || (!showShield && !show2FA && !showPricing && !showCheckout && !showAdmin && !showLegal)) {
+    return (
+      <div style={{ width: '100%', minHeight: '100vh', position: 'relative', background: '#000000' }}>
+        {/* FLOATING AI PRIVACY ASSISTANT CHAT WIDGET */}
+        <PrivacyAiChat apiBaseUrl={API_BASE_URL} />
+        
+        <LandingPage 
+          onEnterVault={() => {
+            setShowLanding(false);
+            setShow2FA(true);
+            setShowShield(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }} 
+          onLoginRequest={() => {
+            setShowLanding(false);
+            setShow2FA(true);
+            setShowShield(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          onReadManifesto={() => window.location.hash = "manifesto"}
+        />
+
+        {/* GLOBAL ENCRYPTION & PURGE OVERLAY */}
+        {isEncrypting && (
+          <div className="modal-overlay" style={{ zIndex: 99999, background: 'rgba(0, 0, 0, 0.9)' }}>
+            <div className="price-box fade-in" style={{ textAlign: 'center', border: '1px solid var(--tiger-blue)' }}>
+              <h3 className="tiger-text" style={{ marginBottom: '20px' }}>ENCRYPTING_NODE</h3>
+              <div className="cyberpunk-spinner-large"></div>
+              <p style={{ color: '#cbd5e1', fontSize: '0.9rem' }}>{purgeStatus || "SCRUBBING PII..."}</p>
+              <p style={{ color: '#64748B', fontSize: '0.7rem', margin: '10px 0 0 0' }}>SECURE LINK ESTABLISHED</p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className={`app-container ${isEmergencyWipe ? 'wipe-shake' : ''}`}>
-      {/* FLOATING AI PRIVACY ASSISTANT CHAT WIDGET (UNCONDITIONAL DOM INJECTION) */}
+      {/* FLOATING AI PRIVACY ASSISTANT CHAT WIDGET */}
       <PrivacyAiChat apiBaseUrl={API_BASE_URL} />
       
-      {/* 1. SEPARATE MARKETING WEBSITE (Intelligence Hub) */}
-      {(showLanding || (!showShield && !show2FA && !showPricing && !showCheckout && !showAdmin && !showLegal)) ? (
-        <div style={{ position: 'relative', width: '100%', minHeight: '100vh' }}>
-          <LandingPage 
-            onEnterVault={() => {
-              setShowLanding(false);
-              setShow2FA(true);
-              setShowShield(false);
-            }} 
-            onLoginRequest={() => {
-              setShowLanding(false);
-              setShow2FA(true);
-              setShowShield(false);
-            }}
-            onReadManifesto={() => window.location.hash = "manifesto"}
-          />
-        </div>
-      ) : (
-        <>
-          {/* 2. CORE APP HEADER */}
+      {/* 2. CORE APP HEADER */}
           <div className="progress-bar-container">
             <div className="progress-bar-fill" style={{ width: `${showShield ? 100 : 50}%` }}></div>
             <span className="secure-connection-text">
@@ -4415,8 +4433,6 @@ const handleEmergencyBurn = async () => {
               </div>
             )}
           </main>
-        </>
-      )}
 
 
 
