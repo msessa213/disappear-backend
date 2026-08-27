@@ -1,38 +1,69 @@
 import React, { useState, useRef, useEffect } from 'react';
 
+const INITIAL_GREETING = {
+  sender: 'ai',
+  text: "Hello! I am your **Disappear AI Privacy Specialist**. Ask me any question about privacy protection, data broker scrubs, pricing, or how we compare to other services."
+};
+
 export default function PrivacyAiChat({ apiBaseUrl }) {
   const [isOpen, setIsOpen] = useState(false);
   const [inputMsg, setInputMsg] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [messages, setMessages] = useState([
-    {
-      sender: 'ai',
-      text: "Hello! I am your **Disappear AI Privacy Specialist**. Ask me any question about privacy protection, data broker scrubs, pricing, or how we compare to other services."
-    }
-  ]);
+  
+  // Persistent Conversation History from Session Storage
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem("disappear_ai_chat_history_v1");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return [INITIAL_GREETING];
+  });
 
   const messagesEndRef = useRef(null);
+  const chatBodyRef = useRef(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+    if (chatBodyRef.current) {
+      chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+    }
   };
 
+  // Persist messages to sessionStorage
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("disappear_ai_chat_history_v1", JSON.stringify(messages));
+    } catch (e) {}
+  }, [messages]);
+
+  // Robust Auto-scroll on messages, typing state, or modal open
   useEffect(() => {
     if (isOpen) {
-      scrollToBottom();
+      const timer = setTimeout(() => {
+        scrollToBottom();
+      }, 50);
+      return () => clearTimeout(timer);
     }
-  }, [messages, isOpen]);
+  }, [messages, isTyping, isOpen]);
 
-  // Listen for global 'open-ai-chat' custom events triggered from header, footer, or support node
+  // Listen for global 'open-ai-chat' custom events
   useEffect(() => {
-    const handleGlobalOpen = () => setIsOpen(true);
+    const handleGlobalOpen = () => {
+      setIsOpen(true);
+      setTimeout(() => scrollToBottom(), 100);
+    };
     window.addEventListener('open-ai-chat', handleGlobalOpen);
     return () => window.removeEventListener('open-ai-chat', handleGlobalOpen);
   }, []);
 
   const handleSendMessage = async (textToSend) => {
     const text = textToSend || inputMsg;
-    if (!text || !text.trim()) return;
+    if (!text || !text.trim() || isTyping) return;
 
     const userMessage = text.trim();
     setMessages(prev => [...prev, { sender: 'user', text: userMessage }]);
@@ -52,21 +83,30 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
       } else {
         setMessages(prev => [...prev, { 
           sender: 'ai', 
-          text: "I am having trouble reaching the command server. Here is a quick overview:\n\n• **Elite Privacy Plan**: $19.99/month ($217.38/yr annual with $22.50 flat savings)\n• **Included**: 400+ broker data scrubs, 5 relay slots, human analyst audits, and emergency burn." 
+          text: "I am having trouble reaching the command server. Here is a quick overview:\n\n• **Elite Privacy Plan**: $19.99/month ($191.88/yr annual — Save 20%)\n• **Included**: 400+ broker data scrubs, 6 relay slots (emails & virtual SMS lines), human analyst audits, and emergency burn." 
         }]);
       }
     } catch (err) {
       setMessages(prev => [...prev, { 
         sender: 'ai', 
-        text: "Our privacy shield is active! Our **Elite Plan is $19.99/mo** (or **$217.38/yr annual with $22.50 flat savings**). It includes continuous 400+ data broker scrubs, 5 burner email/phone relays, and emergency wipe." 
+        text: "Our privacy shield is active! Our **Elite Plan is $19.99/mo** (or **$191.88/yr annual — Save 20%**). It includes continuous 400+ data broker scrubs, 6 burner email/phone relays, and emergency wipe." 
       }]);
     } finally {
       setIsTyping(false);
     }
   };
 
+  const handleClearHistory = () => {
+    const fresh = [INITIAL_GREETING];
+    setMessages(fresh);
+    try {
+      sessionStorage.setItem("disappear_ai_chat_history_v1", JSON.stringify(fresh));
+    } catch (e) {}
+  };
+
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
       handleSendMessage();
     }
   };
@@ -81,7 +121,7 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
 
   return (
     <div className="privacy-ai-chat-container">
-      {/* 1. Responsive Floating Trigger Badge (Desktop Pill / Mobile Icon Circle) */}
+      {/* 1. Responsive Floating Trigger Badge */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
@@ -107,7 +147,7 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
       {/* 2. Floating Chat Modal Window */}
       {isOpen && (
         <div className="ai-chat-modal-floating">
-          {/* Header Bar with Minimize & Close Buttons */}
+          {/* Header Bar */}
           <div
             style={{
               padding: '12px 16px',
@@ -123,6 +163,25 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
               <span style={{ fontWeight: 'bold', fontSize: '0.85rem', color: '#FFFFFF', letterSpacing: '1px' }}>AI PRIVACY AGENT</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                onClick={handleClearHistory}
+                title="Clear Chat History"
+                aria-label="Clear Chat History"
+                style={{
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  borderRadius: '6px',
+                  color: '#94A3B8',
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                  padding: '2px 6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                🗑️ Clear
+              </button>
               <button
                 onClick={() => setIsOpen(false)}
                 title="Minimize Chat"
@@ -172,6 +231,7 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
               <button
                 key={idx}
                 onClick={() => handleSendMessage(p.query)}
+                disabled={isTyping}
                 style={{
                   whiteSpace: 'nowrap',
                   background: 'rgba(0, 71, 171, 0.15)',
@@ -180,7 +240,8 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
                   borderRadius: '12px',
                   padding: '5px 10px',
                   fontSize: '0.75rem',
-                  cursor: 'pointer'
+                  cursor: isTyping ? 'not-allowed' : 'pointer',
+                  opacity: isTyping ? 0.5 : 1
                 }}
               >
                 {p.label}
@@ -190,6 +251,7 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
 
           {/* Chat Messages */}
           <div
+            ref={chatBodyRef}
             style={{
               flex: 1,
               padding: '16px',
@@ -205,7 +267,7 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
                 key={idx}
                 style={{
                   alignSelf: m.sender === 'user' ? 'flex-end' : 'flex-start',
-                  maxWidth: '85%',
+                  maxWidth: '88%',
                   padding: '10px 14px',
                   borderRadius: m.sender === 'user' ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
                   backgroundColor: m.sender === 'user' ? '#0047AB' : '#111827',
@@ -229,10 +291,11 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
                   backgroundColor: '#111827',
                   color: '#00D2FF',
                   fontSize: '0.8rem',
-                  fontStyle: 'italic'
+                  fontStyle: 'italic',
+                  border: '1px solid rgba(0, 210, 255, 0.2)'
                 }}
               >
-                AI Assistant is typing...
+                ⏳ AI Specialist is typing response...
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -250,8 +313,9 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
           >
             <input
               type="text"
-              placeholder="Ask a question about privacy, pricing..."
+              placeholder={isTyping ? "AI is replying..." : "Ask a question about privacy, pricing..."}
               value={inputMsg}
+              disabled={isTyping}
               onChange={(e) => setInputMsg(e.target.value)}
               onKeyDown={handleKeyPress}
               style={{
@@ -262,23 +326,25 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
                 padding: '10px 12px',
                 color: '#FFFFFF',
                 fontSize: '0.85rem',
-                outline: 'none'
+                outline: 'none',
+                opacity: isTyping ? 0.6 : 1
               }}
             />
             <button
               onClick={() => handleSendMessage()}
+              disabled={isTyping || !inputMsg.trim()}
               style={{
-                backgroundColor: '#0047AB',
+                backgroundColor: isTyping || !inputMsg.trim() ? '#1E293B' : '#0047AB',
                 border: 'none',
                 borderRadius: '8px',
                 padding: '0 14px',
-                color: '#FFFFFF',
+                color: isTyping || !inputMsg.trim() ? '#64748B' : '#FFFFFF',
                 fontWeight: 'bold',
                 fontSize: '0.85rem',
-                cursor: 'pointer'
+                cursor: isTyping || !inputMsg.trim() ? 'not-allowed' : 'pointer'
               }}
             >
-              SEND
+              {isTyping ? "..." : "SEND"}
             </button>
           </div>
         </div>
