@@ -780,7 +780,7 @@ function App() {
     }
   }, []);
 
-  // --- HASH ROUTING CONTROLLER ---
+  // --- HASH ROUTING & POPSTATE BROWSER NAVIGATION CONTROLLER ---
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash;
@@ -877,22 +877,33 @@ function App() {
         setShowLegal(null);
       } else if (hash === '' || hash === '#') {
         const activeSession = getSessionItem("disappear_session") === "active";
+        setShowLegal(null);
+        setShowAdmin(false);
+        setShowAdminLogin(false);
+        setShowPricing(false);
+        setShow2FA(false);
+        setShowCheckout(false);
+        setShowKycModal(false);
+        setShowSupportModal(false);
+        setShowForgotPasswordModal(false);
+        setShowFaqModal(false);
         if (activeSession) {
-          setShowLegal(null);
-          setShowAdmin(false);
-          setShowAdminLogin(false);
-          setShowPricing(false);
-          setShow2FA(false);
-          setShowCheckout(false);
           setShowLanding(false);
           setShowShield(true);
+        } else {
+          setShowLanding(true);
+          setShowShield(false);
         }
       }
     };
 
     handleHashChange();
     window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handleHashChange);
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('popstate', handleHashChange);
+    };
   }, []);
 
   // --- GOOGLE MAPS PLACES AUTOCOMPLETE ---
