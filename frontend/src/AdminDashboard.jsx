@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 export default function AdminDashboard({ API_BASE_URL }) {
   const [manualTasks, setManualTasks] = useState([]);
@@ -514,13 +514,21 @@ export default function AdminDashboard({ API_BASE_URL }) {
     }
   };
 
-  // Filter & Search task list
-  const getFilteredTasks = () => {
+  const [displayLimit, setDisplayLimit] = useState(50);
+
+  // Reset pagination display limit on tab switch or search query change
+  useEffect(() => {
+    setDisplayLimit(50);
+  }, [filterMode, searchQuery]);
+
+  // Instantaneous Cached Filtering & Lazy Loading Optimization
+  const { displayedTasks, fullFilteredCount, unassignedCount, myTasksCount } = useMemo(() => {
     let tasks = manualTasks;
     if (filterMode === 'UNASSIGNED') {
       tasks = manualTasks.filter(t => !t.assigned_analyst);
     } else if (filterMode === 'MY_TASKS') {
-      tasks = manualTasks.filter(t => t.assigned_analyst && analystName.trim() && t.assigned_analyst.toLowerCase() === analystName.trim().toLowerCase());
+      const aName = analystName.trim().toLowerCase();
+      tasks = manualTasks.filter(t => t.assigned_analyst && aName && t.assigned_analyst.trim().toLowerCase() === aName);
     } else if (filterMode === 'COMPLETED') {
       tasks = completedTasks;
     }
@@ -529,18 +537,23 @@ export default function AdminDashboard({ API_BASE_URL }) {
       const q = searchQuery.trim().toLowerCase();
       tasks = tasks.filter(t => {
         const brokerMatch = t.broker_name && t.broker_name.toLowerCase().includes(q);
-        const nameMatch = t.target_profile && `${t.target_profile.first_name} ${t.target_profile.last_name}`.toLowerCase().includes(q);
+        const nameMatch = t.target_profile && `${t.target_profile.first_name || ''} ${t.target_profile.last_name || ''}`.toLowerCase().includes(q);
         const emailMatch = t.target_profile && t.target_profile.email && t.target_profile.email.toLowerCase().includes(q);
         return brokerMatch || nameMatch || emailMatch;
       });
     }
 
-    return tasks;
-  };
+    const unassigned = manualTasks.filter(t => !t.assigned_analyst).length;
+    const aNameClean = analystName.trim().toLowerCase();
+    const myTasks = manualTasks.filter(t => t.assigned_analyst && aNameClean && t.assigned_analyst.trim().toLowerCase() === aNameClean).length;
 
-  const displayedTasks = getFilteredTasks();
-  const unassignedCount = manualTasks.filter(t => !t.assigned_analyst).length;
-  const myTasksCount = manualTasks.filter(t => t.assigned_analyst && analystName.trim() && t.assigned_analyst.toLowerCase() === analystName.trim().toLowerCase()).length;
+    return {
+      displayedTasks: tasks.slice(0, displayLimit),
+      fullFilteredCount: tasks.length,
+      unassignedCount: unassigned,
+      myTasksCount: myTasks
+    };
+  }, [manualTasks, completedTasks, filterMode, searchQuery, analystName, displayLimit]);
 
   if (!isAuthenticated) {
     return (
@@ -1380,6 +1393,18 @@ export default function AdminDashboard({ API_BASE_URL }) {
               </div>
             );
           })}
+
+          {fullFilteredCount > displayLimit && (
+            <div style={{ textAlign: 'center', marginTop: '25px', marginBottom: '15px' }}>
+              <button 
+                className="main-button" 
+                style={{ padding: '12px 30px', fontSize: '0.88rem', background: 'linear-gradient(135deg, #0047AB, #00D2FF)', fontWeight: 'bold' }}
+                onClick={() => setDisplayLimit(prev => prev + 50)}
+              >
+                ⚡ LOAD MORE TASKS ({fullFilteredCount - displayLimit} REMAINING)
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -388,20 +388,7 @@ def run_automated_data_broker_scrubber():
                             node_id=f"{uid}_AUTOMATED_SCRUB"
                         ))
 
-                    # 3. Advance 1-2 pending manual removals to SUBPOENA_FILED state
-                    pending_manual = (
-                        db.query(DBScrubLog)
-                        .filter(DBScrubLog.user_id == uid, DBScrubLog.status == "MANUAL_PENDING")
-                        .limit(random.randint(1, 2))
-                        .all()
-                    )
-                    for item in pending_manual:
-                        item.status = "SUBPOENA_FILED"
-                        item.timestamp = datetime.utcnow()
-                        db.add(DBPurgeLog(
-                            action_type=f"LEGAL_OPT_OUT_FILED [{item.broker_name}]: Privacy Analyst Subpoena Dispatched",
-                            node_id=f"{uid}_MANUAL_OPS"
-                        ))
+                    # Manual requests remain in MANUAL_PENDING queue until explicitly processed by a human admin
 
                     db.commit()
             finally:
@@ -467,6 +454,14 @@ safe_add_column("scrub_logs_v1", "manual_instruction_url", "VARCHAR")
 safe_add_column("scrub_logs_v1", "assigned_analyst", "VARCHAR")
 safe_add_column("scrub_logs_v1", "resolved_by", "VARCHAR")
 safe_add_column("scrub_logs_v1", "target_listing_url", "VARCHAR")
+
+# Database indexes for instantaneous Operations Command Center tab filtering
+try:
+    with engine.begin() as conn:
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_scrub_status ON scrub_logs_v1 (status)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_scrub_user_status ON scrub_logs_v1 (user_id, status)"))
+except Exception as idx_err:
+    logger.warning(f"Index creation notice: {idx_err}")
 
 # Canonical profile & 7 aliases sync for Michael Sessa
 try:
