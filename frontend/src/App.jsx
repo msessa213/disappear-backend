@@ -2145,7 +2145,7 @@ const handleEmergencyBurn = async () => {
 
   if (showLanding && !showLegal && !showPricing && !showCheckout && !showAdmin && !show2FA && !showShield) {
     return (
-      <div style={{ width: '100%', minHeight: '100vh', position: 'relative', background: '#000000' }}>
+      <div style={{ width: '100%', minHeight: '100vh', position: 'relative', background: '#000000', paddingBottom: '70px' }}>
         {/* FLOATING AI PRIVACY ASSISTANT CHAT WIDGET */}
         <PrivacyAiChat apiBaseUrl={API_BASE_URL} />
         
@@ -2170,6 +2170,24 @@ const handleEmergencyBurn = async () => {
           }}
           onReadManifesto={() => window.location.hash = "manifesto"}
         />
+
+        <footer className="home-footer">
+            <div style={{ width: '100%', marginBottom: '8px', fontSize: '0.82rem', color: '#94A3B8', letterSpacing: '0.5px', textAlign: 'center' }}>
+              DISAPPEAR IS BROUGHT TO YOU BY <strong style={{ color: '#00D2FF', letterSpacing: '1px' }}>DFS 213 LLC</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+              <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "manifesto"}>MANIFESTO</span>
+              <span className="footer-divider" style={{ opacity: 0.4, color: '#64748B' }}>|</span>
+              <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "privacy"}>PRIVACY</span>
+              <span className="footer-divider" style={{ opacity: 0.4, color: '#64748B' }}>|</span>
+              <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "terms"}>TERMS</span>
+              <span className="footer-divider" style={{ opacity: 0.4, color: '#64748B' }}>|</span>
+              <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "aml-policy"}>AML & FRAUD</span>
+              <span className="footer-divider" style={{ opacity: 0.4, color: '#64748B' }}>|</span>
+              <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "support"}>SUPPORT</span>
+              <span className="admin-trigger" style={{ cursor: 'pointer', opacity: 0 }} onClick={() => window.location.hash = "admin"}>.</span>
+            </div>
+        </footer>
 
         {/* GLOBAL ENCRYPTION & PURGE OVERLAY */}
         {isEncrypting && (
