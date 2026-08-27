@@ -64,7 +64,7 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
           </span>
         </div>
         <div className="nav-actions">
-          <button className="login-btn-nav" onClick={onLoginRequest}>ACCESS VAULT</button>
+          <button className="login-btn-nav" onClick={onLoginRequest}>🔑 ACCESS VAULT / SIGN IN</button>
         </div>
       </nav>
 
@@ -84,7 +84,7 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
                 ⚡ INITIATE IDENTITY SCRUB
               </button>
               
-              <div style={{ marginTop: '12px', marginBottom: '14px' }}>
+              <div style={{ marginTop: '12px', marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
                 <span 
                   style={{ 
                     color: '#FFD700', 
@@ -97,6 +97,19 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
                   onClick={onEnterVault}
                 >
                   👉 NEW CUSTOMERS SIGN UP HERE TO INITIATE SCRUB
+                </span>
+                <span 
+                  style={{ 
+                    color: '#00D2FF', 
+                    fontSize: '0.88rem', 
+                    fontWeight: 'bold', 
+                    cursor: 'pointer', 
+                    textDecoration: 'underline',
+                    letterSpacing: '0.5px'
+                  }} 
+                  onClick={onLoginRequest}
+                >
+                  🔑 ALREADY HAVE AN ACCOUNT? SIGN IN HERE
                 </span>
               </div>
 
@@ -256,8 +269,8 @@ function LandingPage({ onEnterVault, onLoginRequest, onReadManifesto }) {
 
       {/* --- LOGIN GATEWAY & LEGAL FOOTER --- */}
       <section className="login-gateway" style={{ padding: '60px 20px 30px', borderTop: '1px solid #111' }}>
-        <p className="login-prompt" style={{ color: '#94A3B8', marginBottom: '10px' }}>EXISTING OPERATIVE?</p>
-        <button className="login-btn-nav" style={{ padding: '15px 30px' }} onClick={onLoginRequest}>DECRYPT VAULT ACCESS</button>
+        <p className="login-prompt" style={{ color: '#94A3B8', marginBottom: '10px' }}>EXISTING OPERATIVE / RETURNING USER?</p>
+        <button className="login-btn-nav" style={{ padding: '15px 30px' }} onClick={onLoginRequest}>🔑 SIGN IN / ACCESS VAULT</button>
       </section>
 
       {/* --- FOOTER COMPLIANCE LINKS --- */}
