@@ -4352,7 +4352,8 @@ async def generate_purge_receipt(db: Session = Depends(get_db)):
 @limiter.limit("30/minute")
 async def ai_privacy_chat(request: Request, req: AIChatRequest):
     """Provides automated AI Privacy & Support answers for pricing, how it works, broker scrubs, competitor comparison, and aliases."""
-    msg = req.message.lower().strip()
+    raw_query = (req.message or "").strip()
+    msg = raw_query.lower()
     
     if any(k in msg for k in ["compare", "vs", "versus", "deleteme", "incogni", "optery", "kanary", "better", "competitor", "difference", "why disappear"]):
         reply = (
@@ -4369,7 +4370,7 @@ async def ai_privacy_chat(request: Request, req: AIChatRequest):
             "4. **Bank-Grade Hardware & Biometric Security**:\n"
             "   • Face ID / Touch ID / Fingerprint biometrics, PBKDF2 hashing, and AES-256 encrypted vault exports."
         )
-    elif any(k in msg for k in ["price", "pricing", "cost", "how much", "plan", "subscription", "annual", "monthly", "tier", "fee"]):
+    elif any(k in msg for k in ["price", "pricing", "cost", "how much", "plan", "subscription", "annual", "monthly", "tier", "fee", "pay", "charge", "discount", "coupon", "fam30", "promo"]):
         reply = (
             "💰 **Disappear Elite Privacy Pricing**:\n\n"
             "• **Monthly Plan**: $19.99/month\n"
@@ -4382,7 +4383,7 @@ async def ai_privacy_chat(request: Request, req: AIChatRequest):
             "✓ Mobile App + Face ID / Biometric Security\n"
             "✓ 100% money-back guarantee & 1-click cancellation anytime!"
         )
-    elif any(k in msg for k in ["how it works", "how does it work", "how does disappear work", "how it work", "what is disappear", "overview", "what do you do", "process", "step by step"]):
+    elif any(k in msg for k in ["how it works", "how does it work", "how does disappear work", "how it work", "what is disappear", "overview", "what do you do", "process", "step by step", "explain"]):
         reply = (
             "🛡️ **How Disappear Protects Your Identity (Step-by-Step)**:\n\n"
             "**Step 1: Deep PII Audit & Threat Detection**\n"
@@ -4394,26 +4395,26 @@ async def ai_privacy_chat(request: Request, req: AIChatRequest):
             "**Step 4: Continuous 24/7 Monitoring & Emergency Burn**\n"
             "We re-scan every 30 days to block re-listed records. If any line is spammed, click **Emergency Burn** to scorch it instantly!"
         )
-    elif any(k in msg for k in ["broker", "scrub", "remove", "data broker", "whitepages", "spokeo", "beenverified", "opt out", "opt-out", "delete my data"]):
+    elif any(k in msg for k in ["broker", "scrub", "remove", "data broker", "whitepages", "spokeo", "beenverified", "opt out", "opt-out", "delete my data", "information", "public records", "address", "relatives", "background search"]):
         reply = (
             "🔍 **Data Broker Removal Power**:\n\n"
             "Disappear purges your personal information from **400+ major data broker databases**, including:\n"
             "• Whitepages, Spokeo, Radaris, BeenVerified, PeopleFinders, FastPeopleSearch, LexisNexis, TruthFinder, Intelius, and 390+ more.\n\n"
             "Unlike other tools that fail on tough brokers, our **Human Analyst Team** manually files legal opt-out documentation until your records disappear."
         )
-    elif any(k in msg for k in ["alias", "email alias", "phone alias", "relay", "burner", "virtual phone", "sms", "forward"]):
+    elif any(k in msg for k in ["alias", "email alias", "phone alias", "relay", "burner", "virtual phone", "sms", "forward", "masked", "inbox", "message", "addy"]):
         reply = (
             "🔒 **Active Masking & Relays (6 Active Slots)**:\n\n"
             "• **Email Relays**: Create custom email aliases (e.g., `shopping_89a@anonaddy.me`) that forward to your real email inbox without revealing your personal address.\n"
             "• **Phone Relays**: Masked phone lines with real SMS forwarding to your device.\n"
             "• **Zero Friction**: 1-click creation with zero verification popups once onboarded."
         )
-    elif any(k in msg for k in ["burn", "emergency burn", "emergency wipe", "nuke", "destroy"]):
+    elif any(k in msg for k in ["burn", "emergency burn", "emergency wipe", "nuke", "destroy", "scorch", "panic"]):
         reply = (
             "⚡ **Emergency Burn (Panic Scorch Button)**:\n\n"
             "If a website sells your details or an alias gets spammed, 1 tap on **Emergency Burn** instantly scorches and deletes all active email relays, virtual phone lines, and payment cards—severing tracking permanently."
         )
-    elif any(k in msg for k in ["security", "password", "biometric", "face id", "fingerprint", "encrypt", "safe", "privacy"]):
+    elif any(k in msg for k in ["security", "password", "biometric", "face id", "fingerprint", "encrypt", "safe", "privacy", "vault", "lock", "hash"]):
         reply = (
             "🔐 **Bank-Grade Vault Security**:\n\n"
             "• **PBKDF2 Password Hashing** (100,000 SHA-256 iterations)\n"
@@ -4421,7 +4422,7 @@ async def ai_privacy_chat(request: Request, req: AIChatRequest):
             "• **AES-256 Encrypted** vault exports\n"
             "• **Strict KYC/AML** compliance to stop fraudulent abuse."
         )
-    elif any(k in msg for k in ["breach", "breached", "hack", "hacked", "leak", "leaked", "stolen", "compromised", "dark web"]):
+    elif any(k in msg for k in ["breach", "breached", "hack", "hacked", "leak", "leaked", "stolen", "compromised", "dark web", "identity theft"]):
         reply = (
             "🚨 **What Happens If Your Data Is Breached or Leaked**:\n\n"
             "1. **Your Real Identity Remains 100% Safe**:\n"
@@ -4431,33 +4432,45 @@ async def ai_privacy_chat(request: Request, req: AIChatRequest):
             "3. **Automated Dark Web & Broker Scrubbing**:\n"
             "   Data brokers buy breached databases. Disappear continuously scans 400+ data broker sites every 30 days to detect and legally purge any re-listed records."
         )
-    elif any(k in msg for k in ["spam", "robocall", "junk", "telemarketer", "scam", "phishing"]):
+    elif any(k in msg for k in ["spam", "robocall", "junk", "telemarketer", "scam", "phishing", "call", "calls", "text", "texts"]):
         reply = (
             "🚫 **How Disappear Stops Spam & Robocalls**:\n\n"
             "• **Data Broker Purging**: Most spam calls come from data brokers selling your phone number. Disappear wipes your number from 400+ broker directories.\n"
             "• **Masked Virtual Phone Lines**: Use Disappear phone relays for signups so spam never reaches your personal phone.\n"
             "• **Instant Line Scorch**: If a virtual line receives spam, burn it in 1 click and replace it with a clean line."
         )
-    elif any(k in msg for k in ["stalker", "dox", "doxxed", "doxxing", "harass", "safety", "threat", "ex-partner"]):
+    elif any(k in msg for k in ["stalker", "dox", "doxxed", "doxxing", "harass", "safety", "threat", "ex-partner", "relatives", "family"]):
         reply = (
             "🛡️ **Stalker & Doxxing Protection**:\n\n"
             "• **Complete PII Eradication**: We remove your home address, family member names, phone numbers, and location history from public search engines and 400+ people-search sites.\n"
             "• **Human Analyst Priority**: High-risk or sensitive removal requests are escalated to our **Human Privacy Analyst Team** to ensure 100% compliance."
         )
-    elif any(k in msg for k in ["cancel", "cancellation", "refund", "guarantee", "stop"]):
+    elif any(k in msg for k in ["refer", "referral", "invite", "friend", "link", "reward", "credit", "free month"]):
+        reply = (
+            "🎁 **Disappear Referral Program**:\n\n"
+            "• **Your Unique Link**: Get your personal referral link inside your Vault under the **Referral Milestone Card**.\n"
+            "• **Earn Free Months**: For every 5 friends who sign up using your link, you earn 1 FREE month of Elite Privacy Protection!"
+        )
+    elif any(k in msg for k in ["cancel", "cancellation", "refund", "guarantee", "stop", "unsubscribe"]):
         reply = (
             "✅ **100% Risk-Free & Easy Cancellation**:\n\n"
             "You are never locked in. You can cancel your subscription at any time with a single click inside your dashboard under Settings. No hidden fees, no phone calls required."
         )
-    else:
+    elif any(k in msg for k in ["human", "agent", "support", "help", "contact", "person", "email support", "ticket"]):
         reply = (
-            "I'm standing by to answer any questions about protecting your identity! Here are popular topics I can help you with:\n\n"
-            "• 🏆 **Why Disappear Beats Competitors** (DeleteMe vs Incogni vs Disappear)\n"
-            "• 🛡️ **How Disappear Protects You** (Step-by-Step)\n"
-            "• 💰 **Pricing & Plan Details** ($19.99/mo or $15.99/mo annual)\n"
-            "• 🔒 **Email Aliases & Phone Relays**\n"
-            "• ⚡ **Emergency Burn Panic Button**\n\n"
-            "What specific question can I answer for you?"
+            "👤 **Human Support & Analyst Assistance**:\n\n"
+            "Our Privacy Team is standing by! You can submit a direct support ticket from your Vault dashboard under **Support & Feedback** or email `support@disappearco.com`. Dedicated Human Analysts review all opt-out exceptions within 24 hours."
+        )
+    else:
+        clean_q_display = raw_query[:80] + ("..." if len(raw_query) > 80 else "")
+        reply = (
+            f"🛡️ **Disappear AI Specialist Answer**:\n\n"
+            f"Thank you for asking: *\"{clean_q_display}\"*\n\n"
+            f"Here is how Disappear addresses this for you:\n\n"
+            f"1. **Continuous 400+ Data Broker Purging**: Disappear actively removes your personal data (name, address, phone numbers, relatives) from over 400+ data brokers using automated legal bots backed by dedicated human privacy analysts.\n\n"
+            f"2. **Real-Time Masking & Relays**: You receive **6 Active Alias Slots** (Burner Emails & Virtual Phone Lines with SMS forwarding) to mask your real contact details when signing up for services.\n\n"
+            f"3. **Instant Emergency Scorch**: If an alias receives spam or is involved in a breach, click **Emergency Burn** to sever connection immediately.\n\n"
+            f"💡 *Would you like specific details on pricing ($19.99/mo or $15.99/mo annual), broker opt-outs, or setting up burner aliases? Ask away!*"
         )
 
     return {"status": "success", "reply": reply}
