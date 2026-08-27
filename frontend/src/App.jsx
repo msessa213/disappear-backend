@@ -4137,7 +4137,7 @@ const handleEmergencyBurn = async () => {
                                 lineHeight: '1.45',
                                 textAlign: 'left'
                               }}>
-                                ℹ️ <strong>Quick Note on Setup:</strong> After creating your account, you will receive a one-time verification email from <code>addy.io</code> to confirm your email forwarding address. You'll also be able to manage or re-trigger this verification anytime inside your Vault profile settings.
+                                ℹ️ <strong>Quick Note on Setup:</strong> After creating your account, you will receive a one-time verification email from <code>addy.io</code> to confirm your email forwarding address. Once you click "Verify" on <code>addy.io</code>, you can safely close that tab and return here to <code>disappearco.com</code> to log into your vault. You can also manage or re-trigger this verification anytime inside your Vault profile settings.
                               </div>
                               <input type="password" name="disappear_signup_password_clean" id="disappear_signup_password_clean" autoComplete="new-password" className="mask-btn full-row" placeholder="Account Password (min 6 characters)" value={targetProfile.password} onChange={(e) => setTargetProfile({...targetProfile, password: e.target.value})} required />
                               <input type="password" name="disappear_signup_confirm_password_clean" id="disappear_signup_confirm_password_clean" autoComplete="new-password" className="mask-btn full-row" placeholder="Confirm Account Password" value={signupConfirmPassword} onChange={(e) => setSignupConfirmPassword(e.target.value)} required />
