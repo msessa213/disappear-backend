@@ -2559,9 +2559,49 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
             "used": len(target_emails_query)
         }
 
-        # Referral Stats Calculations
-        ref_code = profile.referral_code or "REFDEFAULT"
-        ref_count = profile.referral_count or 0
+        # Dynamic & Self-Healing Referral Stats Calculation
+        if not profile.referral_code:
+            import uuid
+            profile.referral_code = f"REF{profile.id[-6:].upper() if len(profile.id) >= 6 else str(uuid.uuid4())[:8].upper()}"
+            try:
+                db.commit()
+            except Exception:
+                db.rollback()
+
+        ref_code = profile.referral_code
+        ref_identifiers = list(set([ref_code, ref_code.upper(), profile.id, profile.email, profile.email.lower()]))
+
+        db_ref_count = 0
+        try:
+            db_ref_count = db.query(DBProfile).filter(
+                DBProfile.referred_by.in_(ref_identifiers),
+                DBProfile.id != profile.id
+            ).count()
+        except Exception as ref_db_err:
+            logger.warning(f"Referral query error: {ref_db_err}")
+
+        credited_logs_count = 0
+        try:
+            credited_logs_count = db.query(DBPurgeLog).filter(
+                DBPurgeLog.action_type == "REFERRAL_CREDITED",
+                or_(
+                    DBPurgeLog.user_id == profile.id,
+                    DBPurgeLog.node_id.like(f"%{profile.id}%"),
+                    DBPurgeLog.node_id.like(f"%{ref_code}%")
+                )
+            ).count()
+        except Exception as ref_log_err:
+            logger.warning(f"Referral log query error: {ref_log_err}")
+
+        ref_count = max(profile.referral_count or 0, db_ref_count, credited_logs_count)
+
+        if ref_count > (profile.referral_count or 0):
+            profile.referral_count = ref_count
+            try:
+                db.commit()
+            except Exception:
+                db.rollback()
+
         next_needed = max(0, 5 - (ref_count % 5))
         progress_pct = int(((ref_count % 5) / 5.0) * 100)
         

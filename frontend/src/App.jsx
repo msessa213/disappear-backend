@@ -735,9 +735,12 @@ function App() {
     const refCode = urlParams.get('ref') || urlParams.get('referral_code') || urlParams.get('referral');
     if (refCode) {
       const cleanRef = refCode.trim().toUpperCase();
-      // 1. Clear previous active auth session so visitor starts with a clean slate
-      removeSessionItem("disappear_session");
-      removeSessionItem("disappear_user_id");
+      const activeUser = currentUserId || getSessionItem("disappear_user_id");
+      // Only clear session if visiting someone ELSE's referral link while not logged in
+      if (!activeUser) {
+        removeSessionItem("disappear_session");
+        removeSessionItem("disappear_user_id");
+      }
 
       // 2. Save Referral Code to BOTH localStorage & sessionStorage for full session persistence
       setSessionItem("disappear_referral_code", cleanRef);
