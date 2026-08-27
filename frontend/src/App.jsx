@@ -3880,6 +3880,8 @@ const handleEmergencyBurn = async () => {
                       <label style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>NEW PASSWORD</label>
                       <input 
                         type="password"
+                        name="disappear_reset_new_password"
+                        autoComplete="new-password"
                         className="mask-btn"
                         style={{ width: '100%', marginTop: '4px', color: '#fff', fontSize: '0.85rem' }}
                         placeholder="New Password (min 6 characters)"
@@ -3892,6 +3894,8 @@ const handleEmergencyBurn = async () => {
                       <label style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>CONFIRM NEW PASSWORD</label>
                       <input 
                         type="password"
+                        name="disappear_reset_confirm_password"
+                        autoComplete="new-password"
                         className="mask-btn"
                         style={{ width: '100%', marginTop: '4px', color: '#fff', fontSize: '0.85rem' }}
                         placeholder="Confirm New Password"
@@ -3945,32 +3949,32 @@ const handleEmergencyBurn = async () => {
                         <button className="mask-btn" style={{ fontSize: '0.85rem' }} onClick={() => { window.location.hash = "pricing"; }}>CREATE ACCOUNT</button>
                       </div>
                       <h3 className="tiger-text" style={{ fontSize: '1.1rem', marginBottom: '15px', textAlign: 'center' }}>SIGN IN TO DISAPPEAR</h3>
-                      <form onSubmit={(e) => { e.preventDefault(); verify2FA(); }} autoComplete="off" style={{ width: '100%' }}>
+                      <form onSubmit={(e) => { e.preventDefault(); verify2FA(); }} autoComplete="on" style={{ width: '100%' }}>
                         <p className="field-label">REGISTERED ACCOUNT EMAIL</p>
                         <input 
                           type="email"
                           name="disappear_login_email_clean" 
                           id="disappear_login_email_clean"
-                          autoComplete="off" 
-                          data-lpignore="true"
+                          autoComplete="username" 
                           className="mask-btn" 
                           style={{width: '100%', textAlign: 'center', marginBottom: '15px', color: 'white'}} 
                           placeholder="customer@email.com" 
                           value={loginEmail} 
                           onChange={(e) => setLoginEmail(e.target.value)} 
+                          required
                         />
                         <p className="field-label">ACCOUNT PASSWORD</p>
                         <input 
                           type="password" 
                           name="disappear_login_password_clean" 
                           id="disappear_login_password_clean"
-                          autoComplete="new-password" 
-                          data-lpignore="true"
+                          autoComplete="current-password" 
                           className="mask-btn" 
                           style={{width: '100%', textAlign: 'center', color: 'white', marginBottom: '10px'}} 
                           placeholder="••••••••" 
                           value={loginPassword} 
                           onChange={(e) => setLoginPassword(e.target.value)} 
+                          required
                         />
                         <div style={{ textAlign: 'right', marginBottom: '15px' }}>
                           <span 
@@ -4080,64 +4084,65 @@ const handleEmergencyBurn = async () => {
                     {/* Panel 1: Target Profile */}
                     <div className="pricing-card">
                       <div className="price-box">
-                        <h3 className="tiger-text">TARGET PROFILE DATA</h3>
+                        <form onSubmit={(e) => { e.preventDefault(); handleFinalPurchase(); }} autoComplete="on" style={{ width: '100%' }}>
+                          <h3 className="tiger-text">TARGET PROFILE DATA</h3>
 
-                        {/* LEGAL NAME & DATA REMOVAL TARGET NOTICE BANNER */}
-                        <div style={{
-                          background: 'rgba(0, 210, 255, 0.08)',
-                          border: '1px solid #00D2FF',
-                          borderRadius: '8px',
-                          padding: '14px 16px',
-                          marginBottom: '18px',
-                          boxShadow: '0 0 20px rgba(0, 210, 255, 0.2)',
-                          textAlign: 'left'
-                        }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ fontSize: '1.2rem' }}>⚠️</span>
-                              <h4 style={{ color: '#00D2FF', margin: 0, fontSize: '0.92rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
-                                LEGAL NAME & DATA REMOVAL TARGET NOTICE
-                              </h4>
+                          {/* LEGAL NAME & DATA REMOVAL TARGET NOTICE BANNER */}
+                          <div style={{
+                            background: 'rgba(0, 210, 255, 0.08)',
+                            border: '1px solid #00D2FF',
+                            borderRadius: '8px',
+                            padding: '14px 16px',
+                            marginBottom: '18px',
+                            boxShadow: '0 0 20px rgba(0, 210, 255, 0.2)',
+                            textAlign: 'left'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                                <h4 style={{ color: '#00D2FF', margin: 0, fontSize: '0.92rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                                  LEGAL NAME & DATA REMOVAL TARGET NOTICE
+                                </h4>
+                              </div>
+                              <button
+                                type="button"
+                                className="reset-btn"
+                                style={{ padding: '2px 8px', fontSize: '0.72rem', color: '#00D2FF', borderColor: '#00D2FF' }}
+                                onClick={() => setShowSignupTargetNoticeModal(true)}
+                              >
+                                ℹ️ WHY REAL NAME?
+                              </button>
                             </div>
-                            <button
-                              type="button"
-                              className="reset-btn"
-                              style={{ padding: '2px 8px', fontSize: '0.72rem', color: '#00D2FF', borderColor: '#00D2FF' }}
-                              onClick={() => setShowSignupTargetNoticeModal(true)}
-                            >
-                              ℹ️ WHY REAL NAME?
-                            </button>
+                            <p style={{ color: '#F8FAFC', fontSize: '0.82rem', margin: 0, lineHeight: '1.45' }}>
+                              <strong>IMPORTANT:</strong> Please enter your <strong>REAL LEGAL NAME</strong> and physical address below. The name entered here will be the <strong>exact target searched, scrubbed, and removed</strong> across all 400+ public data broker registries.
+                            </p>
                           </div>
-                          <p style={{ color: '#F8FAFC', fontSize: '0.82rem', margin: 0, lineHeight: '1.45' }}>
-                            <strong>IMPORTANT:</strong> Please enter your <strong>REAL LEGAL NAME</strong> and physical address below. The name entered here will be the <strong>exact target searched, scrubbed, and removed</strong> across all 400+ public data broker registries.
-                          </p>
-                        </div>
 
-                        <div className="checkout-grid">
-                            <input className="mask-btn" placeholder="First Name (Legal Name)" value={targetProfile.firstName || targetProfile.first_name || ""} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value, first_name: e.target.value})} />
-                            <input className="mask-btn" placeholder="Middle Name (Legal Name)" value={targetProfile.middleName || targetProfile.middle_name || ""} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value, middle_name: e.target.value})} />
-                            <input className="mask-btn full-row" placeholder="Nickname / Public Record Alias (e.g. Common Short Names / Former Names)" value={targetProfile.nickname || ""} onChange={(e) => setTargetProfile({...targetProfile, nickname: e.target.value})} />
-                            <input className="mask-btn full-row" placeholder="Last Name (Legal Name)" value={targetProfile.lastName || targetProfile.last_name || ""} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value, last_name: e.target.value})} />
-                            <input type="email" name="disappear_signup_email_clean" autoComplete="off" data-lpignore="true" className="mask-btn full-row" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} />
-                            
-                            {/* --- ADDY.IO VERIFICATION ADVANCE NOTICE CALLOUT --- */}
-                            <div style={{
-                              gridColumn: '1 / -1',
-                              background: 'rgba(0, 210, 255, 0.06)',
-                              border: '1px solid rgba(0, 210, 255, 0.25)',
-                              borderRadius: '6px',
-                              padding: '10px 14px',
-                              marginTop: '2px',
-                              marginBottom: '4px',
-                              fontSize: '0.78rem',
-                              color: '#E2E8F0',
-                              lineHeight: '1.45',
-                              textAlign: 'left'
-                            }}>
-                              ℹ️ <strong>Quick Note on Setup:</strong> After creating your account, you will receive a one-time verification email from <code>addy.io</code> to confirm your email forwarding address. You'll also be able to manage or re-trigger this verification anytime inside your Vault profile settings.
-                            </div>
-                            <input type="password" name="disappear_signup_password_clean" autoComplete="new-password" data-lpignore="true" className="mask-btn full-row" placeholder="Account Password (min 6 characters)" value={targetProfile.password} onChange={(e) => setTargetProfile({...targetProfile, password: e.target.value})} />
-                            <input type="password" name="disappear_signup_confirm_password_clean" autoComplete="new-password" data-lpignore="true" className="mask-btn full-row" placeholder="Confirm Account Password" value={signupConfirmPassword} onChange={(e) => setSignupConfirmPassword(e.target.value)} />
+                          <div className="checkout-grid">
+                              <input className="mask-btn" placeholder="First Name (Legal Name)" value={targetProfile.firstName || targetProfile.first_name || ""} onChange={(e) => setTargetProfile({...targetProfile, firstName: e.target.value, first_name: e.target.value})} />
+                              <input className="mask-btn" placeholder="Middle Name (Legal Name)" value={targetProfile.middleName || targetProfile.middle_name || ""} onChange={(e) => setTargetProfile({...targetProfile, middleName: e.target.value, middle_name: e.target.value})} />
+                              <input className="mask-btn full-row" placeholder="Nickname / Public Record Alias (e.g. Common Short Names / Former Names)" value={targetProfile.nickname || ""} onChange={(e) => setTargetProfile({...targetProfile, nickname: e.target.value})} />
+                              <input className="mask-btn full-row" placeholder="Last Name (Legal Name)" value={targetProfile.lastName || targetProfile.last_name || ""} onChange={(e) => setTargetProfile({...targetProfile, lastName: e.target.value, last_name: e.target.value})} />
+                              <input type="email" name="disappear_signup_email_clean" id="disappear_signup_email_clean" autoComplete="username" className="mask-btn full-row" placeholder="Email Address" value={targetProfile.email} onChange={(e) => setTargetProfile({...targetProfile, email: e.target.value})} required />
+                              
+                              {/* --- ADDY.IO VERIFICATION ADVANCE NOTICE CALLOUT --- */}
+                              <div style={{
+                                gridColumn: '1 / -1',
+                                background: 'rgba(0, 210, 255, 0.06)',
+                                border: '1px solid rgba(0, 210, 255, 0.25)',
+                                borderRadius: '6px',
+                                padding: '10px 14px',
+                                marginTop: '2px',
+                                marginBottom: '4px',
+                                fontSize: '0.78rem',
+                                color: '#E2E8F0',
+                                lineHeight: '1.45',
+                                textAlign: 'left'
+                              }}>
+                                ℹ️ <strong>Quick Note on Setup:</strong> After creating your account, you will receive a one-time verification email from <code>addy.io</code> to confirm your email forwarding address. You'll also be able to manage or re-trigger this verification anytime inside your Vault profile settings.
+                              </div>
+                              <input type="password" name="disappear_signup_password_clean" id="disappear_signup_password_clean" autoComplete="new-password" className="mask-btn full-row" placeholder="Account Password (min 6 characters)" value={targetProfile.password} onChange={(e) => setTargetProfile({...targetProfile, password: e.target.value})} required />
+                              <input type="password" name="disappear_signup_confirm_password_clean" id="disappear_signup_confirm_password_clean" autoComplete="new-password" className="mask-btn full-row" placeholder="Confirm Account Password" value={signupConfirmPassword} onChange={(e) => setSignupConfirmPassword(e.target.value)} required />
                             <input className="mask-btn full-row" placeholder="Real Phone Number (For SMS Forwarding)" value={targetProfile.phone} onChange={(e) => setTargetProfile({...targetProfile, phone: e.target.value})} />
                             <input ref={addressRef} className="mask-btn full-row" placeholder="Street Address" value={targetProfile.address} onChange={(e) => setTargetProfile({...targetProfile, address: e.target.value})} />
                             <input className="mask-btn" placeholder="City" value={targetProfile.city} onChange={(e) => setTargetProfile({...targetProfile, city: e.target.value})} />
@@ -4347,6 +4352,7 @@ const handleEmergencyBurn = async () => {
                             letterSpacing: '1px',
                             transition: 'all 0.3s ease'
                           }} 
+                          type="submit"
                           onClick={handleFinalPurchase}
                         >
                           {isMinting ? (
@@ -4381,9 +4387,10 @@ const handleEmergencyBurn = async () => {
                           </p>
                         )}
 
-                        <button className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => window.location.hash = "pricing"}>BACK</button>
-                      </div>
+                        <button type="button" className="reset-btn" style={{width: '100%', marginTop: '10px'}} onClick={() => window.location.hash = "pricing"}>BACK</button>
+                      </form>
                     </div>
+                  </div>
 
                     {/* Panel 2: Secure Commitments */}
                     <div className="pricing-card feature-card">
@@ -5047,12 +5054,14 @@ const handleEmergencyBurn = async () => {
               Enter your registered account email to receive a 6-digit SMS verification code on your registered mobile phone.
             </p>
 
-            <form onSubmit={handleForgotPasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <form onSubmit={handleForgotPasswordSubmit} autoComplete="on" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
                 <p className="field-label" style={{ marginBottom: '4px' }}>REGISTERED ACCOUNT EMAIL</p>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <input 
                     type="email" 
+                    name="disappear_forgot_email"
+                    autoComplete="username"
                     className="mask-btn" 
                     style={{ flex: 1, color: 'white', fontSize: '0.85rem' }} 
                     placeholder="customer@email.com" 
@@ -5090,6 +5099,8 @@ const handleEmergencyBurn = async () => {
                 <p className="field-label" style={{ marginBottom: '4px' }}>NEW PASSWORD</p>
                 <input 
                   type="password" 
+                  name="disappear_forgot_new_password"
+                  autoComplete="new-password"
                   className="mask-btn" 
                   style={{ width: '100%', color: 'white', fontSize: '0.85rem' }} 
                   placeholder="New Password (min 6 chars)" 
@@ -5103,6 +5114,8 @@ const handleEmergencyBurn = async () => {
                 <p className="field-label" style={{ marginBottom: '4px' }}>CONFIRM NEW PASSWORD</p>
                 <input 
                   type="password" 
+                  name="disappear_forgot_confirm_password"
+                  autoComplete="new-password"
                   className="mask-btn" 
                   style={{ width: '100%', color: 'white', fontSize: '0.85rem' }} 
                   placeholder="Confirm New Password" 
