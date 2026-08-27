@@ -4437,12 +4437,13 @@ const handleEmergencyBurn = async () => {
                           </div>
 
                           {/* Step 1 */}
-                          <div style={{
+                          <div className="onboarding-journey-step" style={{
                             background: 'rgba(0, 71, 171, 0.08)',
                             border: '1px solid rgba(0, 71, 171, 0.3)',
                             borderRadius: '8px',
                             padding: '14px 16px',
                             display: 'flex',
+                            flexDirection: 'row',
                             gap: '12px',
                             alignItems: 'flex-start'
                           }}>
@@ -4457,7 +4458,8 @@ const handleEmergencyBurn = async () => {
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              marginTop: '2px'
+                              marginTop: '2px',
+                              flexShrink: 0
                             }}>1</div>
                             <div>
                               <div style={{ color: '#00D2FF', fontWeight: 'bold', fontSize: '0.88rem', marginBottom: '4px' }}>
@@ -4470,12 +4472,13 @@ const handleEmergencyBurn = async () => {
                           </div>
 
                           {/* Step 2 */}
-                          <div style={{
+                          <div className="onboarding-journey-step" style={{
                             background: 'rgba(0, 71, 171, 0.08)',
                             border: '1px solid rgba(0, 71, 171, 0.3)',
                             borderRadius: '8px',
                             padding: '14px 16px',
                             display: 'flex',
+                            flexDirection: 'row',
                             gap: '12px',
                             alignItems: 'flex-start'
                           }}>
@@ -4490,7 +4493,8 @@ const handleEmergencyBurn = async () => {
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              marginTop: '2px'
+                              marginTop: '2px',
+                              flexShrink: 0
                             }}>2</div>
                             <div>
                               <div style={{ color: '#00D2FF', fontWeight: 'bold', fontSize: '0.88rem', marginBottom: '4px' }}>
@@ -4503,12 +4507,13 @@ const handleEmergencyBurn = async () => {
                           </div>
 
                           {/* Step 3 */}
-                          <div style={{
+                          <div className="onboarding-journey-step" style={{
                             background: 'rgba(0, 71, 171, 0.08)',
                             border: '1px solid rgba(0, 71, 171, 0.3)',
                             borderRadius: '8px',
                             padding: '14px 16px',
                             display: 'flex',
+                            flexDirection: 'row',
                             gap: '12px',
                             alignItems: 'flex-start'
                           }}>
@@ -4523,7 +4528,8 @@ const handleEmergencyBurn = async () => {
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              marginTop: '2px'
+                              marginTop: '2px',
+                              flexShrink: 0
                             }}>3</div>
                             <div>
                               <div style={{ color: '#00D2FF', fontWeight: 'bold', fontSize: '0.88rem', marginBottom: '4px' }}>
@@ -4536,12 +4542,13 @@ const handleEmergencyBurn = async () => {
                           </div>
 
                           {/* Step 4 */}
-                          <div style={{
+                          <div className="onboarding-journey-step" style={{
                             background: 'rgba(0, 71, 171, 0.08)',
                             border: '1px solid rgba(0, 71, 171, 0.3)',
                             borderRadius: '8px',
                             padding: '14px 16px',
                             display: 'flex',
+                            flexDirection: 'row',
                             gap: '12px',
                             alignItems: 'flex-start'
                           }}>
@@ -4556,7 +4563,8 @@ const handleEmergencyBurn = async () => {
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              marginTop: '2px'
+                              marginTop: '2px',
+                              flexShrink: 0
                             }}>4</div>
                             <div>
                               <div style={{ color: '#00D2FF', fontWeight: 'bold', fontSize: '0.88rem', marginBottom: '4px' }}>

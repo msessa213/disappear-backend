@@ -1161,19 +1161,31 @@ input[type="checkbox"] {
   flex-direction: column !important;
   flex: 1 1 420px !important;
   max-width: 450px !important;
-  min-height: 100% !important;
+  height: auto !important;
+  min-height: auto !important;
 }
 
 .onboarding-panels-container .pricing-card.feature-card {
   flex: 1 1 380px !important;
+  height: auto !important;
 }
 
 .onboarding-panels-container .price-box {
   flex: 1 !important;
   margin: 0 !important;
-  height: 100% !important;
+  height: auto !important;
+  min-height: auto !important;
   display: flex !important;
   flex-direction: column !important;
+  box-sizing: border-box !important;
+}
+
+.onboarding-journey-step {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 12px !important;
+  align-items: flex-start !important;
+  width: 100% !important;
   box-sizing: border-box !important;
 }
 
@@ -1188,6 +1200,14 @@ input[type="checkbox"] {
     width: 100% !important;
     max-width: 450px !important;
     flex: 1 1 auto !important;
+    height: auto !important;
+  }
+
+  .onboarding-journey-step {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 12px !important;
+    align-items: flex-start !important;
   }
 }
 
