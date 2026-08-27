@@ -1229,7 +1229,7 @@ input[type="checkbox"] {
 /* FLOATING MINIMIZABLE CHATBOT (RESPONSIVE CYBERPUNK BADGE) */
 .privacy-ai-chat-container {
   position: fixed;
-  bottom: 25px;
+  bottom: 75px;
   right: 25px;
   z-index: 999999;
   pointer-events: auto;
@@ -1310,8 +1310,9 @@ input[type="checkbox"] {
 /* MOBILE OPTIMIZATION (<= 768px): COLLAPSE TO COMPACT FLOATING CIRCLE ICON */
 @media (max-width: 768px) {
   .privacy-ai-chat-container {
-    bottom: 15px;
-    right: 15px;
+    bottom: max(80px, calc(70px + env(safe-area-inset-bottom, 0px))) !important;
+    right: 15px !important;
+    z-index: 999999 !important;
   }
   
   .ai-chat-trigger-btn {
@@ -1334,9 +1335,10 @@ input[type="checkbox"] {
   }
 
   .ai-chat-modal-floating {
-    bottom: 15px !important;
+    bottom: max(75px, calc(65px + env(safe-area-inset-bottom, 0px))) !important;
     right: 15px !important;
     width: calc(100vw - 30px) !important;
-    max-height: calc(100vh - 80px) !important;
+    max-height: calc(100vh - 100px) !important;
+    z-index: 999999 !important;
   }
 }
