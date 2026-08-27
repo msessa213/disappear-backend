@@ -2156,14 +2156,20 @@ const handleEmergencyBurn = async () => {
         <LandingPage 
           onEnterVault={() => {
             setShowLanding(false);
-            setShow2FA(true);
+            setShowPricing(true);
+            setShow2FA(false);
             setShowShield(false);
+            setShowLegal(null);
+            window.location.hash = "pricing";
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }} 
           onLoginRequest={() => {
             setShowLanding(false);
             setShow2FA(true);
+            setShowPricing(false);
             setShowShield(false);
+            setShowLegal(null);
+            window.location.hash = "login";
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           onReadManifesto={() => window.location.hash = "manifesto"}
@@ -3934,7 +3940,7 @@ const handleEmergencyBurn = async () => {
             ) : (
               /* 4. ONBOARDING & LOGIN FLOW (MOBILE OPTIMIZED) */
               <div className="onboarding-flow">
-                {(show2FA || (!showPricing && !showCheckout && !isScanning)) && (
+                {(show2FA && !showPricing && !showCheckout && !isScanning) && (
                   <div className="fade-in" style={{ maxWidth: '480px', margin: '0 auto', width: '100%' }}>
                     <div className="pricing-card" style={{ width: '100%' }}>
                       <div className="price-box" style={{ padding: '30px 25px' }}>
