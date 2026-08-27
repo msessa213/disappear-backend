@@ -4007,26 +4007,6 @@ const handleEmergencyBurn = async () => {
                         </div>
                         <button type="submit" className="main-button" style={{width: '100%', marginTop: '5px'}}>SIGN IN</button>
                       </form>
-                      <button 
-                        type="button" 
-                        className="main-button" 
-                        style={{ width: '100%', marginTop: '12px', background: 'linear-gradient(135deg, #10B981, #059669)', border: 'none' }}
-                        onClick={() => {
-                          const savedUid = currentUserId || getSessionItem("disappear_user_id");
-                          if (!savedUid) {
-                            triggerToast("⚠️ PLEASE SIGN IN WITH YOUR EMAIL & PASSWORD");
-                            return;
-                          }
-                          setSessionItem("disappear_session", "active");
-                          setCurrentUserId(savedUid);
-                          setShowLanding(false);
-                          setShow2FA(false);
-                          setShowShield(true);
-                          syncDefenseData();
-                        }}
-                      >
-                        ⚡ ACCESS VAULT DIRECTLY
-                      </button>
                       {(hasBiometrics || Capacitor.isNativePlatform()) && (
                         <button 
                           className="mask-btn" 
