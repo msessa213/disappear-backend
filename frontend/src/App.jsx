@@ -876,22 +876,16 @@ function App() {
         setShowAdminLogin(false);
         setShowLegal(null);
       } else if (hash === '' || hash === '#') {
-        if (window.location.hash) {
-          window.history.replaceState(null, "", window.location.pathname + window.location.search);
-        }
         const activeSession = getSessionItem("disappear_session") === "active";
-        setShowLegal(null);
-        setShowAdmin(false);
-        setShowAdminLogin(false);
-        setShowPricing(false);
-        setShow2FA(false);
-        setShowCheckout(false);
         if (activeSession) {
+          setShowLegal(null);
+          setShowAdmin(false);
+          setShowAdminLogin(false);
+          setShowPricing(false);
+          setShow2FA(false);
+          setShowCheckout(false);
           setShowLanding(false);
           setShowShield(true);
-        } else {
-          setShowLanding(true);
-          setShowShield(false);
         }
       }
     };
@@ -899,7 +893,7 @@ function App() {
     handleHashChange();
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [syncDefenseData]);
+  }, []);
 
   // --- GOOGLE MAPS PLACES AUTOCOMPLETE ---
   useEffect(() => {
@@ -1049,22 +1043,18 @@ function App() {
       setProgress(100);
       syncDefenseData(savedUid);
     } else {
-      // DEFAULT TO PUBLIC LANDING PAGE ONLY WHEN NO USER CREDENTIALS EXIST
+      // DEFAULT TO PUBLIC LANDING PAGE ONLY WHEN NO USER CREDENTIALS EXIST AND NO ROUTE HASH IS PRESENT
       setCurrentUserId(null);
-      setShowLanding(true);
-      setShowShield(false);
-      setShowPricing(false);
-      setShowCheckout(false);
-      setShow2FA(false);
-
-      // Auto-scroll window to top hero section
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-      try {
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-      } catch (e) {}
+      const initialHash = window.location.hash;
+      if (!initialHash || initialHash === '#' || initialHash === '') {
+        setShowLanding(true);
+        setShowShield(false);
+        setShowPricing(false);
+        setShowCheckout(false);
+        setShow2FA(false);
+      }
     }
-  }, [syncDefenseData]);
+  }, []);
 
 
 
