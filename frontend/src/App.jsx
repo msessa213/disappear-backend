@@ -33,14 +33,12 @@ const isExplicitLocalDev = typeof window !== 'undefined' &&
 const API_BASE_URL = (import.meta.env && import.meta.env.VITE_API_BASE_URL) || (isExplicitLocalDev ? LOCAL_API : "");
 
 // --- TAB ISOLATION & SECURE SESSION STORAGE ENGINE ---
-// Uses sessionStorage so each browser tab/window maintains its own strictly isolated session sandbox.
-// Zero reading of auth credentials from global localStorage to prevent ghost logins on page refresh.
+// Uses sessionStorage exclusively so each browser tab/window maintains its own strictly isolated session sandbox.
+// Zero reading or writing of auth session credentials to global localStorage to prevent cross-tab state bleeding.
 const getSessionItem = (key) => {
   try {
     const val = sessionStorage.getItem(key);
     if (val && val !== "undefined" && val !== "null") return val;
-    const localVal = localStorage.getItem(key);
-    if (localVal && localVal !== "undefined" && localVal !== "null") return localVal;
     return "";
   } catch (e) {
     return "";
@@ -51,7 +49,6 @@ const setSessionItem = (key, value) => {
   try {
     if (value !== undefined && value !== null) {
       sessionStorage.setItem(key, value);
-      localStorage.setItem(key, value);
     }
   } catch (e) {}
 };
@@ -59,14 +56,12 @@ const setSessionItem = (key, value) => {
 const removeSessionItem = (key) => {
   try {
     sessionStorage.removeItem(key);
-    localStorage.removeItem(key);
   } catch (e) {}
 };
 
 const clearSessionStorage = () => {
   try {
     sessionStorage.clear();
-    localStorage.clear();
   } catch (e) {}
 };
 
@@ -224,9 +219,9 @@ function App() {
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   const [addyRecipientStatus, setAddyRecipientStatus] = useState(() => {
-    const activeUid = getSessionItem("disappear_user_id") || (typeof localStorage !== 'undefined' ? localStorage.getItem("disappear_user_id") : null);
+    const activeUid = getSessionItem("disappear_user_id");
     if (activeUid) {
-      const cached = getSessionItem(`disappear_addy_verified_${activeUid}`) || (typeof localStorage !== 'undefined' ? localStorage.getItem(`disappear_addy_verified_${activeUid}`) : null);
+      const cached = getSessionItem(`disappear_addy_verified_${activeUid}`);
       if (cached === "VERIFIED") return "VERIFIED";
     }
     return null;
