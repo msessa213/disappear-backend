@@ -254,6 +254,7 @@ export default function PrivacyAiChat({ apiBaseUrl }) {
             ref={chatBodyRef}
             style={{
               flex: 1,
+              minHeight: 0,
               padding: '16px',
               overflowY: 'auto',
               display: 'flex',
