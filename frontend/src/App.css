@@ -1310,7 +1310,7 @@ input[type="checkbox"] {
 /* MOBILE OPTIMIZATION (<= 768px): COLLAPSE TO COMPACT FLOATING CIRCLE ICON */
 @media (max-width: 768px) {
   .privacy-ai-chat-container {
-    bottom: max(80px, calc(70px + env(safe-area-inset-bottom, 0px))) !important;
+    bottom: max(115px, calc(105px + env(safe-area-inset-bottom, 0px))) !important;
     right: 15px !important;
     z-index: 999999 !important;
   }
@@ -1335,10 +1335,10 @@ input[type="checkbox"] {
   }
 
   .ai-chat-modal-floating {
-    bottom: max(75px, calc(65px + env(safe-area-inset-bottom, 0px))) !important;
+    bottom: max(110px, calc(100px + env(safe-area-inset-bottom, 0px))) !important;
     right: 15px !important;
     width: calc(100vw - 30px) !important;
-    max-height: calc(100vh - 100px) !important;
+    max-height: calc(100vh - 130px) !important;
     z-index: 999999 !important;
   }
 }
