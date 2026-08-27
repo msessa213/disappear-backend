@@ -4420,6 +4420,122 @@ const handleEmergencyBurn = async () => {
                             </span>
                           </div>
                         </div>
+
+                        {/* --- STEP-BY-STEP ONBOARDING & VERIFICATION GUIDE --- */}
+                        <div style={{
+                          marginTop: '25px',
+                          paddingTop: '20px',
+                          borderTop: '1px dashed rgba(0, 210, 255, 0.3)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '16px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '0.82rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1.5px', textTransform: 'uppercase' }}>
+                              🚀 YOUR ONBOARDING JOURNEY
+                            </span>
+                          </div>
+
+                          {/* Step 1 */}
+                          <div style={{
+                            background: 'rgba(0, 71, 171, 0.08)',
+                            border: '1px solid rgba(0, 71, 171, 0.3)',
+                            borderRadius: '8px',
+                            padding: '14px 16px',
+                            display: 'flex',
+                            gap: '12px',
+                            alignItems: 'flex-start'
+                          }}>
+                            <div style={{
+                              background: 'var(--tiger-blue)',
+                              color: '#FFF',
+                              fontWeight: 'bold',
+                              fontSize: '0.8rem',
+                              borderRadius: '50%',
+                              minWidth: '24px',
+                              height: '24px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginTop: '2px'
+                            }}>1</div>
+                            <div>
+                              <div style={{ color: '#00D2FF', fontWeight: 'bold', fontSize: '0.88rem', marginBottom: '4px' }}>
+                                Secure Checkout & Account Creation
+                              </div>
+                              <div style={{ color: '#cbd5e1', fontSize: '0.8rem', lineHeight: '1.4' }}>
+                                Complete your secure checkout. Your encrypted account vault is created instantly.
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Step 2 */}
+                          <div style={{
+                            background: 'rgba(0, 71, 171, 0.08)',
+                            border: '1px solid rgba(0, 71, 171, 0.3)',
+                            borderRadius: '8px',
+                            padding: '14px 16px',
+                            display: 'flex',
+                            gap: '12px',
+                            alignItems: 'flex-start'
+                          }}>
+                            <div style={{
+                              background: 'var(--tiger-blue)',
+                              color: '#FFF',
+                              fontWeight: 'bold',
+                              fontSize: '0.8rem',
+                              borderRadius: '50%',
+                              minWidth: '24px',
+                              height: '24px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginTop: '2px'
+                            }}>2</div>
+                            <div>
+                              <div style={{ color: '#00D2FF', fontWeight: 'bold', fontSize: '0.88rem', marginBottom: '4px' }}>
+                                Verification Email Check
+                              </div>
+                              <div style={{ color: '#cbd5e1', fontSize: '0.8rem', lineHeight: '1.4' }}>
+                                Check your inbox for a quick verification message to activate your secure session and access your dashboard.
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Step 3 */}
+                          <div style={{
+                            background: 'rgba(0, 71, 171, 0.08)',
+                            border: '1px solid rgba(0, 71, 171, 0.3)',
+                            borderRadius: '8px',
+                            padding: '14px 16px',
+                            display: 'flex',
+                            gap: '12px',
+                            alignItems: 'flex-start'
+                          }}>
+                            <div style={{
+                              background: 'var(--tiger-blue)',
+                              color: '#FFF',
+                              fontWeight: 'bold',
+                              fontSize: '0.8rem',
+                              borderRadius: '50%',
+                              minWidth: '24px',
+                              height: '24px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginTop: '2px'
+                            }}>3</div>
+                            <div>
+                              <div style={{ color: '#00D2FF', fontWeight: 'bold', fontSize: '0.88rem', marginBottom: '4px' }}>
+                                Generating Your First Alias
+                              </div>
+                              <div style={{ color: '#cbd5e1', fontSize: '0.8rem', lineHeight: '1.4' }}>
+                                Once logged into your vault, head to the Aliases section to instantly generate your secure burner email and phone aliases to mask your real identity.
+                              </div>
+                            </div>
+                          </div>
+
+                        </div>
                       </div>
                     </div>
                   </div>
