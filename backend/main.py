@@ -2612,6 +2612,8 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
 
         payment_methods = []
 
+        is_addy_verified = await check_and_update_addy_verification(profile, db)
+
         return {
             "profile": {
                 "first_name": profile.first_name or "",
@@ -2635,8 +2637,8 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
                 "threat_level": "NOMINAL",
                 "uptime": "99.998%",
                 "active_nodes": total_used,
-                "addy_verified": bool(getattr(profile, 'addy_verified', False)),
-                "addy_status": "VERIFIED" if bool(getattr(profile, 'addy_verified', False)) else "PENDING_VERIFICATION"
+                "addy_verified": is_addy_verified,
+                "addy_status": "VERIFIED" if is_addy_verified else "PENDING_VERIFICATION"
             },
             "recent_audit": logs,
             "map_nodes": map_nodes,
@@ -3699,6 +3701,44 @@ async def kill_alias(alias_id: str, db: Session = Depends(get_db)):
     raise HTTPException(status_code=404, detail="Node not found")
 
 
+async def check_and_update_addy_verification(profile: DBProfile, db: Session) -> bool:
+    """Auto-checks Addy.io recipient verification and permanently updates DBProfile.addy_verified in database."""
+    if not profile or not profile.email or profile.email.endswith("@disappearco.com"):
+        return False
+    
+    # 1. Fast persistent cache check: If already verified in DB, return True immediately
+    if bool(getattr(profile, 'addy_verified', False)):
+        return True
+
+    raw_key = (os.getenv("ADDY_API_KEY") or os.getenv("ADDY_KEY") or os.getenv("ADDY_IO_KEY") or os.getenv("ANONADDY_API_KEY") or "").strip()
+    if not raw_key:
+        raw_key = "addy_io_dPdJs2PJZQLQV87dSP14P7di8YuLQOE06tDlidRlf6d08223"
+    
+    headers = {"Authorization": f"Bearer {raw_key}", "Accept": "application/json"}
+    try:
+        async with httpx.AsyncClient(timeout=6.0) as client:
+            rec_res = await client.get("https://app.addy.io/api/v1/recipients", headers=headers)
+            if rec_res.status_code == 200:
+                recipients = rec_res.json().get("data", [])
+                for r in recipients:
+                    if r.get("email", "").lower() == profile.email.lower():
+                        is_verified = bool(r.get("email_verified_at"))
+                        if is_verified:
+                            profile.addy_verified = True
+                            try:
+                                db.add(profile)
+                                db.commit()
+                                logger.info(f"Successfully verified and saved addy_verified=True in DB for user {profile.id}")
+                            except Exception as commit_err:
+                                db.rollback()
+                                logger.error(f"Failed to commit addy_verified=True to DB: {commit_err}")
+                            return True
+    except Exception as ex:
+        logger.warning(f"Addy recipient status check notice: {ex}")
+    
+    return bool(getattr(profile, 'addy_verified', False))
+
+
 @app.get("/aliases/recipient-status")
 async def get_addy_recipient_status(user_id: Optional[str] = None, db: Session = Depends(get_db)):
     """Checks if the customer's recipient email is verified on Addy.io"""
@@ -3714,42 +3754,10 @@ async def get_addy_recipient_status(user_id: Optional[str] = None, db: Session =
     if not profile or not profile.email or profile.email.endswith("@disappearco.com"):
         return {"status": "UNKNOWN", "verified": False, "email": profile.email if profile else ""}
     
-    # 1. Fast persistent cache check: If already verified in DB, return VERIFIED immediately
-    if bool(getattr(profile, 'addy_verified', False)):
-        return {"status": "VERIFIED", "verified": True, "email": profile.email}
-
-    raw_key = (os.getenv("ADDY_API_KEY") or os.getenv("ADDY_KEY") or os.getenv("ADDY_IO_KEY") or os.getenv("ANONADDY_API_KEY") or "").strip()
-    if not raw_key:
-        raw_key = "addy_io_dPdJs2PJZQLQV87dSP14P7di8YuLQOE06tDlidRlf6d08223"
-    
-    headers = {"Authorization": f"Bearer {raw_key}", "Accept": "application/json"}
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            rec_res = await client.get("https://app.addy.io/api/v1/recipients", headers=headers)
-            if rec_res.status_code == 200:
-                recipients = rec_res.json().get("data", [])
-                for r in recipients:
-                    if r.get("email", "").lower() == profile.email.lower():
-                        is_verified = bool(r.get("email_verified_at"))
-                        if is_verified:
-                            profile.addy_verified = True
-                            try:
-                                db.add(profile)
-                                db.commit()
-                            except Exception:
-                                db.rollback()
-                        return {
-                            "status": "VERIFIED" if is_verified else "PENDING_VERIFICATION",
-                            "verified": is_verified,
-                            "email": profile.email
-                        }
-    except Exception as ex:
-        logger.warning(f"Addy recipient status check error: {ex}")
-    
-    is_currently_verified = bool(getattr(profile, 'addy_verified', False))
+    is_verified = await check_and_update_addy_verification(profile, db)
     return {
-        "status": "VERIFIED" if is_currently_verified else "PENDING_VERIFICATION", 
-        "verified": is_currently_verified, 
+        "status": "VERIFIED" if is_verified else "PENDING_VERIFICATION",
+        "verified": is_verified,
         "email": profile.email
     }
 

@@ -529,11 +529,11 @@ function App() {
                   return isStructurallyEqual(prev, updated) ? prev : updated;
               });
           }
-          if (data.profile.addy_verified || data.profile.addy_status === "VERIFIED") {
-              setAddyRecipientStatus("VERIFIED");
+          if (data.profile) {
+              const isVerified = Boolean(data.profile.addy_verified || data.profile.addy_status === "VERIFIED");
+              setAddyRecipientStatus(isVerified ? "VERIFIED" : "PENDING_VERIFICATION");
               if (activeUserId) {
-                  setSessionItem(`disappear_addy_verified_${activeUserId}`, "VERIFIED");
-                  try { localStorage.setItem(`disappear_addy_verified_${activeUserId}`, "VERIFIED"); } catch(e){}
+                  setSessionItem(`disappear_addy_verified_${activeUserId}`, isVerified ? "VERIFIED" : "PENDING_VERIFICATION");
               }
           }
       }
