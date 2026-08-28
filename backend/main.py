@@ -4588,7 +4588,7 @@ async def create_support_ticket(
         primary_dest = (os.getenv("SUPPORT_EMAIL") or os.getenv("SUPPORT_DESTINATION_EMAIL") or "customer.service@disappearco.com").strip()
         dest_recipients = list(set([primary_dest, "customer.service@disappearco.com"]))
 
-        from_address = (os.getenv("RESEND_FROM_EMAIL") or os.getenv("SUPPORT_FROM_EMAIL") or "Disappear Support <noreply@disappearco.com>").strip()
+        from_address = (os.getenv("RESEND_FROM_EMAIL") or os.getenv("SUPPORT_FROM_EMAIL") or "Disappear Support <onboarding@resend.dev>").strip()
 
         email_dispatched = False
         dispatch_resend_id = None
@@ -4660,7 +4660,7 @@ async def create_support_ticket(
                         res_data = resend_resp.json()
                         dispatch_resend_id = res_data.get("id", tracking_id)
                         email_dispatched = True
-                        logger.info(f"✅ SUPPORT_EMAIL_DISPATCH_SUCCESS: Ticket {tracking_id} sent via Resend. Resend ID: {dispatch_resend_id}")
+                        logger.info(f"✅ SUPPORT_EMAIL_DISPATCH_SUCCESS: Ticket {tracking_id} sent via Resend to {dest_recipients}. Resend ID: {dispatch_resend_id}")
                     else:
                         err_text = f"RESEND_REJECTED (HTTP {resend_resp.status_code}): {resend_resp.text}"
                         logger.error(f"❌ {err_text}")
