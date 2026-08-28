@@ -1518,19 +1518,24 @@ function App() {
   };
 
   const handleSendTicket = async () => {
+    const activeUserId = currentUserId || getSessionItem("disappear_user_id") || "UNAUTHENTICATED";
+    const userEmail = (supportData.email || targetProfile.email || getSessionItem("disappear_user_email") || "").trim();
+
+    if (!userEmail || !userEmail.includes("@")) {
+      triggerToast("⚠️ PLEASE ENTER A VALID RETURN EMAIL ADDRESS");
+      return;
+    }
     if (!supportData.message || !supportData.message.trim()) { 
       triggerToast("⚠️ PLEASE ENTER A DETAILED INQUIRY DESCRIPTION"); 
       return; 
     }
     try {
-        const activeUserId = currentUserId || getSessionItem("disappear_user_id") || "UNAUTHENTICATED";
-        const activeEmail = targetProfile.email || getSessionItem("disappear_user_email") || "NOT_PROVIDED";
         const payload = {
           category: supportData.category || "GENERAL_INQUIRY",
-          subject: supportData.subject || "TECHNICAL_INQUIRY",
+          subject: supportData.subject || supportData.category || "TECHNICAL_INQUIRY",
           message: supportData.message.trim(),
           user_id: activeUserId,
-          email: activeEmail
+          email: userEmail.toLowerCase()
         };
 
         const res = await secureRequest(`${API_BASE_URL}/support/ticket?user_id=${activeUserId}`, {
@@ -1541,7 +1546,7 @@ function App() {
         const data = await res.json().catch(() => ({}));
         if (res.ok) {
             triggerToast("✅ TICKET TRANSMITTED TO CUSTOMER SERVICE");
-            setSupportData({ category: "GENERAL_INQUIRY", subject: "TECHNICAL_ERR", message: "" });
+            setSupportData({ category: "GENERAL_INQUIRY", subject: "GENERAL_INQUIRY", email: userEmail, message: "" });
             setShowSupportModal(false);
         } else {
             console.error("SUPPORT_TICKET_API_ERROR:", data);
@@ -4991,18 +4996,45 @@ const handleEmergencyBurn = async () => {
       {/* --- GLOBAL SUPPORT MODAL --- */}
       {showSupportModal && (
         <div className="modal-overlay" style={{zIndex: 60000}} onClick={() => setShowSupportModal(false)}>
-          <div className="price-box" onClick={e => e.stopPropagation()}>
-            <h3 className="tiger-text">SUPPORT UPLINK</h3>
-            <p className="field-label">ISSUE CATEGORY</p>
-            <select className="mask-btn" style={{width: '100%', background: '#000', color: 'white', marginBottom: '15px'}} value={supportData.category} onChange={(e) => setSupportData({...supportData, category: e.target.value, subject: e.target.value})}>
-              <option value="PAYMENT_ERR">PAYMENT_ISSUE</option>
-              <option value="NODE_ERR">NODE_FAILURE</option>
-              <option value="PURGE_ERR">PURGE_TIMEOUT</option>
-              <option value="OTHER">OTHER_INQUIRY</option>
-            </select>
-            <textarea className="mask-btn" style={{width: '100%', height: '100px', color: 'white', textAlign: 'left', paddingTop: '10px'}} placeholder="Describe the anomaly..." value={supportData.message} onChange={(e) => setSupportData({...supportData, message: e.target.value})} />
-            <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={handleSendTicket}>TRANSMIT_TICKET</button>
-            <button className="reset-btn" style={{width: '100%'}} onClick={() => setShowSupportModal(false)}>ABORT</button>
+          <div className="price-box" onClick={e => e.stopPropagation()} style={{ maxWidth: '460px', width: '100%', padding: '25px' }}>
+            <h3 className="tiger-text" style={{ marginBottom: '15px' }}>🎟️ SUPPORT & ASSISTANCE UPLINK</h3>
+            
+            <form onSubmit={(e) => { e.preventDefault(); handleSendTicket(); }} autoComplete="on" style={{ display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left' }}>
+              <div>
+                <p className="field-label" style={{ marginBottom: '4px' }}>YOUR EMAIL ADDRESS (FOR REPLY)</p>
+                <input
+                  type="email"
+                  name="disappear_support_reply_email"
+                  id="disappear_support_reply_email"
+                  autoComplete="email"
+                  className="mask-btn"
+                  style={{ width: '100%', color: 'white', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                  placeholder="customer@email.com"
+                  value={supportData.email !== undefined ? supportData.email : (targetProfile.email || getSessionItem("disappear_user_email") || "")}
+                  onChange={(e) => setSupportData({...supportData, email: e.target.value})}
+                  required
+                />
+              </div>
+
+              <div>
+                <p className="field-label" style={{ marginBottom: '4px' }}>ISSUE CATEGORY</p>
+                <select className="mask-btn" style={{width: '100%', background: '#000', color: 'white', fontSize: '0.85rem', boxSizing: 'border-box'}} value={supportData.category || "GENERAL_INQUIRY"} onChange={(e) => setSupportData({...supportData, category: e.target.value, subject: e.target.value})}>
+                  <option value="GENERAL_INQUIRY">GENERAL INQUIRY / ASSISTANCE</option>
+                  <option value="PAYMENT_ERR">BILLING & PAYMENT ISSUE</option>
+                  <option value="NODE_ERR">DATA BROKER OPT-OUT FAILURE</option>
+                  <option value="PURGE_ERR">ALIAS / FORWARDING ISSUE</option>
+                  <option value="OTHER">OTHER INQUIRY</option>
+                </select>
+              </div>
+
+              <div>
+                <p className="field-label" style={{ marginBottom: '4px' }}>INQUIRY DESCRIPTION</p>
+                <textarea className="mask-btn" style={{width: '100%', height: '110px', color: 'white', textAlign: 'left', paddingTop: '10px', fontSize: '0.85rem', boxSizing: 'border-box'}} placeholder="Describe your question or issue in detail..." value={supportData.message} onChange={(e) => setSupportData({...supportData, message: e.target.value})} required />
+              </div>
+
+              <button type="submit" className="main-button" style={{width: '100%', marginTop: '10px'}}>⚡ TRANSMIT SUPPORT TICKET</button>
+              <button type="button" className="reset-btn" style={{width: '100%'}} onClick={() => setShowSupportModal(false)}>CANCEL</button>
+            </form>
           </div>
         </div>
       )}
