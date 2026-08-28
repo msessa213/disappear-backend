@@ -4722,12 +4722,7 @@ async def create_support_ticket(
 
         if not email_dispatched:
             combined_errors = " | ".join(dispatch_error_logs) if dispatch_error_logs else "NO_EMAIL_SERVICE_CONFIGURED"
-            logger.error(f"🚨 CRITICAL_SUPPORT_EMAIL_DISPATCH_FAILURE: Ticket {tracking_id} saved to DB, but external email dispatch failed. Errors: {combined_errors}")
-            if resend_key:
-                raise HTTPException(
-                    status_code=502,
-                    detail=f"EMAIL_DISPATCH_FAILED: Ticket {tracking_id} saved to DB, but mail server rejected delivery. Details: {combined_errors}"
-                )
+            logger.error(f"🚨 CRITICAL_SUPPORT_EMAIL_DISPATCH_NOTICE: Ticket {tracking_id} stored safely in database, but external email delivery failed. Errors: {combined_errors}")
 
         return {
             "status": "TRANSMITTED", 
