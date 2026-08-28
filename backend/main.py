@@ -4586,105 +4586,51 @@ async def create_support_ticket(
 
         # --- SECURE EMAIL DISPATCH TO customer.service@disappearco.com ---
         primary_dest = (os.getenv("SUPPORT_EMAIL") or os.getenv("SUPPORT_DESTINATION_EMAIL") or "customer.service@disappearco.com").strip()
-        dest_recipients = list(set([primary_dest, "customer.service@disappearco.com", "michael.sessa@disappearco.com"]))
+        dest_recipients = list(set([primary_dest, "customer.service@disappearco.com"]))
+
+        from_address = (os.getenv("RESEND_FROM_EMAIL") or os.getenv("SUPPORT_FROM_EMAIL") or "Disappear Support <noreply@disappearco.com>").strip()
 
         email_dispatched = False
         dispatch_resend_id = None
+        dispatch_error_logs = []
 
         resend_key = (os.getenv("RESEND_API_KEY") or "").strip()
-        if resend_key:
+        if not resend_key:
+            err_str = "RESEND_API_KEY_MISSING: Environment variable RESEND_API_KEY is not configured on Railway server."
+            logger.error(f"❌ {err_str}")
+            dispatch_error_logs.append(err_str)
+        else:
             try:
-                async with httpx.AsyncClient() as client:
-                    resend_resp = await client.post(
-                        "https://api.resend.com/emails",
-                        headers={
-                            "Authorization": f"Bearer {resend_key}",
-                            "Content-Type": "application/json"
-                        },
-                        json={
-                            "from": "Disappear System <onboarding@resend.dev>",
-                            "to": dest_recipients,
-                            "subject": f"DISAPPEAR SUPPORT TICKET [{support_req.category}]: {support_req.subject}",
-                            "text": (
-                                f"SECURE SUPPORT TICKET DISPATCH\n"
-                                f"--------------------------------------------------\n"
-                                f"TRACKING ID:      {tracking_id}\n"
-                                f"USER ID:          {target_uid}\n"
-                                f"REGISTERED EMAIL: {target_email}\n"
-                                f"DESTINATION:      customer.service@disappearco.com\n"
-                                f"CATEGORY:         {support_req.category}\n"
-                                f"SUBJECT:          {support_req.subject}\n"
-                                f"TIMESTAMP:        {datetime.utcnow().isoformat()}Z\n"
-                                f"--------------------------------------------------\n\n"
-                                f"CUSTOMER MESSAGE:\n"
-                                f"{support_req.message}\n\n"
-                                f"--------------------------------------------------\n"
-                                f"Disappear PaaS Automated Support Uplink"
-                            )
-                        },
-                        timeout=10.0
-                    )
+                headers = {
+                    "Authorization": f"Bearer {resend_key}",
+                    "Content-Type": "application/json"
+                }
 
-                    logger.info(f"RESEND_DISPATCH_RESPONSE: Status {resend_resp.status_code} - Body: {resend_resp.text}")
+                html_body = f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px; border: 1px solid #1E293B; background: #0B0F17; color: #F8FAFC; border-radius: 8px;">
+                    <h2 style="color: #38BDF8; margin-top: 0;">🎟️ DISAPPEAR SUPPORT TICKET</h2>
+                    <hr style="border: 0; border-top: 1px solid #334155; margin: 15px 0;" />
+                    <p style="margin: 6px 0;"><strong>TRACKING ID:</strong> <span style="color: #F59E0B; font-weight: bold;">{tracking_id}</span></p>
+                    <p style="margin: 6px 0;"><strong>USER ID:</strong> {target_uid}</p>
+                    <p style="margin: 6px 0;"><strong>RETURN EMAIL:</strong> <a href="mailto:{target_email}" style="color: #38BDF8;">{target_email}</a></p>
+                    <p style="margin: 6px 0;"><strong>CATEGORY:</strong> {support_req.category}</p>
+                    <p style="margin: 6px 0;"><strong>SUBJECT:</strong> {support_req.subject}</p>
+                    <p style="margin: 6px 0;"><strong>TIMESTAMP:</strong> {datetime.utcnow().isoformat()}Z</p>
+                    <hr style="border: 0; border-top: 1px solid #334155; margin: 15px 0;" />
+                    <h4 style="color: #94A3B8; margin-bottom: 8px;">CUSTOMER INQUIRY MESSAGE:</h4>
+                    <div style="background: #1E293B; padding: 15px; border-radius: 6px; white-space: pre-wrap; color: #FFFFFF; font-size: 14px; line-height: 1.5;">
+{support_req.message}
+                    </div>
+                    <hr style="border: 0; border-top: 1px solid #334155; margin: 20px 0 10px 0;" />
+                    <p style="font-size: 11px; color: #64748B; margin: 0;">Disappear PaaS Operations Uplink — DFS 213 LLC</p>
+                </div>
+                """
 
-                    if resend_resp.status_code in [200, 201, 202]:
-                        res_data = resend_resp.json()
-                        dispatch_resend_id = res_data.get("id", tracking_id)
-                        email_dispatched = True
-                    elif resend_resp.status_code == 403 and "only send testing emails" in resend_resp.text:
-                        logger.warning("RESEND_TEST_DOMAIN_RESTRICTION: Retrying dispatch to verified developer account (michael.sessa@disappearco.com)")
-                        retry_resp = await client.post(
-                            "https://api.resend.com/emails",
-                            headers={
-                                "Authorization": f"Bearer {resend_key}",
-                                "Content-Type": "application/json"
-                            },
-                            json={
-                                "from": "Disappear System <onboarding@resend.dev>",
-                                "to": ["michael.sessa@disappearco.com"],
-                                "subject": f"DISAPPEAR SUPPORT TICKET [{support_req.category}]: {support_req.subject}",
-                                "text": (
-                                    f"SECURE SUPPORT TICKET DISPATCH (REFORWARDED)\n"
-                                    f"--------------------------------------------------\n"
-                                    f"TRACKING ID:      {tracking_id}\n"
-                                    f"USER ID:          {target_uid}\n"
-                                    f"REGISTERED EMAIL: {target_email}\n"
-                                    f"TARGET DEST:      customer.service@disappearco.com\n"
-                                    f"CATEGORY:         {support_req.category}\n"
-                                    f"SUBJECT:          {support_req.subject}\n"
-                                    f"TIMESTAMP:        {datetime.utcnow().isoformat()}Z\n"
-                                    f"--------------------------------------------------\n\n"
-                                    f"CUSTOMER MESSAGE:\n"
-                                    f"{support_req.message}\n\n"
-                                    f"--------------------------------------------------\n"
-                                    f"Disappear PaaS Automated Support Uplink"
-                                )
-                            },
-                            timeout=10.0
-                        )
-                        if retry_resp.status_code in [200, 201, 202]:
-                            res_data = retry_resp.json()
-                            dispatch_resend_id = res_data.get("id", tracking_id)
-                            email_dispatched = True
-            except Exception as email_err:
-                logger.warning(f"RESEND_DISPATCH_EXCEPTION: {email_err}")
-
-        # Fallback SMTP Email Dispatcher
-        if not email_dispatched and os.getenv("SMTP_HOST") and os.getenv("SMTP_USER") and os.getenv("SMTP_PASS"):
-            try:
-                import smtplib
-                from email.mime.text import MIMEText
-                smtp_host = os.getenv("SMTP_HOST")
-                smtp_port = int(os.getenv("SMTP_PORT", 465))
-                smtp_user = os.getenv("SMTP_USER")
-                smtp_pass = os.getenv("SMTP_PASS")
-
-                msg = MIMEText(
-                    f"SECURE SUPPORT TICKET DISPATCH\n"
+                text_body = (
+                    f"DISAPPEAR SUPPORT TICKET [{tracking_id}]\n"
                     f"--------------------------------------------------\n"
-                    f"TRACKING ID:      {tracking_id}\n"
                     f"USER ID:          {target_uid}\n"
-                    f"REGISTERED EMAIL: {target_email}\n"
+                    f"RETURN EMAIL:     {target_email}\n"
                     f"DESTINATION:      customer.service@disappearco.com\n"
                     f"CATEGORY:         {support_req.category}\n"
                     f"SUBJECT:          {support_req.subject}\n"
@@ -4693,19 +4639,95 @@ async def create_support_ticket(
                     f"CUSTOMER MESSAGE:\n"
                     f"{support_req.message}\n\n"
                     f"--------------------------------------------------\n"
-                    f"Disappear PaaS Automated Support Uplink"
+                    f"Disappear PaaS Operations Uplink"
                 )
-                msg["Subject"] = f"DISAPPEAR SUPPORT TICKET [{support_req.category}]: {support_req.subject}"
+
+                payload = {
+                    "from": from_address,
+                    "to": dest_recipients,
+                    "reply_to": target_email if target_email and "@" in target_email else None,
+                    "subject": f"[{tracking_id}] DISAPPEAR SUPPORT: {support_req.category} - {support_req.subject}",
+                    "html": html_body,
+                    "text": text_body
+                }
+
+                async with httpx.AsyncClient() as client:
+                    resend_resp = await client.post("https://api.resend.com/emails", headers=headers, json=payload, timeout=12.0)
+                    
+                    logger.info(f"RESEND_DISPATCH_RESPONSE: HTTP {resend_resp.status_code} - Body: {resend_resp.text}")
+
+                    if resend_resp.status_code in [200, 201, 202]:
+                        res_data = resend_resp.json()
+                        dispatch_resend_id = res_data.get("id", tracking_id)
+                        email_dispatched = True
+                        logger.info(f"✅ SUPPORT_EMAIL_DISPATCH_SUCCESS: Ticket {tracking_id} sent via Resend. Resend ID: {dispatch_resend_id}")
+                    else:
+                        err_text = f"RESEND_REJECTED (HTTP {resend_resp.status_code}): {resend_resp.text}"
+                        logger.error(f"❌ {err_text}")
+                        dispatch_error_logs.append(err_text)
+                        
+                        if resend_resp.status_code == 403 and "onboarding@resend.dev" not in from_address:
+                            logger.warning("RESEND_DOMAIN_UNVERIFIED: Retrying with sandbox sender onboarding@resend.dev")
+                            payload["from"] = "Disappear Support <onboarding@resend.dev>"
+                            retry_resp = await client.post("https://api.resend.com/emails", headers=headers, json=payload, timeout=12.0)
+                            if retry_resp.status_code in [200, 201, 202]:
+                                res_data = retry_resp.json()
+                                dispatch_resend_id = res_data.get("id", tracking_id)
+                                email_dispatched = True
+                                logger.info(f"✅ SUPPORT_EMAIL_DISPATCH_RETRY_SUCCESS: Sent ticket {tracking_id} using sandbox sender.")
+                            else:
+                                retry_err = f"RESEND_RETRY_FAILED (HTTP {retry_resp.status_code}): {retry_resp.text}"
+                                logger.error(f"❌ {retry_err}")
+                                dispatch_error_logs.append(retry_err)
+
+            except Exception as resend_ex:
+                ex_str = f"RESEND_EXCEPTION: {str(resend_ex)}"
+                logger.error(f"❌ {ex_str}", exc_info=True)
+                dispatch_error_logs.append(ex_str)
+
+        # Tier 2: Fallback SMTP Email Dispatcher
+        if not email_dispatched and os.getenv("SMTP_HOST") and os.getenv("SMTP_USER") and os.getenv("SMTP_PASS"):
+            try:
+                import smtplib
+                from email.mime.text import MIMEText
+                from email.mime.multipart import MIMEMultipart
+
+                smtp_host = os.getenv("SMTP_HOST")
+                smtp_port = int(os.getenv("SMTP_PORT", 465))
+                smtp_user = os.getenv("SMTP_USER")
+                smtp_pass = os.getenv("SMTP_PASS")
+
+                msg = MIMEMultipart("alternative")
+                msg["Subject"] = f"[{tracking_id}] DISAPPEAR SUPPORT: {support_req.category} - {support_req.subject}"
                 msg["From"] = smtp_user
                 msg["To"] = ", ".join(dest_recipients)
+                if target_email and "@" in target_email:
+                    msg["Reply-To"] = target_email
+
+                part_text = MIMEText(text_body, "plain")
+                part_html = MIMEText(html_body, "html")
+                msg.attach(part_text)
+                msg.attach(part_html)
 
                 with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=10.0) as server:
                     server.login(smtp_user, smtp_pass)
                     server.sendmail(smtp_user, dest_recipients, msg.as_string())
+                
                 email_dispatched = True
-                logger.info(f"SMTP_SUPPORT_DISPATCH_SUCCESS: Sent support ticket {tracking_id} to {dest_recipients} via SMTP")
+                logger.info(f"✅ SMTP_SUPPORT_DISPATCH_SUCCESS: Sent ticket {tracking_id} to {dest_recipients} via SMTP")
             except Exception as smtp_err:
-                logger.warning(f"SMTP_SUPPORT_DISPATCH_NOTICE: {smtp_err}")
+                smtp_ex_str = f"SMTP_DISPATCH_FAILED: {str(smtp_err)}"
+                logger.error(f"❌ {smtp_ex_str}", exc_info=True)
+                dispatch_error_logs.append(smtp_ex_str)
+
+        if not email_dispatched:
+            combined_errors = " | ".join(dispatch_error_logs) if dispatch_error_logs else "NO_EMAIL_SERVICE_CONFIGURED"
+            logger.error(f"🚨 CRITICAL_SUPPORT_EMAIL_DISPATCH_FAILURE: Ticket {tracking_id} saved to DB, but external email dispatch failed. Errors: {combined_errors}")
+            if resend_key:
+                raise HTTPException(
+                    status_code=502,
+                    detail=f"EMAIL_DISPATCH_FAILED: Ticket {tracking_id} saved to DB, but mail server rejected delivery. Details: {combined_errors}"
+                )
 
         return {
             "status": "TRANSMITTED", 
