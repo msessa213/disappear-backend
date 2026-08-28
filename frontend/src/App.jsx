@@ -323,24 +323,48 @@ function App() {
   const groupedSmsThreads = useMemo(() => {
     if (!smsInbox || smsInbox.length === 0) return [];
 
-    const extractPhoneFromMsg = (msgStr, lineStr) => {
-      if (!msgStr) return lineStr || "VIRTUAL_LINE";
-      const fromMatch = msgStr.match(/From\s*[:\s]*\+?([0-9\s\-\(\)]+)/i) || msgStr.match(/To\s*[:\s]*\+?([0-9\s\-\(\)]+)/i);
-      if (fromMatch && fromMatch[1]) {
-        const rawNum = fromMatch[1].replace(/\D/g, "");
-        if (rawNum.length === 10) return `+1${rawNum}`;
-        if (rawNum.length === 11 && rawNum.startsWith("1")) return `+${rawNum}`;
+    const extractContactPhone = (sms) => {
+      if (!sms) return "VIRTUAL_LINE";
+      const isOutbound = (sms.message && String(sms.message).startsWith("OUTBOUND"));
+
+      if (isOutbound) {
+        if (sms.to_phone) {
+          const raw = sms.to_phone.replace(/\D/g, "");
+          if (raw.length === 10) return `+1${raw}`;
+          if (raw.length === 11 && raw.startsWith("1")) return `+${raw}`;
+          if (raw.length > 0) return sms.to_phone;
+        }
+        const toMatch = String(sms.message).match(/To\s*[:\s]*\+?([0-9\s\-\(\)]+)/i);
+        if (toMatch && toMatch[1]) {
+          const rawNum = toMatch[1].replace(/\D/g, "");
+          if (rawNum.length === 10) return `+1${rawNum}`;
+          if (rawNum.length === 11 && rawNum.startsWith("1")) return `+${rawNum}`;
+        }
+      } else {
+        if (sms.from_phone) {
+          const raw = sms.from_phone.replace(/\D/g, "");
+          if (raw.length === 10) return `+1${raw}`;
+          if (raw.length === 11 && raw.startsWith("1")) return `+${raw}`;
+          if (raw.length > 0) return sms.from_phone;
+        }
+        const fromMatch = String(sms.message).match(/From\s*[:\s]*\+?([0-9\s\-\(\)]+)/i);
+        if (fromMatch && fromMatch[1]) {
+          const rawNum = fromMatch[1].replace(/\D/g, "");
+          if (rawNum.length === 10) return `+1${rawNum}`;
+          if (rawNum.length === 11 && rawNum.startsWith("1")) return `+${rawNum}`;
+        }
       }
-      const numMatch = msgStr.match(/\+?1?\s*\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})/);
+
+      const numMatch = String(sms.message || "").match(/\+?1?\s*\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})/);
       if (numMatch) {
         return `+1${numMatch[1]}${numMatch[2]}${numMatch[3]}`;
       }
-      return lineStr || "VIRTUAL_LINE";
+      return sms.line || "VIRTUAL_LINE";
     };
 
     const groupedMap = new Map();
     smsInbox.forEach(sms => {
-      const phone = extractPhoneFromMsg(sms.message, sms.line);
+      const phone = extractContactPhone(sms);
       if (!groupedMap.has(phone)) {
         groupedMap.set(phone, []);
       }
@@ -3146,10 +3170,10 @@ const handleEmergencyBurn = async () => {
                               {/* Group Header */}
                               <div className="sms-thread-header">
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                  <span style={{ fontSize: '0.82rem', color: '#00D2FF', fontWeight: 'bold' }}>📱 FROM: {formattedPhoneDisplay}</span>
+                                  <span style={{ fontSize: '0.82rem', color: '#00D2FF', fontWeight: 'bold' }}>📱 CONTACT: {formattedPhoneDisplay}</span>
                                   {newestMessage?.to_phone && (
                                     <span style={{ fontSize: '0.72rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.15)', padding: '2px 7px', borderRadius: '4px', border: '1px solid rgba(56, 189, 248, 0.3)', fontWeight: 'bold' }}>
-                                      📥 TO: {newestMessage.to_phone}
+                                      🔒 ALIAS: {newestMessage.to_phone}{getAliasLabel(newestMessage.to_phone)}
                                     </span>
                                   )}
                                   <span style={{ fontSize: '0.65rem', background: '#1e293b', color: '#10B981', padding: '1px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
@@ -3222,73 +3246,115 @@ const handleEmergencyBurn = async () => {
                               {/* Messages inside this Phone Thread */}
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 {/* NEWEST MESSAGE ALWAYS SHOWN AT TOP */}
-                                {newestMessage && (
-                                  <div key={newestMessage.id} style={{ background: newestMessage.message.startsWith("OUTBOUND") ? '#051815' : '#030712', padding: '8px 10px', borderRadius: '5px', border: newestMessage.message.startsWith("OUTBOUND") ? '1px solid #059669' : '1px solid #1e293b', fontSize: '0.78rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                                        <span style={{ fontSize: '0.65rem', color: '#10B981', fontWeight: 'bold' }}>LATEST MESSAGE</span>
-                                        {newestMessage.from_phone && (
-                                          <span style={{ fontSize: '0.65rem', color: '#00D2FF', background: 'rgba(0, 210, 255, 0.12)', padding: '1px 6px', borderRadius: '3px', border: '1px solid rgba(0, 210, 255, 0.3)', fontWeight: 'bold' }}>
-                                            📤 FROM: {newestMessage.from_phone}{getAliasLabel(newestMessage.from_phone)}
+                                {newestMessage && (() => {
+                                  const isOutbound = newestMessage.message && String(newestMessage.message).startsWith("OUTBOUND");
+                                  return (
+                                    <div key={newestMessage.id} style={{ background: isOutbound ? '#051815' : '#030712', padding: '8px 10px', borderRadius: '5px', border: isOutbound ? '1px solid #059669' : '1px solid #1e293b', fontSize: '0.78rem' }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                          <span style={{ fontSize: '0.65rem', color: isOutbound ? '#10B981' : '#38BDF8', fontWeight: 'bold' }}>
+                                            {isOutbound ? "OUTBOUND REPLY" : "INCOMING SMS"}
                                           </span>
-                                        )}
-                                        {newestMessage.to_phone && (
-                                          <span style={{ fontSize: '0.65rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
-                                            📥 TO: {newestMessage.to_phone}
-                                          </span>
-                                        )}
+                                          {isOutbound ? (
+                                            <>
+                                              {newestMessage.from_phone && (
+                                                <span style={{ fontSize: '0.65rem', color: '#00D2FF', background: 'rgba(0, 210, 255, 0.12)', padding: '1px 6px', borderRadius: '3px', border: '1px solid rgba(0, 210, 255, 0.3)', fontWeight: 'bold' }}>
+                                                  📤 FROM ALIAS: {newestMessage.from_phone}{getAliasLabel(newestMessage.from_phone)}
+                                                </span>
+                                              )}
+                                              {newestMessage.to_phone && (
+                                                <span style={{ fontSize: '0.65rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
+                                                  🎯 TO: {newestMessage.to_phone}
+                                                </span>
+                                              )}
+                                            </>
+                                          ) : (
+                                            <>
+                                              {newestMessage.from_phone && (
+                                                <span style={{ fontSize: '0.65rem', color: '#00D2FF', background: 'rgba(0, 210, 255, 0.12)', padding: '1px 6px', borderRadius: '3px', border: '1px solid rgba(0, 210, 255, 0.3)', fontWeight: 'bold' }}>
+                                                  📥 FROM: {newestMessage.from_phone}
+                                                </span>
+                                              )}
+                                              {newestMessage.to_phone && (
+                                                <span style={{ fontSize: '0.65rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
+                                                  🔒 TO ALIAS: {newestMessage.to_phone}{getAliasLabel(newestMessage.to_phone)}
+                                                </span>
+                                              )}
+                                            </>
+                                          )}
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                          <span style={{ color: '#64748B', fontSize: '0.68rem' }}>{newestMessage.timestamp}</span>
+                                          <button
+                                            type="button"
+                                            style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '0.75rem', cursor: 'pointer', padding: '0 2px' }}
+                                            onClick={(e) => handleDeleteSmsMessage(newestMessage.id, e)}
+                                            title="Delete message"
+                                          >
+                                            🗑️
+                                          </button>
+                                        </div>
                                       </div>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <span style={{ color: '#64748B', fontSize: '0.68rem' }}>{newestMessage.timestamp}</span>
-                                        <button
-                                          type="button"
-                                          style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '0.75rem', cursor: 'pointer', padding: '0 2px' }}
-                                          onClick={(e) => handleDeleteSmsMessage(newestMessage.id, e)}
-                                          title="Delete message"
-                                        >
-                                          🗑️
-                                        </button>
-                                      </div>
+                                      <div style={{ color: isOutbound ? '#34D399' : '#FFFFFF', fontWeight: '500' }}>{cleanMessageContent(newestMessage.message)}</div>
                                     </div>
-                                    <div style={{ color: newestMessage.message.startsWith("OUTBOUND") ? '#34D399' : '#FFFFFF', fontWeight: '500' }}>{cleanMessageContent(newestMessage.message)}</div>
-                                  </div>
-                                )}
+                                  );
+                                })()}
 
                                 {/* COLLAPSED OLDER MESSAGES DROPDOWN TOGGLE */}
                                 {hasOlderMessages && (
                                   <>
                                     {isExpanded && (
                                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px', paddingLeft: '8px', borderLeft: '2px solid #1e293b' }}>
-                                        {olderMessages.map(sms => (
-                                          <div key={sms.id} style={{ background: sms.message.startsWith("OUTBOUND") ? '#051815' : '#030712', padding: '6px 8px', borderRadius: '4px', border: sms.message.startsWith("OUTBOUND") ? '1px solid #059669' : '1px solid #111827', fontSize: '0.75rem' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap', gap: '4px' }}>
-                                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                                                {sms.from_phone && (
-                                                  <span style={{ fontSize: '0.62rem', color: '#00D2FF', background: 'rgba(0, 210, 255, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(0, 210, 255, 0.3)', fontWeight: 'bold' }}>
-                                                    📤 FROM: {sms.from_phone}{getAliasLabel(sms.from_phone)}
-                                                  </span>
-                                                )}
-                                                {sms.to_phone && (
-                                                  <span style={{ fontSize: '0.62rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
-                                                    📥 TO: {sms.to_phone}
-                                                  </span>
-                                                )}
+                                        {olderMessages.map(sms => {
+                                          const isSubOutbound = sms.message && String(sms.message).startsWith("OUTBOUND");
+                                          return (
+                                            <div key={sms.id} style={{ background: isSubOutbound ? '#051815' : '#030712', padding: '6px 8px', borderRadius: '4px', border: isSubOutbound ? '1px solid #059669' : '1px solid #111827', fontSize: '0.75rem' }}>
+                                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap', gap: '4px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                                  {isSubOutbound ? (
+                                                    <>
+                                                      {sms.from_phone && (
+                                                        <span style={{ fontSize: '0.62rem', color: '#00D2FF', background: 'rgba(0, 210, 255, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(0, 210, 255, 0.3)', fontWeight: 'bold' }}>
+                                                          📤 FROM ALIAS: {sms.from_phone}{getAliasLabel(sms.from_phone)}
+                                                        </span>
+                                                      )}
+                                                      {sms.to_phone && (
+                                                        <span style={{ fontSize: '0.62rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
+                                                          🎯 TO: {sms.to_phone}
+                                                        </span>
+                                                      )}
+                                                    </>
+                                                  ) : (
+                                                    <>
+                                                      {sms.from_phone && (
+                                                        <span style={{ fontSize: '0.62rem', color: '#00D2FF', background: 'rgba(0, 210, 255, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(0, 210, 255, 0.3)', fontWeight: 'bold' }}>
+                                                          📥 FROM: {sms.from_phone}
+                                                        </span>
+                                                      )}
+                                                      {sms.to_phone && (
+                                                        <span style={{ fontSize: '0.62rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
+                                                          🔒 TO ALIAS: {sms.to_phone}{getAliasLabel(sms.to_phone)}
+                                                        </span>
+                                                      )}
+                                                    </>
+                                                  )}
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                  <span style={{ color: '#64748B', fontSize: '0.65rem' }}>{sms.timestamp}</span>
+                                                  <button
+                                                    type="button"
+                                                    style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '0.72rem', cursor: 'pointer', padding: '0 2px', marginLeft: '6px' }}
+                                                    onClick={(e) => handleDeleteSmsMessage(sms.id, e)}
+                                                    title="Delete message"
+                                                  >
+                                                    🗑️
+                                                  </button>
+                                                </div>
                                               </div>
-                                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                <span style={{ color: '#64748B', fontSize: '0.65rem' }}>{sms.timestamp}</span>
-                                                <button
-                                                  type="button"
-                                                  style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '0.72rem', cursor: 'pointer', padding: '0 2px', marginLeft: '6px' }}
-                                                  onClick={(e) => handleDeleteSmsMessage(sms.id, e)}
-                                                  title="Delete message"
-                                                >
-                                                  🗑️
-                                                </button>
-                                              </div>
+                                              <div style={{ color: isSubOutbound ? '#34D399' : '#E2E8F0' }}>{cleanMessageContent(sms.message)}</div>
                                             </div>
-                                            <div style={{ color: sms.message.startsWith("OUTBOUND") ? '#34D399' : '#E2E8F0' }}>{cleanMessageContent(sms.message)}</div>
-                                          </div>
-                                        ))}
+                                          );
+                                        })}
                                       </div>
                                     )}
 
