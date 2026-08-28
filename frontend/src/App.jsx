@@ -1123,6 +1123,16 @@ function App() {
     return "";
   };
 
+  const cleanMessageContent = (rawMsg) => {
+    if (!rawMsg) return "";
+    let clean = String(rawMsg);
+    // Strip audit log prefixes like "SMS_RECEIVED [From ...]:" or "OUTBOUND [From ... To ...]:"
+    clean = clean.replace(/^(?:SMS_RECEIVED|OUTBOUND|SMS_SENT|SMS_FORWARDED)\s*\[[^\]]+\]:\s*/i, "");
+    // Strip redundant leading [Disappear] branding tags if present
+    clean = clean.replace(/^(?:\[Disappear\]\s*)+/i, "");
+    return clean.trim();
+  };
+
   const handleSendSmsReply = async (targetTo, bodyText, fromPhoneOverride) => {
     const rawTo = (targetTo || replyRecipient || "").trim();
     const body = (bodyText || replyBody || "").trim();
@@ -3155,8 +3165,11 @@ const handleEmergencyBurn = async () => {
                                       if (isGroupReplying) {
                                         setActiveReplyId(null);
                                       } else {
+                                        const cleanPhoneRecipient = phone.startsWith("+") ? phone : (phone ? `+${phone.replace(/\D/g, "")}` : "");
+                                        const targetAliasLine = newestMessage?.to_phone || "";
                                         setActiveReplyId(`group_${phone}`);
-                                        setReplyRecipient(phone.startsWith("+") ? phone : "");
+                                        setReplyRecipient(cleanPhoneRecipient);
+                                        setSelectedSenderAlias(targetAliasLine);
                                         setReplyBody("");
                                       }
                                     }}
@@ -3193,7 +3206,12 @@ const handleEmergencyBurn = async () => {
                                     onClick={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      handleSendSmsReply(phone.startsWith("+") ? phone : replyRecipient, replyBody);
+                                      const targetAliasLine = newestMessage?.to_phone || selectedSenderAlias || "";
+                                      handleSendSmsReply(
+                                        phone.startsWith("+") ? phone : replyRecipient, 
+                                        replyBody, 
+                                        targetAliasLine
+                                      );
                                     }}
                                   >
                                     📤 SEND REPLY NOW
@@ -3232,7 +3250,7 @@ const handleEmergencyBurn = async () => {
                                         </button>
                                       </div>
                                     </div>
-                                    <div style={{ color: newestMessage.message.startsWith("OUTBOUND") ? '#34D399' : '#FFFFFF', fontWeight: '500' }}>{newestMessage.message}</div>
+                                    <div style={{ color: newestMessage.message.startsWith("OUTBOUND") ? '#34D399' : '#FFFFFF', fontWeight: '500' }}>{cleanMessageContent(newestMessage.message)}</div>
                                   </div>
                                 )}
 
@@ -3268,7 +3286,7 @@ const handleEmergencyBurn = async () => {
                                                 </button>
                                               </div>
                                             </div>
-                                            <div style={{ color: sms.message.startsWith("OUTBOUND") ? '#34D399' : '#E2E8F0' }}>{sms.message}</div>
+                                            <div style={{ color: sms.message.startsWith("OUTBOUND") ? '#34D399' : '#E2E8F0' }}>{cleanMessageContent(sms.message)}</div>
                                           </div>
                                         ))}
                                       </div>
