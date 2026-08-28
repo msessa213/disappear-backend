@@ -65,6 +65,7 @@ except Exception as e:
 def send_sms(to_phone_number: str, message_body: str, from_phone_number: Optional[str] = None) -> bool:
     """
     Sends an SMS message using the configured Twilio client.
+    Guarantees clean Disappear branding on all outgoing SMS notifications.
 
     Args:
         to_phone_number: The recipient's phone number in E.164 format (e.g., +15551234567).
@@ -78,28 +79,35 @@ def send_sms(to_phone_number: str, message_body: str, from_phone_number: Optiona
         logger.error("TWILIO_SEND_SMS_FAILURE: Twilio client is not available. Cannot send message.")
         return False
 
-    default_sender = "+15855802036"
+    default_sender = (settings.TWILIO_PHONE_NUMBER or os.getenv("TWILIO_PHONE_NUMBER") or "+15855802036").strip()
+    msg_service_sid = (settings.TWILIO_MESSAGING_SERVICE_SID or os.getenv("TWILIO_MESSAGING_SERVICE_SID") or "").strip()
     
-    # Priority: Forcibly route all system SMS through registered default sender +15855802036
+    # Priority: Forcibly route system SMS through registered sender or custom alias number
     from_num = default_sender if (not from_phone_number or "8137558466" in str(from_phone_number)) else from_phone_number
+
+    # Ensure clean Disappear branding prefix on every outgoing SMS message body
+    clean_body = (message_body or "").strip()
+    if clean_body:
+        if not (clean_body.startswith("[Disappear]") or clean_body.startswith("📱 [Disappear Alert]") or clean_body.startswith("[Disappear Vault]") or clean_body.startswith("Disappear Alert:")):
+            clean_body = f"[Disappear] {clean_body}"
 
     if from_num:
         try:
-            message = twilio_client.messages.create(body=message_body, from_=from_num, to=to_phone_number)
-            logger.info(f"Twilio SMS sent successfully from {from_num} to {to_phone_number}. SID: {message.sid}")
+            message = twilio_client.messages.create(body=clean_body, from_=from_num, to=to_phone_number)
+            logger.info(f"TWILIO_SMS_DISPATCHED: Sent SMS from {from_num} to {to_phone_number} | SID: {message.sid} | Body: '{clean_body[:45]}...'")
             return True
         except Exception as ex_from:
-            logger.warning(f"Twilio SMS send from {from_num} failed: {ex_from}.")
+            logger.warning(f"TWILIO_SMS_DISPATCH_NOTICE: Direct send from {from_num} failed: {ex_from}. Retrying via Messaging Service...")
 
-    # Ultimate fallback to Messaging Service if specific sender failed
+    # Fallback to Messaging Service if specific sender failed
     if msg_service_sid:
         try:
             message = twilio_client.messages.create(
-                body=message_body,
+                body=clean_body,
                 messaging_service_sid=msg_service_sid,
                 to=to_phone_number
             )
-            logger.info(f"Twilio SMS sent via fallback Messaging Service {msg_service_sid} to {to_phone_number}. SID: {message.sid}")
+            logger.info(f"TWILIO_SMS_DISPATCHED_VIA_SERVICE: Sent SMS via Messaging Service {msg_service_sid} to {to_phone_number} | SID: {message.sid}")
             return True
         except Exception as ex_fallback:
             logger.error(f"TWILIO_SEND_SMS_FAILURE: Messaging Service fallback failed: {ex_fallback}")
