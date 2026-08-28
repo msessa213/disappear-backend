@@ -1156,6 +1156,29 @@ function App() {
     return clean.trim();
   };
 
+  const sanitizePhoneAlias = (phoneStr) => {
+    if (!phoneStr) return "";
+    const str = String(phoneStr).trim();
+    if (str.includes("***") || (str.includes("813") && str.includes("***"))) {
+      const last4 = str.replace(/\D/g, "").slice(-4);
+      const matchedUserAlias = (phones || []).find(p => {
+        const pNum = (p.content || p.number || p || "").replace(/\D/g, "");
+        return pNum && last4 && pNum.endsWith(last4);
+      });
+      if (matchedUserAlias) {
+        const val = matchedUserAlias.content || matchedUserAlias.number || matchedUserAlias;
+        return val.startsWith("+") ? val : `+1${val.replace(/\D/g, "")}`;
+      }
+      const firstAlias = (phones || [])[0];
+      if (firstAlias) {
+        const val = firstAlias.content || firstAlias.number || firstAlias;
+        return val.startsWith("+") ? val : `+1${val.replace(/\D/g, "")}`;
+      }
+      return "";
+    }
+    return str;
+  };
+
   const handleSendSmsReply = async (targetTo, bodyText, fromPhoneOverride) => {
     const rawTo = (targetTo || replyRecipient || "").trim();
     const body = (bodyText || replyBody || "").trim();
@@ -3171,9 +3194,10 @@ const handleEmergencyBurn = async () => {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                                   <span style={{ fontSize: '0.82rem', color: '#00D2FF', fontWeight: 'bold' }}>📱 CONTACT: {formattedPhoneDisplay}</span>
                                   {(() => {
-                                    const resolvedAlias = messages.find(m => m.message && String(m.message).startsWith("OUTBOUND") && m.from_phone)?.from_phone
+                                    const rawAlias = messages.find(m => m.message && String(m.message).startsWith("OUTBOUND") && m.from_phone)?.from_phone
                                       || messages.find(m => m.to_phone && m.to_phone !== phone)?.to_phone
                                       || (newestMessage?.to_phone && newestMessage.to_phone !== phone ? newestMessage.to_phone : "");
+                                    const resolvedAlias = sanitizePhoneAlias(rawAlias);
                                     if (!resolvedAlias) return null;
                                     return (
                                       <span style={{ fontSize: '0.72rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.15)', padding: '2px 7px', borderRadius: '4px', border: '1px solid rgba(56, 189, 248, 0.3)', fontWeight: 'bold' }}>
@@ -3262,9 +3286,9 @@ const handleEmergencyBurn = async () => {
                                           </span>
                                           {isOutbound ? (
                                             <>
-                                              {newestMessage.from_phone && (
+                                              {newestMessage.from_phone && sanitizePhoneAlias(newestMessage.from_phone) && (
                                                 <span style={{ fontSize: '0.65rem', color: '#00D2FF', background: 'rgba(0, 210, 255, 0.12)', padding: '1px 6px', borderRadius: '3px', border: '1px solid rgba(0, 210, 255, 0.3)', fontWeight: 'bold' }}>
-                                                  📤 FROM ALIAS: {newestMessage.from_phone}{getAliasLabel(newestMessage.from_phone)}
+                                                  📤 FROM ALIAS: {sanitizePhoneAlias(newestMessage.from_phone)}{getAliasLabel(newestMessage.from_phone)}
                                                 </span>
                                               )}
                                               {newestMessage.to_phone && (
@@ -3280,9 +3304,9 @@ const handleEmergencyBurn = async () => {
                                                   📥 FROM: {newestMessage.from_phone}
                                                 </span>
                                               )}
-                                              {newestMessage.to_phone && (
+                                              {newestMessage.to_phone && sanitizePhoneAlias(newestMessage.to_phone) && (
                                                 <span style={{ fontSize: '0.65rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
-                                                  🔒 TO ALIAS: {newestMessage.to_phone}{getAliasLabel(newestMessage.to_phone)}
+                                                  🔒 TO ALIAS: {sanitizePhoneAlias(newestMessage.to_phone)}{getAliasLabel(newestMessage.to_phone)}
                                                 </span>
                                               )}
                                             </>
@@ -3318,9 +3342,9 @@ const handleEmergencyBurn = async () => {
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                                                   {isSubOutbound ? (
                                                     <>
-                                                      {sms.from_phone && (
+                                                      {sms.from_phone && sanitizePhoneAlias(sms.from_phone) && (
                                                         <span style={{ fontSize: '0.62rem', color: '#00D2FF', background: 'rgba(0, 210, 255, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(0, 210, 255, 0.3)', fontWeight: 'bold' }}>
-                                                          📤 FROM ALIAS: {sms.from_phone}{getAliasLabel(sms.from_phone)}
+                                                          📤 FROM ALIAS: {sanitizePhoneAlias(sms.from_phone)}{getAliasLabel(sms.from_phone)}
                                                         </span>
                                                       )}
                                                       {sms.to_phone && (
@@ -3336,9 +3360,9 @@ const handleEmergencyBurn = async () => {
                                                           📥 FROM: {sms.from_phone}
                                                         </span>
                                                       )}
-                                                      {sms.to_phone && (
+                                                      {sms.to_phone && sanitizePhoneAlias(sms.to_phone) && (
                                                         <span style={{ fontSize: '0.62rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
-                                                          🔒 TO ALIAS: {sms.to_phone}{getAliasLabel(sms.to_phone)}
+                                                          🔒 TO ALIAS: {sanitizePhoneAlias(sms.to_phone)}{getAliasLabel(sms.to_phone)}
                                                         </span>
                                                       )}
                                                     </>
