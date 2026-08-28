@@ -62,10 +62,22 @@ except Exception as e:
     logger.error(f"CRITICAL_TWILIO_ERROR: Failed to initialize Twilio client: {e}")
     twilio_client = None
 
+def format_to_e164(phone_str: str) -> str:
+    if not phone_str:
+        return ""
+    digits = "".join(filter(str.isdigit, str(phone_str)))
+    if len(digits) == 10:
+        return f"+1{digits}"
+    elif len(digits) == 11 and digits.startswith("1"):
+        return f"+{digits}"
+    elif len(digits) > 10:
+        return f"+{digits}"
+    return phone_str.strip() if str(phone_str).startswith("+") else (f"+{digits}" if digits else "")
+
 def send_sms(to_phone_number: str, message_body: str, from_phone_number: Optional[str] = None) -> bool:
     """
     Sends an SMS message using the configured Twilio client.
-    Guarantees clean Disappear branding on all outgoing SMS notifications.
+    Guarantees E.164 formatting, alias sender routing, clean Disappear branding, and detailed error logs.
 
     Args:
         to_phone_number: The recipient's phone number in E.164 format (e.g., +15551234567).
@@ -79,11 +91,17 @@ def send_sms(to_phone_number: str, message_body: str, from_phone_number: Optiona
         logger.error("TWILIO_SEND_SMS_FAILURE: Twilio client is not available. Cannot send message.")
         return False
 
-    default_sender = (settings.TWILIO_PHONE_NUMBER or os.getenv("TWILIO_PHONE_NUMBER") or "+15855802036").strip()
+    target_to = format_to_e164(to_phone_number)
+    if not target_to:
+        logger.error(f"TWILIO_INVALID_RECIPIENT: Recipient number '{to_phone_number}' could not be formatted to E.164 standard.")
+        return False
+
+    default_sender = format_to_e164(settings.TWILIO_PHONE_NUMBER or os.getenv("TWILIO_PHONE_NUMBER") or "+15855802036")
     msg_service_sid = (settings.TWILIO_MESSAGING_SERVICE_SID or os.getenv("TWILIO_MESSAGING_SERVICE_SID") or "").strip()
     
-    # Priority: Forcibly route system SMS through registered sender or custom alias number
-    from_num = default_sender if (not from_phone_number or "8137558466" in str(from_phone_number)) else from_phone_number
+    # Priority: Dynamically use user's formatted alias phone number if provided, otherwise default sender number
+    requested_from_e164 = format_to_e164(from_phone_number) if from_phone_number else ""
+    from_num = requested_from_e164 if requested_from_e164 else default_sender
 
     # Ensure clean Disappear branding prefix on every outgoing SMS message body
     clean_body = (message_body or "").strip()
@@ -93,26 +111,33 @@ def send_sms(to_phone_number: str, message_body: str, from_phone_number: Optiona
 
     if from_num:
         try:
-            message = twilio_client.messages.create(body=clean_body, from_=from_num, to=to_phone_number)
-            logger.info(f"TWILIO_SMS_DISPATCHED: Sent SMS from {from_num} to {to_phone_number} | SID: {message.sid} | Body: '{clean_body[:45]}...'")
+            message = twilio_client.messages.create(body=clean_body, from_=from_num, to=target_to)
+            logger.info(f"✅ TWILIO_SMS_DISPATCHED: Sent SMS from alias/line {from_num} to {target_to} | SID: {message.sid} | Body: '{clean_body[:45]}...'")
             return True
+        except TwilioRestException as tw_err:
+            logger.error(
+                f"❌ TWILIO_REST_ERROR [Code {tw_err.code}]: {tw_err.msg} | "
+                f"Status: {tw_err.status} | From: {from_num} | To: {target_to}"
+            )
         except Exception as ex_from:
-            logger.warning(f"TWILIO_SMS_DISPATCH_NOTICE: Direct send from {from_num} failed: {ex_from}. Retrying via Messaging Service...")
+            logger.error(f"❌ TWILIO_SMS_DISPATCH_EXCEPTION: From={from_num} To={target_to} Error={str(ex_from)}")
 
-    # Fallback to Messaging Service if specific sender failed
+    # Fallback to Messaging Service SID if specific phone number dispatch failed or unassigned
     if msg_service_sid:
         try:
             message = twilio_client.messages.create(
                 body=clean_body,
                 messaging_service_sid=msg_service_sid,
-                to=to_phone_number
+                to=target_to
             )
-            logger.info(f"TWILIO_SMS_DISPATCHED_VIA_SERVICE: Sent SMS via Messaging Service {msg_service_sid} to {to_phone_number} | SID: {message.sid}")
+            logger.info(f"✅ TWILIO_SMS_DISPATCHED_VIA_SERVICE: Sent SMS via Messaging Service {msg_service_sid} to {target_to} | SID: {message.sid}")
             return True
+        except TwilioRestException as tw_svc_err:
+            logger.error(f"❌ TWILIO_SERVICE_REST_ERROR [Code {tw_svc_err.code}]: {tw_svc_err.msg} | To: {target_to}")
         except Exception as ex_fallback:
-            logger.error(f"TWILIO_SEND_SMS_FAILURE: Messaging Service fallback failed: {ex_fallback}")
+            logger.error(f"❌ TWILIO_SEND_SMS_FAILURE: Messaging Service fallback failed: {ex_fallback}")
 
-    logger.error(f"TWILIO_SEND_SMS_FAILURE: Failed to send SMS to {to_phone_number}.")
+    logger.error(f"🚨 TWILIO_SEND_SMS_FAILURE: Failed to send SMS from {from_num} to {target_to}.")
     return False
 
 def make_voice_call(to_phone_number: str, twiml_url: str) -> bool:
