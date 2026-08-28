@@ -2566,6 +2566,17 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
         ref_code = profile.referral_code
         ref_identifiers = list(set([ref_code, ref_code.upper(), profile.id, profile.email, profile.email.lower()]))
 
+        # Auto-attribute & credit any referred profiles matching this profile's referral code or ID
+        try:
+            referred_profiles = db.query(DBProfile).filter(
+                DBProfile.referred_by.in_(ref_identifiers),
+                DBProfile.id != profile.id
+            ).all()
+            for rp in referred_profiles:
+                attribute_referral_signup(rp.id, profile.referral_code or profile.id, db)
+        except Exception as auto_ref_err:
+            logger.warning(f"Auto referral credit sync notice: {auto_ref_err}")
+
         db_ref_count = 0
         try:
             db_ref_count = db.query(DBProfile).filter(
@@ -4108,7 +4119,12 @@ async def save_profile(request: Request, db: Session = Depends(get_db)):
                         existing_email.dob = data.get("dob")
                     if data.get("password"):
                         existing_email.password_hash = hash_password(data.get("password"))
+                    ref_by_input = (data.get("referred_by") or data.get("referral_code") or "").strip().upper()
+                    if ref_by_input:
+                        existing_email.referred_by = ref_by_input
                     db.commit()
+                    if ref_by_input:
+                        attribute_referral_signup(existing_email.id, ref_by_input, db)
                     logger.info(f"UNPAID_PROFILE_UPDATED: Updated pending profile {existing_email.id} for {email_input}")
                     return {"status": "SUCCESS", "profile_id": existing_email.id}
 
