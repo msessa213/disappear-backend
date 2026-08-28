@@ -4478,7 +4478,7 @@ async def ai_privacy_chat(request: Request, req: AIChatRequest):
     elif any(k in msg for k in ["human", "agent", "support", "help", "contact", "person", "email support", "ticket"]):
         reply = (
             "👤 **Human Support & Analyst Assistance**:\n\n"
-            "Our Privacy Team is standing by! You can submit a direct support ticket from your Vault dashboard under **Support & Feedback** or email `support@disappearco.com`. Dedicated Human Analysts review all opt-out exceptions within 24 hours."
+            "Our Privacy Team is standing by! You can submit a direct support ticket from your Vault dashboard under **Support & Feedback** or email `customer.service@disappearco.com`. Dedicated Human Analysts review all opt-out exceptions within 24 hours."
         )
     else:
         clean_q_display = raw_query[:80] + ("..." if len(raw_query) > 80 else "")
@@ -4586,7 +4586,7 @@ async def create_support_ticket(
 
         # --- SECURE EMAIL DISPATCH TO customer.service@disappearco.com ---
         primary_dest = (os.getenv("SUPPORT_EMAIL") or os.getenv("SUPPORT_DESTINATION_EMAIL") or "customer.service@disappearco.com").strip()
-        dest_recipients = list(set([primary_dest, "customer.service@disappearco.com"]))
+        dest_recipients = [primary_dest]
 
         from_address = (os.getenv("RESEND_FROM_EMAIL") or os.getenv("SUPPORT_FROM_EMAIL") or "Disappear Support <onboarding@resend.dev>").strip()
 
@@ -4666,15 +4666,16 @@ async def create_support_ticket(
                         logger.error(f"❌ {err_text}")
                         dispatch_error_logs.append(err_text)
                         
-                        if resend_resp.status_code == 403 and "onboarding@resend.dev" not in from_address:
-                            logger.warning("RESEND_DOMAIN_UNVERIFIED: Retrying with sandbox sender onboarding@resend.dev")
+                        if resend_resp.status_code == 403:
+                            logger.warning(f"RESEND_SANDBOX_RESTRICTION: Retrying dispatch to {primary_dest} using onboarding@resend.dev sandbox sender")
+                            payload["to"] = [primary_dest]
                             payload["from"] = "Disappear Support <onboarding@resend.dev>"
                             retry_resp = await client.post("https://api.resend.com/emails", headers=headers, json=payload, timeout=12.0)
                             if retry_resp.status_code in [200, 201, 202]:
                                 res_data = retry_resp.json()
                                 dispatch_resend_id = res_data.get("id", tracking_id)
                                 email_dispatched = True
-                                logger.info(f"✅ SUPPORT_EMAIL_DISPATCH_RETRY_SUCCESS: Sent ticket {tracking_id} using sandbox sender.")
+                                logger.info(f"✅ SUPPORT_EMAIL_DISPATCH_RETRY_SUCCESS: Sent ticket {tracking_id} to {primary_dest} with reply_to={target_email}.")
                             else:
                                 retry_err = f"RESEND_RETRY_FAILED (HTTP {retry_resp.status_code}): {retry_resp.text}"
                                 logger.error(f"❌ {retry_err}")
