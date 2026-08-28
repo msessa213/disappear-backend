@@ -355,11 +355,10 @@ function App() {
         }
       }
 
-      const numMatch = String(sms.message || "").match(/\+?1?\s*\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})/);
-      if (numMatch) {
-        return `+1${numMatch[1]}${numMatch[2]}${numMatch[3]}`;
+      if (sms.line && sms.line !== "VIRTUAL_LINE" && sms.line !== "OUTBOUND_SMS") {
+        return sms.line;
       }
-      return sms.line || "VIRTUAL_LINE";
+      return "UNKNOWN_SENDER";
     };
 
     const groupedMap = new Map();
@@ -3171,11 +3170,17 @@ const handleEmergencyBurn = async () => {
                               <div className="sms-thread-header">
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                                   <span style={{ fontSize: '0.82rem', color: '#00D2FF', fontWeight: 'bold' }}>📱 CONTACT: {formattedPhoneDisplay}</span>
-                                  {newestMessage?.to_phone && (
-                                    <span style={{ fontSize: '0.72rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.15)', padding: '2px 7px', borderRadius: '4px', border: '1px solid rgba(56, 189, 248, 0.3)', fontWeight: 'bold' }}>
-                                      🔒 ALIAS: {newestMessage.to_phone}{getAliasLabel(newestMessage.to_phone)}
-                                    </span>
-                                  )}
+                                  {(() => {
+                                    const resolvedAlias = messages.find(m => m.message && String(m.message).startsWith("OUTBOUND") && m.from_phone)?.from_phone
+                                      || messages.find(m => m.to_phone && m.to_phone !== phone)?.to_phone
+                                      || (newestMessage?.to_phone && newestMessage.to_phone !== phone ? newestMessage.to_phone : "");
+                                    if (!resolvedAlias) return null;
+                                    return (
+                                      <span style={{ fontSize: '0.72rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.15)', padding: '2px 7px', borderRadius: '4px', border: '1px solid rgba(56, 189, 248, 0.3)', fontWeight: 'bold' }}>
+                                        🔒 ALIAS: {resolvedAlias}{getAliasLabel(resolvedAlias)}
+                                      </span>
+                                    );
+                                  })()}
                                   <span style={{ fontSize: '0.65rem', background: '#1e293b', color: '#10B981', padding: '1px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
                                     {messages.length} {messages.length === 1 ? 'MSG' : 'MSGS'}
                                   </span>
