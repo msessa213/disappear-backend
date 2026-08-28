@@ -2545,18 +2545,41 @@ const handleEmergencyBurn = async () => {
                         Select your issue category below to transmit a ticket directly to our operations team.
                       </p>
 
-                      <div style={{ marginTop: '25px' }}>
-                        <p className="field-label">ISSUE CATEGORY</p>
-                        <select className="mask-btn" style={{width: '100%', background: '#000', color: 'white', marginBottom: '15px'}} value={supportData.category} onChange={(e) => setSupportData({...supportData, category: e.target.value, subject: e.target.value})}>
-                          <option value="PAYMENT_ERR">PAYMENT_ISSUE</option>
-                          <option value="NODE_ERR">NODE_FAILURE</option>
-                          <option value="PURGE_ERR">PURGE_TIMEOUT</option>
-                          <option value="OTHER">OTHER_INQUIRY</option>
-                        </select>
-                        <p className="field-label">INQUIRY / ANOMALY DESCRIPTION</p>
-                        <textarea className="mask-btn" style={{width: '100%', height: '120px', color: 'white', textAlign: 'left', paddingTop: '10px'}} placeholder="Describe your request or question in detail..." value={supportData.message} onChange={(e) => setSupportData({...supportData, message: e.target.value})} />
-                        <button className="main-button" style={{width: '100%', marginTop: '20px'}} onClick={handleSendTicket}>TRANSMIT TICKET</button>
-                      </div>
+                      <form onSubmit={(e) => { e.preventDefault(); handleSendTicket(); }} autoComplete="on" style={{ marginTop: '25px', display: 'flex', flexDirection: 'column', gap: '14px', textAlign: 'left' }}>
+                        <div>
+                          <p className="field-label" style={{ marginBottom: '4px' }}>YOUR EMAIL ADDRESS (FOR REPLY)</p>
+                          <input
+                            type="email"
+                            name="disappear_legal_support_reply_email"
+                            id="disappear_legal_support_reply_email"
+                            autoComplete="email"
+                            className="mask-btn"
+                            style={{ width: '100%', color: 'white', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                            placeholder="customer@email.com"
+                            value={supportData.email !== undefined ? supportData.email : (targetProfile.email || getSessionItem("disappear_user_email") || "")}
+                            onChange={(e) => setSupportData({...supportData, email: e.target.value})}
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <p className="field-label" style={{ marginBottom: '4px' }}>ISSUE CATEGORY</p>
+                          <select className="mask-btn" style={{width: '100%', background: '#000', color: 'white', fontSize: '0.85rem', boxSizing: 'border-box'}} value={supportData.category || "GENERAL_INQUIRY"} onChange={(e) => setSupportData({...supportData, category: e.target.value, subject: e.target.value})}>
+                            <option value="GENERAL_INQUIRY">GENERAL INQUIRY / ASSISTANCE</option>
+                            <option value="PAYMENT_ERR">BILLING & PAYMENT ISSUE</option>
+                            <option value="NODE_ERR">DATA BROKER OPT-OUT FAILURE</option>
+                            <option value="PURGE_ERR">ALIAS / FORWARDING ISSUE</option>
+                            <option value="OTHER">OTHER INQUIRY</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <p className="field-label" style={{ marginBottom: '4px' }}>INQUIRY / ANOMALY DESCRIPTION</p>
+                          <textarea className="mask-btn" style={{width: '100%', height: '120px', color: 'white', textAlign: 'left', paddingTop: '10px', fontSize: '0.85rem', boxSizing: 'border-box'}} placeholder="Describe your request or question in detail..." value={supportData.message} onChange={(e) => setSupportData({...supportData, message: e.target.value})} required />
+                        </div>
+
+                        <button type="submit" className="main-button" style={{width: '100%', marginTop: '10px'}}>⚡ TRANSMIT SUPPORT TICKET</button>
+                      </form>
 
                       <div style={{ marginTop: '35px', borderTop: '1px solid #222', paddingTop: '20px', fontSize: '0.85rem', color: '#94A3B8' }}>
                         <p style={{ margin: '4px 0' }}><strong>CORPORATE ENTITY:</strong> DFS 213 LLC</p>
