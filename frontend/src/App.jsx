@@ -78,9 +78,15 @@ function App() {
   // --- SECURE BRIDGE LOGIC ---
   // This bridges the gap between the app and the server on native hardware
   const secureRequest = async (url, options = {}, retries = 3) => {
-    const activeUserId = currentUserId || getSessionItem("disappear_user_id") || "";
+    const activeUserId = currentUserId 
+      || getSessionItem("disappear_user_id") 
+      || getSessionItem("user_id") 
+      || (typeof localStorage !== "undefined" ? (localStorage.getItem("disappear_user_id") || localStorage.getItem("user_id")) : "") 
+      || "";
+
     const headers = { 
       'Content-Type': 'application/json', 
+      'Accept': 'application/json',
       'x-user-id': activeUserId, 
       'Cache-Control': 'no-cache',
       'Pragma': 'no-cache',
@@ -89,23 +95,30 @@ function App() {
 
     for (let i = 0; i < retries; i++) {
       try {
-        if (Capacitor.isNativePlatform()) {
-          const response = await CapacitorHttp.request({
-            url,
-            method: options.method || 'GET',
-            data: (options.body && typeof options.body === 'string') ? JSON.parse(options.body) : options.body,
-            headers: headers
-          });
-          return { 
-            ok: response.status >= 200 && response.status < 300, 
-            status: response.status,
-            json: () => Promise.resolve(response.data) 
-          };
+        if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform() && window.CapacitorHttp) {
+          try {
+            const parsedData = (options.body && typeof options.body === 'string') ? JSON.parse(options.body) : options.body;
+            const response = await CapacitorHttp.request({
+              url,
+              method: options.method || 'GET',
+              data: parsedData,
+              headers: headers
+            });
+            const isOk = response.status >= 200 && response.status < 300;
+            const resData = (typeof response.data === 'string') ? JSON.parse(response.data) : (response.data || {});
+            return { 
+              ok: isOk, 
+              status: response.status,
+              json: () => Promise.resolve(resData) 
+            };
+          } catch (capErr) {
+            console.warn("CapacitorHttp notice, falling back to window.fetch:", capErr);
+          }
         }
         return await fetch(url, { ...options, headers });
       } catch (err) {
         if (i === retries - 1) {
-          return { ok: false, status: 0, json: async () => ({}) };
+          return { ok: false, status: 0, json: async () => ({ detail: err.message || "Network request failed" }) };
         }
         await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
       }
@@ -294,13 +307,35 @@ function App() {
       triggerToast("⚠️ PLEASE FILL IN ALIAS, RECIPIENT & MESSAGE");
       return;
     }
+
+    const activeUserId = currentUserId 
+      || getSessionItem("disappear_user_id") 
+      || getSessionItem("user_id") 
+      || (typeof localStorage !== "undefined" ? (localStorage.getItem("disappear_user_id") || localStorage.getItem("user_id")) : "") 
+      || "";
+
+    if (!activeUserId) {
+      triggerToast("⚠️ PLEASE SIGN IN TO TRANSMIT ALIAS EMAIL");
+      return;
+    }
+
     setIsSendingAliasReply(true);
     triggerToast("⏳ TRANSMITTING ALIAS EMAIL...");
+
+    console.log("✉️ MOBILE_EMAIL_DISPATCH_INITIATED:", {
+      url: `${API_BASE_URL}/api/email/send?user_id=${encodeURIComponent(activeUserId)}`,
+      alias_email: activeSenderAlias,
+      recipient_email: replyRecipientEmail,
+      user_id: activeUserId
+    });
+
     try {
-      const activeUserId = currentUserId || getSessionItem("disappear_user_id");
       const res = await secureRequest(`${API_BASE_URL}/api/email/send?user_id=${encodeURIComponent(activeUserId)}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-User-ID": activeUserId
+        },
         body: JSON.stringify({
           alias_email: activeSenderAlias,
           recipient_email: replyRecipientEmail,
@@ -308,17 +343,20 @@ function App() {
           message_body: aliasReplyBody
         })
       });
+      const err = await res.json().catch(() => ({ detail: `HTTP ${res.status} Response Parse Error` }));
       if (res.ok) {
+        console.log("✅ MOBILE_EMAIL_DISPATCH_SUCCESS:", err);
         triggerToast("✅ ALIAS EMAIL DISPATCHED SUCCESSFULLY!");
         setAliasReplyBody("");
         setShowAliasReplyModal(false);
         fetchAliasMessages();
       } else {
-        const err = await res.json().catch(() => ({}));
-        triggerToast(`❌ REASON: ${err.detail || "FAILED TO TRANSMIT EMAIL"}`);
+        console.error("❌ MOBILE_EMAIL_DISPATCH_FAILED:", res.status, err);
+        triggerToast(`❌ REASON: ${err.detail || `FAILED TO TRANSMIT EMAIL (${res.status})`}`);
       }
     } catch (err) {
-      triggerToast("❌ NETWORK ERROR SENDING ALIAS EMAIL");
+      console.error("❌ MOBILE_EMAIL_DISPATCH_EXCEPTION:", err);
+      triggerToast(`❌ NETWORK ERROR SENDING ALIAS EMAIL: ${err.message || "Connection failed"}`);
     } finally {
       setIsSendingAliasReply(false);
     }
@@ -4774,10 +4812,12 @@ const handleEmergencyBurn = async () => {
           style={{ 
             zIndex: 60000, 
             display: 'flex', 
-            alignItems: 'center', 
+            alignItems: 'flex-start', 
             justifyContent: 'center', 
-            padding: 'max(16px, env(safe-area-inset-top, 16px)) 12px max(24px, env(safe-area-inset-bottom, 24px)) 12px', 
-            overflowY: 'auto' 
+            padding: 'max(24px, env(safe-area-inset-top, 24px)) 12px max(24px, env(safe-area-inset-bottom, 24px)) 12px', 
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-y'
           }} 
           onClick={() => setShowAliasReplyModal(false)}
         >
@@ -4786,11 +4826,14 @@ const handleEmergencyBurn = async () => {
             style={{ 
               maxWidth: '540px', 
               width: '100%', 
-              maxHeight: '90vh', 
+              maxHeight: 'calc(100vh - 60px)', 
               overflowY: 'auto', 
+              WebkitOverflowScrolling: 'touch',
+              touchAction: 'pan-y',
               textAlign: 'left', 
               boxSizing: 'border-box',
               padding: '24px',
+              margin: 'auto 0',
               border: '1px solid var(--tiger-blue)'
             }} 
             onClick={e => e.stopPropagation()}
