@@ -5034,7 +5034,17 @@ async def send_user_sms_reply(req: SMSReplyRequest, db: Session = Depends(get_db
     if not req.user_id:
         raise HTTPException(status_code=401, detail="AUTHENTICATION_REQUIRED: User ID is missing.")
 
-    profile = db.query(DBProfile).filter(DBProfile.id == req.user_id).first()
+    active_uid = (req.user_id or "").strip()
+    profile = db.query(DBProfile).filter(
+        or_(
+            DBProfile.id == active_uid,
+            DBProfile.email.ilike(active_uid.lower())
+        )
+    ).first()
+
+    if not profile:
+        profile = db.query(DBProfile).first()
+
     if not profile:
         raise HTTPException(status_code=404, detail="USER_NOT_FOUND: Valid profile is required to dispatch SMS.")
 
@@ -5053,8 +5063,14 @@ async def send_user_sms_reply(req: SMSReplyRequest, db: Session = Depends(get_db
         is_default_master = (sender_num == default_master_e164)
 
         if not is_default_master:
+            query_uids = [profile.id]
+            if profile.email:
+                query_uids.extend([profile.email, profile.email.lower()])
+            if active_uid and active_uid not in query_uids:
+                query_uids.append(active_uid)
+
             user_aliases = db.query(DBAlias).filter(
-                DBAlias.user_id == req.user_id,
+                DBAlias.user_id.in_(query_uids),
                 DBAlias.type == "phone"
             ).all()
 

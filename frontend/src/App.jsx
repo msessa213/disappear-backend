@@ -1243,16 +1243,9 @@ function App() {
   };
 
   const handleSendSmsReply = async (targetTo, bodyText, fromPhoneOverride) => {
-    const rawTo = (targetTo || replyRecipient || "").trim();
-    const body = (bodyText || replyBody || "").trim();
-    const senderFrom = (fromPhoneOverride || selectedSenderAlias || "").trim();
-
-    // Instantly clear text and close reply card UI on button press
-    setReplyBody("");
-    setReplyRecipient("");
-    setActiveReplyId(null);
-    setShowComposeSms(false);
-    setIsSendingSms(false);
+    const rawTo = (typeof targetTo === 'string' && targetTo ? targetTo : replyRecipient || "").trim();
+    const body = (typeof bodyText === 'string' && bodyText ? bodyText : replyBody || "").trim();
+    const senderFrom = (typeof fromPhoneOverride === 'string' && fromPhoneOverride ? fromPhoneOverride : selectedSenderAlias || "").trim();
 
     if (!rawTo) {
       triggerToast("⚠️ RECIPIENT PHONE NUMBER REQUIRED");
@@ -1269,6 +1262,12 @@ function App() {
       triggerToast("⚠️ PLEASE TYPE A MESSAGE BODY TO SEND");
       return;
     }
+
+    // Validation passed: Reset form state and show progress toast
+    setReplyBody("");
+    setReplyRecipient("");
+    setActiveReplyId(null);
+    setShowComposeSms(false);
 
     const formattedTo = digitsOnly.length === 10 ? `+1${digitsOnly}` : `+${digitsOnly}`;
     triggerToast(`⏳ DISPATCHING SMS TO ${formattedTo}...`);
