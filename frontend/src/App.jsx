@@ -25,12 +25,21 @@ import './App.css';
 const PROD_API = "https://disappear-backend-production.up.railway.app";
 const LOCAL_API = "http://127.0.0.1:8000";
 
-// Only use LOCAL_API if explicitly running on local Vite dev server (port 5173)
-const isExplicitLocalDev = typeof window !== 'undefined' && 
+const isCapacitorNative = typeof window !== 'undefined' && (
+  (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
+  window.location.protocol === 'file:' || 
+  window.location.protocol === 'capacitor:' || 
+  window.location.protocol === 'ionic:'
+);
+
+// Only use LOCAL_API if explicitly running on local Vite dev server (port 5173 on non-Capacitor web)
+const isExplicitLocalDev = !isCapacitorNative && typeof window !== 'undefined' && 
   (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') && 
   window.location.port === '5173';
 
-const API_BASE_URL = (import.meta.env && import.meta.env.VITE_API_BASE_URL) || (isExplicitLocalDev ? LOCAL_API : "");
+const API_BASE_URL = isCapacitorNative 
+  ? PROD_API 
+  : ((import.meta.env && import.meta.env.VITE_API_BASE_URL) || (isExplicitLocalDev ? LOCAL_API : PROD_API));
 
 // --- TAB ISOLATION & SECURE SESSION STORAGE ENGINE ---
 // Uses sessionStorage exclusively so each browser tab/window maintains its own strictly isolated session sandbox.
