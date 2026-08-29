@@ -1219,23 +1219,32 @@ function App() {
     const formattedTo = digitsOnly.length === 10 ? `+1${digitsOnly}` : `+${digitsOnly}`;
     triggerToast(`⏳ DISPATCHING SMS TO ${formattedTo}...`);
 
-    const activeUserId = currentUserId || getSessionItem("disappear_user_id");
+    const activeUserId = currentUserId 
+      || getSessionItem("disappear_user_id") 
+      || getSessionItem("user_id") 
+      || (typeof localStorage !== "undefined" ? (localStorage.getItem("disappear_user_id") || localStorage.getItem("user_id")) : "") 
+      || "ANONYMOUS_USER";
+
     if (!activeUserId) {
       triggerToast("⚠️ PLEASE SIGN IN TO SEND SMS");
       setIsSendingSms(false);
       return;
     }
 
+    const cleanSenderFrom = (senderFrom && senderFrom.trim()) ? senderFrom.trim() : null;
+
+    const smsPayload = {
+      user_id: activeUserId,
+      to_phone: formattedTo,
+      message: body,
+      from_phone: cleanSenderFrom
+    };
+
     try {
       const res = await secureRequest(`${API_BASE_URL}/api/v1/send-sms`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          user_id: activeUserId, 
-          to_phone: formattedTo, 
-          message: body,
-          from_phone: senderFrom || undefined
-        })
+        body: JSON.stringify(smsPayload)
       });
       const data = await res.json();
       if (res.ok) {
