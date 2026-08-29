@@ -362,6 +362,22 @@ function App() {
     }
   };
 
+  const handleDeleteAliasMessage = async (id, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (!id) return;
+    try {
+      setAliasMessages(prev => prev.filter(m => String(m.id) !== String(id)));
+      triggerToast("🗑️ EMAIL DELETED FROM VAULT");
+      await secureRequest(`${API_BASE_URL}/aliases/messages/${id}`, { method: "DELETE" });
+      fetchAliasMessages();
+    } catch (err) {
+      console.error("Error deleting alias message:", err);
+    }
+  };
+
   const [relayCredits, setRelayCredits] = useState(500);
   const [relayCreditsTotal, setRelayCreditsTotal] = useState(500);
   const [isRefillingCredits, setIsRefillingCredits] = useState(false);
@@ -2996,7 +3012,7 @@ const handleEmergencyBurn = async () => {
                         No forwarded alias emails logged yet. Messages sent to your encrypted email aliases will route here and to your inbox automatically.
                       </p>
                     ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '280px', overflowY: 'auto' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '420px', overflowY: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
                         {aliasMessages.map(msg => (
                           <div key={msg.id} style={{ background: msg.direction === 'OUTBOUND' ? '#031a10' : '#090d16', border: msg.direction === 'OUTBOUND' ? '1px solid #10b981' : '1px solid #1e293b', borderRadius: '8px', padding: '10px 12px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
@@ -3018,10 +3034,10 @@ const handleEmergencyBurn = async () => {
                             <div style={{ fontSize: '0.80rem', color: '#FFFFFF', fontWeight: 'bold', marginBottom: '4px' }}>
                               {msg.subject || 'No Subject'}
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: '#CBD5E1', lineHeight: '1.4', whiteSpace: 'pre-wrap', maxHeight: '80px', overflowY: 'auto' }}>
+                            <div style={{ fontSize: '0.75rem', color: '#CBD5E1', lineHeight: '1.4', whiteSpace: 'pre-wrap', maxHeight: '120px', overflowY: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
                               {msg.body_text || 'Encrypted email content.'}
                             </div>
-                            <div style={{ marginTop: '8px', textAlign: 'right' }}>
+                            <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end', gap: '8px', flexWrap: 'wrap' }}>
                               <button
                                 type="button"
                                 className="reset-btn"
@@ -3035,6 +3051,15 @@ const handleEmergencyBurn = async () => {
                                 }}
                               >
                                 ✉️ REPLY VIA {msg.alias_email}
+                              </button>
+                              <button
+                                type="button"
+                                className="reset-btn"
+                                style={{ padding: '3px 8px', fontSize: '0.70rem', color: '#EF4444', borderColor: '#EF4444' }}
+                                onClick={(e) => handleDeleteAliasMessage(msg.id, e)}
+                                title="Delete email message"
+                              >
+                                🗑️ DELETE
                               </button>
                             </div>
                           </div>

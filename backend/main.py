@@ -3476,6 +3476,22 @@ async def get_alias_messages(bg_tasks: BackgroundTasks, user_id: Optional[str] =
         return {"messages": []}
 
 
+@app.delete("/aliases/messages/{message_id}")
+@app.delete("/api/v1/aliases/messages/{message_id}")
+async def delete_alias_message(message_id: str, db: Session = Depends(get_db)):
+    """Deletes an inbound or outbound alias email message log entry from the database"""
+    try:
+        msg = db.query(DBAliasMessage).filter(DBAliasMessage.id == message_id).first()
+        if msg:
+            db.delete(msg)
+            db.commit()
+            return {"status": "SUCCESS", "message": "ALIAS_MESSAGE_DELETED"}
+        return {"status": "NOT_FOUND", "message": "Message not found"}
+    except Exception as ex:
+        logger.error(f"delete_alias_message error: {ex}")
+        raise HTTPException(status_code=500, detail=str(ex))
+
+
 class AliasReplyRequest(BaseModel):
     alias_email: str
     recipient_email: str
