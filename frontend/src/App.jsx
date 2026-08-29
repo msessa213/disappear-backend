@@ -194,6 +194,8 @@ function App() {
   const [selectedSenderAlias, setSelectedSenderAlias] = useState("");
   const [isSendingSms, setIsSendingSms] = useState(false);
   const [showComposeSms, setShowComposeSms] = useState(false);
+  const [composeSmsRecipient, setComposeSmsRecipient] = useState("");
+  const [composeSmsBody, setComposeSmsBody] = useState("");
   const [expandedThreads, setExpandedThreads] = useState({});
   const [showOnboardingWelcomeModal, setShowOnboardingWelcomeModal] = useState(false);
   const [showDataRemovalNoticeModal, setShowDataRemovalNoticeModal] = useState(false);
@@ -3239,21 +3241,25 @@ const handleEmergencyBurn = async () => {
                         <input
                           type="text"
                           placeholder="Recipient Phone (+18135551234)"
-                          value={replyRecipient}
-                          onChange={(e) => setReplyRecipient(e.target.value)}
-                          style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#030712', border: '1px solid #1e293b', color: '#fff', borderRadius: '4px', marginBottom: '8px', boxSizing: 'border-box' }}
+                          value={composeSmsRecipient}
+                          onChange={(e) => setComposeSmsRecipient(e.target.value)}
+                          style={{ width: '100%', padding: '8px 10px', fontSize: '0.82rem', background: '#030712', border: '1px solid #1e293b', color: '#fff', borderRadius: '4px', marginBottom: '8px', boxSizing: 'border-box' }}
                         />
                         <textarea
                           placeholder="Type your message..."
-                          value={replyBody}
-                          onChange={(e) => setReplyBody(e.target.value)}
-                          style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#030712', border: '1px solid #1e293b', color: '#fff', borderRadius: '4px', marginBottom: '8px', height: '50px', boxSizing: 'border-box', resize: 'vertical' }}
+                          value={composeSmsBody}
+                          onChange={(e) => setComposeSmsBody(e.target.value)}
+                          style={{ width: '100%', padding: '8px 10px', fontSize: '0.82rem', background: '#030712', border: '1px solid #1e293b', color: '#fff', borderRadius: '4px', marginBottom: '8px', height: '60px', boxSizing: 'border-box', resize: 'vertical' }}
                         />
                         <button
                           className="main-button"
                           type="button"
-                          style={{ padding: '6px 12px', fontSize: '0.75rem', width: '100%', fontWeight: 'bold' }}
-                          onClick={() => handleSendSmsReply(replyRecipient, replyBody, selectedSenderAlias)}
+                          style={{ padding: '8px 12px', fontSize: '0.80rem', width: '100%', fontWeight: 'bold' }}
+                          onClick={() => {
+                            handleSendSmsReply(composeSmsRecipient, composeSmsBody, selectedSenderAlias);
+                            setComposeSmsRecipient("");
+                            setComposeSmsBody("");
+                          }}
                         >
                           📤 SEND SMS
                         </button>
