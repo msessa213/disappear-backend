@@ -1,5 +1,6 @@
 import os
 import logging
+import traceback
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioRestException
 from pydantic_settings import BaseSettings
@@ -24,43 +25,52 @@ class TwilioSettings(BaseSettings):
         env_file = ".env"
         extra = "ignore"
 
-try:
-    settings = TwilioSettings()
-    account_sid = (settings.TWILIO_ACCOUNT_SID or os.getenv("TWILIO_ACCOUNT_SID") or "").strip()
-    auth_token = (settings.TWILIO_AUTH_TOKEN or os.getenv("TWILIO_AUTH_TOKEN") or "").strip()
-    key_sid = (settings.TWILIO_API_KEY_SID or os.getenv("TWILIO_API_KEY_SID") or "").strip()
-    key_secret = (settings.TWILIO_API_KEY_SECRET or os.getenv("TWILIO_API_KEY_SECRET") or "").strip()
+settings = TwilioSettings()
+
+_twilio_client_instance = None
+
+def get_twilio_client() -> Optional[Client]:
+    """
+    Safely resolves and returns the Twilio Client instance.
+    Initializes lazily from environment variables without throwing startup network exceptions.
+    """
+    global _twilio_client_instance
+    if _twilio_client_instance is not None:
+        return _twilio_client_instance
+
+    account_sid = (os.getenv("TWILIO_ACCOUNT_SID") or getattr(settings, "TWILIO_ACCOUNT_SID", None) or "").strip()
+    auth_token = (os.getenv("TWILIO_AUTH_TOKEN") or getattr(settings, "TWILIO_AUTH_TOKEN", None) or "").strip()
+    key_sid = (os.getenv("TWILIO_API_KEY_SID") or getattr(settings, "TWILIO_API_KEY_SID", None) or "").strip()
+    key_secret = (os.getenv("TWILIO_API_KEY_SECRET") or getattr(settings, "TWILIO_API_KEY_SECRET", None) or "").strip()
 
     if account_sid.startswith("SK"):
         account_sid = ""
 
-    twilio_client = None
+    # Strategy 1: Account SID + Auth Token (Direct, 100% reliable for REST API message dispatch)
+    if account_sid and auth_token and account_sid.startswith("AC"):
+        try:
+            _twilio_client_instance = Client(account_sid, auth_token)
+            logger.info("✅ TWILIO_INIT_SUCCESS: Initialized client using Account SID & Auth Token.")
+            return _twilio_client_instance
+        except Exception as ex1:
+            logger.warning(f"Twilio Account SID initialization notice: {ex1}")
 
-    # Method 1: Try API Key & Secret
+    # Strategy 2: API Key SID + API Secret
     if key_sid and key_secret:
         try:
-            client1 = Client(key_sid, key_secret, account_sid) if (account_sid and account_sid.startswith("AC")) else Client(key_sid, key_secret)
-            client1.incoming_phone_numbers.list(limit=1)
-            twilio_client = client1
-            logger.info("Twilio client initialized using API Key & Secret.")
-        except Exception as e1:
-            logger.warning(f"Twilio API Key auth attempt failed: {e1}")
+            if account_sid and account_sid.startswith("AC"):
+                _twilio_client_instance = Client(key_sid, key_secret, account_sid)
+            else:
+                _twilio_client_instance = Client(key_sid, key_secret)
+            logger.info("✅ TWILIO_INIT_SUCCESS: Initialized client using API Key & Secret.")
+            return _twilio_client_instance
+        except Exception as ex2:
+            logger.warning(f"Twilio API Key initialization notice: {ex2}")
 
-    # Method 2: Fallback to Account SID + Auth Token
-    if not twilio_client and account_sid and auth_token:
-        try:
-            client2 = Client(account_sid, auth_token)
-            client2.incoming_phone_numbers.list(limit=1)
-            twilio_client = client2
-            logger.info("Twilio client initialized using Account SID & Auth Token.")
-        except Exception as e2:
-            logger.warning(f"Twilio Auth Token auth attempt failed: {e2}")
+    logger.warning("TWILIO_WARNING: Twilio credentials not configured or initialization incomplete.")
+    return None
 
-    if not twilio_client:
-        logger.warning("TWILIO_WARNING: Unable to authenticate Twilio client with provided credentials.")
-except Exception as e:
-    logger.error(f"CRITICAL_TWILIO_ERROR: Failed to initialize Twilio client: {e}")
-    twilio_client = None
+twilio_client = get_twilio_client()
 
 def format_to_e164(phone_str: str) -> str:
     if not phone_str:
@@ -87,7 +97,8 @@ def send_sms(to_phone_number: str, message_body: str, from_phone_number: Optiona
     Returns:
         True if the message was sent successfully, False otherwise.
     """
-    if not twilio_client:
+    active_client = get_twilio_client()
+    if not active_client:
         logger.error("TWILIO_SEND_SMS_FAILURE: Twilio client is not available. Cannot send message.")
         return False
 
@@ -111,7 +122,7 @@ def send_sms(to_phone_number: str, message_body: str, from_phone_number: Optiona
 
     if from_num:
         try:
-            message = twilio_client.messages.create(body=clean_body, from_=from_num, to=target_to)
+            message = active_client.messages.create(body=clean_body, from_=from_num, to=target_to)
             logger.info(f"✅ TWILIO_SMS_DISPATCHED: Sent SMS from alias/line {from_num} to {target_to} | SID: {message.sid} | Body: '{clean_body[:45]}...'")
             return True
         except TwilioRestException as tw_err:
@@ -125,7 +136,7 @@ def send_sms(to_phone_number: str, message_body: str, from_phone_number: Optiona
     # Fallback to Messaging Service SID if specific phone number dispatch failed or unassigned
     if msg_service_sid:
         try:
-            message = twilio_client.messages.create(
+            message = active_client.messages.create(
                 body=clean_body,
                 messaging_service_sid=msg_service_sid,
                 to=target_to

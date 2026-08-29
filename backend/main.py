@@ -5056,35 +5056,42 @@ async def send_user_sms_reply(req: SMSReplyRequest, db: Session = Depends(get_db
                     detail=f"UNAUTHORIZED_ALIAS_ACCESS: The requested sender number '{sender_num}' is not assigned to your user account."
                 )
 
-    from services.twilio_service import send_sms, twilio_client
-    if not twilio_client:
-        raise HTTPException(status_code=503, detail="TWILIO_CLIENT_UNAVAILABLE: Twilio client is not initialized in Railway.")
+    from services.twilio_service import send_sms, get_twilio_client
+    active_client = get_twilio_client()
+    if not active_client:
+        logger.error("TWILIO_CLIENT_UNAVAILABLE: Twilio client initialization failed. Please check TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN on Railway.")
 
     sender_display = sender_num if sender_num else "+15855802036"
-    success = send_sms(to_phone_number=target_to, message_body=req.message.strip(), from_phone_number=sender_num)
-    if success:
-        if profile:
-            profile.relay_credits = max(0, (profile.relay_credits or 500) - 1)
-            db.commit()
-        try:
-            db.add(DBPurgeLog(
-                user_id=req.user_id,
-                action_type=f"SMS_SENT [From {sender_display} To {target_to}]: {req.message.strip()}",
-                node_id=f"{req.user_id}_OUTBOUND_SMS"
-            ))
-            db.commit()
-        except Exception:
-            pass
-        return {
-            "status": "success",
-            "detail": f"Message sent successfully from {sender_display} to {target_to}",
-            "from_phone": sender_display,
-            "to_phone": target_to,
-            "message": req.message.strip(),
-            "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-        }
-    else:
-        raise HTTPException(status_code=500, detail="TWILIO_DELIVERY_FAILED: Carrier rejected message or sender number is unverified.")
+    try:
+        success = send_sms(to_phone_number=target_to, message_body=req.message.strip(), from_phone_number=sender_num)
+        if success:
+            if profile:
+                profile.relay_credits = max(0, (profile.relay_credits or 500) - 1)
+                db.commit()
+            try:
+                db.add(DBPurgeLog(
+                    user_id=req.user_id,
+                    action_type=f"SMS_SENT [From {sender_display} To {target_to}]: {req.message.strip()}",
+                    node_id=f"{req.user_id}_OUTBOUND_SMS"
+                ))
+                db.commit()
+            except Exception as db_err:
+                logger.warning(f"SMS audit log commit warning: {db_err}")
+            return {
+                "status": "success",
+                "detail": f"Message sent successfully from {sender_display} to {target_to}",
+                "from_phone": sender_display,
+                "to_phone": target_to,
+                "message": req.message.strip(),
+                "timestamp": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+            }
+        else:
+            raise HTTPException(status_code=500, detail="TWILIO_DELIVERY_FAILED: Carrier rejected message or sender number is unverified.")
+    except HTTPException:
+        raise
+    except Exception as ex_dispatch:
+        logger.error(f"❌ SMS_DISPATCH_UNHANDLED_EXCEPTION: {ex_dispatch}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"SMS_DISPATCH_ERROR: {str(ex_dispatch)}")
 
 
 @app.api_route("/twilio/sms", methods=["GET", "POST"])
@@ -5098,113 +5105,117 @@ async def twilio_incoming_sms(
     """
     Twilio Webhook for incoming SMS messages.
     Resolves the virtual number to the user's real phone number, logs the text to the Live Audit feed & In-App Vault,
-    and forwards the SMS via REST API.
+    and forwards the SMS via REST API with zero crash vulnerability.
     """
-    form_data = {}
     try:
-        form_data = await request.form()
-    except Exception:
-        pass
-    query_params = request.query_params
-    json_data = {}
-    try:
-        json_data = await request.json()
-    except Exception:
-        pass
+        form_data = {}
+        try:
+            form_data = await request.form()
+        except Exception:
+            pass
+        query_params = request.query_params
+        json_data = {}
+        try:
+            json_data = await request.json()
+        except Exception:
+            pass
 
-    To = form_data.get("To") or query_params.get("To") or json_data.get("To") or To_param or ""
-    From = form_data.get("From") or query_params.get("From") or json_data.get("From") or From_param or ""
-    Body = form_data.get("Body") or query_params.get("Body") or json_data.get("Body") or Body_param or ""
+        To = form_data.get("To") or query_params.get("To") or json_data.get("To") or To_param or ""
+        From = form_data.get("From") or query_params.get("From") or json_data.get("From") or From_param or ""
+        Body = form_data.get("Body") or query_params.get("Body") or json_data.get("Body") or Body_param or ""
 
-    logger.info(f"TWILIO_INBOUND_SMS: Message to '{To}' from '{From}' | Body: '{Body}'")
-    clean_to = "".join(filter(str.isdigit, To or ""))
-    
-    # 1. Flexible lookup against phone aliases
-    phone_aliases = db.query(DBAlias).filter(DBAlias.type == "phone").all()
-    alias = None
-    for a in phone_aliases:
-        clean_content = "".join(filter(str.isdigit, a.content or ""))
-        if clean_content and (clean_to == clean_content or clean_to.endswith(clean_content) or clean_content.endswith(clean_to)):
-            alias = a
-            break
-
-    profile = None
-    if alias and alias.user_id:
-        profile = db.query(DBProfile).filter(DBProfile.id == alias.user_id).first()
-
-    target_uid = alias.user_id if alias and alias.user_id else (profile.id if profile else "GLOBAL")
-
-    # 2. ALWAYS Log to DBPurgeLog so incoming SMS text appears live in user's Security Audit feed
-    try:
-        db.add(DBPurgeLog(
-            action_type=f"SMS_RECEIVED [From {From}]: {Body}",
-            node_id=f"{target_uid}_VIRTUAL_LINE_{clean_to[-4:] if clean_to else 'SMS'}"
-        ))
-        db.commit()
-    except Exception as ex:
-        logger.warning(f"Failed to log SMS audit event: {ex}")
-
-    # 3. Resolve owner user's physical forwarding phone number
-    forward_phone = ""
-    if profile and profile.phone:
-        forward_phone = format_to_e164(profile.phone)
-
-    if not forward_phone:
-        # Fallback: check profile linked to current alias or active customer profile
-        prof_with_phone = db.query(DBProfile).filter(DBProfile.phone.isnot(None), DBProfile.phone != "").first()
-        if prof_with_phone and prof_with_phone.phone:
-            forward_phone = format_to_e164(prof_with_phone.phone)
-
-    if not forward_phone:
-        logger.warning(f"TWILIO_SMS_NO_DESTINATION: Captured SMS in Vault for line {To} owned by {target_uid}, but no physical mobile phone is linked.")
-        return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response/>', media_type="application/xml")
+        logger.info(f"TWILIO_INBOUND_SMS: Message to '{To}' from '{From}' | Body: '{Body}'")
+        clean_to = "".join(filter(str.isdigit, To or ""))
         
-    def format_phone_display(raw_num: str) -> str:
-        if not raw_num: return "Unknown"
-        digits = "".join(filter(str.isdigit, raw_num))
-        if len(digits) == 11 and digits.startswith("1"):
-            return f"+1 ({digits[1:4]}) {digits[4:7]}-{digits[7:]}"
-        elif len(digits) == 10:
-            return f"+1 ({digits[0:3]}) {digits[3:6]}-{digits[6:]}"
-        return raw_num
+        # 1. Flexible lookup against phone aliases
+        phone_aliases = db.query(DBAlias).filter(DBAlias.type == "phone").all()
+        alias = None
+        for a in phone_aliases:
+            clean_content = "".join(filter(str.isdigit, a.content or ""))
+            if clean_content and (clean_to == clean_content or clean_to.endswith(clean_content) or clean_content.endswith(clean_to)):
+                alias = a
+                break
 
-    sender_display = format_phone_display(From)
-    recipient_line_display = format_phone_display(To)
-    alias_name = alias.label if (alias and alias.label) else (f"Virtual Line {clean_to[-4:]}" if clean_to else "Relay Slot")
+        profile = None
+        if alias and alias.user_id:
+            profile = db.query(DBProfile).filter(DBProfile.id == alias.user_id).first()
 
-    message_content = (
-        f"📱 DISAPPEAR RELAY SMS\n"
-        f"• FROM: {sender_display}\n"
-        f"• FOR LINE: {recipient_line_display} ({alias_name})\n"
-        f"──────────────────\n"
-        f"{Body}"
-    )
-    
-    # Credit Firewall check: Protect baseline margin & prevent runaway telecom costs
-    current_credits = getattr(profile, 'relay_credits', 500) if profile else 500
-    if current_credits is not None and current_credits <= 0:
-        logger.warning(f"TWILIO_SMS_BLOCKED: Profile {target_uid} exhausted relay credits")
+        target_uid = alias.user_id if alias and alias.user_id else (profile.id if profile else "GLOBAL")
+
+        # 2. ALWAYS Log to DBPurgeLog so incoming SMS text appears live in user's Security Audit feed
+        try:
+            db.add(DBPurgeLog(
+                user_id=target_uid if target_uid != "GLOBAL" else None,
+                action_type=f"SMS_RECEIVED [From {From}]: {Body}",
+                node_id=f"{target_uid}_VIRTUAL_LINE_{clean_to[-4:] if clean_to else 'SMS'}"
+            ))
+            db.commit()
+        except Exception as ex:
+            logger.warning(f"Failed to log SMS audit event: {ex}")
+
+        # 3. Resolve owner user's physical forwarding phone number
+        forward_phone = ""
+        if profile and profile.phone:
+            forward_phone = format_to_e164(profile.phone)
+
+        if not forward_phone:
+            # Fallback: check profile linked to current alias or active customer profile
+            prof_with_phone = db.query(DBProfile).filter(DBProfile.phone.isnot(None), DBProfile.phone != "").first()
+            if prof_with_phone and prof_with_phone.phone:
+                forward_phone = format_to_e164(prof_with_phone.phone)
+
+        if not forward_phone:
+            logger.warning(f"TWILIO_SMS_NO_DESTINATION: Captured SMS in Vault for line {To} owned by {target_uid}, but no physical mobile phone is linked.")
+            return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response/>', media_type="application/xml")
+            
+        def format_phone_display(raw_num: str) -> str:
+            if not raw_num: return "Unknown"
+            digits = "".join(filter(str.isdigit, raw_num))
+            if len(digits) == 11 and digits.startswith("1"):
+                return f"+1 ({digits[1:4]}) {digits[4:7]}-{digits[7:]}"
+            elif len(digits) == 10:
+                return f"+1 ({digits[0:3]}) {digits[3:6]}-{digits[6:]}"
+            return raw_num
+
+        sender_display = format_phone_display(From)
+        recipient_line_display = format_phone_display(To)
+        alias_name = alias.label if (alias and alias.label) else (f"Virtual Line {clean_to[-4:]}" if clean_to else "Relay Slot")
+
+        message_content = (
+            f"📱 DISAPPEAR RELAY SMS\n"
+            f"• FROM: {sender_display}\n"
+            f"• FOR LINE: {recipient_line_display} ({alias_name})\n"
+            f"──────────────────\n"
+            f"{Body}"
+        )
+        
+        # Credit Firewall check: Protect baseline margin & prevent runaway telecom costs
+        current_credits = getattr(profile, 'relay_credits', 500) if profile else 500
+        if current_credits is not None and current_credits <= 0:
+            logger.warning(f"TWILIO_SMS_BLOCKED: Profile {target_uid} exhausted relay credits")
+            return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response/>', media_type="application/xml")
+
+        if profile:
+            profile.relay_credits = max(0, (profile.relay_credits or 500) - 1)
+            db.commit()
+
+        logger.info(f"TWILIO_SMS_FORWARDING: Forwarding SMS from {From} via virtual {To} to physical device {forward_phone}")
+        
+        # Dispatch SMS to physical device using Twilio REST API via verified system line
+        from services.twilio_service import send_sms
+        sent_ok = send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=None)
+        if not sent_ok and To:
+            sent_ok = send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=To)
+
+        if sent_ok:
+            logger.info(f"TWILIO_SMS_SUCCESS: Inbound SMS from {From} successfully delivered to mobile device {forward_phone}")
+        else:
+            logger.error(f"TWILIO_SMS_ERROR: Failed to deliver inbound SMS to mobile device {forward_phone}")
+
         return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response/>', media_type="application/xml")
-
-    if profile:
-        profile.relay_credits = max(0, (profile.relay_credits or 500) - 1)
-        db.commit()
-
-    logger.info(f"TWILIO_SMS_FORWARDING: Forwarding SMS from {From} via virtual {To} to physical device {forward_phone}")
-    
-    # Dispatch SMS to physical device using Twilio REST API via verified system line
-    from services.twilio_service import send_sms
-    sent_ok = send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=None)
-    if not sent_ok and To:
-        sent_ok = send_sms(to_phone_number=forward_phone, message_body=message_content, from_phone_number=To)
-
-    if sent_ok:
-        logger.info(f"TWILIO_SMS_SUCCESS: Inbound SMS from {From} successfully delivered to mobile device {forward_phone}")
-    else:
-        logger.error(f"TWILIO_SMS_ERROR: Failed to deliver inbound SMS to mobile device {forward_phone}")
-
-    # Return empty TwiML response to satisfy Twilio webhook completion
-    return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response/>', media_type="application/xml")
+    except Exception as ex_web:
+        logger.error(f"❌ TWILIO_WEBHOOK_SMS_CRASH: {ex_web}\n{traceback.format_exc()}")
+        return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response/>', media_type="application/xml")
 
 
 @app.get("/api/v1/test-twilio")
