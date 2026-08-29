@@ -1240,15 +1240,22 @@ function App() {
       from_phone: cleanSenderFrom
     };
 
+    console.log("📱 MOBILE_SMS_DISPATCH_INITIATED:", {
+      url: `${API_BASE_URL}/api/v1/send-sms`,
+      payload: smsPayload,
+      isCapacitor: typeof window !== "undefined" && !!window.Capacitor?.isNativePlatform?.()
+    });
+
     try {
       const res = await secureRequest(`${API_BASE_URL}/api/v1/send-sms`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(smsPayload)
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({ detail: `HTTP ${res.status} Response Parse Error` }));
       if (res.ok) {
         const actualSender = data.from_phone || senderFrom || "+15855802036";
+        console.log("✅ MOBILE_SMS_DISPATCH_SUCCESS:", data);
         triggerToast(`✅ SMS DELIVERED! (From: ${actualSender} ➔ To: ${formattedTo})`);
         
         const newOutboundItem = {
@@ -1262,11 +1269,12 @@ function App() {
         setSmsInbox(prev => [newOutboundItem, ...prev]);
         fetchSmsInbox();
       } else {
-        triggerToast(`❌ ${data.detail || "FAILED TO DELIVER SMS"}`);
+        console.error("❌ MOBILE_SMS_DISPATCH_FAILED:", res.status, data);
+        triggerToast(`❌ ${data.detail || `FAILED TO DELIVER SMS (${res.status})`}`);
       }
     } catch (e) {
-      console.error("SMS send error:", e);
-      triggerToast("NETWORK ERROR SENDING SMS");
+      console.error("❌ MOBILE_SMS_DISPATCH_EXCEPTION:", e);
+      triggerToast(`NETWORK ERROR SENDING SMS: ${e.message || "Connection refused"}`);
     } finally {
       setIsSendingSms(false);
     }
