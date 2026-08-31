@@ -585,6 +585,11 @@ function App() {
       
       // 1. Consolidated Sync Handshake
       const res = await secureRequest(`${API_BASE_URL}/dashboard/sync?user_id=${encodeURIComponent(activeUserId)}&t=${Date.now()}`);
+      if (res.status === 401 || res.status === 403) {
+        console.warn("🔒 SESSION EXPIRED OR UNAUTHENTICATED: Returning cleanly to login view");
+        handleSecureLogout();
+        return;
+      }
       if (!res.ok) throw new Error("Sync failed");
       const data = await res.json();
 
@@ -1286,7 +1291,8 @@ function App() {
       return;
     }
 
-    const cleanSenderFrom = (senderFrom && senderFrom.trim()) ? senderFrom.trim() : null;
+    const digitsSender = senderFrom ? senderFrom.replace(/\D/g, "") : "";
+    const cleanSenderFrom = digitsSender ? (digitsSender.length === 10 ? `+1${digitsSender}` : `+${digitsSender}`) : null;
 
     const smsPayload = {
       user_id: activeUserId,
@@ -1495,7 +1501,20 @@ function App() {
 
   const handleSecureLogout = () => {
     clearSessionStorage();
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem("disappear_user_id");
+        localStorage.removeItem("disappear_session");
+        localStorage.removeItem("disappear_user_email");
+      }
+    } catch (e) {}
     clearAllUserDataState();
+    setCurrentUserId("");
+    setIsScanning(false);
+    setIsGenerating(false);
+    setIsEncrypting(false);
+    setIsMinting(false);
+    setIsProcessingPayment(false);
     setShowShield(false);
     setShowAdmin(false);
     setShowAdminLogin(false);
