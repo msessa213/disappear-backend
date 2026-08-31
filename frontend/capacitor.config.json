@@ -3,6 +3,7 @@
   "appName": "Disappear",
   "webDir": "dist",
   "server": {
+    "url": "https://disappear-backend-production.up.railway.app",
     "androidScheme": "https",
     "cleartext": true,
     "allowNavigation": [

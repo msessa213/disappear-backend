@@ -1521,8 +1521,9 @@ function App() {
     setShowCheckout(false);
     setShowPricing(false);
     setShowLegal(null);
-    setShow2FA(false);
-    setShowLanding(true);
+    setShowLanding(false);
+    setShow2FA(true);
+    window.location.hash = "login";
     if (window.location.hash) {
       window.history.replaceState(null, "", window.location.pathname + window.location.search);
     }
