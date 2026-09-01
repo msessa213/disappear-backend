@@ -105,6 +105,11 @@ function App() {
               headers: headers
             });
             const isOk = response.status >= 200 && response.status < 300;
+            if (response.status === 401 || response.status === 403) {
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent("disappear_unauthorized_event"));
+              }
+            }
             const resData = (typeof response.data === 'string') ? JSON.parse(response.data) : (response.data || {});
             return { 
               ok: isOk, 
@@ -115,7 +120,13 @@ function App() {
             console.warn("CapacitorHttp notice, falling back to window.fetch:", capErr);
           }
         }
-        return await fetch(url, { ...options, headers });
+        const fetchRes = await fetch(url, { ...options, headers });
+        if (fetchRes.status === 401 || fetchRes.status === 403) {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent("disappear_unauthorized_event"));
+          }
+        }
+        return fetchRes;
       } catch (err) {
         if (i === retries - 1) {
           return { ok: false, status: 0, json: async () => ({ detail: err.message || "Network request failed" }) };
@@ -1506,15 +1517,26 @@ function App() {
         localStorage.removeItem("disappear_user_id");
         localStorage.removeItem("disappear_session");
         localStorage.removeItem("disappear_user_email");
+        localStorage.removeItem("disappear_last_active");
+        localStorage.removeItem("user_id");
       }
     } catch (e) {}
     clearAllUserDataState();
     setCurrentUserId("");
+
+    // Unconditionally kill all active spinners, loaders, and action flags
     setIsScanning(false);
     setIsGenerating(false);
     setIsEncrypting(false);
     setIsMinting(false);
     setIsProcessingPayment(false);
+    setIsRefillingCredits(false);
+    setIsSendingSms(false);
+    setIsSendingAliasReply(false);
+    setIsCheckingAddyStatus(false);
+    setIsRefreshingAliasData(false);
+
+    // Unconditionally route to Sign-In Screen (show2FA)
     setShowShield(false);
     setShowAdmin(false);
     setShowAdminLogin(false);
@@ -1523,22 +1545,27 @@ function App() {
     setShowLegal(null);
     setShowLanding(false);
     setShow2FA(true);
-    window.location.hash = "login";
-    if (window.location.hash) {
-      window.history.replaceState(null, "", window.location.pathname + window.location.search);
-    }
     
-    // Auto-Scroll to Top of Home Landing Page
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     try {
+      window.location.hash = "login";
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
     } catch (e) {}
 
-    triggerToast("🚪 SECURE LOGOUT COMPLETE");
+    triggerToast("🚪 SESSION EXPIRED / LOGOUT COMPLETE");
   };
 
   const handleLogout = handleSecureLogout;
+
+  useEffect(() => {
+    const handleUnauthorizedEvent = () => {
+      console.warn("🔒 UNCONDITIONAL AUTH INTERCEPT: 401/403 Unauthorized detected. Redirecting to Sign-In.");
+      handleSecureLogout();
+    };
+    window.addEventListener("disappear_unauthorized_event", handleUnauthorizedEvent);
+    return () => window.removeEventListener("disappear_unauthorized_event", handleUnauthorizedEvent);
+  }, [handleSecureLogout]);
 
   const handleRefillCredits = async () => {
     setIsRefillingCredits(true);
