@@ -213,6 +213,7 @@ function App() {
   const [showOnboardingWelcomeModal, setShowOnboardingWelcomeModal] = useState(false);
   const [showDataRemovalNoticeModal, setShowDataRemovalNoticeModal] = useState(false);
   const [showSignupTargetNoticeModal, setShowSignupTargetNoticeModal] = useState(false);
+  const [dashboardTab, setDashboardTab] = useState("aliases");
 
   const checkAndShowNoticeModal = (uid) => {
     const targetId = uid || currentUserId || getSessionItem("disappear_user_id") || getSessionItem("disappear_user_email");
@@ -2801,9 +2802,163 @@ const handleEmergencyBurn = async () => {
                 </div>
               </div>
             ) : showShield ? (
-              /* 3. SECURE APPLICATION ENGINE (Restored) */
-              <div className="shield-container fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
-                <h2 className="shield-text">🛡️ SHIELD ACTIVE</h2>
+              <div className="shield-container fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%', maxWidth: '780px', margin: '0 auto' }}>
+                
+                {/* PROMINENT TOP DASHBOARD HEADER & DISCONNECT BUTTON */}
+                <div 
+                  className="top-vault-header" 
+                  style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    width: '100%', 
+                    padding: '12px 18px', 
+                    background: '#05070D', 
+                    border: '1px solid rgba(0, 210, 255, 0.3)', 
+                    borderRadius: '10px', 
+                    boxSizing: 'border-box', 
+                    flexWrap: 'wrap', 
+                    gap: '10px' 
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '1.2rem' }}>🛡️</span>
+                    <div style={{ textAlign: 'left' }}>
+                      <span className="tiger-text" style={{ fontSize: '0.95rem', display: 'block', letterSpacing: '1px' }}>DISAPPEAR VAULT</span>
+                      <span style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 'bold', fontFamily: 'monospace' }}>● ENCRYPTED SESSION</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ background: 'rgba(0, 210, 255, 0.1)', border: '1px solid rgba(0, 210, 255, 0.3)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.78rem', color: '#00D2FF', fontWeight: 'bold' }}>
+                      ⚡ CREDITS: {credits.phone_credits !== undefined ? credits.phone_credits : 500}
+                    </div>
+                    <button 
+                      type="button"
+                      className="reset-btn" 
+                      style={{ 
+                        background: 'rgba(239, 68, 68, 0.15)', 
+                        borderColor: '#EF4444', 
+                        color: '#EF4444', 
+                        fontWeight: 'bold', 
+                        padding: '6px 14px', 
+                        fontSize: '0.78rem', 
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        boxShadow: '0 0 10px rgba(239, 68, 68, 0.3)'
+                      }} 
+                      onClick={handleSecureLogout}
+                    >
+                      🚪 LOGOUT
+                    </button>
+                  </div>
+                </div>
+
+                {/* FLOATING NAVIGATION TABS */}
+                <div 
+                  className="floating-tabs-nav" 
+                  style={{ 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    gap: '6px', 
+                    width: '100%', 
+                    padding: '6px', 
+                    background: 'rgba(5, 7, 13, 0.95)', 
+                    border: '1px solid rgba(0, 210, 255, 0.3)', 
+                    borderRadius: '12px', 
+                    backdropFilter: 'blur(10px)', 
+                    boxShadow: '0 8px 25px rgba(0, 0, 0, 0.6)', 
+                    flexWrap: 'wrap', 
+                    boxSizing: 'border-box',
+                    position: 'sticky',
+                    top: '10px',
+                    zIndex: 100
+                  }}
+                >
+                  <button 
+                    type="button" 
+                    style={{ 
+                      flex: '1 1 110px', 
+                      padding: '8px 12px', 
+                      fontSize: '0.80rem', 
+                      fontWeight: 'bold', 
+                      borderRadius: '8px', 
+                      border: dashboardTab === 'aliases' ? '1px solid #00D2FF' : '1px solid transparent', 
+                      background: dashboardTab === 'aliases' ? 'linear-gradient(135deg, rgba(0, 71, 171, 0.6), rgba(0, 210, 255, 0.3))' : 'transparent', 
+                      color: dashboardTab === 'aliases' ? '#FFFFFF' : '#94A3B8', 
+                      cursor: 'pointer', 
+                      transition: 'all 0.2s ease', 
+                      boxShadow: dashboardTab === 'aliases' ? '0 0 15px rgba(0, 210, 255, 0.4)' : 'none', 
+                      whiteSpace: 'nowrap' 
+                    }} 
+                    onClick={() => setDashboardTab('aliases')}
+                  >
+                    🛡️ ALIASES
+                  </button>
+                  
+                  <button 
+                    type="button" 
+                    style={{ 
+                      flex: '1 1 130px', 
+                      padding: '8px 12px', 
+                      fontSize: '0.80rem', 
+                      fontWeight: 'bold', 
+                      borderRadius: '8px', 
+                      border: dashboardTab === 'removals' ? '1px solid #00D2FF' : '1px solid transparent', 
+                      background: dashboardTab === 'removals' ? 'linear-gradient(135deg, rgba(0, 71, 171, 0.6), rgba(0, 210, 255, 0.3))' : 'transparent', 
+                      color: dashboardTab === 'removals' ? '#FFFFFF' : '#94A3B8', 
+                      cursor: 'pointer', 
+                      transition: 'all 0.2s ease', 
+                      boxShadow: dashboardTab === 'removals' ? '0 0 15px rgba(0, 210, 255, 0.4)' : 'none', 
+                      whiteSpace: 'nowrap' 
+                    }} 
+                    onClick={() => setDashboardTab('removals')}
+                  >
+                    🧹 BROKER REMOVALS
+                  </button>
+
+                  <button 
+                    type="button" 
+                    style={{ 
+                      flex: '1 1 100px', 
+                      padding: '8px 12px', 
+                      fontSize: '0.80rem', 
+                      fontWeight: 'bold', 
+                      borderRadius: '8px', 
+                      border: dashboardTab === 'info' ? '1px solid #00D2FF' : '1px solid transparent', 
+                      background: dashboardTab === 'info' ? 'linear-gradient(135deg, rgba(0, 71, 171, 0.6), rgba(0, 210, 255, 0.3))' : 'transparent', 
+                      color: dashboardTab === 'info' ? '#FFFFFF' : '#94A3B8', 
+                      cursor: 'pointer', 
+                      transition: 'all 0.2s ease', 
+                      boxShadow: dashboardTab === 'info' ? '0 0 15px rgba(0, 210, 255, 0.4)' : 'none', 
+                      whiteSpace: 'nowrap' 
+                    }} 
+                    onClick={() => setDashboardTab('info')}
+                  >
+                    📊 INFO & LOGS
+                  </button>
+
+                  <button 
+                    type="button" 
+                    style={{ 
+                      flex: '1 1 130px', 
+                      padding: '8px 12px', 
+                      fontSize: '0.80rem', 
+                      fontWeight: 'bold', 
+                      borderRadius: '8px', 
+                      border: dashboardTab === 'account' ? '1px solid #00D2FF' : '1px solid transparent', 
+                      background: dashboardTab === 'account' ? 'linear-gradient(135deg, rgba(0, 71, 171, 0.6), rgba(0, 210, 255, 0.3))' : 'transparent', 
+                      color: dashboardTab === 'account' ? '#FFFFFF' : '#94A3B8', 
+                      cursor: 'pointer', 
+                      transition: 'all 0.2s ease', 
+                      boxShadow: dashboardTab === 'account' ? '0 0 15px rgba(0, 210, 255, 0.4)' : 'none', 
+                      whiteSpace: 'nowrap' 
+                    }} 
+                    onClick={() => setDashboardTab('account')}
+                  >
+                    ⚙️ MAINTENANCE
+                  </button>
+                </div>
                 
                 {false && (
                   // VCC feature is disabled
