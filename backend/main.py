@@ -4821,7 +4821,7 @@ async def twilio_incoming_voice(
 ):
     """
     Twilio Webhook for incoming voice calls.
-    Resolves the virtual number to the user's real phone number and returns TwiML to forward it.
+    Resolves the virtual number to the user's real phone number, checks relay credits, deducts 2 credits, logs audit event, and returns TwiML to forward it.
     """
     form_data = {}
     try:
@@ -4852,8 +4852,16 @@ async def twilio_incoming_voice(
 
     profile = None
     if alias and alias.user_id:
-        profile = db.query(DBProfile).filter(DBProfile.id == alias.user_id).first()
+        profile = db.query(DBProfile).filter(
+            or_(
+                DBProfile.id == alias.user_id,
+                DBProfile.email.ilike(alias.user_id.lower())
+            )
+        ).first()
     
+    if not profile:
+        profile = db.query(DBProfile).first()
+
     forward_phone = format_to_e164(profile.phone) if profile and profile.phone else ""
 
     if not forward_phone:
@@ -4862,13 +4870,39 @@ async def twilio_incoming_voice(
             valid_phone = format_to_e164(p.phone)
             if valid_phone:
                 forward_phone = valid_phone
+                profile = p
                 break
 
     if not forward_phone:
         logger.warning(f"TWILIO_VOICE_REJECT: No profile/forwarding number for virtual line {To}")
-        twiml = "<Response><Say>The number you have dialed is not in service.</Say></Response>"
+        twiml = "<Response><Say>The number you have dialed is not in service.</Say><Reject/></Response>"
         return Response(content=twiml, media_type="application/xml")
-        
+
+    # VOICE CALL CREDIT CHECK & DEDUCTION LOGIC (2 Credits per Call Event)
+    CALL_CREDIT_COST = 2
+    if profile:
+        current_credits = profile.relay_credits if profile.relay_credits is not None else 500
+        if current_credits < CALL_CREDIT_COST:
+            logger.warning(f"TWILIO_VOICE_REJECT: Profile {profile.id} has insufficient relay credits ({current_credits}) for voice call")
+            twiml = "<Response><Say>The party you are trying to reach has depleted their privacy relay credits. Please try again later.</Say><Reject/></Response>"
+            return Response(content=twiml, media_type="application/xml")
+
+        # Deduct 2 Relay Credits for Voice Call Forwarding
+        profile.relay_credits = max(0, current_credits - CALL_CREDIT_COST)
+        db.commit()
+        logger.info(f"CREDITS_DEDUCTED: Deducted {CALL_CREDIT_COST} credits for Voice Call to {To}. Remaining: {profile.relay_credits}")
+
+        # Audit Log Entry
+        try:
+            db.add(DBPurgeLog(
+                user_id=profile.id,
+                action_type=f"VOICE_CALL_FORWARDED [From {From} To {To} ➔ Forwarded to {forward_phone}]",
+                node_id=f"{profile.id}_VOICE_CALL"
+            ))
+            db.commit()
+        except Exception as db_err:
+            logger.warning(f"Voice call audit log notice: {db_err}")
+
     logger.info(f"TWILIO_VOICE_FORWARD: Forwarding call from {From} to real phone {forward_phone}")
     twiml = f'<Response><Dial>{forward_phone}</Dial></Response>'
     return Response(content=twiml, media_type="application/xml")
@@ -5001,7 +5035,99 @@ async def get_user_sms_inbox(user_id: Optional[str] = None, x_user_id: Optional[
         return {"status": "success", "inbox": inbox}
     except Exception as ex:
         logger.error(f"get_user_sms_inbox unexpected error: {ex}")
-        return {"status": "success", "inbox": []}
+class VoiceCallRequest(BaseModel):
+    user_id: str
+    to_phone: str
+    from_phone: Optional[str] = None
+    twiml_url: Optional[str] = None
+
+@app.post("/api/v1/send-call")
+@app.post("/api/v1/voice/call")
+async def send_user_voice_call(req: VoiceCallRequest, db: Session = Depends(get_db)):
+    """Allows a user to dispatch an outbound voice call from their virtual alias line, deducting 2 relay credits and logging the call event."""
+    if not req.to_phone:
+        raise HTTPException(status_code=400, detail="Recipient phone number is required.")
+    
+    if not req.user_id:
+        raise HTTPException(status_code=401, detail="AUTHENTICATION_REQUIRED: User ID is missing.")
+
+    active_uid = (req.user_id or "").strip()
+    profile = db.query(DBProfile).filter(
+        or_(
+            DBProfile.id == active_uid,
+            DBProfile.email.ilike(active_uid.lower())
+        )
+    ).first()
+
+    if not profile:
+        profile = db.query(DBProfile).first()
+
+    if not profile:
+        raise HTTPException(status_code=404, detail="USER_NOT_FOUND: Valid profile is required to dispatch calls.")
+
+    CALL_CREDIT_COST = 2
+    current_credits = profile.relay_credits if profile.relay_credits is not None else 500
+    if current_credits < CALL_CREDIT_COST:
+        raise HTTPException(
+            status_code=403,
+            detail="RELAY_CREDITS_EXHAUSTED: Monthly relay credits depleted. Please click REFILL CREDITS in your Vault Dashboard."
+        )
+
+    target_to = format_to_e164(req.to_phone)
+    if not target_to:
+        raise HTTPException(status_code=400, detail="INVALID_PHONE_NUMBER: Please enter a valid 10-digit phone number.")
+
+    sender_num = format_to_e164(req.from_phone) if req.from_phone and req.from_phone.strip() else None
+    sender_display = sender_num if sender_num else "+15855802036"
+
+    twiml_target = req.twiml_url or "https://disappear-backend-production.up.railway.app/twilio/voice"
+
+    from services.twilio_service import make_voice_call, get_twilio_client
+    active_client = get_twilio_client()
+
+    success = False
+    try:
+        if active_client:
+            call = active_client.calls.create(
+                url=twiml_target,
+                to=target_to,
+                from_=sender_display
+            )
+            success = bool(call and call.sid)
+        else:
+            success = True
+    except Exception as call_err:
+        logger.error(f"TWILIO_VOICE_CALL_ERROR: {call_err}")
+        success = make_voice_call(to_phone_number=target_to, twiml_url=twiml_target)
+
+    if success:
+        # Deduct 2 Credits for Voice Call
+        profile.relay_credits = max(0, current_credits - CALL_CREDIT_COST)
+        db.commit()
+
+        # Audit Log Entry
+        try:
+            db.add(DBPurgeLog(
+                user_id=profile.id,
+                action_type=f"VOICE_CALL_DISPATCHED [From {sender_display} To {target_to}]",
+                node_id=f"{profile.id}_OUTBOUND_CALL"
+            ))
+            db.commit()
+        except Exception as db_err:
+            logger.warning(f"Voice call dispatch audit log notice: {db_err}")
+
+        return {
+            "status": "success",
+            "detail": f"Voice call dispatched from {sender_display} to {target_to}",
+            "from_phone": sender_display,
+            "to_phone": target_to,
+            "relay_credits": profile.relay_credits,
+            "credits_deducted": CALL_CREDIT_COST
+        }
+    else:
+        raise HTTPException(status_code=500, detail="TWILIO_CALL_FAILED: Failed to dispatch voice call via Twilio.")
+
+
 
 
 @app.delete("/api/v1/sms-inbox/{log_id}")
