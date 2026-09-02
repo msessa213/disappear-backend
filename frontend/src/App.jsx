@@ -192,6 +192,8 @@ function App() {
   // --- CATEGORY-SPECIFIC STATES ---
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [showTerminateAliasModal, setShowTerminateAliasModal] = useState(false);
+  const [aliasToTerminate, setAliasToTerminate] = useState(null);
   const [aliasLabel, setAliasLabel] = useState("");
   const [aliasAreaCode, setAliasAreaCode] = useState("");
   const [emails, setEmails] = useState([]);
@@ -1844,12 +1846,30 @@ function App() {
     finally { setIsEncrypting(false); setPurgeStatus(""); }
   };
 
-  const handleKillAlias = async (id) => {
+  const promptKillAlias = (aliasObj) => {
+    if (!aliasObj) return;
+    setAliasToTerminate(aliasObj);
+    setShowTerminateAliasModal(true);
+  };
+
+  const confirmKillAlias = async () => {
+    if (!aliasToTerminate || !aliasToTerminate.id) return;
+    const targetId = aliasToTerminate.id;
+    setShowTerminateAliasModal(false);
+    setAliasToTerminate(null);
     try {
-      await secureRequest(`${API_BASE_URL}/aliases/kill/${id}`, { method: "DELETE" });
+      triggerToast("⏳ TERMINATING ALIAS NODE...");
+      await secureRequest(`${API_BASE_URL}/aliases/kill/${targetId}`, { method: "DELETE" });
       syncDefenseData();
-      triggerToast("DATA TERMINATED");
-    } catch (err) { triggerToast("ERROR"); }
+      triggerToast("🗑️ ALIAS NODE PERMANENTLY TERMINATED");
+    } catch (err) {
+      triggerToast("❌ FAILED TO TERMINATE ALIAS NODE");
+    }
+  };
+
+  const handleKillAlias = async (id) => {
+    const aliasObj = [...(emails || []), ...(phones || [])].find(a => String(a.id) === String(id)) || { id };
+    promptKillAlias(aliasObj);
   };
 const handleEmergencyBurn = async () => {
     const confirmation = window.confirm("CONFIRM EMERGENCY BURN? \n\nAll active aliases and card nodes will be terminated immediately. Your scrub history will be vaulted in S3 before wipe.");
@@ -3007,7 +3027,7 @@ const handleEmergencyBurn = async () => {
                           <span style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
                             ALIAS: {e.label.toUpperCase()}
                           </span>
-                          <button className="kill-text-bold" style={{ padding: '3px 8px', fontSize: '0.7rem' }} onClick={() => handleKillAlias(e.id)}>TERMINATE ✖</button>
+                          <button className="kill-text-bold" style={{ padding: '3px 8px', fontSize: '0.7rem' }} onClick={() => promptKillAlias(e)}>TERMINATE ✖</button>
                         </div>
                         <div 
                           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0A0A0A', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', width: '100%', boxSizing: 'border-box' }} 
@@ -3218,7 +3238,7 @@ const handleEmergencyBurn = async () => {
                           <span style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
                             ALIAS: {p.label.toUpperCase()}
                           </span>
-                          <button className="kill-text-bold" style={{ padding: '3px 8px', fontSize: '0.7rem' }} onClick={() => handleKillAlias(p.id)}>TERMINATE ✖</button>
+                          <button className="kill-text-bold" style={{ padding: '3px 8px', fontSize: '0.7rem' }} onClick={() => promptKillAlias(p)}>TERMINATE ✖</button>
                         </div>
                         <div 
                           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0A0A0A', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', width: '100%', boxSizing: 'border-box' }} 
@@ -5253,6 +5273,71 @@ const handleEmergencyBurn = async () => {
             >
               ⚡ UNDERSTOOD — ACCESS MY VAULT DASHBOARD
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* --- ALIAS TERMINATION WARNING CONFIRMATION MODAL --- */}
+      {showTerminateAliasModal && aliasToTerminate && (
+        <div 
+          className="modal-overlay" 
+          style={{ 
+            zIndex: 70000, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            padding: 'max(20px, env(safe-area-inset-top, 20px)) 12px max(30px, env(safe-area-inset-bottom, 30px)) 12px', 
+            overflowY: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-y'
+          }} 
+          onClick={() => { setShowTerminateAliasModal(false); setAliasToTerminate(null); }}
+        >
+          <div 
+            className="price-box" 
+            style={{ 
+              maxWidth: '480px', 
+              width: '100%', 
+              textAlign: 'center', 
+              boxSizing: 'border-box',
+              padding: '28px 22px',
+              border: '2px solid #EF4444',
+              boxShadow: '0 0 30px rgba(239, 68, 68, 0.45)',
+              background: '#090305'
+            }} 
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>⚠️</div>
+            <h3 className="tiger-text" style={{ margin: '0 0 10px 0', fontSize: '1.2rem', color: '#EF4444', letterSpacing: '1px', textTransform: 'uppercase' }}>
+              PERMANENT ALIAS TERMINATION
+            </h3>
+            
+            <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.35)', padding: '12px', borderRadius: '6px', marginBottom: '16px', color: '#FCD34D', fontSize: '0.85rem', fontFamily: 'monospace', fontWeight: 'bold', wordBreak: 'break-all' }}>
+              NODE: {aliasToTerminate.content || aliasToTerminate.label || "ALIAS NODE"}
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: '#E2E8F0', lineHeight: '1.5', margin: '0 0 22px 0' }}>
+              <strong>Warning:</strong> Terminating this alias is <strong>permanent</strong>. You will no longer have access to incoming messages, emails, or calls associated with this number/address.
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', width: '100%' }}>
+              <button 
+                type="button" 
+                className="reset-btn" 
+                style={{ padding: '10px 14px', fontSize: '0.80rem', fontWeight: 'bold', color: '#94A3B8', borderColor: '#475569', width: '100%' }}
+                onClick={() => { setShowTerminateAliasModal(false); setAliasToTerminate(null); }}
+              >
+                ✕ CANCEL
+              </button>
+              <button 
+                type="button" 
+                className="main-button" 
+                style={{ padding: '10px 14px', fontSize: '0.80rem', fontWeight: 'bold', background: 'linear-gradient(135deg, #DC2626, #991B1B)', border: '1px solid #EF4444', color: '#FFF', width: '100%' }}
+                onClick={confirmKillAlias}
+              >
+                🗑️ CONFIRM TERMINATION
+              </button>
+            </div>
           </div>
         </div>
       )}
