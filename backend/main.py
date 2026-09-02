@@ -4841,7 +4841,7 @@ async def twilio_incoming_voice(
     logger.info(f"TWILIO_INBOUND_VOICE: Call to '{To}' from '{From}'")
     clean_to = "".join(filter(str.isdigit, To or ""))
     
-    # Flexible lookup against phone aliases
+    # Flexible lookup against active phone aliases
     phone_aliases = db.query(DBAlias).filter(DBAlias.type == "phone").all()
     alias = None
     for a in phone_aliases:
@@ -4850,32 +4850,27 @@ async def twilio_incoming_voice(
             alias = a
             break
 
-    profile = None
-    if alias and alias.user_id:
-        profile = db.query(DBProfile).filter(
-            or_(
-                DBProfile.id == alias.user_id,
-                DBProfile.email.ilike(alias.user_id.lower())
-            )
-        ).first()
-    
-    if not profile:
-        profile = db.query(DBProfile).first()
+    if not alias or not alias.user_id:
+        logger.warning(f"TWILIO_VOICE_REJECT: No active assigned alias found for virtual line {To}")
+        twiml = "<Response><Say>The number you have dialed is no longer in service.</Say><Reject/></Response>"
+        return Response(content=twiml, media_type="application/xml")
 
-    forward_phone = format_to_e164(profile.phone) if profile and profile.phone else ""
+    profile = db.query(DBProfile).filter(
+        or_(
+            DBProfile.id == alias.user_id,
+            DBProfile.email.ilike(alias.user_id.lower())
+        )
+    ).first()
 
+    if not profile or not profile.phone:
+        logger.warning(f"TWILIO_VOICE_REJECT: No linked active profile or destination phone for virtual line {To}")
+        twiml = "<Response><Say>The number you have dialed is no longer in service.</Say><Reject/></Response>"
+        return Response(content=twiml, media_type="application/xml")
+
+    forward_phone = format_to_e164(profile.phone)
     if not forward_phone:
-        all_profiles = db.query(DBProfile).all()
-        for p in all_profiles:
-            valid_phone = format_to_e164(p.phone)
-            if valid_phone:
-                forward_phone = valid_phone
-                profile = p
-                break
-
-    if not forward_phone:
-        logger.warning(f"TWILIO_VOICE_REJECT: No profile/forwarding number for virtual line {To}")
-        twiml = "<Response><Say>The number you have dialed is not in service.</Say><Reject/></Response>"
+        logger.warning(f"TWILIO_VOICE_REJECT: Invalid forwarding phone for virtual line {To}")
+        twiml = "<Response><Say>The number you have dialed is no longer in service.</Say><Reject/></Response>"
         return Response(content=twiml, media_type="application/xml")
 
     # VOICE CALL CREDIT CHECK & DEDUCTION LOGIC (2 Credits per Call Event)
@@ -5296,31 +5291,31 @@ async def twilio_incoming_sms(
 
         profile = None
         if alias and alias.user_id:
-            profile = db.query(DBProfile).filter(DBProfile.id == alias.user_id).first()
+            profile = db.query(DBProfile).filter(
+                or_(
+                    DBProfile.id == alias.user_id,
+                    DBProfile.email.ilike(alias.user_id.lower())
+                )
+            ).first()
 
-        target_uid = alias.user_id if alias and alias.user_id else (profile.id if profile else "GLOBAL")
+        if not alias or not alias.user_id or not profile:
+            logger.warning(f"TWILIO_SMS_REJECT: Incoming text to terminated/unassigned alias line {To}. Dropping safely.")
+            return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response/>', media_type="application/xml")
+
+        target_uid = alias.user_id
 
         # 2. ALWAYS Log to DBPurgeLog so incoming SMS text appears live in user's Security Audit feed
         try:
             db.add(DBPurgeLog(
-                user_id=target_uid if target_uid != "GLOBAL" else None,
+                user_id=target_uid,
                 action_type=f"SMS_RECEIVED [From {From}]: {Body}",
                 node_id=f"{target_uid}_VIRTUAL_LINE_{clean_to[-4:] if clean_to else 'SMS'}"
             ))
             db.commit()
-        except Exception as ex:
-            logger.warning(f"Failed to log SMS audit event: {ex}")
+        except Exception as db_log_err:
+            logger.warning(f"DBPurgeLog SMS insert warning: {db_log_err}")
 
-        # 3. Resolve owner user's physical forwarding phone number
-        forward_phone = ""
-        if profile and profile.phone:
-            forward_phone = format_to_e164(profile.phone)
-
-        if not forward_phone:
-            # Fallback: check profile linked to current alias or active customer profile
-            prof_with_phone = db.query(DBProfile).filter(DBProfile.phone.isnot(None), DBProfile.phone != "").first()
-            if prof_with_phone and prof_with_phone.phone:
-                forward_phone = format_to_e164(prof_with_phone.phone)
+        forward_phone = format_to_e164(profile.phone) if profile.phone else ""
 
         if not forward_phone:
             logger.warning(f"TWILIO_SMS_NO_DESTINATION: Captured SMS in Vault for line {To} owned by {target_uid}, but no physical mobile phone is linked.")
