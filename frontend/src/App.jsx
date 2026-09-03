@@ -2533,7 +2533,14 @@ const handleEmergencyBurn = async () => {
                 <div style={{ flexShrink: 0, marginBottom: '12px', borderBottom: '1px solid rgba(0, 210, 255, 0.3)', paddingBottom: '10px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                     <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.05rem', letterSpacing: '0.5px' }}>⚙️ EDIT TARGET PROFILE & ADDRESS</h3>
-                    <button className="reset-btn" type="button" style={{ padding: '2px 8px', fontSize: '0.8rem', cursor: 'pointer' }} onClick={() => setShowEditTargetProfileModal(false)}>✕</button>
+                    <button 
+                      className="reset-btn" 
+                      type="button" 
+                      style={{ padding: '3px 10px', fontSize: '0.75rem', color: '#94A3B8', borderColor: 'rgba(148, 163, 184, 0.4)', fontFamily: 'monospace', fontWeight: 'bold', cursor: 'pointer', letterSpacing: '0.5px' }} 
+                      onClick={() => setShowEditTargetProfileModal(false)}
+                    >
+                      [ CLOSE ]
+                    </button>
                   </div>
                   <p style={{ fontSize: '0.76rem', color: '#94A3B8', textAlign: 'left', margin: '6px 0 0 0', lineHeight: '1.4' }}>
                     Data brokers rely on exact legal name, physical address, and contact details to process opt-out removals. Update your details below:
@@ -2554,7 +2561,7 @@ const handleEmergencyBurn = async () => {
                     textAlign: 'left'
                   }}
                 >
-                  {/* TIER 2 (SCROLLABLE BODY): FORM INPUTS WITH 40PX CLEARANCE */}
+                  {/* TIER 2 (SCROLLABLE BODY): FORM INPUTS WITH 60PX CLEARANCE */}
                   <div style={{ 
                     flex: '1 1 auto',
                     flexGrow: 1,
@@ -2563,7 +2570,7 @@ const handleEmergencyBurn = async () => {
                     WebkitOverflowScrolling: 'touch', 
                     touchAction: 'pan-y',
                     paddingRight: '8px', 
-                    paddingBottom: '40px', 
+                    paddingBottom: '60px', 
                     display: 'flex', 
                     flexDirection: 'column', 
                     gap: '14px',
