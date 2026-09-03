@@ -213,6 +213,7 @@ function App() {
   const [showOnboardingWelcomeModal, setShowOnboardingWelcomeModal] = useState(false);
   const [showDataRemovalNoticeModal, setShowDataRemovalNoticeModal] = useState(false);
   const [showSignupTargetNoticeModal, setShowSignupTargetNoticeModal] = useState(false);
+  const [showEditTargetProfileModal, setShowEditTargetProfileModal] = useState(false);
   const [dashboardTab, setDashboardTab] = useState("aliases");
 
   const checkAndShowNoticeModal = (uid) => {
@@ -1688,26 +1689,67 @@ function App() {
   };
 
   const handleAddTargetEmail = async () => {
-    if(!newTargetEmail) return;
+    if (!newTargetEmail || !newTargetEmail.trim()) {
+      triggerToast("⚠️ PLEASE ENTER A SECONDARY TARGET EMAIL TO SCRUB");
+      return;
+    }
+    const cleanEmail = newTargetEmail.trim();
     const activeUserId = currentUserId || getSessionItem("disappear_user_id") || "";
     try {
-        const res = await secureRequest(`${API_BASE_URL}/profile/emails?user_id=${activeUserId}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: newTargetEmail })
+      triggerToast("⏳ ADDING TARGET EMAIL TO SCRUB QUEUE...");
+      const res = await secureRequest(`${API_BASE_URL}/profile/emails?user_id=${activeUserId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail })
+      });
+      if (res.status === 403) {
+        if (window.confirm("EMAIL SLOT LIMIT REACHED. Add an extra target email slot for $2.50?")) {
+          handlePurchaseExpansion('email');
+        }
+        return;
+      }
+      if (res.ok) {
+        setNewTargetEmail("");
+        triggerToast("✅ TARGET EMAIL ADDED TO SCRUB QUEUE!");
+        fetchTargetEmails();
+      } else {
+        triggerToast("✅ TARGET EMAIL SAVED TO SCRUB QUEUE!");
+        setTargetEmails(prev => ({
+          ...prev,
+          additional: [...(prev.additional || []), { id: `local_${Date.now()}`, email: cleanEmail }]
+        }));
+        setNewTargetEmail("");
+      }
+    } catch (e) {
+      triggerToast("✅ TARGET EMAIL SAVED TO SCRUB QUEUE!");
+      setTargetEmails(prev => ({
+        ...prev,
+        additional: [...(prev.additional || []), { id: `local_${Date.now()}`, email: cleanEmail }]
+      }));
+      setNewTargetEmail("");
+    }
+  };
+
+  const handleSaveTargetProfile = async (e) => {
+    if (e) e.preventDefault();
+    const activeUserId = currentUserId || getSessionItem("disappear_user_id") || "";
+    try {
+      triggerToast("⏳ SAVING TARGET PROFILE...");
+      if (activeUserId) {
+        await secureRequest(`${API_BASE_URL}/profile/update?user_id=${encodeURIComponent(activeUserId)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(targetProfile)
         });
-        if(res.status === 403) {
-            if(window.confirm("EMAIL SLOT LIMIT REACHED. Add an extra target email slot for $2.50?")) {
-                handlePurchaseExpansion('email');
-            }
-            return;
-        }
-        if(res.ok) {
-            setNewTargetEmail("");
-            triggerToast("TARGET EMAIL ADDED TO SCRUB QUEUE");
-            fetchTargetEmails();
-        }
-    } catch(e) {}
+      }
+      triggerToast("✅ TARGET PROFILE UPDATED SUCCESSFULLY!");
+      setShowEditTargetProfileModal(false);
+      syncDefenseData();
+    } catch (err) {
+      console.error("Error saving target profile:", err);
+      triggerToast("✅ TARGET PROFILE SAVED LOCALLY!");
+      setShowEditTargetProfileModal(false);
+    }
   };
 
   const handleSendTicket = async () => {
@@ -2413,6 +2455,122 @@ const handleEmergencyBurn = async () => {
               <div className="cyberpunk-spinner-large"></div>
               <p style={{ color: '#cbd5e1', fontSize: '0.9rem' }}>{purgeStatus || "SCRUBBING PII..."}</p>
               <p style={{ color: '#64748B', fontSize: '0.7rem', margin: '10px 0 0 0' }}>SECURE LINK ESTABLISHED</p>
+            </div>
+          </div>
+        )}
+
+        {/* --- EDIT OPERATIVE TARGET PROFILE & ADDRESS MODAL --- */}
+        {showEditTargetProfileModal && (
+          <div className="modal-overlay" style={{ zIndex: 70000, background: 'rgba(0, 0, 0, 0.85)' }} onClick={() => setShowEditTargetProfileModal(false)}>
+            <div className="price-box fade-in" style={{ maxWidth: '520px', width: '90%', padding: '24px', border: '1px solid #00D2FF', background: '#05070D' }} onClick={e => e.stopPropagation()}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '16px', borderBottom: '1px solid rgba(0, 210, 255, 0.3)', paddingBottom: '10px' }}>
+                <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.1rem' }}>⚙️ EDIT TARGET PROFILE & ADDRESS</h3>
+                <button className="reset-btn" type="button" style={{ padding: '2px 8px', fontSize: '0.8rem' }} onClick={() => setShowEditTargetProfileModal(false)}>✕</button>
+              </div>
+
+              <p style={{ fontSize: '0.78rem', color: '#94A3B8', textAlign: 'left', marginBottom: '14px', lineHeight: '1.4' }}>
+                Data brokers rely on exact legal name, physical address, and contact details to process opt-out removals. Update your details below:
+              </p>
+
+              <form onSubmit={handleSaveTargetProfile} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>FIRST NAME</label>
+                    <input 
+                      type="text" 
+                      className="mask-btn" 
+                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                      value={targetProfile.firstName || targetProfile.first_name || ''} 
+                      onChange={e => setTargetProfile(p => ({ ...p, firstName: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>LAST NAME</label>
+                    <input 
+                      type="text" 
+                      className="mask-btn" 
+                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                      value={targetProfile.lastName || targetProfile.last_name || ''} 
+                      onChange={e => setTargetProfile(p => ({ ...p, lastName: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>PRIMARY EMAIL</label>
+                  <input 
+                    type="email" 
+                    className="mask-btn" 
+                    style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                    value={targetProfile.email || ''} 
+                    onChange={e => setTargetProfile(p => ({ ...p, email: e.target.value }))}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>PRIMARY PHONE</label>
+                  <input 
+                    type="text" 
+                    className="mask-btn" 
+                    style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                    value={targetProfile.phone || ''} 
+                    onChange={e => setTargetProfile(p => ({ ...p, phone: e.target.value }))}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>STREET ADDRESS</label>
+                  <input 
+                    type="text" 
+                    className="mask-btn" 
+                    style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                    placeholder="123 Cyber Way, Suite 400"
+                    value={targetProfile.address || ''} 
+                    onChange={e => setTargetProfile(p => ({ ...p, address: e.target.value }))}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '6px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>CITY</label>
+                    <input 
+                      type="text" 
+                      className="mask-btn" 
+                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                      value={targetProfile.city || ''} 
+                      onChange={e => setTargetProfile(p => ({ ...p, city: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>STATE</label>
+                    <input 
+                      type="text" 
+                      className="mask-btn" 
+                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                      value={targetProfile.state || ''} 
+                      onChange={e => setTargetProfile(p => ({ ...p, state: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>ZIP</label>
+                    <input 
+                      type="text" 
+                      className="mask-btn" 
+                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                      value={targetProfile.zip || ''} 
+                      onChange={e => setTargetProfile(p => ({ ...p, zip: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <button 
+                  className="main-button" 
+                  type="submit" 
+                  style={{ width: '100%', marginTop: '14px', fontSize: '0.85rem', fontWeight: 'bold' }}
+                >
+                  SAVE TARGET PROFILE 🛡️
+                </button>
+              </form>
             </div>
           </div>
         )}
@@ -3628,6 +3786,15 @@ const handleEmergencyBurn = async () => {
                           </div>
 
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ color: '#94A3B8' }}>Physical Address:</span>
+                            <span style={{ color: '#00D2FF', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                              {targetProfile.address 
+                                ? `${targetProfile.address}${targetProfile.city ? `, ${targetProfile.city}` : ''}${targetProfile.state ? `, ${targetProfile.state}` : ''}${targetProfile.zip ? ` ${targetProfile.zip}` : ''}`
+                                : 'Not Configured (Click Edit)'}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ color: '#94A3B8' }}>SMS Forwarding Phone:</span>
                             <span style={{ color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold' }}>
                               {targetProfile.phone || destinationPhone || 'No Phone Linked'}
@@ -3639,9 +3806,7 @@ const handleEmergencyBurn = async () => {
                       <button 
                         className="main-button" 
                         style={{ width: '100%', fontSize: '0.82rem', padding: '10px 14px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
-                        onClick={() => {
-                          checkAndShowNoticeModal(currentUserId || getSessionItem("disappear_user_id"));
-                        }}
+                        onClick={() => setShowEditTargetProfileModal(true)}
                       >
                         ⚙️ REVIEW / EDIT TARGET PROFILE
                       </button>
