@@ -366,6 +366,7 @@ function App() {
         setAliasReplyBody("");
         setShowAliasReplyModal(false);
         fetchAliasMessages();
+        syncDefenseData();
       } else {
         console.error("❌ MOBILE_EMAIL_DISPATCH_FAILED:", res.status, err);
         triggerToast(`❌ REASON: ${err.detail || `FAILED TO TRANSMIT EMAIL (${res.status})`}`);
@@ -615,7 +616,10 @@ function App() {
               vcc_total: data.profile.vcc_email_total || 6,
               vcc_used: data.profile.used_vcc_email || 0,
               phone_total: data.profile.phone_total || 2,
-              phone_used: data.profile.used_phones || 0
+              phone_used: data.profile.used_phones || 0,
+              phone_credits: data.profile.relay_credits !== undefined 
+                ? data.profile.relay_credits 
+                : (data.profile.phone_credits !== undefined ? data.profile.phone_credits : 500)
           };
           setCredits(prev => isStructurallyEqual(prev, newCredits) ? prev : newCredits);
 
@@ -1343,6 +1347,7 @@ function App() {
         };
         setSmsInbox(prev => [newOutboundItem, ...prev]);
         fetchSmsInbox();
+        syncDefenseData();
       } else {
         console.error("❌ MOBILE_SMS_DISPATCH_FAILED:", res.status, data);
         triggerToast(`❌ ${data.detail || `FAILED TO DELIVER SMS (${res.status})`}`);
@@ -3902,6 +3907,57 @@ const handleEmergencyBurn = async () => {
                       >
                         {isRefillingCredits ? "⚡ REFILLING CREDITS..." : "⚡ REFILL RELAY CREDITS (+250 CREDITS / $5.95)"}
                       </button>
+                    </div>
+
+                    {/* REFERRAL MILESTONE REWARDS & SHARE CARD */}
+                    <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #00D2FF', background: 'linear-gradient(135deg, rgba(0,71,171,0.12) 0%, rgba(5,11,20,0.95) 100%)', borderRadius: '12px', padding: '16px', boxSizing: 'border-box' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                        <div>
+                          <span className="tool-label tiger-text" style={{ margin: 0, fontSize: '0.95rem', display: 'block', fontWeight: 'bold' }}>🎁 REFERRAL MILESTONE REWARDS</span>
+                          <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>Earn 1 Free Month of Elite Protection for every 5 referred operatives</span>
+                        </div>
+                        <span style={{ fontSize: '0.75rem', color: '#10B981', background: 'rgba(16,185,129,0.15)', padding: '4px 10px', borderRadius: '12px', border: '1px solid rgba(16,185,129,0.3)', fontWeight: 'bold' }}>
+                          {referralData.free_months_earned || 0} FREE MONTHS UNLOCKED
+                        </span>
+                      </div>
+
+                      {/* Referral Code & Link Box */}
+                      <div style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.3)', padding: '12px 14px', borderRadius: '8px', marginBottom: '14px', textAlign: 'left' }}>
+                        <span style={{ fontSize: '0.70rem', color: '#94A3B8', fontWeight: 'bold', display: 'block', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '1px' }}>
+                          YOUR UNIQUE SHAREABLE REFERRAL LINK:
+                        </span>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <input 
+                            type="text" 
+                            readOnly 
+                            value={referralData.link || (referralData.code ? `https://disappearco.com/?ref=${referralData.code}` : `https://disappearco.com/?ref=${getSessionItem("disappear_user_id") || "invite"}`)} 
+                            style={{ flex: 1, minWidth: '200px', fontSize: '0.82rem', background: '#020202', color: '#00D2FF', fontFamily: 'monospace', fontWeight: 'bold', padding: '8px 12px', border: '1px solid rgba(0,210,255,0.3)', borderRadius: '6px', boxSizing: 'border-box' }} 
+                          />
+                          <button 
+                            type="button"
+                            className="main-button" 
+                            style={{ padding: '8px 14px', fontSize: '0.80rem', fontWeight: 'bold', whiteSpace: 'nowrap' }} 
+                            onClick={() => {
+                              const linkToCopy = referralData.link || (referralData.code ? `https://disappearco.com/?ref=${referralData.code}` : `https://disappearco.com/?ref=${getSessionItem("disappear_user_id") || "invite"}`);
+                              navigator.clipboard.writeText(linkToCopy);
+                              triggerToast("📋 REFERRAL LINK COPIED TO CLIPBOARD!");
+                            }}
+                          >
+                            COPY LINK 📋
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Progress Bar & Milestone Status */}
+                      <div style={{ background: '#05070D', border: '1px solid rgba(255,255,255,0.08)', padding: '10px 14px', borderRadius: '8px', textAlign: 'left' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#CBD5E1', marginBottom: '6px', fontWeight: 'bold' }}>
+                          <span>REFERRED OPERATIVES: <strong style={{ color: '#00D2FF' }}>{referralData.count || 0}</strong></span>
+                          <span>NEXT REWARD: <strong style={{ color: '#10B981' }}>{referralData.next_milestone_needed || 5} MORE</strong></span>
+                        </div>
+                        <div style={{ width: '100%', height: '8px', background: 'rgba(0,0,0,0.5)', borderRadius: '4px', overflow: 'hidden', border: '1px solid rgba(0,210,255,0.2)' }}>
+                          <div style={{ width: `${referralData.progress_pct || 0}%`, height: '100%', background: 'linear-gradient(90deg, #00D2FF, #10B981)', borderRadius: '4px', transition: 'width 0.4s ease' }} />
+                        </div>
+                      </div>
                     </div>
 
                     {/* PASSWORD MANAGEMENT CARD (PROFILE SECURITY) */}
