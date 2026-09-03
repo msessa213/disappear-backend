@@ -200,6 +200,7 @@ function App() {
   const [phones, setPhones] = useState([]);
   const [destinationPhone, setDestinationPhone] = useState("");
   const [hasLoadedPhone, setHasLoadedPhone] = useState(false);
+  const [showEditForwardingPhone, setShowEditForwardingPhone] = useState(false);
   const [smsInbox, setSmsInbox] = useState([]);
   const [activeReplyId, setActiveReplyId] = useState(null);
   const [replyRecipient, setReplyRecipient] = useState("");
@@ -695,10 +696,10 @@ function App() {
         }
       }
 
-      // 8. Map Profile Phone Number (Initial load only to avoid polling overwrite)
+      // 8. Map Profile Phone Number (Keeps destination phone strictly synced with user profile)
       if (data.profile) {
-        if (!hasLoadedPhone) {
-          setDestinationPhone(data.profile.phone || "");
+        if (data.profile.phone) {
+          setDestinationPhone(data.profile.phone);
           setHasLoadedPhone(true);
         }
         if (data.profile.relay_credits !== undefined) setRelayCredits(data.profile.relay_credits);
@@ -1222,6 +1223,91 @@ function App() {
     }
   };
 
+  const handleRelaySmsToPersonalPhone = async (smsItem) => {
+    const targetForwardPhone = destinationPhone || targetProfile.phone || "";
+    if (!targetForwardPhone) {
+      triggerToast("⚠️ NO PHYSICAL FORWARDING PHONE CONFIGURED. PLEASE SET YOUR PHONE NUMBER.");
+      setShowEditForwardingPhone(true);
+      return;
+    }
+
+    const digitsOnly = targetForwardPhone.replace(/\D/g, "");
+    if (digitsOnly.length < 10) {
+      triggerToast("⚠️ INVALID FORWARDING PHONE NUMBER ON FILE.");
+      return;
+    }
+
+    const formattedTarget = digitsOnly.length === 10 ? `+1${digitsOnly}` : `+${digitsOnly}`;
+    const smsContent = smsItem?.body || smsItem?.text || smsItem?.message || smsItem?.content || smsItem?.text_content || "Incoming SMS Alert";
+    const senderLine = smsItem?.from_phone || smsItem?.to_phone || "Vault Alias";
+
+    triggerToast(`⏳ RELAYING SMS TO ${formattedTarget}...`);
+
+    const activeUserId = currentUserId || getSessionItem("disappear_user_id") || "ANONYMOUS_USER";
+    const payload = {
+      user_id: activeUserId,
+      to_phone: formattedTarget,
+      message: `[Disappear Relay from ${senderLine}]: ${smsContent}`,
+      from_phone: smsItem?.to_phone || null
+    };
+
+    try {
+      const res = await secureRequest(`${API_BASE_URL}/api/v1/send-sms`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        triggerToast(`✅ SMS RELAY DISPATCHED TO ${formattedTarget}!`);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        triggerToast(`❌ RELAY FAILED: ${errData.detail || "Unable to route SMS to personal phone"}`);
+      }
+    } catch (err) {
+      console.error("SMS Relay Exception:", err);
+      triggerToast("NETWORK ERROR RELAYING SMS");
+    }
+  };
+
+  const handleTestSmsForwarding = async () => {
+    const targetForwardPhone = destinationPhone || targetProfile.phone || "";
+    if (!targetForwardPhone) {
+      triggerToast("⚠️ PLEASE CONFIGURE A PHYSICAL FORWARDING PHONE FIRST");
+      setShowEditForwardingPhone(true);
+      return;
+    }
+
+    const digitsOnly = targetForwardPhone.replace(/\D/g, "");
+    if (digitsOnly.length < 10) {
+      triggerToast("⚠️ PLEASE ENTER A VALID 10-DIGIT MOBILE NUMBER");
+      return;
+    }
+
+    const formattedTarget = digitsOnly.length === 10 ? `+1${digitsOnly}` : `+${digitsOnly}`;
+    triggerToast(`⏳ DISPATCHING TEST FORWARDING RELAY TO ${formattedTarget}...`);
+
+    const activeUserId = currentUserId || getSessionItem("disappear_user_id") || "ANONYMOUS_USER";
+    try {
+      const res = await secureRequest(`${API_BASE_URL}/api/v1/send-sms`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: activeUserId,
+          to_phone: formattedTarget,
+          message: "[Disappear Vault Test]: SMS Forwarding Relay is active and functioning properly on your personal device! 🛡️"
+        })
+      });
+      if (res.ok) {
+        triggerToast(`✅ TEST SMS DELIVERED TO ${formattedTarget}! FORWARDING IS ACTIVE.`);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        triggerToast(`❌ TEST FAILED: ${errData.detail || "Unable to reach personal device"}`);
+      }
+    } catch (err) {
+      triggerToast("NETWORK ERROR TESTING SMS FORWARDING");
+    }
+  };
+
   const getAliasLabel = (phoneNum) => {
     if (!phoneNum) return "";
     const cleanNum = phoneNum.replace(/\D/g, "");
@@ -1741,6 +1827,16 @@ function App() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(targetProfile)
         });
+
+        // Ensure physical destination phone stays 100% in sync for Twilio SMS forwarding
+        if (targetProfile.phone) {
+          await secureRequest(`${API_BASE_URL}/auth/update-phone`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: activeUserId, phone: targetProfile.phone })
+          }).catch(err => console.warn("Phone sync notice:", err));
+          setDestinationPhone(targetProfile.phone);
+        }
       }
       triggerToast("✅ TARGET PROFILE UPDATED SUCCESSFULLY!");
       setShowEditTargetProfileModal(false);
@@ -3568,12 +3664,59 @@ const handleEmergencyBurn = async () => {
                       </div>
 
                       <div style={{ background: '#05070D', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '12px 14px', borderRadius: '8px', marginBottom: '16px', textAlign: 'left' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-                          <span style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold', textTransform: 'uppercase' }}>PHYSICAL DEVICE FORWARDING PHONE:</span>
-                          <span style={{ fontSize: '0.85rem', color: '#10B981', fontFamily: 'monospace', fontWeight: 'bold' }}>
-                            {destinationPhone ? destinationPhone : "NOT CONFIGURED"}
-                          </span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                          <div>
+                            <span style={{ fontSize: '0.72rem', color: '#94A3B8', fontWeight: 'bold', textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>PHYSICAL DEVICE FORWARDING PHONE:</span>
+                            <span style={{ fontSize: '0.88rem', color: '#10B981', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                              {destinationPhone || targetProfile.phone || "NOT CONFIGURED"}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                            <button 
+                              type="button"
+                              className="reset-btn"
+                              style={{ padding: '4px 10px', fontSize: '0.72rem', color: '#00D2FF', borderColor: 'rgba(0, 210, 255, 0.4)', fontWeight: 'bold', cursor: 'pointer' }}
+                              onClick={() => setShowEditForwardingPhone(!showEditForwardingPhone)}
+                            >
+                              {showEditForwardingPhone ? "CANCEL ✕" : "⚙️ CONFIGURE"}
+                            </button>
+                            <button 
+                              type="button"
+                              className="reset-btn"
+                              style={{ padding: '4px 10px', fontSize: '0.72rem', color: '#10B981', borderColor: 'rgba(16, 185, 129, 0.4)', fontWeight: 'bold', cursor: 'pointer' }}
+                              onClick={handleTestSmsForwarding}
+                            >
+                              📲 TEST RELAY
+                            </button>
+                          </div>
                         </div>
+
+                        {showEditForwardingPhone && (
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
+                            <input 
+                              type="text"
+                              className="mask-btn"
+                              style={{ flex: 1, minWidth: '180px', color: '#fff', fontSize: '0.82rem', height: '38px', boxSizing: 'border-box' }}
+                              placeholder="Enter Real Mobile Phone (+18135551234)"
+                              value={destinationPhone}
+                              onChange={e => {
+                                setDestinationPhone(e.target.value);
+                                setTargetProfile(prev => ({ ...prev, phone: e.target.value }));
+                              }}
+                            />
+                            <button 
+                              type="button"
+                              className="main-button"
+                              style={{ padding: '6px 14px', fontSize: '0.78rem', fontWeight: 'bold', cursor: 'pointer' }}
+                              onClick={async () => {
+                                await handleSaveForwardingPhone();
+                                setShowEditForwardingPhone(false);
+                              }}
+                            >
+                              SAVE FORWARDING PHONE 📱
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       {phones.length === 0 ? (
@@ -3744,6 +3887,16 @@ const handleEmergencyBurn = async () => {
                                     <button
                                       className="reset-btn"
                                       type="button"
+                                      title="Relay newest message in thread to physical mobile device"
+                                      style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#00D2FF', borderColor: '#00D2FF', fontWeight: 'bold' }}
+                                      onClick={() => handleRelaySmsToPersonalPhone(newestMessage)}
+                                    >
+                                      📲 RELAY
+                                    </button>
+
+                                    <button
+                                      className="reset-btn"
+                                      type="button"
                                       style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#EF4444', borderColor: '#EF4444', fontWeight: 'bold' }}
                                       onClick={(e) => {
                                         messages.forEach(msg => handleDeleteSmsMessage(msg.id, e));
@@ -3781,10 +3934,21 @@ const handleEmergencyBurn = async () => {
                                             <span style={{ fontSize: '0.70rem', color: isOutbound ? '#10B981' : '#00D2FF', fontWeight: 'bold' }}>
                                               {isOutbound ? '📤 SENT VIA ALIAS' : '📥 RECEIVED'} {m.to_phone ? `(${m.to_phone})` : ''}
                                             </span>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                               <span style={{ fontSize: '0.65rem', color: '#64748B' }}>
                                                 {m.timestamp || m.created_at ? new Date(m.timestamp || m.created_at).toLocaleString() : 'Recently'}
                                               </span>
+                                              {!isOutbound && (
+                                                <button
+                                                  className="reset-btn"
+                                                  type="button"
+                                                  title="Forward SMS to physical personal phone number"
+                                                  style={{ padding: '1px 6px', fontSize: '0.65rem', color: '#10B981', borderColor: 'rgba(16,185,129,0.4)', fontWeight: 'bold' }}
+                                                  onClick={() => handleRelaySmsToPersonalPhone(m)}
+                                                >
+                                                  📲 RELAY
+                                                </button>
+                                              )}
                                               <button
                                                 className="reset-btn"
                                                 type="button"
