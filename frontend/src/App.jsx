@@ -3211,58 +3211,61 @@ const handleEmergencyBurn = async () => {
                         </p>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '350px', overflowY: 'auto' }}>
-                          {aliasMessages.map((msg) => (
-                            <div key={msg.id} style={{ background: '#05070D', border: '1px solid #1e293b', padding: '12px', borderRadius: '8px', textAlign: 'left' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
-                                <div>
-                                  <span style={{ fontSize: '0.82rem', color: '#FFFFFF', fontWeight: 'bold', display: 'block' }}>
-                                    FROM: {msg.sender || "Unknown Sender"}
-                                  </span>
-                                  <span style={{ fontSize: '0.72rem', color: '#00D2FF', fontFamily: 'monospace' }}>
-                                    TO ALIAS: {msg.alias_email || "Alias Node"}
+                          {aliasMessages.map((msg) => {
+                            const emailBodyContent = msg.body || msg.text || msg.message || msg.content || msg.text_content || msg.snippet || (typeof msg.html === 'string' ? msg.html.replace(/<[^>]+>/g, '') : '') || "No message body";
+                            return (
+                              <div key={msg.id} style={{ background: '#05070D', border: '1px solid #1e293b', padding: '12px', borderRadius: '8px', textAlign: 'left' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                                  <div>
+                                    <span style={{ fontSize: '0.82rem', color: '#FFFFFF', fontWeight: 'bold', display: 'block' }}>
+                                      FROM: {msg.sender || "Unknown Sender"}
+                                    </span>
+                                    <span style={{ fontSize: '0.72rem', color: '#00D2FF', fontFamily: 'monospace' }}>
+                                      TO ALIAS: {msg.alias_email || "Alias Node"}
+                                    </span>
+                                  </div>
+                                  <span style={{ fontSize: '0.68rem', color: '#64748B' }}>
+                                    {msg.received_at ? new Date(msg.received_at).toLocaleString() : "Recently"}
                                   </span>
                                 </div>
-                                <span style={{ fontSize: '0.68rem', color: '#64748B' }}>
-                                  {msg.received_at ? new Date(msg.received_at).toLocaleString() : "Recently"}
-                                </span>
-                              </div>
 
-                              {msg.subject && (
-                                <div style={{ fontSize: '0.78rem', color: '#FCD34D', fontWeight: 'bold', marginBottom: '6px' }}>
-                                  SUBJECT: {msg.subject}
+                                {msg.subject && (
+                                  <div style={{ fontSize: '0.78rem', color: '#FCD34D', fontWeight: 'bold', marginBottom: '6px' }}>
+                                    SUBJECT: {msg.subject}
+                                  </div>
+                                )}
+
+                                <div style={{ background: '#020202', padding: '8px 10px', borderRadius: '4px', border: '1px solid #111', fontSize: '0.78rem', color: '#CBD5E1', marginBottom: '8px', whiteSpace: 'pre-wrap', maxHeight: '120px', overflowY: 'auto' }}>
+                                  {emailBodyContent}
                                 </div>
-                              )}
 
-                              <div style={{ background: '#020202', padding: '8px 10px', borderRadius: '4px', border: '1px solid #111', fontSize: '0.78rem', color: '#CBD5E1', marginBottom: '8px', whiteSpace: 'pre-wrap', maxHeight: '120px', overflowY: 'auto' }}>
-                                {msg.snippet || msg.body || "No message preview"}
+                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                  <button
+                                    type="button"
+                                    className="reset-btn"
+                                    style={{ padding: '3px 10px', fontSize: '0.70rem', color: '#10B981', borderColor: '#10B981', fontWeight: 'bold' }}
+                                    onClick={() => {
+                                      setReplyAliasEmail(msg.alias_email || (emails[0] ? emails[0].content : ""));
+                                      setReplyRecipientEmail(msg.sender || "");
+                                      setReplySubject(msg.subject ? (msg.subject.startsWith("Re:") ? msg.subject : `Re: ${msg.subject}`) : "Re: Your Message");
+                                      setAliasReplyBody("");
+                                      setShowAliasReplyModal(true);
+                                    }}
+                                  >
+                                    💬 REPLY VIA ALIAS
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="reset-btn"
+                                    style={{ padding: '3px 10px', fontSize: '0.70rem', color: '#EF4444', borderColor: '#EF4444', fontWeight: 'bold' }}
+                                    onClick={(e) => handleDeleteAliasMessage(msg.id, e)}
+                                  >
+                                    🗑️ DELETE
+                                  </button>
+                                </div>
                               </div>
-
-                              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                <button
-                                  type="button"
-                                  className="reset-btn"
-                                  style={{ padding: '3px 10px', fontSize: '0.70rem', color: '#10B981', borderColor: '#10B981', fontWeight: 'bold' }}
-                                  onClick={() => {
-                                    setReplyAliasEmail(msg.alias_email || (emails[0] ? emails[0].content : ""));
-                                    setReplyRecipientEmail(msg.sender || "");
-                                    setReplySubject(msg.subject ? (msg.subject.startsWith("Re:") ? msg.subject : `Re: ${msg.subject}`) : "Re: Your Message");
-                                    setAliasReplyBody("");
-                                    setShowAliasReplyModal(true);
-                                  }}
-                                >
-                                  💬 REPLY VIA ALIAS
-                                </button>
-                                <button
-                                  type="button"
-                                  className="reset-btn"
-                                  style={{ padding: '3px 10px', fontSize: '0.70rem', color: '#EF4444', borderColor: '#EF4444', fontWeight: 'bold' }}
-                                  onClick={(e) => handleDeleteAliasMessage(msg.id, e)}
-                                >
-                                  🗑️ DELETE
-                                </button>
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -3468,6 +3471,39 @@ const handleEmergencyBurn = async () => {
                                       🗑️ DELETE
                                     </button>
                                   </div>
+                                </div>
+
+                                {/* SMS THREAD INDIVIDUAL MESSAGES FEED WITH BODY MAPPING */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '8px 0' }}>
+                                  {messages.map((m, mIdx) => {
+                                    const smsBodyContent = m.body || m.text || m.message || m.content || m.text_content || "No message body";
+                                    const isOutbound = m.direction === 'outbound' || m.is_outbound;
+                                    return (
+                                      <div key={m.id || mIdx} style={{ background: isOutbound ? '#071828' : '#040b16', border: '1px solid #1e293b', borderRadius: '6px', padding: '8px 10px', textAlign: 'left' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                          <span style={{ fontSize: '0.70rem', color: isOutbound ? '#10B981' : '#00D2FF', fontWeight: 'bold' }}>
+                                            {isOutbound ? '📤 SENT VIA ALIAS' : '📥 RECEIVED'} {m.to_phone ? `(${m.to_phone})` : ''}
+                                          </span>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span style={{ fontSize: '0.65rem', color: '#64748B' }}>
+                                              {m.timestamp || m.created_at ? new Date(m.timestamp || m.created_at).toLocaleString() : 'Recently'}
+                                            </span>
+                                            <button
+                                              className="reset-btn"
+                                              type="button"
+                                              style={{ padding: '1px 5px', fontSize: '0.65rem', color: '#EF4444', borderColor: '#EF4444' }}
+                                              onClick={(e) => handleDeleteSmsMessage(m.id, e)}
+                                            >
+                                              🗑️
+                                            </button>
+                                          </div>
+                                        </div>
+                                        <div style={{ fontSize: '0.80rem', color: '#E2E8F0', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                          {smsBodyContent}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
 
                                 {isGroupReplying && (
