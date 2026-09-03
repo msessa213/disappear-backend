@@ -2513,7 +2513,8 @@ const handleEmergencyBurn = async () => {
                 style={{ 
                   maxWidth: '540px', 
                   width: '100%', 
-                  maxHeight: '82vh',
+                  height: '80vh',
+                  maxHeight: '80vh',
                   display: 'flex',
                   flexDirection: 'column',
                   padding: '20px', 
@@ -2522,12 +2523,14 @@ const handleEmergencyBurn = async () => {
                   borderRadius: '16px',
                   boxShadow: '0 10px 45px rgba(0, 0, 0, 0.95)',
                   boxSizing: 'border-box',
-                  overflow: 'hidden'
+                  overflow: 'hidden',
+                  alignItems: 'stretch',
+                  gap: 0
                 }} 
                 onClick={e => e.stopPropagation()}
               >
                 {/* TIER 1 (HEADER): FIXED TITLE & CLOSE BUTTON */}
-                <div style={{ flexShrink: 0, marginBottom: '10px', borderBottom: '1px solid rgba(0, 210, 255, 0.3)', paddingBottom: '10px' }}>
+                <div style={{ flexShrink: 0, marginBottom: '12px', borderBottom: '1px solid rgba(0, 210, 255, 0.3)', paddingBottom: '10px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                     <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.05rem', letterSpacing: '0.5px' }}>⚙️ EDIT TARGET PROFILE & ADDRESS</h3>
                     <button className="reset-btn" type="button" style={{ padding: '2px 8px', fontSize: '0.8rem', cursor: 'pointer' }} onClick={() => setShowEditTargetProfileModal(false)}>✕</button>
@@ -2545,25 +2548,25 @@ const handleEmergencyBurn = async () => {
                     width: '100%', 
                     display: 'flex', 
                     flexDirection: 'column', 
-                    flex: 1,
+                    flex: '1 1 auto',
                     minHeight: 0,
                     overflow: 'hidden',
                     textAlign: 'left'
                   }}
                 >
-                  {/* TIER 2 (SCROLLABLE BODY): FORM INPUTS WITH 30PX CLEARANCE */}
+                  {/* TIER 2 (SCROLLABLE BODY): FORM INPUTS WITH 40PX CLEARANCE */}
                   <div style={{ 
-                    flex: 1,
+                    flex: '1 1 auto',
                     flexGrow: 1,
                     minHeight: 0,
                     overflowY: 'auto', 
                     WebkitOverflowScrolling: 'touch', 
                     touchAction: 'pan-y',
-                    paddingRight: '6px', 
-                    paddingBottom: '30px', 
+                    paddingRight: '8px', 
+                    paddingBottom: '40px', 
                     display: 'flex', 
                     flexDirection: 'column', 
-                    gap: '12px',
+                    gap: '14px',
                     boxSizing: 'border-box' 
                   }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -2662,10 +2665,10 @@ const handleEmergencyBurn = async () => {
                     flexShrink: 0,
                     borderTop: '1px solid rgba(0, 210, 255, 0.3)', 
                     paddingTop: '14px', 
-                    marginTop: '6px', 
+                    marginTop: 'auto', 
                     background: '#05070D', 
                     display: 'flex', 
-                    gap: '10px' 
+                    gap: '12px' 
                   }}>
                     <button 
                       type="button"
