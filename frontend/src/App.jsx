@@ -2960,1262 +2960,887 @@ const handleEmergencyBurn = async () => {
                   </button>
                 </div>
                 
-                {false && (
-                  // VCC feature is disabled
-                  <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #FFD700', background: '#050505', position: 'relative' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                      <p className="tool-label" style={{ margin: 0, color: '#FFD700' }}>GLOBAL WALLET NODE</p>
-                      <span style={{ fontSize: '0.85rem', color: '#94A3B8' }}>WALLETS_ENABLED: [TRUE]</span>
-                    </div>
-                    {(() => {
-                      const globalCard = cards.find(c => c.label.toUpperCase() === 'PRIMARY_PAY_NODE' || c.label.toUpperCase().includes('GLOBAL'));
-                      return globalCard ? (
-                        <div className="managed-card-row enhanced-card" style={{ background: 'linear-gradient(135deg, #050505 0%, #111 100%)' }}>
-                          <div className="card-row-info">
-                            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
-                               <span className="card-nickname" style={{color: '#FFD700', fontWeight: 'bold'}}>{globalCard.label.toUpperCase()}</span>
-                               <button className="kill-text-bold" onClick={() => { if(window.confirm("RESET NODE? Old card will be burned.")) handleKillCard(globalCard.id); }}>RESET NODE</button>
-                            </div>
-                            
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#020202', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', marginBottom: '12px' }} onClick={() => {navigator.clipboard.writeText(globalCard.number.replace(/\s/g, '')); triggerToast("CARD NUMBER COPIED")}}>
-                              <code className="card-digits" style={{ fontSize: '1.2rem', letterSpacing: '3px', color: '#fff', margin: 0, padding: 0 }}>{globalCard.number}</code>
-                              <span style={{ fontSize: '0.8rem', color: '#FFD700', fontWeight: 'bold' }}>COPY 📋</span>
-                            </div>
-
-                            <div className="responsive-card-details">
-                               <div style={{ cursor: 'pointer' }} onClick={() => {navigator.clipboard.writeText(globalCard.expiry || '12/29'); triggerToast("EXPIRY COPIED")}}>
-                                 <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>EXP 📋</span>
-                                 <strong>{globalCard.expiry || '12/29'}</strong>
-                               </div>
-                               <div style={{ cursor: 'pointer' }} onClick={() => {navigator.clipboard.writeText(globalCard.cvv || '000'); triggerToast("CVV COPIED")}}>
-                                 <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>CVV 📋</span>
-                                 <strong>{globalCard.cvv || '***'}</strong>
-                                </div>
-                               <div style={{ marginLeft: 'auto' }}>
-                                  <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>TYPE</span>
-                                  <span style={{ fontSize: '0.9rem' }}>VIRTUAL_DEBIT</span>
-                               </div>
-                            </div>
-                          </div>
+                {/* TAB 1: ALIASES (EMAIL & MOBILE SMS MANAGEMENT) */}
+                {dashboardTab === 'aliases' && (
+                  <div className="tab-pane fade-in" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                    
+                    {/* EMAIL PROTECTION MODULE */}
+                    <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative', border: '1px solid var(--tiger-blue)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span className="tool-label" style={{ margin: 0, textAlign: 'left', fontWeight: 'bold' }}>EMAIL PROTECTION</span>
+                          {addyRecipientStatus === "VERIFIED" ? (
+                            <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10B981', border: '1px solid #10B981', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                              ✅ VERIFIED & ACTIVE
+                            </span>
+                          ) : (
+                            <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#FCD34D', border: '1px solid #F59E0B', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                              ⚠️ VERIFICATION PENDING
+                            </span>
+                          )}
                         </div>
-                      ) : (
-                        <div style={{ textAlign: 'center', padding: '20px', border: '1px dashed #334155', borderRadius: '4px' }}>
-                          <span style={{ color: '#94A3B8', fontSize: '0.85rem', display: 'block', marginBottom: '15px' }}>NO ACTIVE GLOBAL WALLET LINKED.</span>
-                          <button className="reset-btn" style={{ fontSize: '0.85rem', padding: '8px 15px' }} onClick={() => { setNewCardLabel('PRIMARY_PAY_NODE'); setShowMintModal(true); }}>ACTIVATE GLOBAL NODE</button>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                )}
-
-                <div className="masking-tool" style={{ border: '1px solid #111', background: '#050505', width: '100%', maxWidth: '600px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                        <div>
-                            <span className="field-label" style={{ display: 'block', fontSize: '0.85rem', color: 'white', letterSpacing: '2px', fontWeight: 'bold', textTransform: 'uppercase' }}>VAULT CAPACITY</span>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--tiger-blue)', display: 'block', marginTop: '3px', fontWeight: 'bold', textTransform: 'uppercase' }}>EMAIL ALIAS NODES</span>
-                        </div>
-                        <span className="tiger-text" style={{ alignSelf: 'center' }}>{emails.length} / {credits.vcc_total}</span>
-                    </div>
-                    <button className="purchase-btn" disabled={isProcessingPayment} onClick={() => handlePurchaseExpansion('permanent_slot')}>
-                      {isProcessingPayment ? "PROCESSING..." : "+ ADD PERMANENT VAULT SLOT ($5.95)"}
-                    </button>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: '25px', marginBottom: '10px' }}>
-                        <div>
-                            <span className="field-label" style={{ display: 'block', fontSize: '0.85rem', color: 'white', letterSpacing: '2px', fontWeight: 'bold', textTransform: 'uppercase' }}>ACTIVE PHONE LINES</span>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--tiger-blue)', display: 'block', marginTop: '3px', fontWeight: 'bold', textTransform: 'uppercase' }}>PHONE ALIAS NODES</span>
-                        </div>
-                        <span className="tiger-text" style={{ alignSelf: 'center' }}>{phones.length} / {credits.phone_total}</span>
-                    </div>
-                    <button 
-                      className="purchase-btn" 
-                      style={{borderColor: 'var(--tiger-blue)'}} 
-                      disabled={isProcessingPayment} 
-                      onClick={() => handlePurchaseExpansion('phone')}
-                    >
-                      {isProcessingPayment ? "PROCESSING..." : "+ PROVISION EXTRA MOBILE LINE ($5.95)"}
-                    </button>
-                </div>
-                
-                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative', border: '1px solid var(--tiger-blue)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span className="tool-label" style={{ margin: 0, textAlign: 'left', fontWeight: 'bold' }}>EMAIL PROTECTION</span>
-                      {addyRecipientStatus === "VERIFIED" ? (
-                        <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10B981', border: '1px solid #10B981', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
-                          ✅ VERIFIED & ACTIVE
-                        </span>
-                      ) : (
-                        <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#FCD34D', border: '1px solid #F59E0B', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
-                          ⚠️ VERIFICATION PENDING
-                        </span>
-                      )}
-                    </div>
-                    <button 
-                      type="button"
-                      className="main-button" 
-                      style={{ 
-                        padding: '8px 14px', 
-                        fontSize: '0.80rem', 
-                        fontWeight: 'bold', 
-                        letterSpacing: '0.5px',
-                        background: 'linear-gradient(135deg, #00D2FF 0%, #0072FF 100%)',
-                        border: 'none',
-                        color: '#ffffff',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        boxShadow: '0 0 12px rgba(0, 210, 255, 0.35)',
-                        whiteSpace: 'nowrap'
-                      }} 
-                      onClick={() => { setShowEmailModal(true); checkAddyRecipientStatus(false); }}
-                    >
-                      + GENERATE EMAIL ALIAS
-                    </button>
-                  </div>
-                  
-                  {/* --- UNMISSABLE ADDY.IO EMAIL VERIFICATION CALLOUT BANNER --- */}
-                  {addyRecipientStatus === "PENDING_VERIFICATION" && (
-                    <div style={{
-                      background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(217, 119, 6, 0.3) 100%)',
-                      border: '2px solid #F59E0B',
-                      borderRadius: '12px',
-                      padding: '18px 20px',
-                      marginBottom: '20px',
-                      textAlign: 'left',
-                      boxShadow: '0 0 30px rgba(245, 158, 11, 0.4)',
-                      boxSizing: 'border-box'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '1.5rem' }}>📩</span>
-                        <div>
-                          <h4 style={{ margin: 0, color: '#FCD34D', fontSize: '1.05rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
-                            ACTION REQUIRED: VERIFY YOUR EMAIL ADDRESS
-                          </h4>
-                          <p style={{ margin: '2px 0 0 0', color: '#FFF', fontSize: '0.82rem', fontWeight: 'bold' }}>
-                            Verification Link Sent To: <span style={{ color: '#00D2FF', textDecoration: 'underline' }}>{addyRecipientEmail || "Your Registered Email"}</span>
-                          </p>
-                        </div>
-                      </div>
-
-                      <p style={{ color: '#E2E8F0', fontSize: '0.85rem', lineHeight: '1.5', margin: '0 0 12px 0' }}>
-                        Your email alias forwarding is <strong>currently pending verification</strong> from Addy.io. Please open your email inbox (and check <strong>Spam/Junk</strong> folder) for an email from <code>noreply@addy.io</code> and click <strong>"Verify Email Address"</strong>.
-                      </p>
-
-                      <div style={{ 
-                        background: 'rgba(5, 11, 20, 0.85)', 
-                        borderLeft: '4px solid #F59E0B', 
-                        padding: '10px 14px', 
-                        borderRadius: '6px', 
-                        marginBottom: '14px',
-                        fontSize: '0.80rem',
-                        color: '#00D2FF',
-                        lineHeight: '1.45'
-                      }}>
-                        💡 <strong>IMPORTANT VERIFICATION NOTE:</strong> Clicking your email verification link authorizes forwarding. If prompted on the verification page, <u>you do NOT need to log into Addy.io</u>—simply close that browser tab and return to Disappear!
-                      </div>
-
-                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                         <button 
-                          type="button" 
+                          type="button"
                           className="main-button" 
                           style={{ 
-                            padding: '10px 18px', 
-                            fontSize: '0.82rem', 
+                            padding: '8px 14px', 
+                            fontSize: '0.80rem', 
                             fontWeight: 'bold', 
-                            background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', 
-                            border: 'none', 
-                            color: '#FFF', 
-                            boxShadow: '0 0 15px rgba(245, 158, 11, 0.4)', 
+                            letterSpacing: '0.5px',
+                            background: 'linear-gradient(135deg, #00D2FF 0%, #0072FF 100%)',
+                            border: 'none',
+                            color: '#ffffff',
+                            borderRadius: '6px',
                             cursor: 'pointer',
-                            opacity: isResendingAddyVerification ? 0.7 : 1,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                          }}
-                          onClick={handleResendAddyVerification}
-                          disabled={isResendingAddyVerification}
+                            boxShadow: '0 0 12px rgba(0, 210, 255, 0.35)',
+                            whiteSpace: 'nowrap'
+                          }} 
+                          onClick={() => { setShowEmailModal(true); checkAddyRecipientStatus(false); }}
                         >
-                          {isResendingAddyVerification ? (
-                            <>
-                              <span className="cyberpunk-spinner" style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid #FFF', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></span>
-                              DISPATCHING...
-                            </>
-                          ) : (
-                            '📩 RESEND VERIFICATION EMAIL'
-                          )}
-                        </button>
-                        <button 
-                          type="button" 
-                          className="reset-btn" 
-                          style={{ 
-                            padding: '10px 16px', 
-                            fontSize: '0.82rem', 
-                            fontWeight: 'bold', 
-                            borderColor: '#F59E0B', 
-                            color: '#FCD34D', 
-                            cursor: 'pointer',
-                            opacity: isCheckingAddyStatus ? 0.7 : 1,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                          }}
-                          onClick={() => checkAddyRecipientStatus(true)}
-                          disabled={isCheckingAddyStatus}
-                        >
-                          {isCheckingAddyStatus ? (
-                            <>
-                              <span className="cyberpunk-spinner" style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid #FCD34D', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></span>
-                              CHECKING STATUS...
-                            </>
-                          ) : (
-                            '🔄 CHECK VERIFICATION STATUS'
-                          )}
+                          + GENERATE EMAIL ALIAS
                         </button>
                       </div>
-                    </div>
-                  )}
-
-                  <div className="alias-manager-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
-                    {emails.map((e) => (
-                      <div key={e.id} style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.25)', padding: '14px 16px', borderRadius: '10px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                          <span style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                            ALIAS: {e.label.toUpperCase()}
-                          </span>
-                          <button className="kill-text-bold" style={{ padding: '3px 8px', fontSize: '0.7rem' }} onClick={() => promptKillAlias(e)}>TERMINATE ✖</button>
-                        </div>
-                        <div 
-                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0A0A0A', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', width: '100%', boxSizing: 'border-box' }} 
-                          onClick={() => {navigator.clipboard.writeText(e.content); triggerToast("EMAIL COPIED")}}
-                        >
-                          <span style={{ fontSize: '0.88rem', color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
-                            {e.content}
-                          </span>
-                          <span style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 'bold', flexShrink: 0, marginLeft: '8px', whiteSpace: 'nowrap' }}>COPY 📋</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* --- INBOUND ALIAS EMAIL MESSAGES & REPLY ROUTING UI CARD --- */}
-                  <div style={{ background: '#05070E', border: '1px solid #334155', padding: '15px', borderRadius: '8px', marginTop: '18px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-                      <span style={{ fontSize: '0.82rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px' }}>
-                        📩 INBOUND & OUTBOUND ALIAS TRANSMISSIONS
-                      </span>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        <button 
-                          type="button"
-                          className="main-button"
-                          style={{ padding: '3px 10px', fontSize: '0.72rem', fontWeight: 'bold', background: 'linear-gradient(135deg, #10B981, #059669)' }}
-                          onClick={() => {
-                            setReplyAliasEmail(emails.length > 0 ? emails[0].content : "");
-                            setReplyRecipientEmail("");
-                            setReplySubject("");
-                            setAliasReplyBody("");
-                            setShowAliasReplyModal(true);
-                          }}
-                        >
-                          ➕ COMPOSE NEW EMAIL
-                        </button>
-                        <button 
-                          type="button"
-                          className="reset-btn"
-                          style={{ padding: '3px 10px', fontSize: '0.72rem', color: '#00D2FF', borderColor: '#00D2FF', opacity: isRefreshingAliasData ? 0.6 : 1 }}
-                          onClick={handleRefreshAliasData}
-                          disabled={isRefreshingAliasData}
-                        >
-                          {isRefreshingAliasData ? "⏳ REFRESHING..." : "🔄 REFRESH"}
-                        </button>
-                      </div>
-                    </div>
-
-                    {aliasMessages.length === 0 ? (
-                      <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, textAlign: 'center', padding: '12px', fontStyle: 'italic' }}>
-                        No forwarded alias emails logged yet. Messages sent to your encrypted email aliases will route here and to your inbox automatically.
-                      </p>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '420px', overflowY: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
-                        {aliasMessages.map(msg => (
-                          <div key={msg.id} style={{ background: msg.direction === 'OUTBOUND' ? '#031a10' : '#090d16', border: msg.direction === 'OUTBOUND' ? '1px solid #10b981' : '1px solid #1e293b', borderRadius: '8px', padding: '10px 12px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                                <span style={{ fontSize: '0.68rem', background: msg.direction === 'OUTBOUND' ? '#064e3b' : '#1e3a8a', color: msg.direction === 'OUTBOUND' ? '#34d399' : '#60a5fa', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
-                                  {msg.direction || 'INBOUND'}
-                                </span>
-                                <span style={{ fontSize: '0.78rem', color: '#FCD34D', fontWeight: 'bold' }}>
-                                  {msg.direction === 'OUTBOUND' ? `TO: ${msg.recipient_email}` : `FROM: ${msg.sender_email}`}
-                                </span>
-                                <span style={{ fontSize: '0.70rem', color: '#00D2FF' }}>
-                                  (ALIAS: {msg.alias_email})
-                                </span>
-                              </div>
-                              <span style={{ fontSize: '0.68rem', color: '#64748B' }}>
-                                {msg.created_at ? new Date(msg.created_at).toLocaleString() : ''}
-                              </span>
-                            </div>
-                            <div style={{ fontSize: '0.80rem', color: '#FFFFFF', fontWeight: 'bold', marginBottom: '4px' }}>
-                              {msg.subject || 'No Subject'}
-                            </div>
-                            <div style={{ fontSize: '0.75rem', color: '#CBD5E1', lineHeight: '1.4', whiteSpace: 'pre-wrap', maxHeight: '120px', overflowY: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
-                              {msg.body_text || 'Encrypted email content.'}
-                            </div>
-                            <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end', gap: '8px', flexWrap: 'wrap' }}>
-                              <button
-                                type="button"
-                                className="reset-btn"
-                                style={{ padding: '3px 10px', fontSize: '0.70rem', color: '#10B981', borderColor: '#10B981' }}
-                                onClick={() => {
-                                  setReplyAliasEmail(msg.alias_email);
-                                  setReplyRecipientEmail(msg.direction === 'OUTBOUND' ? msg.recipient_email : msg.sender_email);
-                                  setReplySubject(`Re: ${msg.subject || 'Alias Transmission'}`);
-                                  setReplyBody("");
-                                  setShowAliasReplyModal(true);
-                                }}
-                              >
-                                ✉️ REPLY VIA {msg.alias_email}
-                              </button>
-                              <button
-                                type="button"
-                                className="reset-btn"
-                                style={{ padding: '3px 8px', fontSize: '0.70rem', color: '#EF4444', borderColor: '#EF4444' }}
-                                onClick={(e) => handleDeleteAliasMessage(msg.id, e)}
-                                title="Delete email message"
-                              >
-                                🗑️ DELETE
-                              </button>
+                      
+                      {/* ADDY.IO EMAIL VERIFICATION CALLOUT BANNER */}
+                      {addyRecipientStatus === "PENDING_VERIFICATION" && (
+                        <div style={{
+                          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(217, 119, 6, 0.3) 100%)',
+                          border: '2px solid #F59E0B',
+                          borderRadius: '12px',
+                          padding: '18px 20px',
+                          marginBottom: '20px',
+                          textAlign: 'left',
+                          boxShadow: '0 0 30px rgba(245, 158, 11, 0.4)',
+                          boxSizing: 'border-box'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '1.5rem' }}>📩</span>
+                            <div>
+                              <h4 style={{ margin: 0, color: '#FCD34D', fontSize: '1.05rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                                ACTION REQUIRED: VERIFY YOUR EMAIL ADDRESS
+                              </h4>
+                              <p style={{ margin: '2px 0 0 0', color: '#FFF', fontSize: '0.82rem', fontWeight: 'bold' }}>
+                                Verification Link Sent To: <span style={{ color: '#00D2FF', textDecoration: 'underline' }}>{addyRecipientEmail || "Your Registered Email"}</span>
+                              </p>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
 
-                {/* --- RELAY SHIELD CREDITS METER CARD --- */}
-                <div className="masking-tool" style={{ 
-                  width: '100%', 
-                  maxWidth: '600px', 
-                  border: '1px solid rgba(0, 210, 255, 0.3)',
-                  background: 'rgba(5, 7, 13, 0.95)',
-                  borderRadius: '12px',
-                  padding: '20px',
-                  textAlign: 'left'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
-                    <span style={{ fontSize: '0.82rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                      🛡️ MONTHLY RELAY SHIELD CREDITS
-                    </span>
-                    <span style={{ fontSize: '0.85rem', color: relayCredits > 50 ? '#10B981' : '#EF4444', fontWeight: 'bold' }}>
-                      {relayCredits} / {relayCreditsTotal} CREDITS
-                    </span>
-                  </div>
+                          <p style={{ color: '#E2E8F0', fontSize: '0.85rem', lineHeight: '1.5', margin: '0 0 12px 0' }}>
+                            Your email alias forwarding is <strong>currently pending verification</strong> from Addy.io. Please open your email inbox (and check <strong>Spam/Junk</strong> folder) for an email from <code>noreply@addy.io</code> and click <strong>"Verify Email Address"</strong>.
+                          </p>
 
-                  {/* Progress Bar */}
-                  <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.1)', borderRadius: '5px', overflow: 'hidden', marginBottom: '10px' }}>
-                    <div style={{ 
-                      width: `${Math.min(100, Math.max(0, (relayCredits / Math.max(1, relayCreditsTotal)) * 100))}%`, 
-                      height: '100%', 
-                      background: relayCredits > 100 ? 'linear-gradient(90deg, #00D2FF, #10B981)' : 'linear-gradient(90deg, #F59E0B, #EF4444)',
-                      transition: 'width 0.4s ease'
-                    }}></div>
-                  </div>
+                          <div style={{ 
+                            background: 'rgba(5, 11, 20, 0.85)', 
+                            border: '1px solid rgba(245, 158, 11, 0.4)', 
+                            borderRadius: '8px', 
+                            padding: '10px 14px', 
+                            marginBottom: '14px', 
+                            fontSize: '0.78rem', 
+                            color: '#CBD5E1', 
+                            lineHeight: '1.4' 
+                          }}>
+                            ⚡ <strong>Note:</strong> Once you click the link in your email, your aliases will automatically activate within seconds.
+                          </div>
 
-                  <p style={{ fontSize: '0.74rem', color: '#94A3B8', margin: '0 0 14px 0', lineHeight: '1.4' }}>
-                    1 SMS Relay = 1 Credit | 1 Call Forwarding Minute = 2 Credits. Credits protect your privacy and lock in guaranteed plan pricing.
-                  </p>
+                          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              className="main-button"
+                              style={{
+                                padding: '8px 14px',
+                                fontSize: '0.80rem',
+                                fontWeight: 'bold',
+                                background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                                border: 'none',
+                                color: '#FFF',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                opacity: isResendingAddyVerification ? 0.7 : 1,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                              }}
+                              onClick={handleResendAddyVerification}
+                              disabled={isResendingAddyVerification}
+                            >
+                              {isResendingAddyVerification ? (
+                                <>
+                                  <span className="cyberpunk-spinner" style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid #FFF', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></span>
+                                  RESENDING LINK...
+                                </>
+                              ) : (
+                                '📩 RESEND VERIFICATION EMAIL'
+                              )}
+                            </button>
 
-                  <button 
-                    className="main-button" 
-                    disabled={isRefillingCredits}
-                    style={{ width: '100%', padding: '12px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                    onClick={handleRefillCredits}
-                  >
-                    {isRefillingCredits ? "⏳ INITIALIZING..." : "⚡ REFILL +250 RELAY CREDITS ($5.00)"}
-                  </button>
-                </div>
-
-                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-                    <span className="tool-label" style={{ margin: 0, textAlign: 'left', fontWeight: 'bold' }}>PHONE PROTECTION & SMS RELAY</span>
-                    <button 
-                      type="button"
-                      className="main-button" 
-                      style={{ 
-                        padding: '8px 14px', 
-                        fontSize: '0.80rem', 
-                        fontWeight: 'bold', 
-                        letterSpacing: '0.5px',
-                        background: 'linear-gradient(135deg, #00D2FF 0%, #0072FF 100%)',
-                        border: 'none',
-                        color: '#ffffff',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        boxShadow: '0 0 12px rgba(0, 210, 255, 0.35)',
-                        whiteSpace: 'nowrap'
-                      }} 
-                      onClick={() => setShowPhoneModal(true)}
-                    >
-                      + GENERATE PHONE ALIAS
-                    </button>
-                  </div>
-                  
-                  {/* Destination Forwarding Mobile Phone Setup */}
-                  <div style={{ background: 'rgba(0,210,255,0.03)', border: '1px solid rgba(0,210,255,0.2)', padding: '14px', borderRadius: '8px', marginBottom: '18px', textAlign: 'left' }}>
-                    <label style={{ fontSize: '0.78rem', color: '#00D2FF', display: 'block', marginBottom: '6px', fontWeight: 'bold', letterSpacing: '0.5px' }}>
-                      📱 FORWARDING DESTINATION MOBILE NUMBER
-                    </label>
-                    <div className="flex-responsive-row">
-                      <input 
-                        className="mask-btn" 
-                        placeholder="e.g. (813) 555-0199"
-                        value={destinationPhone} 
-                        onChange={(e) => setDestinationPhone(e.target.value)} 
-                        style={{ flex: 1, fontSize: '0.9rem' }}
-                      />
-                      <button 
-                        className="main-button" 
-                        style={{ padding: '12px 14px', fontSize: '0.82rem', whiteSpace: 'nowrap', minWidth: '120px' }}
-                        onClick={handleSaveForwardingPhone}
-                      >
-                        💾 SAVE PHONE
-                      </button>
-                    </div>
-                    <p style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: '6px', marginBottom: 0 }}>
-                      Texts sent to your phone aliases will be forwarded directly to this mobile phone number.
-                    </p>
-                  </div>
-
-                  <div className="alias-manager-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
-                    {phones.map((p) => (
-                      <div key={p.id} style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.25)', padding: '14px 16px', borderRadius: '10px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                          <span style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                            ALIAS: {p.label.toUpperCase()}
-                          </span>
-                          <button className="kill-text-bold" style={{ padding: '3px 8px', fontSize: '0.7rem' }} onClick={() => promptKillAlias(p)}>TERMINATE ✖</button>
+                            <button
+                              type="button"
+                              className="reset-btn"
+                              style={{
+                                padding: '8px 14px',
+                                fontSize: '0.80rem',
+                                fontWeight: 'bold',
+                                borderColor: '#F59E0B',
+                                color: '#FCD34D',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                opacity: isCheckingAddyStatus ? 0.7 : 1,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                              }}
+                              onClick={() => checkAddyRecipientStatus(true)}
+                              disabled={isCheckingAddyStatus}
+                            >
+                              {isCheckingAddyStatus ? (
+                                <>
+                                  <span className="cyberpunk-spinner" style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid #FCD34D', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></span>
+                                  CHECKING STATUS...
+                                </>
+                              ) : (
+                                '🔄 CHECK STATUS NOW'
+                              )}
+                            </button>
+                          </div>
                         </div>
-                        <div 
-                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0A0A0A', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', width: '100%', boxSizing: 'border-box' }} 
-                          onClick={() => {navigator.clipboard.writeText(p.content); triggerToast("PHONE COPIED")}}
-                        >
-                          <span style={{ fontSize: '0.88rem', color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
-                            {p.content}
-                          </span>
-                          <span style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 'bold', flexShrink: 0, marginLeft: '8px', whiteSpace: 'nowrap' }}>COPY 📋</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      )}
 
-                  {/* Live In-App SMS Vault Inbox */}
-                  <div style={{ background: '#05070E', border: '1px solid #334155', padding: '15px', borderRadius: '8px', marginTop: '20px', textAlign: 'left' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                      <span style={{ fontSize: '0.82rem', color: '#10B981', fontWeight: 'bold', letterSpacing: '1px' }}>
-                        📥 INCOMING SMS MESSAGES (LIVE INBOX)
-                      </span>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button className="reset-btn" style={{ padding: '3px 8px', fontSize: '0.7rem' }} onClick={() => setShowComposeSms(!showComposeSms)}>
-                          {showComposeSms ? "✕ CLOSE" : "✉️ NEW SMS"}
-                        </button>
-                        <button className="reset-btn" style={{ padding: '3px 8px', fontSize: '0.7rem' }} onClick={fetchSmsInbox}>
-                          🔄 REFRESH
-                        </button>
-                      </div>
+                      {emails.length === 0 ? (
+                        <div className="terminal-line" style={{textAlign: 'center', opacity: 0.5, marginBottom: '15px'}}>NO ACTIVE EMAIL ALIASES CREATED</div>
+                      ) : (
+                        <div className="alias-manager-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
+                          {emails.map((e) => (
+                            <div key={e.id} style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.25)', padding: '14px 16px', borderRadius: '10px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                <span style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                                  ALIAS: {e.label.toUpperCase()}
+                                </span>
+                                <button className="kill-text-bold" style={{ padding: '3px 8px', fontSize: '0.7rem' }} onClick={() => promptKillAlias(e)}>TERMINATE ✖</button>
+                              </div>
+                              <div 
+                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0A0A0A', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', width: '100%', boxSizing: 'border-box' }} 
+                                onClick={() => {navigator.clipboard.writeText(e.content); triggerToast("EMAIL COPIED")}}
+                              >
+                                <span style={{ fontSize: '0.88rem', color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
+                                  {e.content}
+                                </span>
+                                <span style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 'bold', flexShrink: 0, marginLeft: '8px', whiteSpace: 'nowrap' }}>COPY 📋</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
-                    {showComposeSms && (
-                      <div style={{ background: '#090d16', border: '1px solid #00D2FF', padding: '12px', borderRadius: '6px', marginBottom: '12px' }}>
-                        <div style={{ fontSize: '0.75rem', color: '#00D2FF', fontWeight: 'bold', marginBottom: '10px' }}>✉️ SEND NEW SMS FROM ALIAS LINE</div>
-                        
-                        <div style={{ marginBottom: '10px' }}>
-                          <label style={{ fontSize: '0.70rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            SEND FROM ALIAS / NUMBER:
-                          </label>
-                          <select
-                            value={selectedSenderAlias}
-                            onChange={(e) => setSelectedSenderAlias(e.target.value)}
-                            style={{ 
-                              width: '100%', 
-                              padding: '8px 10px', 
-                              fontSize: '0.80rem', 
-                              background: '#030712', 
-                              border: '1px solid #00D2FF', 
-                              color: '#00D2FF', 
-                              fontWeight: 'bold',
-                              borderRadius: '4px',
-                              boxSizing: 'border-box' 
+                    {/* INBOUND ALIAS EMAIL MESSAGES & REPLY ROUTING UI CARD */}
+                    <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)', position: 'relative' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span className="tool-label" style={{ margin: 0, textAlign: 'left', fontWeight: 'bold' }}>INBOUND ALIAS VAULT INBOX</span>
+                          <span style={{ background: 'rgba(0, 210, 255, 0.15)', color: '#00D2FF', border: '1px solid rgba(0, 210, 255, 0.3)', padding: '2px 7px', borderRadius: '4px', fontSize: '0.70rem', fontWeight: 'bold' }}>
+                            {aliasMessages.length} MESSAGES
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            className="main-button"
+                            style={{ padding: '6px 12px', fontSize: '0.75rem', fontWeight: 'bold', background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', border: 'none', color: '#ffffff', borderRadius: '5px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                            onClick={() => {
+                              if (emails.length > 0) setReplyAliasEmail(emails[0].content || "");
+                              setReplyRecipientEmail("");
+                              setReplySubject("");
+                              setAliasReplyBody("");
+                              setShowAliasReplyModal(true);
                             }}
                           >
-                            <option value="">-- DEFAULT MASTER LINE (+15855802036) --</option>
-                            {(phones || []).map((p, pIdx) => {
-                              const numVal = p.content || p.number || p;
-                              const labelVal = p.label ? `${p.label} (${numVal})` : numVal;
-                              return (
-                                <option key={p.id || pIdx} value={numVal}>
-                                  📱 {labelVal}
-                                </option>
-                              );
-                            })}
-                          </select>
+                            ✉️ COMPOSE NEW EMAIL
+                          </button>
+                          <button
+                            type="button"
+                            className="reset-btn"
+                            style={{ padding: '6px 12px', fontSize: '0.75rem', fontWeight: 'bold', borderColor: '#00D2FF', color: '#00D2FF', borderRadius: '5px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                            onClick={handleRefreshAliasData}
+                            disabled={isRefreshingAliasData}
+                          >
+                            {isRefreshingAliasData ? "🔄 REFRESHING..." : "🔄 REFRESH"}
+                          </button>
                         </div>
-
-                        <input
-                          type="text"
-                          placeholder="Recipient Phone (+18135551234)"
-                          value={composeSmsRecipient}
-                          onChange={(e) => setComposeSmsRecipient(e.target.value)}
-                          style={{ width: '100%', padding: '8px 10px', fontSize: '0.82rem', background: '#030712', border: '1px solid #1e293b', color: '#fff', borderRadius: '4px', marginBottom: '8px', boxSizing: 'border-box' }}
-                        />
-                        <textarea
-                          placeholder="Type your message..."
-                          value={composeSmsBody}
-                          onChange={(e) => setComposeSmsBody(e.target.value)}
-                          style={{ width: '100%', padding: '8px 10px', fontSize: '0.82rem', background: '#030712', border: '1px solid #1e293b', color: '#fff', borderRadius: '4px', marginBottom: '8px', height: '60px', boxSizing: 'border-box', resize: 'vertical' }}
-                        />
-                        <button
-                          className="main-button"
-                          type="button"
-                          style={{ padding: '8px 12px', fontSize: '0.80rem', width: '100%', fontWeight: 'bold' }}
-                          onClick={() => {
-                            handleSendSmsReply(composeSmsRecipient, composeSmsBody, selectedSenderAlias);
-                            setComposeSmsRecipient("");
-                            setComposeSmsBody("");
-                          }}
-                        >
-                          📤 SEND SMS
-                        </button>
                       </div>
-                    )}
 
-                    {groupedSmsThreads.length === 0 ? (
-                      <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, textAlign: 'center', padding: '10px' }}>
-                        No incoming text messages received yet. Any SMS sent to your alias will appear here instantly.
-                      </p>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '320px', overflowY: 'auto' }}>
-                        {groupedSmsThreads.map(({ phone, messages }) => {
-                          const formattedPhoneDisplay = phone.replace(/\+1([0-9]{3})([0-9]{3})([0-9]{4})/, "+1 ($1) $2-$3");
-                          const isGroupReplying = activeReplyId === `group_${phone}`;
-                          const isExpanded = !!expandedThreads[phone];
-
-                          const newestMessage = messages[0];
-                          const olderMessages = messages.slice(1);
-                          const hasOlderMessages = olderMessages.length > 0;
-
-                          return (
-                            <div key={`thread_${phone}`} style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '8px', padding: '10px 12px' }}>
-                              {/* Group Header */}
-                              <div className="sms-thread-header">
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                  <span style={{ fontSize: '0.82rem', color: '#00D2FF', fontWeight: 'bold' }}>📱 CONTACT: {formattedPhoneDisplay}</span>
-                                  {(() => {
-                                    const rawAlias = messages.find(m => m.message && String(m.message).startsWith("OUTBOUND") && m.from_phone)?.from_phone
-                                      || messages.find(m => m.to_phone && m.to_phone !== phone)?.to_phone
-                                      || (newestMessage?.to_phone && newestMessage.to_phone !== phone ? newestMessage.to_phone : "");
-                                    const resolvedAlias = sanitizePhoneAlias(rawAlias);
-                                    if (!resolvedAlias) return null;
-                                    return (
-                                      <span style={{ fontSize: '0.72rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.15)', padding: '2px 7px', borderRadius: '4px', border: '1px solid rgba(56, 189, 248, 0.3)', fontWeight: 'bold' }}>
-                                        🔒 ALIAS: {resolvedAlias}{getAliasLabel(resolvedAlias)}
-                                      </span>
-                                    );
-                                  })()}
-                                  <span style={{ fontSize: '0.65rem', background: '#1e293b', color: '#10B981', padding: '1px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
-                                    {messages.length} {messages.length === 1 ? 'MSG' : 'MSGS'}
+                      {aliasMessages.length === 0 ? (
+                        <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, textAlign: 'center', padding: '12px' }}>
+                          No email messages received in your alias vault yet. Incoming emails sent to your active aliases will appear here.
+                        </p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '350px', overflowY: 'auto' }}>
+                          {aliasMessages.map((msg) => (
+                            <div key={msg.id} style={{ background: '#05070D', border: '1px solid #1e293b', padding: '12px', borderRadius: '8px', textAlign: 'left' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                                <div>
+                                  <span style={{ fontSize: '0.82rem', color: '#FFFFFF', fontWeight: 'bold', display: 'block' }}>
+                                    FROM: {msg.sender || "Unknown Sender"}
+                                  </span>
+                                  <span style={{ fontSize: '0.72rem', color: '#00D2FF', fontFamily: 'monospace' }}>
+                                    TO ALIAS: {msg.alias_email || "Alias Node"}
                                   </span>
                                 </div>
-                                <div style={{ display: 'flex', gap: '6px' }}>
-                                  <button
-                                    className="reset-btn"
-                                    type="button"
-                                    style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#10B981', borderColor: '#10B981' }}
-                                    onClick={() => {
-                                      if (isGroupReplying) {
-                                        setActiveReplyId(null);
-                                      } else {
-                                        const cleanPhoneRecipient = phone.startsWith("+") ? phone : (phone ? `+${phone.replace(/\D/g, "")}` : "");
-                                        const targetAliasLine = newestMessage?.to_phone || "";
-                                        setActiveReplyId(`group_${phone}`);
-                                        setReplyRecipient(cleanPhoneRecipient);
-                                        setSelectedSenderAlias(targetAliasLine);
-                                        setReplyBody("");
-                                      }
-                                    }}
-                                  >
-                                    {isGroupReplying ? "✕ CLOSE" : "💬 REPLY"}
-                                  </button>
-
-                                  <button
-                                    className="reset-btn"
-                                    type="button"
-                                    style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#EF4444', borderColor: '#EF4444' }}
-                                    onClick={(e) => {
-                                      messages.forEach(msg => handleDeleteSmsMessage(msg.id, e));
-                                    }}
-                                  >
-                                    🗑️ DELETE
-                                  </button>
-                                </div>
+                                <span style={{ fontSize: '0.68rem', color: '#64748B' }}>
+                                  {msg.received_at ? new Date(msg.received_at).toLocaleString() : "Recently"}
+                                </span>
                               </div>
 
-                              {/* Quick Reply Box for Thread */}
-                              {isGroupReplying && (
-                                <div style={{ background: '#030712', border: '1px solid #10B981', padding: '8px', borderRadius: '6px', marginBottom: '8px' }}>
-                                  <textarea
-                                    placeholder={`Reply to ${formattedPhoneDisplay}...`}
-                                    value={replyBody}
-                                    onChange={(e) => setReplyBody(e.target.value)}
-                                    style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#090d16', border: '1px solid #1e293b', color: '#fff', borderRadius: '4px', marginBottom: '6px', height: '45px', boxSizing: 'border-box', resize: 'vertical' }}
-                                  />
-                                  <button
-                                    className="main-button"
-                                    type="button"
-                                    style={{ padding: '6px 12px', fontSize: '0.75rem', width: '100%', background: 'linear-gradient(135deg, #10B981, #059669)', border: 'none', color: '#fff', fontWeight: 'bold', borderRadius: '4px' }}
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      const targetAliasLine = newestMessage?.to_phone || selectedSenderAlias || "";
-                                      handleSendSmsReply(
-                                        phone.startsWith("+") ? phone : replyRecipient, 
-                                        replyBody, 
-                                        targetAliasLine
-                                      );
-                                    }}
-                                  >
-                                    📤 SEND REPLY NOW
-                                  </button>
+                              {msg.subject && (
+                                <div style={{ fontSize: '0.78rem', color: '#FCD34D', fontWeight: 'bold', marginBottom: '6px' }}>
+                                  SUBJECT: {msg.subject}
                                 </div>
                               )}
 
-                              {/* Messages inside this Phone Thread */}
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                {/* NEWEST MESSAGE ALWAYS SHOWN AT TOP */}
-                                {newestMessage && (() => {
-                                  const isOutbound = newestMessage.message && String(newestMessage.message).startsWith("OUTBOUND");
-                                  return (
-                                    <div key={newestMessage.id} style={{ background: isOutbound ? '#051815' : '#030712', padding: '8px 10px', borderRadius: '5px', border: isOutbound ? '1px solid #059669' : '1px solid #1e293b', fontSize: '0.78rem' }}>
-                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                                          <span style={{ fontSize: '0.65rem', color: isOutbound ? '#10B981' : '#38BDF8', fontWeight: 'bold' }}>
-                                            {isOutbound ? "OUTBOUND REPLY" : "INCOMING SMS"}
-                                          </span>
-                                          {isOutbound ? (
-                                            <>
-                                              {newestMessage.from_phone && sanitizePhoneAlias(newestMessage.from_phone) && (
-                                                <span style={{ fontSize: '0.65rem', color: '#00D2FF', background: 'rgba(0, 210, 255, 0.12)', padding: '1px 6px', borderRadius: '3px', border: '1px solid rgba(0, 210, 255, 0.3)', fontWeight: 'bold' }}>
-                                                  📤 FROM ALIAS: {sanitizePhoneAlias(newestMessage.from_phone)}{getAliasLabel(newestMessage.from_phone)}
-                                                </span>
-                                              )}
-                                              {newestMessage.to_phone && (
-                                                <span style={{ fontSize: '0.65rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
-                                                  🎯 TO: {newestMessage.to_phone}
-                                                </span>
-                                              )}
-                                            </>
-                                          ) : (
-                                            <>
-                                              {newestMessage.from_phone && (
-                                                <span style={{ fontSize: '0.65rem', color: '#00D2FF', background: 'rgba(0, 210, 255, 0.12)', padding: '1px 6px', borderRadius: '3px', border: '1px solid rgba(0, 210, 255, 0.3)', fontWeight: 'bold' }}>
-                                                  📥 FROM: {newestMessage.from_phone}
-                                                </span>
-                                              )}
-                                              {newestMessage.to_phone && sanitizePhoneAlias(newestMessage.to_phone) && (
-                                                <span style={{ fontSize: '0.65rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
-                                                  🔒 TO ALIAS: {sanitizePhoneAlias(newestMessage.to_phone)}{getAliasLabel(newestMessage.to_phone)}
-                                                </span>
-                                              )}
-                                            </>
-                                          )}
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                          <span style={{ color: '#64748B', fontSize: '0.68rem' }}>{newestMessage.timestamp}</span>
-                                          <button
-                                            type="button"
-                                            style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '0.75rem', cursor: 'pointer', padding: '0 2px' }}
-                                            onClick={(e) => handleDeleteSmsMessage(newestMessage.id, e)}
-                                            title="Delete message"
-                                          >
-                                            🗑️
-                                          </button>
-                                        </div>
-                                      </div>
-                                      <div style={{ color: isOutbound ? '#34D399' : '#FFFFFF', fontWeight: '500' }}>{cleanMessageContent(newestMessage.message)}</div>
-                                    </div>
-                                  );
-                                })()}
+                              <div style={{ background: '#020202', padding: '8px 10px', borderRadius: '4px', border: '1px solid #111', fontSize: '0.78rem', color: '#CBD5E1', marginBottom: '8px', whiteSpace: 'pre-wrap', maxHeight: '120px', overflowY: 'auto' }}>
+                                {msg.snippet || msg.body || "No message preview"}
+                              </div>
 
-                                {/* COLLAPSED OLDER MESSAGES DROPDOWN TOGGLE */}
-                                {hasOlderMessages && (
-                                  <>
-                                    {isExpanded && (
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px', paddingLeft: '8px', borderLeft: '2px solid #1e293b' }}>
-                                        {olderMessages.map(sms => {
-                                          const isSubOutbound = sms.message && String(sms.message).startsWith("OUTBOUND");
-                                          return (
-                                            <div key={sms.id} style={{ background: isSubOutbound ? '#051815' : '#030712', padding: '6px 8px', borderRadius: '4px', border: isSubOutbound ? '1px solid #059669' : '1px solid #111827', fontSize: '0.75rem' }}>
-                                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap', gap: '4px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                                                  {isSubOutbound ? (
-                                                    <>
-                                                      {sms.from_phone && sanitizePhoneAlias(sms.from_phone) && (
-                                                        <span style={{ fontSize: '0.62rem', color: '#00D2FF', background: 'rgba(0, 210, 255, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(0, 210, 255, 0.3)', fontWeight: 'bold' }}>
-                                                          📤 FROM ALIAS: {sanitizePhoneAlias(sms.from_phone)}{getAliasLabel(sms.from_phone)}
-                                                        </span>
-                                                      )}
-                                                      {sms.to_phone && (
-                                                        <span style={{ fontSize: '0.62rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
-                                                          🎯 TO: {sms.to_phone}
-                                                        </span>
-                                                      )}
-                                                    </>
-                                                  ) : (
-                                                    <>
-                                                      {sms.from_phone && (
-                                                        <span style={{ fontSize: '0.62rem', color: '#00D2FF', background: 'rgba(0, 210, 255, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(0, 210, 255, 0.3)', fontWeight: 'bold' }}>
-                                                          📥 FROM: {sms.from_phone}
-                                                        </span>
-                                                      )}
-                                                      {sms.to_phone && sanitizePhoneAlias(sms.to_phone) && (
-                                                        <span style={{ fontSize: '0.62rem', color: '#38BDF8', background: 'rgba(56, 189, 248, 0.12)', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(56, 189, 248, 0.25)' }}>
-                                                          🔒 TO ALIAS: {sanitizePhoneAlias(sms.to_phone)}{getAliasLabel(sms.to_phone)}
-                                                        </span>
-                                                      )}
-                                                    </>
-                                                  )}
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                  <span style={{ color: '#64748B', fontSize: '0.65rem' }}>{sms.timestamp}</span>
-                                                  <button
-                                                    type="button"
-                                                    style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '0.72rem', cursor: 'pointer', padding: '0 2px', marginLeft: '6px' }}
-                                                    onClick={(e) => handleDeleteSmsMessage(sms.id, e)}
-                                                    title="Delete message"
-                                                  >
-                                                    🗑️
-                                                  </button>
-                                                </div>
-                                              </div>
-                                              <div style={{ color: isSubOutbound ? '#34D399' : '#E2E8F0' }}>{cleanMessageContent(sms.message)}</div>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-
-                                    <button
-                                      type="button"
-                                      style={{
-                                        width: '100%',
-                                        padding: '5px',
-                                        marginTop: '4px',
-                                        fontSize: '0.72rem',
-                                        background: '#030712',
-                                        border: '1px dashed #334155',
-                                        borderRadius: '4px',
-                                        color: '#00D2FF',
-                                        fontWeight: 'bold',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '6px'
-                                      }}
-                                      onClick={() => setExpandedThreads(prev => ({ ...prev, [phone]: !prev[phone] }))}
-                                    >
-                                      {isExpanded 
-                                        ? `▲ COLLAPSE HISTORY (${olderMessages.length} OLDER ${olderMessages.length === 1 ? 'MSG' : 'MSGS'})` 
-                                        : `▼ SHOW DROPDOWN (${olderMessages.length} OLDER ${olderMessages.length === 1 ? 'MSG' : 'MSGS'})`}
-                                    </button>
-                                  </>
-                                )}
+                              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                <button
+                                  type="button"
+                                  className="reset-btn"
+                                  style={{ padding: '3px 10px', fontSize: '0.70rem', color: '#10B981', borderColor: '#10B981', fontWeight: 'bold' }}
+                                  onClick={() => {
+                                    setReplyAliasEmail(msg.alias_email || (emails[0] ? emails[0].content : ""));
+                                    setReplyRecipientEmail(msg.sender || "");
+                                    setReplySubject(msg.subject ? (msg.subject.startsWith("Re:") ? msg.subject : `Re: ${msg.subject}`) : "Re: Your Message");
+                                    setAliasReplyBody("");
+                                    setShowAliasReplyModal(true);
+                                  }}
+                                >
+                                  💬 REPLY VIA ALIAS
+                                </button>
+                                <button
+                                  type="button"
+                                  className="reset-btn"
+                                  style={{ padding: '3px 10px', fontSize: '0.70rem', color: '#EF4444', borderColor: '#EF4444', fontWeight: 'bold' }}
+                                  onClick={(e) => handleDeleteAliasMessage(msg.id, e)}
+                                >
+                                  🗑️ DELETE
+                                </button>
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {false && (
-                  // VCC feature is disabled
-                  <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
-                    <p className="tool-label" style={{ textAlign: 'center', marginBottom: '20px' }}>CREDIT CARD PROTECTION</p>
-                    <div className="card-manager-list">
-                      {cards.filter(c => {
-                         const globalCard = cards.find(gc => gc.label.toUpperCase() === 'PRIMARY_PAY_NODE' || gc.label.toUpperCase().includes('GLOBAL'));
-                         return !globalCard || c.id !== globalCard.id;
-                      }).map((c) => (
-                          <div key={c.id} className="managed-card-row enhanced-card">
-                            <div className="card-row-info">
-                              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '10px'}}>
-                                   <span className="card-nickname tiger-text">{c.label.toUpperCase()}</span>
-                                   <button className="kill-text-bold" onClick={() => handleKillCard(c.id)}>TERMINATE</button>
-                              </div>
-                              
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#020202', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', marginBottom: '12px' }} onClick={() => {navigator.clipboard.writeText(c.number.replace(/\s/g, '')); triggerToast("CARD NUMBER COPIED")}}>
-                                <code className="card-digits" style={{ fontSize: '1.15rem', letterSpacing: '2px', color: '#fff', margin: 0, padding: 0 }}>{c.number}</code>
-                                <span style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 'bold' }}>COPY 📋</span>
-                              </div>
-
-                              <div className="responsive-card-details">
-                                   <div style={{ cursor: 'pointer' }} onClick={() => {navigator.clipboard.writeText(c.expiry || '08/28'); triggerToast("EXPIRY COPIED")}}>
-                                     <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>EXP 📋</span>
-                                     <strong>{c.expiry || '08/28'}</strong>
-                                   </div>
-                                   <div style={{ cursor: 'pointer' }} onClick={() => {navigator.clipboard.writeText(c.cvv || '000'); triggerToast("CVV COPIED")}}>
-                                     <span style={{fontSize: '0.75rem', color: '#cbd5e1', display: 'block'}}>CVV 📋</span>
-                                     <strong>{c.cvv || '***'}</strong>
-                                   </div>
-                              </div>
-                            </div>
-                          </div>
-                      ))}
-                    </div>
-                    <button className="reset-btn" style={{marginTop: '20px', width: '100%', borderStyle: 'dashed'}} onClick={() => { setNewCardLabel(""); setShowMintModal(true); }}> + GENERATE CARD PROTECTION </button>
-                  </div>
-                )}
-
-                {/* --- OPERATIVE PRIVACY PROFILE & REMOVAL IDENTITY --- */}
-                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
-                  <p className="tool-label" style={{ textAlign: 'center', marginBottom: '14px' }}>👤 OPERATIVE PRIVACY PROFILE & REMOVAL IDENTITY</p>
-                  
-                  <div style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.3)', borderRadius: '10px', padding: '16px', marginBottom: '12px', textAlign: 'left' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '8px' }}>
-                      <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                        TARGET REMOVAL PROFILE
-                      </span>
-                      <span style={{ fontSize: '0.68rem', color: '#10B981', background: 'rgba(16,185,129,0.12)', padding: '3px 8px', borderRadius: '4px', border: '1px solid rgba(16,185,129,0.3)', fontWeight: 'bold' }}>
-                        🟢 ACTIVE PROTECTION
-                      </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.86rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ color: '#94A3B8' }}>Legal Target Name:</span>
-                        <strong style={{ color: '#00D2FF', fontFamily: 'monospace' }}>
-                          {targetProfile.firstName || targetProfile.first_name || targetProfile.lastName || targetProfile.last_name 
-                            ? `${targetProfile.firstName || targetProfile.first_name || ''} ${targetProfile.middleName || targetProfile.middle_name ? `${targetProfile.middleName || targetProfile.middle_name} ` : ''}${targetProfile.lastName || targetProfile.last_name || ''}`.trim() 
-                            : (getSessionItem("disappear_user_email") || 'Registered Operative')}
-                        </strong>
-                      </div>
-
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ color: '#94A3B8' }}>Primary Email:</span>
-                        <span style={{ color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold' }}>
-                          {targetProfile.email || getSessionItem("disappear_user_email") || 'Awaiting Sync...'}
-                        </span>
-                      </div>
-
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ color: '#94A3B8' }}>SMS Forwarding Phone:</span>
-                        <span style={{ color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold' }}>
-                          {targetProfile.phone || destinationPhone || 'No Phone Linked'}
-                        </span>
-                      </div>
-
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ color: '#94A3B8' }}>Registered Address:</span>
-                        <span style={{ color: '#CBD5E1', fontSize: '0.82rem', textAlign: 'right' }}>
-                          {targetProfile.address || 'Address Not Set'}
-                        </span>
-                      </div>
-
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ color: '#94A3B8' }}>Date of Birth:</span>
-                        <span style={{ color: '#CBD5E1', fontFamily: 'monospace' }}>
-                          {targetProfile.dob || 'DOB Not Set'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <button 
-                    className="main-button" 
-                    style={{ width: '100%', fontSize: '0.82rem', padding: '10px 14px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
-                    onClick={() => {
-                      checkAndShowNoticeModal(currentUserId || getSessionItem("disappear_user_id"));
-                    }}
-                  >
-                    ⚙️ REVIEW / EDIT TARGET PROFILE
-                  </button>
-                </div>
-
-                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
-                  <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>DATA BROKER TARGETS</p>
-                  
-                  {/* Primary Target Email */}
-                  <div style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.25)', padding: '14px 16px', borderRadius: '10px', marginBottom: '12px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                        PRIMARY TARGET EMAIL
-                      </span>
-                      <span style={{ fontSize: '0.68rem', color: '#10B981', background: 'rgba(16,185,129,0.12)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(16,185,129,0.3)', fontWeight: 'bold' }}>
-                        PRIMARY 🔒
-                      </span>
-                    </div>
-                    <div 
-                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0A0A0A', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', width: '100%', boxSizing: 'border-box' }}
-                      onClick={() => { if(targetEmails.primary) { navigator.clipboard.writeText(targetEmails.primary); triggerToast("EMAIL COPIED"); } }}
-                    >
-                      <span style={{ fontSize: '0.88rem', color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
-                        {targetEmails.primary || "Awaiting Sync..."}
-                      </span>
-                      <span style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 'bold', flexShrink: 0, marginLeft: '8px', whiteSpace: 'nowrap' }}>COPY 📋</span>
-                    </div>
-                  </div>
-                  
-                  {/* Secondary Target Emails */}
-                  {targetEmails.additional.map((e, idx) => (
-                    <div key={e.id} style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.25)', padding: '14px 16px', borderRadius: '10px', marginBottom: '12px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                          SECONDARY TARGET EMAIL #{idx + 1}
-                        </span>
-                        <button className="kill-text-bold" style={{ padding: '3px 8px', fontSize: '0.7rem' }} onClick={async () => { await secureRequest(`${API_BASE_URL}/profile/emails/${e.id}`, {method: 'DELETE'}); fetchTargetEmails(); }}>
-                          REMOVE ✖
+                    {/* MOBILE SMS PROTECTION MODULE */}
+                    <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative', border: '1px solid var(--tiger-blue)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                        <span className="tool-label" style={{ margin: 0, textAlign: 'left', fontWeight: 'bold' }}>MOBILE SMS PROTECTION</span>
+                        <button 
+                          type="button"
+                          className="main-button" 
+                          style={{ 
+                            padding: '8px 14px', 
+                            fontSize: '0.80rem', 
+                            fontWeight: 'bold', 
+                            letterSpacing: '0.5px',
+                            background: 'linear-gradient(135deg, #00D2FF 0%, #0072FF 100%)',
+                            border: 'none',
+                            color: '#ffffff',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            boxShadow: '0 0 12px rgba(0, 210, 255, 0.35)',
+                            whiteSpace: 'nowrap'
+                          }} 
+                          disabled={isProcessingPayment}
+                          onClick={() => handlePurchaseExpansion('phone')}
+                        >
+                          + PROVISION MOBILE LINE
                         </button>
                       </div>
-                      <div 
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0A0A0A', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', width: '100%', boxSizing: 'border-box' }}
-                        onClick={() => { navigator.clipboard.writeText(e.email); triggerToast("EMAIL COPIED"); }}
-                      >
-                        <span style={{ fontSize: '0.88rem', color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
-                          {e.email}
-                        </span>
-                        <span style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 'bold', flexShrink: 0, marginLeft: '8px', whiteSpace: 'nowrap' }}>COPY 📋</span>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  <div className="flex-responsive-row" style={{ marginTop: '15px' }}>
-                    <input className="mask-btn" style={{flex: 1, color: 'white', textAlign: 'left', paddingLeft: '14px'}} placeholder="Enter secondary email to scrub..." value={newTargetEmail} onChange={e => setNewTargetEmail(e.target.value)} />
-                    <button className="main-button" style={{ fontSize: '0.85rem', padding: '12px 18px', display: 'flex', justifyContent: 'center', alignItems: 'center', whiteSpace: 'nowrap' }} onClick={handleAddTargetEmail}>
-                      + ADD TARGET
-                    </button>
-                  </div>
-                  
-                  <div style={{ fontSize: '0.82rem', color: '#94A3B8', textAlign: 'center', marginTop: '12px', fontWeight: 'bold' }}>
-                    EXTRA EMAIL SLOTS USED: {targetEmails.used} / {targetEmails.slots}
-                  </div>
-                </div>
 
-                {/* --- LIVE DATA BROKER SCRUB QUEUE & MONITOR --- */}
-                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
-                  <p className="tool-label" style={{ textAlign: 'center', marginBottom: '12px' }}>🛡️ DATA BROKER PURGE QUEUE ({scrubStats.total_brokers || 410} REGISTRIES)</p>
-                  
-                  {/* Overall Purge Cycle Status Banner */}
-                  <div style={{
-                    background: scrubStats.removed === 0 ? 'rgba(245, 158, 11, 0.12)' : 'rgba(16, 185, 129, 0.12)',
-                    border: scrubStats.removed === 0 ? '1px solid #F59E0B' : '1px solid #10B981',
-                    color: scrubStats.removed === 0 ? '#FCD34D' : '#10B981',
-                    padding: '12px 14px',
-                    borderRadius: '8px',
-                    marginBottom: '14px',
-                    textAlign: 'left'
-                  }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '4px', letterSpacing: '0.5px' }}>
-                      {scrubStats.removed === 0 ? `🟡 INITIAL PRIVACY PURGE QUEUED | REMOVALS IN PROGRESS (${scrubStats.total_brokers || 410} TARGETS)` : `🟢 ACTIVE PURGE CYCLE | ${scrubStats.removed} OF ${scrubStats.total_brokers || 410} BROKERS SCRUBBED`}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', opacity: 0.9, lineHeight: '1.4' }}>
-                      {scrubStats.removed === 0 
-                        ? `Your target profile has been dispatched to ${scrubStats.total_brokers || 410} major data broker opt-out endpoints. Automated crawlers and human privacy analysts are actively processing opt-out filings.`
-                        : `Continuous background scrubbers have finalized ${scrubStats.removed} verified removals (${scrubStats.progress_pct}% complete).`}
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div style={{ width: '100%', height: '8px', background: 'rgba(0,0,0,0.5)', borderRadius: '4px', overflow: 'hidden', marginTop: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                      <div style={{ width: `${scrubStats.progress_pct || 0}%`, height: '100%', background: 'linear-gradient(90deg, #F59E0B, #10B981)', borderRadius: '4px', transition: 'width 0.4s ease' }} />
-                    </div>
-                  </div>
-
-                  {/* Summary Metric Counters */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '14px' }}>
-                    <div style={{ background: '#05070D', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '8px 10px', borderRadius: '6px', textAlign: 'center' }}>
-                      <span style={{ fontSize: '0.65rem', color: '#FCD34D', display: 'block', fontWeight: 'bold' }}>IN PROGRESS</span>
-                      <strong style={{ fontSize: '1rem', color: '#FFF' }}>{scrubStats.processing || 0}</strong>
-                    </div>
-                    <div style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.3)', padding: '8px 10px', borderRadius: '6px', textAlign: 'center' }}>
-                      <span style={{ fontSize: '0.65rem', color: '#00D2FF', display: 'block', fontWeight: 'bold' }}>MANUAL QUEUED</span>
-                      <strong style={{ fontSize: '1rem', color: '#FFF' }}>{scrubStats.manual_pending || 0}</strong>
-                    </div>
-                    <div style={{ background: '#05070D', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '8px 10px', borderRadius: '6px', textAlign: 'center' }}>
-                      <span style={{ fontSize: '0.65rem', color: '#10B981', display: 'block', fontWeight: 'bold' }}>SCRUBBED</span>
-                      <strong style={{ fontSize: '1rem', color: '#FFF' }}>{scrubStats.removed || 0}</strong>
-                    </div>
-                  </div>
-
-                  {/* Filter Toggles */}
-                  <div style={{ display: 'flex', gap: '5px', marginBottom: '12px' }}>
-                    {["ALL", "PROCESSING", "REMOVED"].map(f => (
-                      <button
-                        key={f}
-                        onClick={() => setBrokerFilter(f)}
-                        style={{
-                          flex: 1,
-                          padding: '6px 0',
-                          fontSize: '0.75rem',
-                          fontWeight: 'bold',
-                          borderRadius: '4px',
-                          border: brokerFilter === f ? '1px solid #00D2FF' : '1px solid #1e293b',
-                          background: brokerFilter === f ? 'rgba(0, 71, 171, 0.3)' : '#05070D',
-                          color: brokerFilter === f ? '#00D2FF' : '#94A3B8',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        {f === "PROCESSING" ? "IN PROGRESS" : f}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Data Broker Items Grid List */}
-                  <div style={{ maxHeight: '240px', overflowY: 'auto', background: '#05070D', border: '1px solid rgba(0,210,255,0.2)', borderRadius: '8px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {(dataBrokers || [])
-                      .filter(b => {
-                        if (brokerFilter === "REMOVED") return b.status === "REMOVED";
-                        if (brokerFilter === "PROCESSING") return b.status !== "REMOVED";
-                        return true;
-                      })
-                      .map((b, bIdx) => {
-                        const isRemoved = b.status === "REMOVED";
-                        const isSubpoena = b.status === "SUBPOENA_FILED";
-                        const isManual = b.status === "MANUAL_PENDING";
-
-                        let badgeColor = "#FCD34D";
-                        let badgeBg = "rgba(245, 158, 11, 0.15)";
-                        let badgeBorder = "rgba(245, 158, 11, 0.4)";
-                        let statusText = "🟡 REMOVAL IN PROGRESS";
-
-                        if (isRemoved) {
-                          badgeColor = "#10B981";
-                          badgeBg = "rgba(16, 185, 129, 0.15)";
-                          badgeBorder = "rgba(16, 185, 129, 0.4)";
-                          statusText = "✅ SCRUBBED & VERIFIED";
-                        } else if (isSubpoena) {
-                          badgeColor = "#C084FC";
-                          badgeBg = "rgba(192, 132, 252, 0.15)";
-                          badgeBorder = "rgba(192, 132, 252, 0.4)";
-                          statusText = "📜 SUBPOENA DISPATCHED";
-                        } else if (isManual) {
-                          badgeColor = "#00D2FF";
-                          badgeBg = "rgba(0, 210, 255, 0.15)";
-                          badgeBorder = "rgba(0, 210, 255, 0.4)";
-                          statusText = "⏳ LEGAL OPT-OUT QUEUED";
-                        }
-
-                        return (
-                          <div key={b.id || bIdx} style={{ background: '#0a0f1d', border: '1px solid #1e293b', borderRadius: '6px', padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ textAlign: 'left' }}>
-                              <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: '#FFFFFF', letterSpacing: '0.5px', display: 'block' }}>
-                                {b.broker_name.toUpperCase()}
-                              </span>
-                              <span style={{ fontSize: '0.68rem', color: '#94A3B8' }}>
-                                {b.removal_type === "AUTOMATED" ? "🤖 AUTOMATED DIRECT OPT-OUT" : "👤 HUMAN ANALYST DISPATCH"}
-                              </span>
-                            </div>
-                            <span style={{ fontSize: '0.68rem', color: badgeColor, background: badgeBg, border: `1px solid ${badgeBorder}`, padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                              {statusText}
-                            </span>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-
-                {false && (
-                  // VCC feature is disabled
-                  <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #111' }}>
-                    <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>EXTERNAL FUNDING SOURCES</p>
-                    {paymentMethods.length > 0 ? paymentMethods.map(m => (
-                      <div key={m.id} className="alias-row" style={{ marginBottom: '10px' }}>
-                        <div className="alias-info" style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span className="alias-label tiger-text">{m.brand.toUpperCase()}</span>
-                          <span className="alias-content">**** **** **** {m.last4} (EXP {m.exp_month}/{m.exp_year})</span>
+                      <div style={{ background: '#05070D', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '12px 14px', borderRadius: '8px', marginBottom: '16px', textAlign: 'left' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                          <span style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold', textTransform: 'uppercase' }}>PHYSICAL DEVICE FORWARDING PHONE:</span>
+                          <span style={{ fontSize: '0.85rem', color: '#10B981', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                            {destinationPhone ? destinationPhone : "NOT CONFIGURED"}
+                          </span>
                         </div>
                       </div>
-                    )) : (
-                      <div className="terminal-line" style={{textAlign: 'center', opacity: 0.5, marginBottom: '15px'}}>NO FUNDING SOURCES LINKED</div>
-                    )}
-                    <button className="reset-btn" style={{ fontSize: '0.95rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', borderStyle: 'dashed' }} onClick={handleLinkFundingSource} disabled={isProcessingPayment}>
-                      {isProcessingPayment ? "UPLINKING..." : "+ LINK REAL CARD (STRIPE)"}
-                    </button>
+
+                      {phones.length === 0 ? (
+                        <div className="terminal-line" style={{textAlign: 'center', opacity: 0.5, marginBottom: '15px'}}>NO ACTIVE VIRTUAL PHONE LINES</div>
+                      ) : (
+                        <div className="alias-manager-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
+                          {phones.map((p) => (
+                            <div key={p.id} style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.25)', padding: '14px 16px', borderRadius: '10px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                <span style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                                  ALIAS: {p.label.toUpperCase()}
+                                </span>
+                                <button className="kill-text-bold" style={{ padding: '3px 8px', fontSize: '0.7rem' }} onClick={() => promptKillAlias(p)}>TERMINATE ✖</button>
+                              </div>
+                              <div 
+                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0A0A0A', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', width: '100%', boxSizing: 'border-box' }} 
+                                onClick={() => {navigator.clipboard.writeText(p.content); triggerToast("PHONE COPIED")}}
+                              >
+                                <span style={{ fontSize: '0.88rem', color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
+                                  {p.content}
+                                </span>
+                                <span style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 'bold', flexShrink: 0, marginLeft: '8px', whiteSpace: 'nowrap' }}>COPY 📋</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* INBOUND MOBILE SMS VAULT INBOX MODULE */}
+                    <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative', border: '1px solid var(--tiger-blue)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span className="tool-label" style={{ margin: 0, textAlign: 'left', fontWeight: 'bold' }}>INBOUND MOBILE SMS VAULT</span>
+                          <span style={{ background: 'rgba(0, 210, 255, 0.15)', color: '#00D2FF', border: '1px solid rgba(0, 210, 255, 0.3)', padding: '1px 6px', borderRadius: '4px', fontSize: '0.70rem', fontWeight: 'bold' }}>
+                            {smsInbox.length} MSG
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button
+                            type="button"
+                            className="main-button"
+                            style={{ padding: '6px 12px', fontSize: '0.75rem', fontWeight: 'bold', background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', border: 'none', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}
+                            onClick={() => setShowComposeSms(!showComposeSms)}
+                          >
+                            {showComposeSms ? "✕ CLOSE SMS" : "✉️ SEND NEW SMS"}
+                          </button>
+                          <button
+                            type="button"
+                            className="reset-btn"
+                            style={{ padding: '6px 12px', fontSize: '0.75rem', fontWeight: 'bold', color: '#00D2FF', borderColor: '#00D2FF' }}
+                            onClick={() => fetchSmsInbox()}
+                          >
+                            🔄 REFRESH
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Standalone Compose SMS Panel */}
+                      {showComposeSms && (
+                        <div style={{ background: '#05070D', border: '1px solid #10B981', padding: '12px', borderRadius: '8px', marginBottom: '14px', textAlign: 'left' }}>
+                          <div style={{ fontSize: '0.80rem', color: '#10B981', fontWeight: 'bold', marginBottom: '8px' }}>
+                            ✉️ DISPATCH STANDALONE SMS MESSAGE
+                          </div>
+                          
+                          <div style={{ marginBottom: '8px' }}>
+                            <label style={{ fontSize: '0.72rem', color: '#94A3B8', display: 'block', marginBottom: '3px', fontWeight: 'bold' }}>
+                              SELECT SENDER ALIAS LINE:
+                            </label>
+                            <select
+                              value={selectedSenderAlias}
+                              onChange={(e) => setSelectedSenderAlias(e.target.value)}
+                              style={{ width: '100%', padding: '6px 10px', fontSize: '0.80rem', background: '#030712', border: '1px solid #1e293b', color: '#00D2FF', borderRadius: '4px', fontWeight: 'bold', boxSizing: 'border-box' }}
+                            >
+                              <option value="">+1 (585) 580-2036 (Disappear System Line)</option>
+                              {phones.map((p, pIdx) => {
+                                const numVal = p.content || "";
+                                const labelVal = p.label ? `${p.label.toUpperCase()} (${numVal})` : numVal;
+                                return (
+                                  <option key={p.id || pIdx} value={numVal}>
+                                    📱 {labelVal}
+                                  </option>
+                                );
+                              })}
+                            </select>
+                          </div>
+
+                          <input
+                            type="text"
+                            placeholder="Recipient Phone (+18135551234)"
+                            value={composeSmsRecipient}
+                            onChange={(e) => setComposeSmsRecipient(e.target.value)}
+                            style={{ width: '100%', padding: '8px 10px', fontSize: '0.82rem', background: '#030712', border: '1px solid #1e293b', color: '#fff', borderRadius: '4px', marginBottom: '8px', boxSizing: 'border-box' }}
+                          />
+                          <textarea
+                            placeholder="Type your message..."
+                            value={composeSmsBody}
+                            onChange={(e) => setComposeSmsBody(e.target.value)}
+                            style={{ width: '100%', padding: '8px 10px', fontSize: '0.82rem', background: '#030712', border: '1px solid #1e293b', color: '#fff', borderRadius: '4px', marginBottom: '8px', height: '60px', boxSizing: 'border-box', resize: 'vertical' }}
+                          />
+                          <button
+                            className="main-button"
+                            type="button"
+                            style={{ padding: '8px 12px', fontSize: '0.80rem', width: '100%', fontWeight: 'bold' }}
+                            onClick={() => {
+                              handleSendSmsReply(composeSmsRecipient, composeSmsBody, selectedSenderAlias);
+                              setComposeSmsRecipient("");
+                              setComposeSmsBody("");
+                            }}
+                          >
+                            📤 SEND SMS
+                          </button>
+                        </div>
+                      )}
+
+                      {groupedSmsThreads.length === 0 ? (
+                        <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, textAlign: 'center', padding: '10px' }}>
+                          No incoming text messages received yet. Any SMS sent to your alias will appear here instantly.
+                        </p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '320px', overflowY: 'auto' }}>
+                          {groupedSmsThreads.map(({ phone, messages }) => {
+                            const formattedPhoneDisplay = phone.replace(/\+1([0-9]{3})([0-9]{3})([0-9]{4})/, "+1 ($1) $2-$3");
+                            const isGroupReplying = activeReplyId === `group_${phone}`;
+                            const newestMessage = messages[0];
+
+                            return (
+                              <div key={`thread_${phone}`} style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '8px', padding: '10px 12px' }}>
+                                <div className="sms-thread-header">
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                    <span style={{ fontSize: '0.82rem', color: '#00D2FF', fontWeight: 'bold' }}>📱 CONTACT: {formattedPhoneDisplay}</span>
+                                    <span style={{ fontSize: '0.65rem', background: '#1e293b', color: '#10B981', padding: '1px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                      {messages.length} {messages.length === 1 ? 'MSG' : 'MSGS'}
+                                    </span>
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '6px' }}>
+                                    <button
+                                      className="reset-btn"
+                                      type="button"
+                                      style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#10B981', borderColor: '#10B981' }}
+                                      onClick={() => {
+                                        if (isGroupReplying) {
+                                          setActiveReplyId(null);
+                                        } else {
+                                          const cleanPhoneRecipient = phone.startsWith("+") ? phone : (phone ? `+${phone.replace(/\D/g, "")}` : "");
+                                          const targetAliasLine = newestMessage?.to_phone || "";
+                                          setActiveReplyId(`group_${phone}`);
+                                          setReplyRecipient(cleanPhoneRecipient);
+                                          setSelectedSenderAlias(targetAliasLine);
+                                          setReplyBody("");
+                                        }
+                                      }}
+                                    >
+                                      {isGroupReplying ? "✕ CLOSE" : "💬 REPLY"}
+                                    </button>
+
+                                    <button
+                                      className="reset-btn"
+                                      type="button"
+                                      style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#EF4444', borderColor: '#EF4444' }}
+                                      onClick={(e) => {
+                                        messages.forEach(msg => handleDeleteSmsMessage(msg.id, e));
+                                      }}
+                                    >
+                                      🗑️ DELETE
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {isGroupReplying && (
+                                  <div style={{ background: '#030712', border: '1px solid #10B981', padding: '8px', borderRadius: '6px', marginBottom: '8px', marginTop: '8px' }}>
+                                    <textarea
+                                      placeholder={`Reply to ${formattedPhoneDisplay}...`}
+                                      value={replyBody}
+                                      onChange={(e) => setReplyBody(e.target.value)}
+                                      style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#090d16', border: '1px solid #1e293b', color: '#fff', borderRadius: '4px', marginBottom: '6px', height: '45px', boxSizing: 'border-box', resize: 'vertical' }}
+                                    />
+                                    <button
+                                      className="main-button"
+                                      type="button"
+                                      style={{ padding: '6px 12px', fontSize: '0.75rem', width: '100%', background: 'linear-gradient(135deg, #10B981, #059669)', border: 'none', color: '#fff', fontWeight: 'bold', borderRadius: '4px' }}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        const targetAliasLine = newestMessage?.to_phone || selectedSenderAlias || "";
+                                        handleSendSmsReply(
+                                          phone.startsWith("+") ? phone : replyRecipient, 
+                                          replyBody, 
+                                          targetAliasLine
+                                        );
+                                      }}
+                                    >
+                                      📤 SEND REPLY NOW
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
                   </div>
                 )}
 
-                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #444' }}>
-                  <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>SUBSCRIPTION MANAGEMENT</p>
-                  
-                  {/* Status Header Container */}
-                  <div style={{ 
-                    background: '#05070D', 
-                    border: '1px solid rgba(0, 210, 255, 0.25)', 
-                    padding: '14px 16px', 
-                    borderRadius: '10px', 
-                    marginBottom: '15px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                    gap: '10px',
-                    width: '100%',
-                    boxSizing: 'border-box'
-                  }}>
-                    <div style={{ textAlign: 'left' }}>
-                      <span style={{ fontSize: '0.72rem', color: '#94A3B8', display: 'block', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold', marginBottom: '3px' }}>CURRENT SUBSCRIPTION PLAN</span>
-                      <strong className="tiger-text" style={{ fontSize: '0.92rem', wordBreak: 'break-word' }}>ELITE OPERATIVE ({billingCycle.toUpperCase()})</strong>
-                    </div>
-                    <div style={{ textAlign: 'left', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', padding: '5px 12px', borderRadius: '8px', flexShrink: 0 }}>
-                      <span style={{ fontSize: '0.68rem', color: '#94A3B8', display: 'block', textTransform: 'uppercase', fontWeight: 'bold' }}>STATUS</span>
-                      <span style={{ color: '#10B981', fontSize: '0.85rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <span style={{ display: 'inline-block', width: '7px', height: '7px', borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981' }}></span>
-                        ACTIVE
-                      </span>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
-                    <button className="main-button" style={{ fontSize: '0.95rem', padding: '14px 10px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', width: '100%' }} onClick={handleManageBilling}>
-                      <span>💳</span> MANAGE BILLING & CREDIT CARD
-                    </button>
-                    <div className="flex-responsive-row" style={{ gap: '10px' }}>
-                      <button className="reset-btn" style={{ flex: 1, fontSize: '0.85rem', padding: '12px 5px', whiteSpace: 'normal', lineHeight: '1.2', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={handleManageBilling}>
-                        {billingCycle === 'monthly' ? "SWITCH TO ANNUAL" : "SWITCH TO MONTHLY"}
-                      </button>
-                      <button className="reset-btn" style={{ flex: 1, borderColor: '#ff4444', color: '#ff4444', fontSize: '0.85rem', padding: '12px 5px', whiteSpace: 'normal', lineHeight: '1.2', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => { if(window.confirm("CANCEL SUBSCRIPTION? PII shielding will be deactivated at end of cycle.")) handleManageBilling(); }}>
-                        CANCEL PLAN
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* --- REFERRAL MILESTONE REWARD WIDGET --- */}
-                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #00D2FF', background: 'linear-gradient(135deg, rgba(0,71,171,0.08) 0%, rgba(5,11,20,0.95) 100%)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '8px' }}>
-                    <p className="tool-label tiger-text" style={{ margin: 0, fontSize: '0.95rem' }}>🎁 REFERRAL MILESTONE REWARDS</p>
-                    <span style={{ fontSize: '0.78rem', color: '#10B981', background: 'rgba(16,185,129,0.15)', padding: '4px 10px', borderRadius: '12px', border: '1px solid rgba(16,185,129,0.3)', fontWeight: 'bold' }}>
-                      {referralData.free_months_earned} FREE MONTHS UNLOCKED
-                    </span>
-                  </div>
-
-                  <p style={{ fontSize: '0.85rem', color: '#CBD5E1', marginBottom: '15px', lineHeight: '1.4' }}>
-                    Earn <strong>1 FREE MONTH</strong> of Disappear for every <strong>5 referred users</strong> who subscribe. Rewards automatically apply a 100% credit to your next Stripe billing cycle.
-                  </p>
-
-                  {/* Milestone Progress Bar */}
-                  <div style={{ background: '#05070D', border: '1px solid rgba(0,210,255,0.3)', borderRadius: '8px', padding: '15px', marginBottom: '15px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: '8px', fontWeight: 'bold', flexWrap: 'wrap', gap: '5px' }}>
-                      <span style={{ color: '#00D2FF' }}>MILESTONE PROGRESS: {referralData.count % 5}/5 REFERRALS</span>
-                      <span style={{ color: '#94A3B8' }}>{referralData.next_milestone_needed} MORE NEEDED</span>
-                    </div>
+                {/* TAB 2: DATA BROKER REMOVALS */}
+                {dashboardTab === 'removals' && (
+                  <div className="tab-pane fade-in" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
                     
-                    <div style={{ width: '100%', height: '10px', background: '#111827', borderRadius: '5px', overflow: 'hidden', border: '1px solid #1F2937' }}>
-                      <div style={{ width: `${referralData.progress_pct}%`, height: '100%', background: 'linear-gradient(90deg, #0047AB, #00D2FF)', borderRadius: '5px', transition: 'width 0.4s ease' }}></div>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', fontSize: '0.75rem', color: '#64748B', flexWrap: 'wrap', gap: '5px' }}>
-                      <span>Total Successful Referrals: <strong>{referralData.count}</strong></span>
-                      <span>Milestone Target: <strong>Every 5 Subscribers</strong></span>
-                    </div>
-                  </div>
-
-                  {/* Shareable Link Box */}
-                  <p className="field-label" style={{ textAlign: 'left', marginBottom: '6px' }}>YOUR UNIQUE REFERRAL LINK</p>
-                  <div className="flex-responsive-row">
-                    <input 
-                      type="text" 
-                      readOnly 
-                      value={referralData.link || (referralData.code ? `https://disappearco.com/?ref=${referralData.code}` : "Generating link...")} 
-                      className="mask-btn" 
-                      style={{ flex: 1, fontSize: '0.82rem', background: '#000', color: '#FFFFFF', textAlign: 'left', paddingLeft: '12px', border: '1px solid rgba(0,210,255,0.3)' }} 
-                    />
-                    <button 
-                      className="main-button" 
-                      style={{ padding: '12px 16px', fontSize: '0.82rem', whiteSpace: 'nowrap', minWidth: '110px' }} 
-                      onClick={() => {
-                        const linkToCopy = referralData.link || `https://disappearco.com/?ref=${referralData.code}`;
-                        navigator.clipboard.writeText(linkToCopy);
-                        triggerToast("REFERRAL LINK COPIED TO CLIPBOARD 📋");
-                      }}
-                    >
-                      COPY LINK 📋
-                    </button>
-                  </div>
-                </div>
-
-                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
-                  <p className="tool-label tiger-text" style={{ textAlign: 'center' }}>SYSTEM SUPPORT NODE</p>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginTop: '10px' }}>
-                    <button className="reset-btn" style={{ fontSize: '0.85rem', padding: '10px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setShowSupportModal(true)}>🎟️ OPEN TICKET</button>
-                    <button className="reset-btn" style={{ fontSize: '0.85rem', padding: '10px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setShowFaqModal(true)}>❓ ACCESS FAQ</button>
-                    <button className="reset-btn" style={{ fontSize: '0.85rem', padding: '10px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#00D2FF', borderColor: '#00D2FF' }} onClick={() => window.dispatchEvent(new CustomEvent('open-ai-chat'))}>🤖 ASK AI SPECIALIST</button>
-                  </div>
-                  <div style={{ marginTop: '20px', fontSize: '0.9rem', color: '#cbd5e1', textAlign: 'center' }}>
-                    <p className="faq-link" onClick={() => setShowManualModal(true)} style={{cursor: 'pointer', textDecoration: 'underline'}}> Operation Manual </p>
-                  </div>
-                </div>
-
-                {/* --- UPDATED: LIVE SECURITY AUDIT (HISTORY VIEW) --- */}
-                <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
-                  <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>LIVE SECURITY AUDIT</p>
-                  
-                  {/* History Filter Toggles */}
-                  <div className="billing-toggle" style={{ display: 'flex', gap: '5px', marginBottom: '15px' }}>
-                    {[30, 60, 90].map(d => (
-                      <button 
-                        key={d}
-                        className={historyDays === d ? 'mask-btn active-toggle' : 'mask-btn'} 
-                        style={{ flex: 1, fontSize: '0.85rem', padding: '10px 0' }} 
-                        onClick={() => setHistoryDays(d)}
-                      >
-                        {d} DAYS
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="audit-list" style={{ maxHeight: '220px', overflowY: 'auto', background: '#05070D', border: '1px solid rgba(0,210,255,0.2)', borderRadius: '8px', padding: '10px' }}>
-                    {auditLog.length > 0 ? auditLog.map((log, i) => (
-                      <div key={`audit-${log.timestamp}-${i}`} style={{ background: '#0a0f1d', border: '1px solid #1e293b', borderRadius: '6px', padding: '10px 12px', marginBottom: '8px', textAlign: 'left' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap', gap: '5px' }}>
-                          <span style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold' }}>
-                            📅 {new Date(log.timestamp).toLocaleDateString()} {new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    {/* OPERATIVE PRIVACY PROFILE & REMOVAL IDENTITY */}
+                    <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
+                      <p className="tool-label" style={{ textAlign: 'center', marginBottom: '14px' }}>👤 OPERATIVE PRIVACY PROFILE & REMOVAL IDENTITY</p>
+                      
+                      <div style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.3)', borderRadius: '10px', padding: '16px', marginBottom: '12px', textAlign: 'left' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '8px' }}>
+                          <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                            TARGET REMOVAL PROFILE
                           </span>
-                          <span style={{ fontSize: '0.68rem', color: '#94A3B8', background: '#111827', padding: '2px 6px', borderRadius: '4px', border: '1px solid #1F2937' }}>
-                            NODE: {log.node?.slice(-12) || 'VAULT_CORE'}
+                          <span style={{ fontSize: '0.68rem', color: '#10B981', background: 'rgba(16,185,129,0.12)', padding: '3px 8px', borderRadius: '4px', border: '1px solid rgba(16,185,129,0.3)', fontWeight: 'bold' }}>
+                            🟢 ACTIVE PROTECTION
                           </span>
                         </div>
-                        <div style={{ fontSize: '0.85rem', color: '#FFFFFF', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ color: '#10B981', fontWeight: 'bold' }}>✓</span>
-                          <span>{log.action}</span>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.86rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ color: '#94A3B8' }}>Legal Target Name:</span>
+                            <strong style={{ color: '#00D2FF', fontFamily: 'monospace' }}>
+                              {targetProfile.firstName || targetProfile.first_name || targetProfile.lastName || targetProfile.last_name 
+                                ? `${targetProfile.firstName || targetProfile.first_name || ''} ${targetProfile.middleName || targetProfile.middle_name ? `${targetProfile.middleName || targetProfile.middle_name} ` : ''}${targetProfile.lastName || targetProfile.last_name || ''}`.trim() 
+                                : (getSessionItem("disappear_user_email") || 'Registered Operative')}
+                            </strong>
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ color: '#94A3B8' }}>Primary Email:</span>
+                            <span style={{ color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                              {targetProfile.email || getSessionItem("disappear_user_email") || 'Awaiting Sync...'}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ color: '#94A3B8' }}>SMS Forwarding Phone:</span>
+                            <span style={{ color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                              {targetProfile.phone || destinationPhone || 'No Phone Linked'}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    )) : (
-                      <div className="terminal-line" style={{textAlign: 'center', opacity: 0.5, padding: '15px'}}>NO_RECORDS_IN_WINDOW</div>
-                    )}
-                  </div>
-                  
-                  {/* Audit Action Buttons */}
-                  <div className="flex-responsive-row" style={{ gap: '10px', marginTop: '15px' }}>
-                    <button className="pdf-btn" style={{ flex: 1, fontSize: '0.82rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center', whiteSpace: 'nowrap' }} onClick={() => handleDownloadPDF(false)} disabled={isGenerating}>
-                      📄 EXPORT AUDIT PDF
-                    </button>
-                    <button className="reset-btn" style={{ flex: 1, fontSize: '0.82rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center', borderColor: 'var(--tiger-blue)', color: 'var(--tiger-blue)', whiteSpace: 'nowrap' }} onClick={handleExportJSON}>
-                      💾 EXPORT SECURE BACKUP
-                    </button>
-                  </div>
-                </div>
 
-                {/* --- PASSWORD MANAGEMENT CARD (PROFILE SECURITY) --- */}
-                <div className="masking-tool" style={{ 
-                  width: '100%', 
-                  maxWidth: '600px', 
-                  marginTop: '25px',
-                  padding: '20px',
-                  border: '1px solid rgba(0, 210, 255, 0.3)',
-                  background: 'rgba(5, 7, 13, 0.95)',
-                  borderRadius: '12px',
-                  textAlign: 'left'
-                }}>
+                      <button 
+                        className="main-button" 
+                        style={{ width: '100%', fontSize: '0.82rem', padding: '10px 14px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}
+                        onClick={() => {
+                          checkAndShowNoticeModal(currentUserId || getSessionItem("disappear_user_id"));
+                        }}
+                      >
+                        ⚙️ REVIEW / EDIT TARGET PROFILE
+                      </button>
+                    </div>
+
+                    {/* DATA BROKER TARGETS */}
+                    <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
+                      <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>DATA BROKER TARGETS</p>
+                      
+                      <div style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.25)', padding: '14px 16px', borderRadius: '10px', marginBottom: '12px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                            PRIMARY TARGET EMAIL
+                          </span>
+                          <span style={{ fontSize: '0.68rem', color: '#10B981', background: 'rgba(16,185,129,0.12)', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(16,185,129,0.3)', fontWeight: 'bold' }}>
+                            PRIMARY 🔒
+                          </span>
+                        </div>
+                        <div 
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0A0A0A', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', width: '100%', boxSizing: 'border-box' }}
+                          onClick={() => { if(targetEmails.primary) { navigator.clipboard.writeText(targetEmails.primary); triggerToast("EMAIL COPIED"); } }}
+                        >
+                          <span style={{ fontSize: '0.88rem', color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
+                            {targetEmails.primary || "Awaiting Sync..."}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 'bold', flexShrink: 0, marginLeft: '8px', whiteSpace: 'nowrap' }}>COPY 📋</span>
+                        </div>
+                      </div>
+                      
+                      {targetEmails.additional.map((e, idx) => (
+                        <div key={e.id} style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.25)', padding: '14px 16px', borderRadius: '10px', marginBottom: '12px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                              SECONDARY TARGET EMAIL #{idx + 1}
+                            </span>
+                            <button className="kill-text-bold" style={{ padding: '3px 8px', fontSize: '0.7rem' }} onClick={async () => { await secureRequest(`${API_BASE_URL}/profile/emails/${e.id}`, {method: 'DELETE'}); fetchTargetEmails(); }}>
+                              REMOVE ✖
+                            </button>
+                          </div>
+                          <div 
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#0A0A0A', padding: '10px 12px', borderRadius: '6px', border: '1px solid #222', cursor: 'pointer', width: '100%', boxSizing: 'border-box' }}
+                            onClick={() => { navigator.clipboard.writeText(e.email); triggerToast("EMAIL COPIED"); }}
+                          >
+                            <span style={{ fontSize: '0.88rem', color: '#FFFFFF', fontFamily: 'monospace', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
+                              {e.email}
+                            </span>
+                            <span style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 'bold', flexShrink: 0, marginLeft: '8px', whiteSpace: 'nowrap' }}>COPY 📋</span>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      <div className="flex-responsive-row" style={{ marginTop: '15px' }}>
+                        <input className="mask-btn" style={{flex: 1, color: 'white', textAlign: 'left', paddingLeft: '14px'}} placeholder="Enter secondary email to scrub..." value={newTargetEmail} onChange={e => setNewTargetEmail(e.target.value)} />
+                        <button className="main-button" style={{ fontSize: '0.85rem', padding: '12px 18px', display: 'flex', justifyContent: 'center', alignItems: 'center', whiteSpace: 'nowrap' }} onClick={handleAddTargetEmail}>
+                          + ADD TARGET
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* LIVE DATA BROKER SCRUB QUEUE & MONITOR */}
+                    <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
+                      <p className="tool-label" style={{ textAlign: 'center', marginBottom: '12px' }}>🛡️ DATA BROKER PURGE QUEUE ({scrubStats.total_brokers || 410} REGISTRIES)</p>
+                      
+                      <div style={{
+                        background: scrubStats.removed === 0 ? 'rgba(245, 158, 11, 0.12)' : 'rgba(16, 185, 129, 0.12)',
+                        border: scrubStats.removed === 0 ? '1px solid #F59E0B' : '1px solid #10B981',
+                        color: scrubStats.removed === 0 ? '#FCD34D' : '#10B981',
+                        padding: '12px 14px',
+                        borderRadius: '8px',
+                        marginBottom: '14px',
+                        textAlign: 'left'
+                      }}>
+                        <div style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '4px', letterSpacing: '0.5px' }}>
+                          {scrubStats.removed === 0 ? `🟡 INITIAL PRIVACY PURGE QUEUED | REMOVALS IN PROGRESS (${scrubStats.total_brokers || 410} TARGETS)` : `🟢 ACTIVE PURGE CYCLE | ${scrubStats.removed} OF ${scrubStats.total_brokers || 410} BROKERS SCRUBBED`}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', opacity: 0.9, lineHeight: '1.4' }}>
+                          {scrubStats.removed === 0 
+                            ? `Your target profile has been dispatched to ${scrubStats.total_brokers || 410} major data broker opt-out endpoints. Automated crawlers and human privacy analysts are actively processing opt-out filings.`
+                            : `Continuous background scrubbers have finalized ${scrubStats.removed} verified removals (${scrubStats.progress_pct}% complete).`}
+                        </div>
+
+                        <div style={{ width: '100%', height: '8px', background: 'rgba(0,0,0,0.5)', borderRadius: '4px', overflow: 'hidden', marginTop: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                          <div style={{ width: `${scrubStats.progress_pct || 0}%`, height: '100%', background: 'linear-gradient(90deg, #F59E0B, #10B981)', borderRadius: '4px', transition: 'width 0.4s ease' }} />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '14px' }}>
+                        <div style={{ background: '#05070D', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '8px 10px', borderRadius: '6px', textAlign: 'center' }}>
+                          <span style={{ fontSize: '0.65rem', color: '#FCD34D', display: 'block', fontWeight: 'bold' }}>IN PROGRESS</span>
+                          <strong style={{ fontSize: '1rem', color: '#FFF' }}>{scrubStats.processing || 0}</strong>
+                        </div>
+                        <div style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.3)', padding: '8px 10px', borderRadius: '6px', textAlign: 'center' }}>
+                          <span style={{ fontSize: '0.65rem', color: '#00D2FF', display: 'block', fontWeight: 'bold' }}>MANUAL QUEUED</span>
+                          <strong style={{ fontSize: '1rem', color: '#FFF' }}>{scrubStats.manual_pending || 0}</strong>
+                        </div>
+                        <div style={{ background: '#05070D', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '8px 10px', borderRadius: '6px', textAlign: 'center' }}>
+                          <span style={{ fontSize: '0.65rem', color: '#10B981', display: 'block', fontWeight: 'bold' }}>SCRUBBED</span>
+                          <strong style={{ fontSize: '1rem', color: '#FFF' }}>{scrubStats.removed || 0}</strong>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '5px', marginBottom: '12px' }}>
+                        {["ALL", "PROCESSING", "REMOVED"].map(f => (
+                          <button
+                            key={f}
+                            onClick={() => setBrokerFilter(f)}
+                            style={{
+                              flex: 1,
+                              padding: '6px 0',
+                              fontSize: '0.75rem',
+                              fontWeight: 'bold',
+                              borderRadius: '4px',
+                              border: brokerFilter === f ? '1px solid #00D2FF' : '1px solid #1e293b',
+                              background: brokerFilter === f ? 'rgba(0, 71, 171, 0.3)' : '#05070D',
+                              color: brokerFilter === f ? '#00D2FF' : '#94A3B8',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {f === "PROCESSING" ? "IN PROGRESS" : f}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div style={{ maxHeight: '240px', overflowY: 'auto', background: '#05070D', border: '1px solid rgba(0,210,255,0.2)', borderRadius: '8px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {(dataBrokers || [])
+                          .filter(b => {
+                            if (brokerFilter === "REMOVED") return b.status === "REMOVED";
+                            if (brokerFilter === "PROCESSING") return b.status !== "REMOVED";
+                            return true;
+                          })
+                          .map((b, bIdx) => {
+                            const isRemoved = b.status === "REMOVED";
+                            const isSubpoena = b.status === "SUBPOENA_FILED";
+                            const isManual = b.status === "MANUAL_PENDING";
+
+                            let badgeColor = "#FCD34D";
+                            let badgeBg = "rgba(245, 158, 11, 0.15)";
+                            let badgeBorder = "rgba(245, 158, 11, 0.4)";
+                            let statusText = "🟡 REMOVAL IN PROGRESS";
+
+                            if (isRemoved) {
+                              badgeColor = "#10B981";
+                              badgeBg = "rgba(16, 185, 129, 0.15)";
+                              badgeBorder = "rgba(16, 185, 129, 0.4)";
+                              statusText = "✅ SCRUBBED & VERIFIED";
+                            } else if (isSubpoena) {
+                              badgeColor = "#C084FC";
+                              badgeBg = "rgba(192, 132, 252, 0.15)";
+                              badgeBorder = "rgba(192, 132, 252, 0.4)";
+                              statusText = "📜 SUBPOENA DISPATCHED";
+                            } else if (isManual) {
+                              badgeColor = "#00D2FF";
+                              badgeBg = "rgba(0, 210, 255, 0.15)";
+                              badgeBorder = "rgba(0, 210, 255, 0.4)";
+                              statusText = "⏳ LEGAL OPT-OUT QUEUED";
+                            }
+
+                            return (
+                              <div key={b.id || bIdx} style={{ background: '#0a0f1d', border: '1px solid #1e293b', borderRadius: '6px', padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ textAlign: 'left' }}>
+                                  <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: '#FFFFFF', letterSpacing: '0.5px', display: 'block' }}>
+                                    {b.broker_name.toUpperCase()}
+                                  </span>
+                                  <span style={{ fontSize: '0.68rem', color: '#94A3B8' }}>
+                                    {b.removal_type === "AUTOMATED" ? "🤖 AUTOMATED DIRECT OPT-OUT" : "👤 HUMAN ANALYST DISPATCH"}
+                                  </span>
+                                </div>
+                                <span style={{ fontSize: '0.68rem', color: badgeColor, background: badgeBg, border: `1px solid ${badgeBorder}`, padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                                  {statusText}
+                                </span>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+
+                  </div>
+                )}
+
+                {/* TAB 3: INFO & SECURITY LOGS */}
+                {dashboardTab === 'info' && (
+                  <div className="tab-pane fade-in" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                    
+                    {/* LIVE SECURITY AUDIT (HISTORY VIEW) */}
+                    <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
+                      <p className="tool-label" style={{ textAlign: 'center', marginBottom: '15px' }}>LIVE SECURITY AUDIT</p>
+                      
+                      <div className="billing-toggle" style={{ display: 'flex', gap: '5px', marginBottom: '15px' }}>
+                        {[30, 60, 90].map(d => (
+                          <button 
+                            key={d}
+                            className={historyDays === d ? 'mask-btn active-toggle' : 'mask-btn'} 
+                            style={{ flex: 1, fontSize: '0.85rem', padding: '10px 0' }} 
+                            onClick={() => setHistoryDays(d)}
+                          >
+                            {d} DAYS
+                          </button>
+                        ))}
+                      </div>
+
+                      <div style={{ maxHeight: '300px', overflowY: 'auto', background: '#05070D', border: '1px solid rgba(0,210,255,0.2)', borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
+                        {purgeHistory.length === 0 ? (
+                          <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, textAlign: 'center', padding: '15px' }}>
+                            No security audit logs recorded for the selected timeframe.
+                          </p>
+                        ) : (
+                          purgeHistory.map((item, idx) => (
+                            <div key={item.id || idx} style={{ background: '#0a0f1d', border: '1px solid #1e293b', padding: '8px 12px', borderRadius: '6px', textAlign: 'left' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                <span style={{ fontSize: '0.78rem', color: '#00D2FF', fontWeight: 'bold' }}>
+                                  {item.action_type || "SECURITY_EVENT"}
+                                </span>
+                                <span style={{ fontSize: '0.68rem', color: '#64748B' }}>
+                                  {item.timestamp ? new Date(item.timestamp).toLocaleString() : "Recently"}
+                                </span>
+                              </div>
+                              {item.node_id && (
+                                <span style={{ fontSize: '0.70rem', color: '#94A3B8', fontFamily: 'monospace', display: 'block' }}>
+                                  NODE_ID: {item.node_id}
+                                </span>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <button className="main-button" style={{ flex: 1, fontSize: '0.82rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center', whiteSpace: 'nowrap' }} onClick={() => handleDownloadPDF(false)}>
+                          📄 EXPORT AUDIT PDF
+                        </button>
+                        <button className="reset-btn" style={{ flex: 1, fontSize: '0.82rem', padding: '12px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center', borderColor: 'var(--tiger-blue)', color: 'var(--tiger-blue)', whiteSpace: 'nowrap' }} onClick={handleExportJSON}>
+                          💾 EXPORT SECURE BACKUP
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* SYSTEM SUPPORT & MANUAL ACCESS */}
+                    <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
+                      <p className="tool-label tiger-text" style={{ textAlign: 'center' }}>SYSTEM SUPPORT NODE</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginTop: '10px' }}>
+                        <button className="reset-btn" style={{ fontSize: '0.85rem', padding: '10px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setShowSupportModal(true)}>🎟️ OPEN TICKET</button>
+                        <button className="reset-btn" style={{ fontSize: '0.85rem', padding: '10px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} onClick={() => setShowFaqModal(true)}>❓ ACCESS FAQ</button>
+                        <button className="reset-btn" style={{ fontSize: '0.85rem', padding: '10px 5px', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#00D2FF', borderColor: '#00D2FF' }} onClick={() => window.dispatchEvent(new CustomEvent('open-ai-chat'))}>🤖 ASK AI SPECIALIST</button>
+                      </div>
+                      <div style={{ marginTop: '20px', fontSize: '0.9rem', color: '#cbd5e1', textAlign: 'center' }}>
+                        <p className="faq-link" onClick={() => setShowManualModal(true)} style={{cursor: 'pointer', textDecoration: 'underline'}}> Operation Manual </p>
+                      </div>
+                    </div>
+
+                  </div>
+                )}
+
+                {/* TAB 4: MAINTENANCE */}
+                {dashboardTab === 'account' && (
+                  <div className="tab-pane fade-in" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                    
+                    {/* VAULT CAPACITY */}
+                    <div className="masking-tool" style={{ border: '1px solid #111', background: '#050505', width: '100%', maxWidth: '600px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                            <div>
+                                <span className="field-label" style={{ display: 'block', fontSize: '0.85rem', color: 'white', letterSpacing: '2px', fontWeight: 'bold', textTransform: 'uppercase' }}>VAULT CAPACITY</span>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--tiger-blue)', display: 'block', marginTop: '3px', fontWeight: 'bold', textTransform: 'uppercase' }}>EMAIL ALIAS NODES</span>
+                            </div>
+                            <span className="tiger-text" style={{ alignSelf: 'center' }}>{emails.length} / {credits.vcc_total}</span>
+                        </div>
+                        <button className="purchase-btn" disabled={isProcessingPayment} onClick={() => handlePurchaseExpansion('permanent_slot')}>
+                          {isProcessingPayment ? "PROCESSING..." : "+ ADD PERMANENT VAULT SLOT ($5.95)"}
+                        </button>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: '25px', marginBottom: '10px' }}>
+                            <div>
+                                <span className="field-label" style={{ display: 'block', fontSize: '0.85rem', color: 'white', letterSpacing: '2px', fontWeight: 'bold', textTransform: 'uppercase' }}>ACTIVE PHONE LINES</span>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--tiger-blue)', display: 'block', marginTop: '3px', fontWeight: 'bold', textTransform: 'uppercase' }}>PHONE ALIAS NODES</span>
+                            </div>
+                            <span className="tiger-text" style={{ alignSelf: 'center' }}>{phones.length} / {credits.phone_total}</span>
+                        </div>
+                        <button 
+                          className="purchase-btn" 
+                          style={{borderColor: 'var(--tiger-blue)'}} 
+                          disabled={isProcessingPayment} 
+                          onClick={() => handlePurchaseExpansion('phone')}
+                        >
+                          {isProcessingPayment ? "PROCESSING..." : "+ PROVISION EXTRA MOBILE LINE ($5.95)"}
+                        </button>
+                    </div>
+
+                    {/* RELAY CREDIT POOL & REFILL */}
+                    <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
+                      <p className="tool-label tiger-text" style={{ textAlign: 'center', marginBottom: '14px' }}>⚡ RELAY CREDIT POOL</p>
+                      
+                      <div style={{ background: '#05070D', border: '1px solid rgba(0, 210, 255, 0.3)', padding: '16px', borderRadius: '10px', marginBottom: '14px', textAlign: 'center' }}>
+                        <span style={{ fontSize: '0.78rem', color: '#94A3B8', display: 'block', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 'bold', marginBottom: '4px' }}>REMAINING RELAY CREDITS</span>
+                        <div style={{ fontSize: '2rem', color: '#00D2FF', fontWeight: 'bold', fontFamily: 'monospace' }}>
+                          {credits.phone_credits !== undefined ? credits.phone_credits : 500} CREDITS
+                        </div>
+                        <p style={{ fontSize: '0.75rem', color: '#CBD5E1', margin: '6px 0 0 0' }}>
+                          1 SMS = 1 Credit | 1 Voice Call / Forwarding Minute = 2 Credits
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="main-button"
+                        style={{ width: '100%', fontSize: '0.85rem', padding: '12px 14px', fontWeight: 'bold', background: 'linear-gradient(135deg, #00D2FF 0%, #0072FF 100%)', border: 'none', color: '#FFF', borderRadius: '6px', cursor: 'pointer', boxShadow: '0 0 15px rgba(0, 210, 255, 0.4)' }}
+                        disabled={isRefillingCredits}
+                        onClick={handleRefillCredits}
+                      >
+                        {isRefillingCredits ? "⚡ REFILLING CREDITS..." : "⚡ REFILL RELAY CREDITS (+250 CREDITS / $5.95)"}
+                      </button>
+                    </div>
+
+                    {/* PASSWORD MANAGEMENT CARD (PROFILE SECURITY) */}
+                    <div className="masking-tool" style={{ 
+                      width: '100%', 
+                      maxWidth: '600px', 
+                      padding: '20px',
+                      border: '1px solid rgba(0, 210, 255, 0.3)',
+                      background: 'rgba(5, 7, 13, 0.95)',
+                      borderRadius: '12px',
+                      textAlign: 'left'
+                    }}>
                   <p className="tool-label" style={{ textAlign: 'center', color: '#00D2FF', marginBottom: '14px' }}>🔐 USER PROFILE & PASSWORD SECURITY</p>
                   
                   {/* --- ADDY.IO EMAIL VERIFICATION STATUS & NOTICE CARD --- */}
@@ -4411,8 +4036,11 @@ const handleEmergencyBurn = async () => {
                     </button>
                   </div>
                 </div>
+
               </div>
-            ) : (
+            )}
+          </div>
+        ) : (
               /* 4. ONBOARDING & LOGIN FLOW (MOBILE OPTIMIZED) */
               <div className="onboarding-flow">
                 {(show2FA && !showPricing && !showCheckout && !isScanning) && (
