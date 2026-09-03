@@ -2458,122 +2458,6 @@ const handleEmergencyBurn = async () => {
             </div>
           </div>
         )}
-
-        {/* --- EDIT OPERATIVE TARGET PROFILE & ADDRESS MODAL --- */}
-        {showEditTargetProfileModal && (
-          <div className="modal-overlay" style={{ zIndex: 70000, background: 'rgba(0, 0, 0, 0.85)' }} onClick={() => setShowEditTargetProfileModal(false)}>
-            <div className="price-box fade-in" style={{ maxWidth: '520px', width: '90%', padding: '24px', border: '1px solid #00D2FF', background: '#05070D' }} onClick={e => e.stopPropagation()}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '16px', borderBottom: '1px solid rgba(0, 210, 255, 0.3)', paddingBottom: '10px' }}>
-                <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.1rem' }}>⚙️ EDIT TARGET PROFILE & ADDRESS</h3>
-                <button className="reset-btn" type="button" style={{ padding: '2px 8px', fontSize: '0.8rem' }} onClick={() => setShowEditTargetProfileModal(false)}>✕</button>
-              </div>
-
-              <p style={{ fontSize: '0.78rem', color: '#94A3B8', textAlign: 'left', marginBottom: '14px', lineHeight: '1.4' }}>
-                Data brokers rely on exact legal name, physical address, and contact details to process opt-out removals. Update your details below:
-              </p>
-
-              <form onSubmit={handleSaveTargetProfile} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  <div>
-                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>FIRST NAME</label>
-                    <input 
-                      type="text" 
-                      className="mask-btn" 
-                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
-                      value={targetProfile.firstName || targetProfile.first_name || ''} 
-                      onChange={e => setTargetProfile(p => ({ ...p, firstName: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>LAST NAME</label>
-                    <input 
-                      type="text" 
-                      className="mask-btn" 
-                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
-                      value={targetProfile.lastName || targetProfile.last_name || ''} 
-                      onChange={e => setTargetProfile(p => ({ ...p, lastName: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>PRIMARY EMAIL</label>
-                  <input 
-                    type="email" 
-                    className="mask-btn" 
-                    style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
-                    value={targetProfile.email || ''} 
-                    onChange={e => setTargetProfile(p => ({ ...p, email: e.target.value }))}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>PRIMARY PHONE</label>
-                  <input 
-                    type="text" 
-                    className="mask-btn" 
-                    style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
-                    value={targetProfile.phone || ''} 
-                    onChange={e => setTargetProfile(p => ({ ...p, phone: e.target.value }))}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>STREET ADDRESS</label>
-                  <input 
-                    type="text" 
-                    className="mask-btn" 
-                    style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
-                    placeholder="123 Cyber Way, Suite 400"
-                    value={targetProfile.address || ''} 
-                    onChange={e => setTargetProfile(p => ({ ...p, address: e.target.value }))}
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '6px' }}>
-                  <div>
-                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>CITY</label>
-                    <input 
-                      type="text" 
-                      className="mask-btn" 
-                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
-                      value={targetProfile.city || ''} 
-                      onChange={e => setTargetProfile(p => ({ ...p, city: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>STATE</label>
-                    <input 
-                      type="text" 
-                      className="mask-btn" 
-                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
-                      value={targetProfile.state || ''} 
-                      onChange={e => setTargetProfile(p => ({ ...p, state: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>ZIP</label>
-                    <input 
-                      type="text" 
-                      className="mask-btn" 
-                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
-                      value={targetProfile.zip || ''} 
-                      onChange={e => setTargetProfile(p => ({ ...p, zip: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
-                <button 
-                  className="main-button" 
-                  type="submit" 
-                  style={{ width: '100%', marginTop: '14px', fontSize: '0.85rem', fontWeight: 'bold' }}
-                >
-                  SAVE TARGET PROFILE 🛡️
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -2604,6 +2488,122 @@ const handleEmergencyBurn = async () => {
               </div>
             ))}
           </div>
+          {/* --- EDIT OPERATIVE TARGET PROFILE & ADDRESS MODAL --- */}
+          {showEditTargetProfileModal && (
+            <div className="modal-overlay" style={{ zIndex: 90000, background: 'rgba(0, 0, 0, 0.85)' }} onClick={() => setShowEditTargetProfileModal(false)}>
+              <div className="price-box fade-in" style={{ maxWidth: '520px', width: '90%', padding: '24px', border: '1px solid #00D2FF', background: '#05070D' }} onClick={e => e.stopPropagation()}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '16px', borderBottom: '1px solid rgba(0, 210, 255, 0.3)', paddingBottom: '10px' }}>
+                  <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.1rem' }}>⚙️ EDIT TARGET PROFILE & ADDRESS</h3>
+                  <button className="reset-btn" type="button" style={{ padding: '2px 8px', fontSize: '0.8rem' }} onClick={() => setShowEditTargetProfileModal(false)}>✕</button>
+                </div>
+
+                <p style={{ fontSize: '0.78rem', color: '#94A3B8', textAlign: 'left', marginBottom: '14px', lineHeight: '1.4' }}>
+                  Data brokers rely on exact legal name, physical address, and contact details to process opt-out removals. Update your details below:
+                </p>
+
+                <form onSubmit={handleSaveTargetProfile} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>FIRST NAME</label>
+                      <input 
+                        type="text" 
+                        className="mask-btn" 
+                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                        value={targetProfile.firstName || targetProfile.first_name || ''} 
+                        onChange={e => setTargetProfile(p => ({ ...p, firstName: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>LAST NAME</label>
+                      <input 
+                        type="text" 
+                        className="mask-btn" 
+                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                        value={targetProfile.lastName || targetProfile.last_name || ''} 
+                        onChange={e => setTargetProfile(p => ({ ...p, lastName: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>PRIMARY EMAIL</label>
+                    <input 
+                      type="email" 
+                      className="mask-btn" 
+                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                      value={targetProfile.email || ''} 
+                      onChange={e => setTargetProfile(p => ({ ...p, email: e.target.value }))}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>PRIMARY PHONE</label>
+                    <input 
+                      type="text" 
+                      className="mask-btn" 
+                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                      value={targetProfile.phone || ''} 
+                      onChange={e => setTargetProfile(p => ({ ...p, phone: e.target.value }))}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>STREET ADDRESS</label>
+                    <input 
+                      type="text" 
+                      className="mask-btn" 
+                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                      placeholder="123 Cyber Way, Suite 400"
+                      value={targetProfile.address || ''} 
+                      onChange={e => setTargetProfile(p => ({ ...p, address: e.target.value }))}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '6px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>CITY</label>
+                      <input 
+                        type="text" 
+                        className="mask-btn" 
+                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                        value={targetProfile.city || ''} 
+                        onChange={e => setTargetProfile(p => ({ ...p, city: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>STATE</label>
+                      <input 
+                        type="text" 
+                        className="mask-btn" 
+                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                        value={targetProfile.state || ''} 
+                        onChange={e => setTargetProfile(p => ({ ...p, state: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>ZIP</label>
+                      <input 
+                        type="text" 
+                        className="mask-btn" 
+                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                        value={targetProfile.zip || ''} 
+                        onChange={e => setTargetProfile(p => ({ ...p, zip: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  <button 
+                    className="main-button" 
+                    type="submit" 
+                    style={{ width: '100%', marginTop: '14px', fontSize: '0.85rem', fontWeight: 'bold' }}
+                  >
+                    SAVE TARGET PROFILE 🛡️
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
 {/* --- INTERACTIVE FAQ MODAL --- */}
           {showFaqModal && (
             <div className="modal-overlay" style={{zIndex: 70000}} onClick={() => setShowFaqModal(false)}>
