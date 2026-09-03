@@ -2501,9 +2501,11 @@ const handleEmergencyBurn = async () => {
                 zIndex: 90000, 
                 background: 'rgba(0, 0, 0, 0.88)',
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
                 justifyContent: 'center',
-                padding: '20px 12px',
+                padding: 'max(20px, env(safe-area-inset-top, 20px)) 12px max(40px, env(safe-area-inset-bottom, 40px)) 12px',
+                overflowY: 'auto',
+                WebkitOverflowScrolling: 'touch',
                 boxSizing: 'border-box'
               }} 
               onClick={() => setShowEditTargetProfileModal(false)}
@@ -2519,14 +2521,15 @@ const handleEmergencyBurn = async () => {
                   touchAction: 'pan-y',
                   display: 'flex',
                   flexDirection: 'column',
-                  padding: '22px 20px', 
+                  padding: '24px 20px 30px 20px', 
                   border: '1px solid #00D2FF', 
                   background: '#05070D',
                   borderRadius: '16px',
                   boxShadow: '0 10px 45px rgba(0, 0, 0, 0.95)',
                   boxSizing: 'border-box',
                   alignItems: 'stretch',
-                  gap: 0
+                  gap: 0,
+                  margin: 'auto 0'
                 }} 
                 onClick={e => e.stopPropagation()}
               >
@@ -3226,7 +3229,7 @@ const handleEmergencyBurn = async () => {
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       width: '100%',
-                      maxWidth: '600px',
+                      maxWidth: '100%',
                       padding: '12px 16px',
                       background: 'linear-gradient(135deg, rgba(0, 71, 171, 0.2) 0%, rgba(5, 7, 13, 0.95) 100%)',
                       border: '1px solid rgba(0, 210, 255, 0.4)',
