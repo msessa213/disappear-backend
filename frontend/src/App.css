@@ -489,7 +489,6 @@ input[type="checkbox"] {
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
-  overscroll-behavior: contain;
 }
 
 .info-modal-content {

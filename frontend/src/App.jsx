@@ -2490,40 +2490,68 @@ const handleEmergencyBurn = async () => {
           </div>
           {/* --- EDIT OPERATIVE TARGET PROFILE & ADDRESS MODAL --- */}
           {showEditTargetProfileModal && (
-            <div className="modal-overlay" style={{ zIndex: 90000, background: 'rgba(0, 0, 0, 0.85)' }} onClick={() => setShowEditTargetProfileModal(false)}>
+            <div 
+              className="modal-overlay" 
+              style={{ 
+                zIndex: 90000, 
+                background: 'rgba(0, 0, 0, 0.88)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflowY: 'auto',
+                padding: '20px 10px'
+              }} 
+              onClick={() => setShowEditTargetProfileModal(false)}
+            >
               <div 
                 className="price-box fade-in" 
                 style={{ 
-                  maxWidth: '520px', 
-                  width: '92%', 
-                  maxHeight: '85vh', 
-                  overflowY: 'auto', 
-                  WebkitOverflowScrolling: 'touch', 
-                  padding: '24px 20px 30px 20px', 
+                  maxWidth: '540px', 
+                  width: '94%', 
+                  maxHeight: '85vh',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  padding: '20px 18px 24px 18px', 
                   border: '1px solid #00D2FF', 
                   background: '#05070D',
                   borderRadius: '16px',
-                  boxShadow: '0 10px 40px rgba(0, 0, 0, 0.9)'
+                  boxShadow: '0 10px 45px rgba(0, 0, 0, 0.95)',
+                  boxSizing: 'border-box'
                 }} 
                 onClick={e => e.stopPropagation()}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '16px', borderBottom: '1px solid rgba(0, 210, 255, 0.3)', paddingBottom: '10px' }}>
-                  <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.1rem' }}>⚙️ EDIT TARGET PROFILE & ADDRESS</h3>
-                  <button className="reset-btn" type="button" style={{ padding: '2px 8px', fontSize: '0.8rem' }} onClick={() => setShowEditTargetProfileModal(false)}>✕</button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '12px', borderBottom: '1px solid rgba(0, 210, 255, 0.3)', paddingBottom: '10px', flexShrink: 0 }}>
+                  <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.05rem', letterSpacing: '0.5px' }}>⚙️ EDIT TARGET PROFILE & ADDRESS</h3>
+                  <button className="reset-btn" type="button" style={{ padding: '2px 8px', fontSize: '0.8rem', cursor: 'pointer' }} onClick={() => setShowEditTargetProfileModal(false)}>✕</button>
                 </div>
 
-                <p style={{ fontSize: '0.78rem', color: '#94A3B8', textAlign: 'left', marginBottom: '14px', lineHeight: '1.4' }}>
+                <p style={{ fontSize: '0.76rem', color: '#94A3B8', textAlign: 'left', marginBottom: '12px', lineHeight: '1.4', flexShrink: 0 }}>
                   Data brokers rely on exact legal name, physical address, and contact details to process opt-out removals. Update your details below:
                 </p>
 
-                <form onSubmit={handleSaveTargetProfile} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '10px', textAlign: 'left' }}>
+                <form 
+                  onSubmit={handleSaveTargetProfile} 
+                  style={{ 
+                    width: '100%', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: '10px', 
+                    textAlign: 'left',
+                    overflowY: 'auto',
+                    WebkitOverflowScrolling: 'touch',
+                    touchAction: 'pan-y',
+                    maxHeight: '60vh',
+                    paddingRight: '6px',
+                    boxSizing: 'border-box'
+                  }}
+                >
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                     <div>
                       <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>FIRST NAME</label>
                       <input 
                         type="text" 
                         className="mask-btn" 
-                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
                         value={targetProfile.firstName || targetProfile.first_name || ''} 
                         onChange={e => setTargetProfile(p => ({ ...p, firstName: e.target.value }))}
                       />
@@ -2533,7 +2561,7 @@ const handleEmergencyBurn = async () => {
                       <input 
                         type="text" 
                         className="mask-btn" 
-                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
                         value={targetProfile.lastName || targetProfile.last_name || ''} 
                         onChange={e => setTargetProfile(p => ({ ...p, lastName: e.target.value }))}
                       />
@@ -2545,7 +2573,7 @@ const handleEmergencyBurn = async () => {
                     <input 
                       type="email" 
                       className="mask-btn" 
-                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
                       value={targetProfile.email || ''} 
                       onChange={e => setTargetProfile(p => ({ ...p, email: e.target.value }))}
                     />
@@ -2556,7 +2584,7 @@ const handleEmergencyBurn = async () => {
                     <input 
                       type="text" 
                       className="mask-btn" 
-                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
                       value={targetProfile.phone || ''} 
                       onChange={e => setTargetProfile(p => ({ ...p, phone: e.target.value }))}
                     />
@@ -2567,7 +2595,7 @@ const handleEmergencyBurn = async () => {
                     <input 
                       type="text" 
                       className="mask-btn" 
-                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
                       placeholder="123 Cyber Way, Suite 400"
                       value={targetProfile.address || ''} 
                       onChange={e => setTargetProfile(p => ({ ...p, address: e.target.value }))}
@@ -2580,7 +2608,7 @@ const handleEmergencyBurn = async () => {
                       <input 
                         type="text" 
                         className="mask-btn" 
-                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
                         value={targetProfile.city || ''} 
                         onChange={e => setTargetProfile(p => ({ ...p, city: e.target.value }))}
                       />
@@ -2590,7 +2618,7 @@ const handleEmergencyBurn = async () => {
                       <input 
                         type="text" 
                         className="mask-btn" 
-                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
                         value={targetProfile.state || ''} 
                         onChange={e => setTargetProfile(p => ({ ...p, state: e.target.value }))}
                       />
@@ -2600,7 +2628,7 @@ const handleEmergencyBurn = async () => {
                       <input 
                         type="text" 
                         className="mask-btn" 
-                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px' }} 
+                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
                         value={targetProfile.zip || ''} 
                         onChange={e => setTargetProfile(p => ({ ...p, zip: e.target.value }))}
                       />
@@ -2610,7 +2638,7 @@ const handleEmergencyBurn = async () => {
                   <button 
                     className="main-button" 
                     type="submit" 
-                    style={{ width: '100%', marginTop: '16px', marginBottom: '10px', fontSize: '0.88rem', padding: '12px 14px', fontWeight: 'bold' }}
+                    style={{ width: '100%', marginTop: '12px', marginBottom: '6px', fontSize: '0.88rem', padding: '12px 14px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer' }}
                   >
                     SAVE TARGET PROFILE 🛡️
                   </button>
