@@ -507,6 +507,7 @@ function App() {
   const [credits, setCredits] = useState({ vcc_total: 6, vcc_used: 0, phone_total: 2, phone_used: 0 });
   const [auditLog, setAuditLog] = useState([]);
   const [historyDays, setHistoryDays] = useState(30); // NEW: History Filter State
+  const [expandedSmsThreads, setExpandedSmsThreads] = useState({}); // NEW: Accordion SMS Threads State
   const [cards, setCards] = useState([]);
   const [progress, setProgress] = useState(15);
   const [showToast, setShowToast] = useState("");
@@ -3217,7 +3218,21 @@ const handleEmergencyBurn = async () => {
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '350px', overflowY: 'auto' }}>
                           {aliasMessages.map((msg) => {
-                            const emailBodyContent = msg.body || msg.text || msg.message || msg.content || msg.text_content || msg.snippet || (typeof msg.html === 'string' ? msg.html.replace(/<[^>]+>/g, '') : '') || "No message body";
+                            const rawContent = msg.body || msg.text || msg.message || msg.content || msg.text_content || msg.snippet || (msg.data && (msg.data.body || msg.data.text || msg.data.content)) || (typeof msg.html === 'string' ? msg.html : '');
+                            let emailBodyContent = "No message body";
+                            if (typeof rawContent === 'string' && rawContent.trim()) {
+                              if (rawContent.includes('<html') || rawContent.includes('<div') || rawContent.includes('<p>') || rawContent.includes('<br')) {
+                                emailBodyContent = rawContent
+                                  .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                                  .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                                  .replace(/<[^>]+>/g, ' ')
+                                  .replace(/\s+/g, ' ')
+                                  .trim() || "No text content";
+                              } else {
+                                emailBodyContent = rawContent;
+                              }
+                            }
+                            
                             return (
                               <div key={msg.id} style={{ background: '#05070D', border: '1px solid #1e293b', padding: '12px', borderRadius: '8px', textAlign: 'left' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
@@ -3429,26 +3444,37 @@ const handleEmergencyBurn = async () => {
                           No incoming text messages received yet. Any SMS sent to your alias will appear here instantly.
                         </p>
                       ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '320px', overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '380px', overflowY: 'auto' }}>
                           {groupedSmsThreads.map(({ phone, messages }) => {
                             const formattedPhoneDisplay = phone.replace(/\+1([0-9]{3})([0-9]{3})([0-9]{4})/, "+1 ($1) $2-$3");
                             const isGroupReplying = activeReplyId === `group_${phone}`;
+                            const isExpanded = Boolean(expandedSmsThreads[phone]);
                             const newestMessage = messages[0];
+                            const newestSnippet = newestMessage ? (newestMessage.body || newestMessage.text || newestMessage.message || newestMessage.content || newestMessage.text_content || "No message snippet") : "No messages";
 
                             return (
-                              <div key={`thread_${phone}`} style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '8px', padding: '10px 12px' }}>
-                                <div className="sms-thread-header">
+                              <div key={`thread_${phone}`} style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '8px', padding: '10px 12px', textAlign: 'left' }}>
+                                <div className="sms-thread-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                                     <span style={{ fontSize: '0.82rem', color: '#00D2FF', fontWeight: 'bold' }}>📱 CONTACT: {formattedPhoneDisplay}</span>
                                     <span style={{ fontSize: '0.65rem', background: '#1e293b', color: '#10B981', padding: '1px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
                                       {messages.length} {messages.length === 1 ? 'MSG' : 'MSGS'}
                                     </span>
                                   </div>
-                                  <div style={{ display: 'flex', gap: '6px' }}>
+                                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                     <button
                                       className="reset-btn"
                                       type="button"
-                                      style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#10B981', borderColor: '#10B981' }}
+                                      style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#00D2FF', borderColor: '#00D2FF', fontWeight: 'bold' }}
+                                      onClick={() => setExpandedSmsThreads(prev => ({ ...prev, [phone]: !prev[phone] }))}
+                                    >
+                                      {isExpanded ? "▲ COLLAPSE" : `▼ EXPAND (${messages.length})`}
+                                    </button>
+
+                                    <button
+                                      className="reset-btn"
+                                      type="button"
+                                      style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#10B981', borderColor: '#10B981', fontWeight: 'bold' }}
                                       onClick={() => {
                                         if (isGroupReplying) {
                                           setActiveReplyId(null);
@@ -3468,7 +3494,7 @@ const handleEmergencyBurn = async () => {
                                     <button
                                       className="reset-btn"
                                       type="button"
-                                      style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#EF4444', borderColor: '#EF4444' }}
+                                      style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#EF4444', borderColor: '#EF4444', fontWeight: 'bold' }}
                                       onClick={(e) => {
                                         messages.forEach(msg => handleDeleteSmsMessage(msg.id, e));
                                       }}
@@ -3478,39 +3504,57 @@ const handleEmergencyBurn = async () => {
                                   </div>
                                 </div>
 
-                                {/* SMS THREAD INDIVIDUAL MESSAGES FEED WITH BODY MAPPING */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '8px 0' }}>
-                                  {messages.map((m, mIdx) => {
-                                    const smsBodyContent = m.body || m.text || m.message || m.content || m.text_content || "No message body";
-                                    const isOutbound = m.direction === 'outbound' || m.is_outbound;
-                                    return (
-                                      <div key={m.id || mIdx} style={{ background: isOutbound ? '#071828' : '#040b16', border: '1px solid #1e293b', borderRadius: '6px', padding: '8px 10px', textAlign: 'left' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                          <span style={{ fontSize: '0.70rem', color: isOutbound ? '#10B981' : '#00D2FF', fontWeight: 'bold' }}>
-                                            {isOutbound ? '📤 SENT VIA ALIAS' : '📥 RECEIVED'} {m.to_phone ? `(${m.to_phone})` : ''}
-                                          </span>
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <span style={{ fontSize: '0.65rem', color: '#64748B' }}>
-                                              {m.timestamp || m.created_at ? new Date(m.timestamp || m.created_at).toLocaleString() : 'Recently'}
+                                {/* COLLAPSED PREVIEW SNIPPET */}
+                                {!isExpanded && (
+                                  <div 
+                                    style={{ background: '#030712', padding: '6px 10px', borderRadius: '4px', border: '1px solid #111', fontSize: '0.78rem', color: '#94A3B8', marginTop: '6px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                    onClick={() => setExpandedSmsThreads(prev => ({ ...prev, [phone]: true }))}
+                                  >
+                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                      💬 {newestSnippet}
+                                    </span>
+                                    <span style={{ fontSize: '0.68rem', color: '#64748B', marginLeft: '8px', flexShrink: 0 }}>
+                                      {newestMessage?.timestamp || newestMessage?.created_at ? new Date(newestMessage.timestamp || newestMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently'}
+                                    </span>
+                                  </div>
+                                )}
+
+                                {/* EXPANDED FULL MESSAGE FEED (SORTED NEWEST FIRST) */}
+                                {isExpanded && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '8px 0' }}>
+                                    {messages.map((m, mIdx) => {
+                                      const smsBodyContent = m.body || m.text || m.message || m.content || m.text_content || "No message body";
+                                      const isOutbound = m.direction === 'outbound' || m.is_outbound;
+                                      return (
+                                        <div key={m.id || mIdx} style={{ background: isOutbound ? '#071828' : '#040b16', border: '1px solid #1e293b', borderRadius: '6px', padding: '8px 10px', textAlign: 'left' }}>
+                                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                            <span style={{ fontSize: '0.70rem', color: isOutbound ? '#10B981' : '#00D2FF', fontWeight: 'bold' }}>
+                                              {isOutbound ? '📤 SENT VIA ALIAS' : '📥 RECEIVED'} {m.to_phone ? `(${m.to_phone})` : ''}
                                             </span>
-                                            <button
-                                              className="reset-btn"
-                                              type="button"
-                                              style={{ padding: '1px 5px', fontSize: '0.65rem', color: '#EF4444', borderColor: '#EF4444' }}
-                                              onClick={(e) => handleDeleteSmsMessage(m.id, e)}
-                                            >
-                                              🗑️
-                                            </button>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                              <span style={{ fontSize: '0.65rem', color: '#64748B' }}>
+                                                {m.timestamp || m.created_at ? new Date(m.timestamp || m.created_at).toLocaleString() : 'Recently'}
+                                              </span>
+                                              <button
+                                                className="reset-btn"
+                                                type="button"
+                                                style={{ padding: '1px 5px', fontSize: '0.65rem', color: '#EF4444', borderColor: '#EF4444' }}
+                                                onClick={(e) => handleDeleteSmsMessage(m.id, e)}
+                                              >
+                                                🗑️
+                                              </button>
+                                            </div>
+                                          </div>
+                                          <div style={{ fontSize: '0.80rem', color: '#E2E8F0', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                            {smsBodyContent}
                                           </div>
                                         </div>
-                                        <div style={{ fontSize: '0.80rem', color: '#E2E8F0', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                                          {smsBodyContent}
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
 
+                                {/* INLINE REPLY PANEL */}
                                 {isGroupReplying && (
                                   <div style={{ background: '#030712', border: '1px solid #10B981', padding: '8px', borderRadius: '6px', marginBottom: '8px', marginTop: '8px' }}>
                                     <textarea
