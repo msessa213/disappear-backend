@@ -2498,7 +2498,6 @@ const handleEmergencyBurn = async () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                overflowY: 'auto',
                 padding: '20px 10px'
               }} 
               onClick={() => setShowEditTargetProfileModal(false)}
@@ -2511,7 +2510,7 @@ const handleEmergencyBurn = async () => {
                   maxHeight: '85vh',
                   display: 'flex',
                   flexDirection: 'column',
-                  padding: '20px 18px 24px 18px', 
+                  padding: '20px 18px', 
                   border: '1px solid #00D2FF', 
                   background: '#05070D',
                   borderRadius: '16px',
@@ -2520,7 +2519,8 @@ const handleEmergencyBurn = async () => {
                 }} 
                 onClick={e => e.stopPropagation()}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '12px', borderBottom: '1px solid rgba(0, 210, 255, 0.3)', paddingBottom: '10px', flexShrink: 0 }}>
+                {/* PINNED MODAL HEADER */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '10px', borderBottom: '1px solid rgba(0, 210, 255, 0.3)', paddingBottom: '10px', flexShrink: 0 }}>
                   <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.05rem', letterSpacing: '0.5px' }}>⚙️ EDIT TARGET PROFILE & ADDRESS</h3>
                   <button className="reset-btn" type="button" style={{ padding: '2px 8px', fontSize: '0.8rem', cursor: 'pointer' }} onClick={() => setShowEditTargetProfileModal(false)}>✕</button>
                 </div>
@@ -2529,119 +2529,149 @@ const handleEmergencyBurn = async () => {
                   Data brokers rely on exact legal name, physical address, and contact details to process opt-out removals. Update your details below:
                 </p>
 
+                {/* MAIN FORM WITH DEDICATED SCROLLABLE BODY & PINNED FOOTER */}
                 <form 
+                  id="target-profile-form"
                   onSubmit={handleSaveTargetProfile} 
                   style={{ 
                     width: '100%', 
                     display: 'flex', 
                     flexDirection: 'column', 
-                    gap: '10px', 
-                    textAlign: 'left',
-                    overflowY: 'auto',
-                    WebkitOverflowScrolling: 'touch',
-                    touchAction: 'pan-y',
-                    maxHeight: '60vh',
-                    paddingRight: '6px',
-                    boxSizing: 'border-box'
+                    flex: 1,
+                    overflow: 'hidden',
+                    textAlign: 'left'
                   }}
                 >
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  {/* SCROLLABLE INPUTS VIEWPORT WITH BOTTOM CLEARANCE PADDING */}
+                  <div style={{ 
+                    overflowY: 'auto', 
+                    WebkitOverflowScrolling: 'touch', 
+                    touchAction: 'pan-y',
+                    maxHeight: '52vh', 
+                    paddingRight: '6px', 
+                    paddingBottom: '30px', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: '12px',
+                    boxSizing: 'border-box' 
+                  }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>FIRST NAME</label>
+                        <input 
+                          type="text" 
+                          className="mask-btn" 
+                          style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
+                          value={targetProfile.firstName || targetProfile.first_name || ''} 
+                          onChange={e => setTargetProfile(p => ({ ...p, firstName: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>LAST NAME</label>
+                        <input 
+                          type="text" 
+                          className="mask-btn" 
+                          style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
+                          value={targetProfile.lastName || targetProfile.last_name || ''} 
+                          onChange={e => setTargetProfile(p => ({ ...p, lastName: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+
                     <div>
-                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>FIRST NAME</label>
+                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>PRIMARY EMAIL</label>
+                      <input 
+                        type="email" 
+                        className="mask-btn" 
+                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
+                        value={targetProfile.email || ''} 
+                        onChange={e => setTargetProfile(p => ({ ...p, email: e.target.value }))}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>PRIMARY PHONE</label>
                       <input 
                         type="text" 
                         className="mask-btn" 
                         style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
-                        value={targetProfile.firstName || targetProfile.first_name || ''} 
-                        onChange={e => setTargetProfile(p => ({ ...p, firstName: e.target.value }))}
+                        value={targetProfile.phone || ''} 
+                        onChange={e => setTargetProfile(p => ({ ...p, phone: e.target.value }))}
                       />
                     </div>
+
                     <div>
-                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>LAST NAME</label>
+                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>STREET ADDRESS</label>
                       <input 
                         type="text" 
                         className="mask-btn" 
                         style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
-                        value={targetProfile.lastName || targetProfile.last_name || ''} 
-                        onChange={e => setTargetProfile(p => ({ ...p, lastName: e.target.value }))}
+                        placeholder="123 Cyber Way, Suite 400"
+                        value={targetProfile.address || ''} 
+                        onChange={e => setTargetProfile(p => ({ ...p, address: e.target.value }))}
                       />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '6px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>CITY</label>
+                        <input 
+                          type="text" 
+                          className="mask-btn" 
+                          style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
+                          value={targetProfile.city || ''} 
+                          onChange={e => setTargetProfile(p => ({ ...p, city: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>STATE</label>
+                        <input 
+                          type="text" 
+                          className="mask-btn" 
+                          style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
+                          value={targetProfile.state || ''} 
+                          onChange={e => setTargetProfile(p => ({ ...p, state: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>ZIP</label>
+                        <input 
+                          type="text" 
+                          className="mask-btn" 
+                          style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
+                          value={targetProfile.zip || ''} 
+                          onChange={e => setTargetProfile(p => ({ ...p, zip: e.target.value }))}
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <div>
-                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>PRIMARY EMAIL</label>
-                    <input 
-                      type="email" 
-                      className="mask-btn" 
-                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
-                      value={targetProfile.email || ''} 
-                      onChange={e => setTargetProfile(p => ({ ...p, email: e.target.value }))}
-                    />
+                  {/* PINNED SOLID FOOTER WITH TOP SEPARATION BORDER */}
+                  <div style={{ 
+                    borderTop: '1px solid rgba(0, 210, 255, 0.3)', 
+                    paddingTop: '12px', 
+                    marginTop: '6px', 
+                    background: '#05070D', 
+                    display: 'flex', 
+                    gap: '10px', 
+                    flexShrink: 0 
+                  }}>
+                    <button 
+                      type="button"
+                      className="reset-btn"
+                      style={{ flex: 1, padding: '10px', fontSize: '0.82rem', borderColor: '#64748B', color: '#94A3B8', fontWeight: 'bold' }}
+                      onClick={() => setShowEditTargetProfileModal(false)}
+                    >
+                      DISMISS
+                    </button>
+                    <button 
+                      type="submit" 
+                      className="main-button" 
+                      style={{ flex: 2, padding: '10px', fontSize: '0.88rem', fontWeight: 'bold', cursor: 'pointer' }}
+                    >
+                      SAVE TARGET PROFILE 🛡️
+                    </button>
                   </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>PRIMARY PHONE</label>
-                    <input 
-                      type="text" 
-                      className="mask-btn" 
-                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
-                      value={targetProfile.phone || ''} 
-                      onChange={e => setTargetProfile(p => ({ ...p, phone: e.target.value }))}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>STREET ADDRESS</label>
-                    <input 
-                      type="text" 
-                      className="mask-btn" 
-                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
-                      placeholder="123 Cyber Way, Suite 400"
-                      value={targetProfile.address || ''} 
-                      onChange={e => setTargetProfile(p => ({ ...p, address: e.target.value }))}
-                    />
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '6px' }}>
-                    <div>
-                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>CITY</label>
-                      <input 
-                        type="text" 
-                        className="mask-btn" 
-                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
-                        value={targetProfile.city || ''} 
-                        onChange={e => setTargetProfile(p => ({ ...p, city: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>STATE</label>
-                      <input 
-                        type="text" 
-                        className="mask-btn" 
-                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
-                        value={targetProfile.state || ''} 
-                        onChange={e => setTargetProfile(p => ({ ...p, state: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>ZIP</label>
-                      <input 
-                        type="text" 
-                        className="mask-btn" 
-                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
-                        value={targetProfile.zip || ''} 
-                        onChange={e => setTargetProfile(p => ({ ...p, zip: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-
-                  <button 
-                    className="main-button" 
-                    type="submit" 
-                    style={{ width: '100%', marginTop: '12px', marginBottom: '6px', fontSize: '0.88rem', padding: '12px 14px', fontWeight: 'bold', flexShrink: 0, cursor: 'pointer' }}
-                  >
-                    SAVE TARGET PROFILE 🛡️
-                  </button>
                 </form>
               </div>
             </div>
