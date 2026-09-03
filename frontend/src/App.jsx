@@ -2493,12 +2493,18 @@ const handleEmergencyBurn = async () => {
             <div 
               className="modal-overlay" 
               style={{ 
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
                 zIndex: 90000, 
                 background: 'rgba(0, 0, 0, 0.88)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '20px 10px'
+                padding: '16px 12px',
+                boxSizing: 'border-box'
               }} 
               onClick={() => setShowEditTargetProfileModal(false)}
             >
@@ -2506,30 +2512,32 @@ const handleEmergencyBurn = async () => {
                 className="price-box fade-in" 
                 style={{ 
                   maxWidth: '540px', 
-                  width: '94%', 
-                  maxHeight: '85vh',
+                  width: '100%', 
+                  maxHeight: '82vh',
                   display: 'flex',
                   flexDirection: 'column',
-                  padding: '20px 18px', 
+                  padding: '20px', 
                   border: '1px solid #00D2FF', 
                   background: '#05070D',
                   borderRadius: '16px',
                   boxShadow: '0 10px 45px rgba(0, 0, 0, 0.95)',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  overflow: 'hidden'
                 }} 
                 onClick={e => e.stopPropagation()}
               >
-                {/* PINNED MODAL HEADER */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '10px', borderBottom: '1px solid rgba(0, 210, 255, 0.3)', paddingBottom: '10px', flexShrink: 0 }}>
-                  <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.05rem', letterSpacing: '0.5px' }}>⚙️ EDIT TARGET PROFILE & ADDRESS</h3>
-                  <button className="reset-btn" type="button" style={{ padding: '2px 8px', fontSize: '0.8rem', cursor: 'pointer' }} onClick={() => setShowEditTargetProfileModal(false)}>✕</button>
+                {/* TIER 1 (HEADER): FIXED TITLE & CLOSE BUTTON */}
+                <div style={{ flexShrink: 0, marginBottom: '10px', borderBottom: '1px solid rgba(0, 210, 255, 0.3)', paddingBottom: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.05rem', letterSpacing: '0.5px' }}>⚙️ EDIT TARGET PROFILE & ADDRESS</h3>
+                    <button className="reset-btn" type="button" style={{ padding: '2px 8px', fontSize: '0.8rem', cursor: 'pointer' }} onClick={() => setShowEditTargetProfileModal(false)}>✕</button>
+                  </div>
+                  <p style={{ fontSize: '0.76rem', color: '#94A3B8', textAlign: 'left', margin: '6px 0 0 0', lineHeight: '1.4' }}>
+                    Data brokers rely on exact legal name, physical address, and contact details to process opt-out removals. Update your details below:
+                  </p>
                 </div>
 
-                <p style={{ fontSize: '0.76rem', color: '#94A3B8', textAlign: 'left', marginBottom: '12px', lineHeight: '1.4', flexShrink: 0 }}>
-                  Data brokers rely on exact legal name, physical address, and contact details to process opt-out removals. Update your details below:
-                </p>
-
-                {/* MAIN FORM WITH DEDICATED SCROLLABLE BODY & PINNED FOOTER */}
+                {/* FORM WRAPPER CONTAINING TIER 2 & TIER 3 */}
                 <form 
                   id="target-profile-form"
                   onSubmit={handleSaveTargetProfile} 
@@ -2538,16 +2546,19 @@ const handleEmergencyBurn = async () => {
                     display: 'flex', 
                     flexDirection: 'column', 
                     flex: 1,
+                    minHeight: 0,
                     overflow: 'hidden',
                     textAlign: 'left'
                   }}
                 >
-                  {/* SCROLLABLE INPUTS VIEWPORT WITH BOTTOM CLEARANCE PADDING */}
+                  {/* TIER 2 (SCROLLABLE BODY): FORM INPUTS WITH 30PX CLEARANCE */}
                   <div style={{ 
+                    flex: 1,
+                    flexGrow: 1,
+                    minHeight: 0,
                     overflowY: 'auto', 
                     WebkitOverflowScrolling: 'touch', 
                     touchAction: 'pan-y',
-                    maxHeight: '52vh', 
                     paddingRight: '6px', 
                     paddingBottom: '30px', 
                     display: 'flex', 
@@ -2646,20 +2657,20 @@ const handleEmergencyBurn = async () => {
                     </div>
                   </div>
 
-                  {/* PINNED SOLID FOOTER WITH TOP SEPARATION BORDER */}
+                  {/* TIER 3 (FOOTER): DEDICATED ACTION BAR */}
                   <div style={{ 
+                    flexShrink: 0,
                     borderTop: '1px solid rgba(0, 210, 255, 0.3)', 
-                    paddingTop: '12px', 
+                    paddingTop: '14px', 
                     marginTop: '6px', 
                     background: '#05070D', 
                     display: 'flex', 
-                    gap: '10px', 
-                    flexShrink: 0 
+                    gap: '10px' 
                   }}>
                     <button 
                       type="button"
                       className="reset-btn"
-                      style={{ flex: 1, padding: '10px', fontSize: '0.82rem', borderColor: '#64748B', color: '#94A3B8', fontWeight: 'bold' }}
+                      style={{ flex: 1, padding: '10px', fontSize: '0.82rem', borderColor: '#64748B', color: '#94A3B8', fontWeight: 'bold', cursor: 'pointer' }}
                       onClick={() => setShowEditTargetProfileModal(false)}
                     >
                       DISMISS
