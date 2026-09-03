@@ -2807,7 +2807,7 @@ const handleEmergencyBurn = async () => {
                 </div>
               </div>
             ) : showShield ? (
-              <div className="shield-container fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
+              <div className="shield-container fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%', maxWidth: '720px', margin: '0 auto' }}>
                 
                 {/* PROMINENT TOP DASHBOARD HEADER & DISCONNECT BUTTON */}
                 <div 
