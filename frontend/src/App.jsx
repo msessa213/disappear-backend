@@ -2807,7 +2807,7 @@ const handleEmergencyBurn = async () => {
                 </div>
               </div>
             ) : showShield ? (
-              <div className="shield-container fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%', maxWidth: '780px', margin: '0 auto' }}>
+              <div className="shield-container fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
                 
                 {/* PROMINENT TOP DASHBOARD HEADER & DISCONNECT BUTTON */}
                 <div 
@@ -2970,10 +2970,10 @@ const handleEmergencyBurn = async () => {
                 
                 {/* TAB 1: ALIASES (EMAIL & MOBILE SMS MANAGEMENT) */}
                 {dashboardTab === 'aliases' && (
-                  <div className="tab-pane fade-in" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                  <div className="tab-pane desktop-grid-2col fade-in" style={{ width: '100%' }}>
                     
                     {/* PROMINENT RELAY CREDITS & VAULT CAPACITY SUMMARY BAR */}
-                    <div style={{
+                    <div className="desktop-span-2" style={{
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
@@ -3779,7 +3779,7 @@ const handleEmergencyBurn = async () => {
 
                 {/* TAB 3: INFO & SECURITY LOGS */}
                 {dashboardTab === 'info' && (
-                  <div className="tab-pane fade-in" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                  <div className="tab-pane desktop-grid-2col fade-in" style={{ width: '100%' }}>
                     
                     {/* LIVE SECURITY AUDIT (HISTORY VIEW) */}
                     <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid var(--tiger-blue)' }}>
@@ -3852,7 +3852,7 @@ const handleEmergencyBurn = async () => {
 
                 {/* TAB 4: MAINTENANCE */}
                 {dashboardTab === 'account' && (
-                  <div className="tab-pane fade-in" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                  <div className="tab-pane desktop-grid-2col fade-in" style={{ width: '100%' }}>
                     
                     {/* VAULT CAPACITY */}
                     <div className="masking-tool" style={{ border: '1px solid #111', background: '#050505', width: '100%', maxWidth: '600px' }}>
