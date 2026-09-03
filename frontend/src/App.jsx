@@ -2491,7 +2491,22 @@ const handleEmergencyBurn = async () => {
           {/* --- EDIT OPERATIVE TARGET PROFILE & ADDRESS MODAL --- */}
           {showEditTargetProfileModal && (
             <div className="modal-overlay" style={{ zIndex: 90000, background: 'rgba(0, 0, 0, 0.85)' }} onClick={() => setShowEditTargetProfileModal(false)}>
-              <div className="price-box fade-in" style={{ maxWidth: '520px', width: '90%', padding: '24px', border: '1px solid #00D2FF', background: '#05070D' }} onClick={e => e.stopPropagation()}>
+              <div 
+                className="price-box fade-in" 
+                style={{ 
+                  maxWidth: '520px', 
+                  width: '92%', 
+                  maxHeight: '85vh', 
+                  overflowY: 'auto', 
+                  WebkitOverflowScrolling: 'touch', 
+                  padding: '24px 20px 30px 20px', 
+                  border: '1px solid #00D2FF', 
+                  background: '#05070D',
+                  borderRadius: '16px',
+                  boxShadow: '0 10px 40px rgba(0, 0, 0, 0.9)'
+                }} 
+                onClick={e => e.stopPropagation()}
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: '16px', borderBottom: '1px solid rgba(0, 210, 255, 0.3)', paddingBottom: '10px' }}>
                   <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.1rem' }}>⚙️ EDIT TARGET PROFILE & ADDRESS</h3>
                   <button className="reset-btn" type="button" style={{ padding: '2px 8px', fontSize: '0.8rem' }} onClick={() => setShowEditTargetProfileModal(false)}>✕</button>
@@ -2595,7 +2610,7 @@ const handleEmergencyBurn = async () => {
                   <button 
                     className="main-button" 
                     type="submit" 
-                    style={{ width: '100%', marginTop: '14px', fontSize: '0.85rem', fontWeight: 'bold' }}
+                    style={{ width: '100%', marginTop: '16px', marginBottom: '10px', fontSize: '0.88rem', padding: '12px 14px', fontWeight: 'bold' }}
                   >
                     SAVE TARGET PROFILE 🛡️
                   </button>
