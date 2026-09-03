@@ -2860,9 +2860,10 @@ const handleEmergencyBurn = async () => {
                   style={{ 
                     display: 'flex', 
                     justifyContent: 'center', 
-                    gap: '6px', 
-                    width: '100%', 
-                    padding: '6px', 
+                    gap: '4px', 
+                    width: '100%',
+                    maxWidth: '100%', 
+                    padding: '6px 4px', 
                     background: 'rgba(5, 7, 13, 0.95)', 
                     border: '1px solid rgba(0, 210, 255, 0.3)', 
                     borderRadius: '12px', 
@@ -2872,7 +2873,9 @@ const handleEmergencyBurn = async () => {
                     boxSizing: 'border-box',
                     position: 'sticky',
                     top: '10px',
-                    zIndex: 100
+                    zIndex: 100,
+                    overflowX: 'auto',
+                    WebkitOverflowScrolling: 'touch'
                   }}
                 >
                   <button 
@@ -2964,6 +2967,40 @@ const handleEmergencyBurn = async () => {
                 {dashboardTab === 'aliases' && (
                   <div className="tab-pane fade-in" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
                     
+                    {/* PROMINENT RELAY CREDITS & VAULT CAPACITY SUMMARY BAR */}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      width: '100%',
+                      maxWidth: '600px',
+                      padding: '12px 16px',
+                      background: 'linear-gradient(135deg, rgba(0, 71, 171, 0.2) 0%, rgba(5, 7, 13, 0.95) 100%)',
+                      border: '1px solid rgba(0, 210, 255, 0.4)',
+                      borderRadius: '10px',
+                      boxSizing: 'border-box',
+                      flexWrap: 'wrap',
+                      gap: '10px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                        <div style={{ background: 'rgba(0, 210, 255, 0.15)', border: '1px solid rgba(0, 210, 255, 0.4)', padding: '5px 12px', borderRadius: '6px', fontSize: '0.85rem', color: '#00D2FF', fontWeight: 'bold' }}>
+                          ⚡ CREDITS: {credits.phone_credits !== undefined ? credits.phone_credits : 500}
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: '#CBD5E1', fontFamily: 'monospace' }}>
+                          EMAILS: <strong style={{ color: '#00D2FF' }}>{emails.length}/{credits.vcc_total}</strong> | PHONES: <strong style={{ color: '#00D2FF' }}>{phones.length}/{credits.phone_total}</strong>
+                        </div>
+                      </div>
+                      
+                      <button 
+                        type="button"
+                        className="reset-btn"
+                        style={{ padding: '6px 12px', fontSize: '0.75rem', fontWeight: 'bold', color: '#00D2FF', borderColor: '#00D2FF', borderRadius: '6px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                        onClick={handleRefillCredits}
+                      >
+                        + REFILL CREDITS ⚡
+                      </button>
+                    </div>
+
                     {/* EMAIL PROTECTION MODULE */}
                     <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative', border: '1px solid var(--tiger-blue)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
@@ -3721,16 +3758,16 @@ const handleEmergencyBurn = async () => {
                       </div>
 
                       <div style={{ maxHeight: '300px', overflowY: 'auto', background: '#05070D', border: '1px solid rgba(0,210,255,0.2)', borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' }}>
-                        {purgeHistory.length === 0 ? (
+                        {auditLog.length === 0 ? (
                           <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, textAlign: 'center', padding: '15px' }}>
                             No security audit logs recorded for the selected timeframe.
                           </p>
                         ) : (
-                          purgeHistory.map((item, idx) => (
+                          auditLog.map((item, idx) => (
                             <div key={item.id || idx} style={{ background: '#0a0f1d', border: '1px solid #1e293b', padding: '8px 12px', borderRadius: '6px', textAlign: 'left' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                                 <span style={{ fontSize: '0.78rem', color: '#00D2FF', fontWeight: 'bold' }}>
-                                  {item.action_type || "SECURITY_EVENT"}
+                                  {item.action || item.action_type || "SECURITY_EVENT"}
                                 </span>
                                 <span style={{ fontSize: '0.68rem', color: '#64748B' }}>
                                   {item.timestamp ? new Date(item.timestamp).toLocaleString() : "Recently"}
