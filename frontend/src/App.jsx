@@ -1332,6 +1332,81 @@ function App() {
     return clean.trim();
   };
 
+  const parseEmailMessageContent = (rawContent, msgAliasEmail) => {
+    if (!rawContent || typeof rawContent !== 'string' || !rawContent.trim()) {
+      return { bannerInfo: null, deactivateUrl: null, bodyText: "No message body" };
+    }
+
+    let text = rawContent;
+    let bannerText = null;
+    let deactivateUrl = null;
+
+    // 1. Check for HTML comment banners like <!--banner-info--> ... <!--/banner-info-->
+    const bannerCommentMatch = text.match(/<!--\s*banner-info\s*-->([\s\S]*?)<!--\s*\/banner-info\s*-->/i);
+    if (bannerCommentMatch) {
+      bannerText = bannerCommentMatch[1];
+      text = text.replace(/<!--\s*banner-info\s*-->[\s\S]*?<!--\s*\/banner-info\s*-->/gi, '');
+    }
+
+    // Strip all remaining HTML comments
+    text = text.replace(/<!--[\s\S]*?-->/g, '');
+
+    // 2. Extract deactivation URL if present
+    const deactivateMatch = (bannerText || text).match(/https?:\/\/[^\s<"']+(?:addy\.io|anonaddy)[^\s<"']*(?:deactivate|unsubscribe)[^\s<"']*/i);
+    if (deactivateMatch) {
+      deactivateUrl = deactivateMatch[0];
+    }
+
+    // 3. Clean raw HTML tags and URLs out of banner text
+    if (bannerText) {
+      bannerText = bannerText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      if (deactivateUrl) {
+        bannerText = bannerText.replace(deactivateUrl, '').replace(/Deactivate alias:\s*/i, '').replace(/To deactivate this alias,\s*/i, '').trim();
+      }
+    }
+
+    // 4. Fallback check for plain text forwarding notices
+    if (!bannerText) {
+      const plainBannerMatch = text.match(/(This email was sent to [^\n\r]+)/i);
+      if (plainBannerMatch) {
+        let matchedBanner = plainBannerMatch[1];
+        const urlInBanner = matchedBanner.match(/https?:\/\/[^\s<"']+/i);
+        if (urlInBanner) {
+          deactivateUrl = urlInBanner[0];
+          matchedBanner = matchedBanner.replace(urlInBanner[0], '').trim();
+        }
+        bannerText = matchedBanner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        text = text.replace(plainBannerMatch[0], '');
+      }
+    }
+
+    // 5. Clean text body if HTML
+    if (text.includes('<html') || text.includes('<div') || text.includes('<p>') || text.includes('<br')) {
+      text = text
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    // Strip deactivation URLs from text body
+    if (deactivateUrl) {
+      text = text.replace(deactivateUrl, '').replace(/\(Deactivate alias:?\s*\)/gi, '').trim();
+    }
+
+    return {
+      bannerInfo: bannerText || (msgAliasEmail ? `This message was forwarded to your encrypted alias ${msgAliasEmail}.` : null),
+      deactivateUrl: deactivateUrl,
+      bodyText: text || "No text content"
+    };
+  };
+
   const sanitizePhoneAlias = (phoneStr) => {
     if (!phoneStr) return "";
     const str = String(phoneStr).trim();
@@ -3565,28 +3640,16 @@ const handleEmergencyBurn = async () => {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '350px', overflowY: 'auto' }}>
                           {aliasMessages.map((msg) => {
                             const rawContent = msg.body || msg.text || msg.message || msg.content || msg.text_content || msg.snippet || (msg.data && (msg.data.body || msg.data.text || msg.data.content)) || (typeof msg.html === 'string' ? msg.html : '');
-                            let emailBodyContent = "No message body";
-                            if (typeof rawContent === 'string' && rawContent.trim()) {
-                              if (rawContent.includes('<html') || rawContent.includes('<div') || rawContent.includes('<p>') || rawContent.includes('<br')) {
-                                emailBodyContent = rawContent
-                                  .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-                                  .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-                                  .replace(/<[^>]+>/g, ' ')
-                                  .replace(/\s+/g, ' ')
-                                  .trim() || "No text content";
-                              } else {
-                                emailBodyContent = rawContent;
-                              }
-                            }
+                            const { bannerInfo, deactivateUrl, bodyText } = parseEmailMessageContent(rawContent, msg.alias_email);
                             
                             return (
-                              <div key={msg.id} style={{ background: '#05070D', border: '1px solid #1e293b', padding: '12px', borderRadius: '8px', textAlign: 'left' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                              <div key={msg.id} style={{ background: '#05070D', border: '1px solid #1e293b', padding: '14px', borderRadius: '10px', textAlign: 'left' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
                                   <div>
-                                    <span style={{ fontSize: '0.82rem', color: '#FFFFFF', fontWeight: 'bold', display: 'block' }}>
+                                    <span style={{ fontSize: '0.84rem', color: '#FFFFFF', fontWeight: 'bold', display: 'block' }}>
                                       FROM: {msg.sender || "Unknown Sender"}
                                     </span>
-                                    <span style={{ fontSize: '0.72rem', color: '#00D2FF', fontFamily: 'monospace' }}>
+                                    <span style={{ fontSize: '0.74rem', color: '#00D2FF', fontFamily: 'monospace' }}>
                                       TO ALIAS: {msg.alias_email || "Alias Node"}
                                     </span>
                                   </div>
@@ -3596,13 +3659,47 @@ const handleEmergencyBurn = async () => {
                                 </div>
 
                                 {msg.subject && (
-                                  <div style={{ fontSize: '0.78rem', color: '#FCD34D', fontWeight: 'bold', marginBottom: '6px' }}>
+                                  <div style={{ fontSize: '0.80rem', color: '#FCD34D', fontWeight: 'bold', marginBottom: '8px' }}>
                                     SUBJECT: {msg.subject}
                                   </div>
                                 )}
 
-                                <div style={{ background: '#020202', padding: '8px 10px', borderRadius: '4px', border: '1px solid #111', fontSize: '0.78rem', color: '#CBD5E1', marginBottom: '8px', whiteSpace: 'pre-wrap', maxHeight: '120px', overflowY: 'auto' }}>
-                                  {emailBodyContent}
+                                {/* POLISHED ENCRYPTED RELAY HEADER BANNER */}
+                                {bannerInfo && (
+                                  <div style={{ 
+                                    background: 'linear-gradient(135deg, rgba(0, 71, 171, 0.2) 0%, rgba(5, 7, 13, 0.95) 100%)', 
+                                    border: '1px solid rgba(0, 210, 255, 0.3)', 
+                                    padding: '8px 12px', 
+                                    borderRadius: '6px', 
+                                    marginBottom: '10px', 
+                                    fontSize: '0.75rem', 
+                                    color: '#CBD5E1',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    flexWrap: 'wrap',
+                                    gap: '6px'
+                                  }}>
+                                    <div>
+                                      <span style={{ color: '#00D2FF', fontWeight: 'bold' }}>🛡️ ENCRYPTED ALIAS RELAY: </span>
+                                      <span>{bannerInfo}</span>
+                                    </div>
+                                    {deactivateUrl && (
+                                      <a 
+                                        href={deactivateUrl} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        style={{ color: '#F87171', fontWeight: 'bold', textDecoration: 'underline', fontSize: '0.72rem', whiteSpace: 'nowrap' }}
+                                      >
+                                        Click here to deactivate this alias ✕
+                                      </a>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* CLEAN EMAIL BODY CONTAINER */}
+                                <div style={{ background: '#020202', padding: '10px 12px', borderRadius: '6px', border: '1px solid #111', fontSize: '0.80rem', color: '#CBD5E1', marginBottom: '10px', whiteSpace: 'pre-wrap', maxHeight: '160px', overflowY: 'auto', lineHeight: '1.5' }}>
+                                  {bodyText}
                                 </div>
 
                                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
