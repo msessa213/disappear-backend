@@ -2503,7 +2503,7 @@ const handleEmergencyBurn = async () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '16px 12px',
+                padding: '20px 12px',
                 boxSizing: 'border-box'
               }} 
               onClick={() => setShowEditTargetProfileModal(false)}
@@ -2513,41 +2513,56 @@ const handleEmergencyBurn = async () => {
                 style={{ 
                   maxWidth: '540px', 
                   width: '100%', 
-                  height: '80vh',
-                  maxHeight: '80vh',
+                  maxHeight: '85vh',
+                  overflowY: 'auto',
+                  WebkitOverflowScrolling: 'touch',
+                  touchAction: 'pan-y',
                   display: 'flex',
                   flexDirection: 'column',
-                  padding: '20px', 
+                  padding: '22px 20px', 
                   border: '1px solid #00D2FF', 
                   background: '#05070D',
                   borderRadius: '16px',
                   boxShadow: '0 10px 45px rgba(0, 0, 0, 0.95)',
                   boxSizing: 'border-box',
-                  overflow: 'hidden',
                   alignItems: 'stretch',
                   gap: 0
                 }} 
                 onClick={e => e.stopPropagation()}
               >
-                {/* TIER 1 (HEADER): FIXED TITLE & CLOSE BUTTON */}
-                <div style={{ flexShrink: 0, marginBottom: '12px', borderBottom: '1px solid rgba(0, 210, 255, 0.3)', paddingBottom: '10px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                    <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.05rem', letterSpacing: '0.5px' }}>⚙️ EDIT TARGET PROFILE & ADDRESS</h3>
+                {/* COMPACT MODAL HEADER */}
+                <div style={{ marginBottom: '14px', borderBottom: '1px solid rgba(0, 210, 255, 0.3)', paddingBottom: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', gap: '10px' }}>
+                    <h3 className="tiger-text" style={{ margin: 0, fontSize: '1.05rem', letterSpacing: '0.5px', textAlign: 'left', flex: 1 }}>⚙️ EDIT TARGET PROFILE & ADDRESS</h3>
                     <button 
                       className="reset-btn" 
                       type="button" 
-                      style={{ padding: '3px 10px', fontSize: '0.75rem', color: '#94A3B8', borderColor: 'rgba(148, 163, 184, 0.4)', fontFamily: 'monospace', fontWeight: 'bold', cursor: 'pointer', letterSpacing: '0.5px' }} 
+                      style={{ 
+                        width: 'auto',
+                        maxWidth: 'max-content',
+                        padding: '4px 10px', 
+                        fontSize: '0.75rem', 
+                        color: '#94A3B8', 
+                        borderColor: 'rgba(148, 163, 184, 0.4)', 
+                        fontFamily: 'monospace', 
+                        fontWeight: 'bold', 
+                        cursor: 'pointer', 
+                        letterSpacing: '0.5px',
+                        display: 'inline-block',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0
+                      }} 
                       onClick={() => setShowEditTargetProfileModal(false)}
                     >
                       [ CLOSE ]
                     </button>
                   </div>
-                  <p style={{ fontSize: '0.76rem', color: '#94A3B8', textAlign: 'left', margin: '6px 0 0 0', lineHeight: '1.4' }}>
+                  <p style={{ fontSize: '0.76rem', color: '#94A3B8', textAlign: 'left', margin: '8px 0 0 0', lineHeight: '1.4' }}>
                     Data brokers rely on exact legal name, physical address, and contact details to process opt-out removals. Update your details below:
                   </p>
                 </div>
 
-                {/* FORM WRAPPER CONTAINING TIER 2 & TIER 3 */}
+                {/* UNIFIED FORM CONTENT THAT SCROLLS NATURALLY WITHIN THE CARD */}
                 <form 
                   id="target-profile-form"
                   onSubmit={handleSaveTargetProfile} 
@@ -2555,132 +2570,112 @@ const handleEmergencyBurn = async () => {
                     width: '100%', 
                     display: 'flex', 
                     flexDirection: 'column', 
-                    flex: '1 1 auto',
-                    minHeight: 0,
-                    overflow: 'hidden',
+                    gap: '14px',
                     textAlign: 'left'
                   }}
                 >
-                  {/* TIER 2 (SCROLLABLE BODY): FORM INPUTS WITH 60PX CLEARANCE */}
-                  <div style={{ 
-                    flex: '1 1 auto',
-                    flexGrow: 1,
-                    minHeight: 0,
-                    overflowY: 'auto', 
-                    WebkitOverflowScrolling: 'touch', 
-                    touchAction: 'pan-y',
-                    paddingRight: '8px', 
-                    paddingBottom: '60px', 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    gap: '14px',
-                    boxSizing: 'border-box' 
-                  }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                      <div>
-                        <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>FIRST NAME</label>
-                        <input 
-                          type="text" 
-                          className="mask-btn" 
-                          style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
-                          value={targetProfile.firstName || targetProfile.first_name || ''} 
-                          onChange={e => setTargetProfile(p => ({ ...p, firstName: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>LAST NAME</label>
-                        <input 
-                          type="text" 
-                          className="mask-btn" 
-                          style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
-                          value={targetProfile.lastName || targetProfile.last_name || ''} 
-                          onChange={e => setTargetProfile(p => ({ ...p, lastName: e.target.value }))}
-                        />
-                      </div>
-                    </div>
-
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                     <div>
-                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>PRIMARY EMAIL</label>
-                      <input 
-                        type="email" 
-                        className="mask-btn" 
-                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
-                        value={targetProfile.email || ''} 
-                        onChange={e => setTargetProfile(p => ({ ...p, email: e.target.value }))}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>PRIMARY PHONE</label>
+                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>FIRST NAME</label>
                       <input 
                         type="text" 
                         className="mask-btn" 
                         style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
-                        value={targetProfile.phone || ''} 
-                        onChange={e => setTargetProfile(p => ({ ...p, phone: e.target.value }))}
+                        value={targetProfile.firstName || targetProfile.first_name || ''} 
+                        onChange={e => setTargetProfile(p => ({ ...p, firstName: e.target.value }))}
                       />
                     </div>
-
                     <div>
-                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>STREET ADDRESS</label>
+                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>LAST NAME</label>
                       <input 
                         type="text" 
                         className="mask-btn" 
                         style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
-                        placeholder="123 Cyber Way, Suite 400"
-                        value={targetProfile.address || ''} 
-                        onChange={e => setTargetProfile(p => ({ ...p, address: e.target.value }))}
+                        value={targetProfile.lastName || targetProfile.last_name || ''} 
+                        onChange={e => setTargetProfile(p => ({ ...p, lastName: e.target.value }))}
                       />
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '6px' }}>
-                      <div>
-                        <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>CITY</label>
-                        <input 
-                          type="text" 
-                          className="mask-btn" 
-                          style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
-                          value={targetProfile.city || ''} 
-                          onChange={e => setTargetProfile(p => ({ ...p, city: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>STATE</label>
-                        <input 
-                          type="text" 
-                          className="mask-btn" 
-                          style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
-                          value={targetProfile.state || ''} 
-                          onChange={e => setTargetProfile(p => ({ ...p, state: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>ZIP</label>
-                        <input 
-                          type="text" 
-                          className="mask-btn" 
-                          style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
-                          value={targetProfile.zip || ''} 
-                          onChange={e => setTargetProfile(p => ({ ...p, zip: e.target.value }))}
-                        />
-                      </div>
                     </div>
                   </div>
 
-                  {/* TIER 3 (FOOTER): DEDICATED ACTION BAR */}
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>PRIMARY EMAIL</label>
+                    <input 
+                      type="email" 
+                      className="mask-btn" 
+                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
+                      value={targetProfile.email || ''} 
+                      onChange={e => setTargetProfile(p => ({ ...p, email: e.target.value }))}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>PRIMARY PHONE</label>
+                    <input 
+                      type="text" 
+                      className="mask-btn" 
+                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
+                      value={targetProfile.phone || ''} 
+                      onChange={e => setTargetProfile(p => ({ ...p, phone: e.target.value }))}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>STREET ADDRESS</label>
+                    <input 
+                      type="text" 
+                      className="mask-btn" 
+                      style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
+                      placeholder="123 Cyber Way, Suite 400"
+                      value={targetProfile.address || ''} 
+                      onChange={e => setTargetProfile(p => ({ ...p, address: e.target.value }))}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '6px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>CITY</label>
+                      <input 
+                        type="text" 
+                        className="mask-btn" 
+                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
+                        value={targetProfile.city || ''} 
+                        onChange={e => setTargetProfile(p => ({ ...p, city: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>STATE</label>
+                      <input 
+                        type="text" 
+                        className="mask-btn" 
+                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
+                        value={targetProfile.state || ''} 
+                        onChange={e => setTargetProfile(p => ({ ...p, state: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: '#00D2FF', fontWeight: 'bold', display: 'block', marginBottom: '3px' }}>ZIP</label>
+                      <input 
+                        type="text" 
+                        className="mask-btn" 
+                        style={{ color: '#fff', fontSize: '0.82rem', height: '40px', width: '100%', boxSizing: 'border-box' }} 
+                        value={targetProfile.zip || ''} 
+                        onChange={e => setTargetProfile(p => ({ ...p, zip: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  {/* ACTION BUTTONS INCLUDED NATURALLY AT BOTTOM OF FORM FLOW */}
                   <div style={{ 
-                    flexShrink: 0,
                     borderTop: '1px solid rgba(0, 210, 255, 0.3)', 
-                    paddingTop: '14px', 
-                    marginTop: 'auto', 
-                    background: '#05070D', 
+                    paddingTop: '16px', 
+                    marginTop: '10px', 
                     display: 'flex', 
                     gap: '12px' 
                   }}>
                     <button 
                       type="button"
                       className="reset-btn"
-                      style={{ flex: 1, padding: '10px', fontSize: '0.82rem', borderColor: '#64748B', color: '#94A3B8', fontWeight: 'bold', cursor: 'pointer' }}
+                      style={{ flex: 1, padding: '12px', fontSize: '0.82rem', borderColor: '#64748B', color: '#94A3B8', fontWeight: 'bold', cursor: 'pointer' }}
                       onClick={() => setShowEditTargetProfileModal(false)}
                     >
                       DISMISS
@@ -2688,7 +2683,7 @@ const handleEmergencyBurn = async () => {
                     <button 
                       type="submit" 
                       className="main-button" 
-                      style={{ flex: 2, padding: '10px', fontSize: '0.88rem', fontWeight: 'bold', cursor: 'pointer' }}
+                      style={{ flex: 2, padding: '12px', fontSize: '0.88rem', fontWeight: 'bold', cursor: 'pointer' }}
                     >
                       SAVE TARGET PROFILE 🛡️
                     </button>
