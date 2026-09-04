@@ -168,6 +168,44 @@ function App() {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedFundingSource, setSelectedFundingSource] = useState("");
 
+  // --- MOBILE WEBVIEW CACHE-BUSTING & VERSION INVALIDATION HOOK ---
+  useEffect(() => {
+    try {
+      const activeBuildStamp = typeof __APP_BUILD_TIMESTAMP__ !== 'undefined'
+        ? String(__APP_BUILD_TIMESTAMP__)
+        : (import.meta.env.VITE_APP_BUILD_TIMESTAMP ? String(import.meta.env.VITE_APP_BUILD_TIMESTAMP) : String(Date.now()));
+      
+      const lastStoredStamp = localStorage.getItem('disappear_app_build_version');
+
+      if (lastStoredStamp && lastStoredStamp !== activeBuildStamp) {
+        console.log(`[CACHE-BUST] New bundle detected (Version ${activeBuildStamp}, Previous ${lastStoredStamp}). Flushing stale WebView caches...`);
+        localStorage.setItem('disappear_app_build_version', activeBuildStamp);
+
+        // Purge CacheStorage API if available on mobile WebView
+        if ('caches' in window) {
+          caches.keys().then((names) => {
+            names.forEach((name) => {
+              caches.delete(name);
+            });
+          }).catch(err => console.warn('[CACHE-BUST] Cache API flush warning:', err));
+        }
+
+        // Prevent infinite reload loops with a session lock
+        const reloadLockKey = `disappear_reloaded_${activeBuildStamp}`;
+        if (!sessionStorage.getItem(reloadLockKey)) {
+          sessionStorage.setItem(reloadLockKey, 'true');
+          if (window.location && typeof window.location.reload === 'function') {
+            window.location.reload();
+          }
+        }
+      } else if (!lastStoredStamp) {
+        localStorage.setItem('disappear_app_build_version', activeBuildStamp);
+      }
+    } catch (err) {
+      console.warn('[CACHE-BUST] Version check error:', err);
+    }
+  }, []);
+
   useEffect(() => {
     checkBiometricAvailability().then(available => {
       setHasBiometrics(available);
@@ -6239,6 +6277,9 @@ const handleEmergencyBurn = async () => {
       <footer className="home-footer">
           <div style={{ width: '100%', marginBottom: '8px', fontSize: '0.82rem', color: '#94A3B8', letterSpacing: '0.5px', textAlign: 'center' }}>
             DISAPPEAR IS BROUGHT TO YOU BY <strong style={{ color: '#00D2FF', letterSpacing: '1px' }}>DFS 213 LLC</strong>
+            <span style={{ fontSize: '0.66rem', color: '#64748B', display: 'block', marginTop: '2px', fontFamily: 'monospace' }}>
+              CLIENT BUILD: v{typeof __APP_BUILD_TIMESTAMP__ !== 'undefined' ? __APP_BUILD_TIMESTAMP__ : (import.meta.env.VITE_APP_BUILD_TIMESTAMP || "STABLE")}
+            </span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
             <span style={{ cursor: 'pointer', letterSpacing: '1px' }} onClick={() => window.location.hash = "manifesto"}>MANIFESTO</span>
