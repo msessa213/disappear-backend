@@ -703,11 +703,11 @@ export default function AdminDashboard({ API_BASE_URL }) {
     }
   };
 
-  const [displayLimit, setDisplayLimit] = useState(50);
+  const [displayLimit, setDisplayLimit] = useState(500);
 
   // Reset pagination display limit on tab switch or search query change
   useEffect(() => {
-    setDisplayLimit(50);
+    setDisplayLimit(500);
   }, [filterMode, searchQuery]);
 
   // Instantaneous Cached Filtering & Lazy Loading Optimization
@@ -726,9 +726,10 @@ export default function AdminDashboard({ API_BASE_URL }) {
       const q = searchQuery.trim().toLowerCase();
       tasks = tasks.filter(t => {
         const brokerMatch = t.broker_name && t.broker_name.toLowerCase().includes(q);
-        const nameMatch = t.target_profile && `${t.target_profile.first_name || ''} ${t.target_profile.last_name || ''}`.toLowerCase().includes(q);
+        const nameMatch = t.target_profile && `${t.target_profile.first_name || ''} ${t.target_profile.middle_name || ''} ${t.target_profile.last_name || ''}`.toLowerCase().includes(q);
         const emailMatch = t.target_profile && t.target_profile.email && t.target_profile.email.toLowerCase().includes(q);
-        return brokerMatch || nameMatch || emailMatch;
+        const userIdMatch = (t.user_id || '').toLowerCase().includes(q);
+        return brokerMatch || nameMatch || emailMatch || userIdMatch;
       });
     }
 
@@ -1412,6 +1413,12 @@ export default function AdminDashboard({ API_BASE_URL }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                     <strong style={{ color: '#00D2FF', fontSize: '1.1rem', letterSpacing: '1px' }}>BROKER: {task.broker_name}</strong>
                     
+                    {task.user_id && (
+                      <span style={{ fontSize: '0.75rem', backgroundColor: 'rgba(0, 210, 255, 0.12)', color: '#00D2FF', padding: '4px 10px', borderRadius: '4px', border: '1px solid rgba(0, 210, 255, 0.4)', fontWeight: 'bold' }}>
+                        👤 USER: {task.user_id}
+                      </span>
+                    )}
+
                     {isCompleted ? (
                       <span style={{ fontSize: '0.75rem', backgroundColor: '#064e3b', color: '#34d399', padding: '4px 10px', borderRadius: '4px', border: '1px solid #059669', fontWeight: 'bold' }}>
                         ✅ REMOVAL COMPLETED BY: {(task.resolved_by || "STAFF ANALYST").toUpperCase()}
