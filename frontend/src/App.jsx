@@ -889,6 +889,48 @@ function App() {
     }
   }, []);
 
+  // --- FRONTEND DIAGNOSTIC HELPER: DOMAIN HEALTH AUDIT ---
+  useEffect(() => {
+    window.runBrokerHealthAudit = async () => {
+      console.log("🔍 Running Data Broker Domain Health Audit...");
+      const brokerList = dataBrokers && dataBrokers.length > 0 ? dataBrokers : [
+        { broker_name: "WHITEPAGES", opt_out_url: "https://www.whitepages.com/suppression-requests" },
+        { broker_name: "BEENVERIFIED", opt_out_url: "https://www.beenverified.com/f/optout/search" },
+        { broker_name: "EXPOSED_CREDS_INDEX", opt_out_url: "https://www.exposedcredsindex.com" },
+        { broker_name: "COMBO_LISTS_VAULT", opt_out_url: "https://www.combolistsvault.com" },
+        { broker_name: "SPOKEO", opt_out_url: "https://www.spokeo.com/optout" },
+        { broker_name: "RADARIS", opt_out_url: "https://radaris.com/control/privacy" }
+      ];
+
+      const live = [];
+      const dead = [];
+
+      for (const b of brokerList) {
+        const name = b.broker_name || b.name || "UNKNOWN";
+        const url = b.opt_out_url || `https://www.${name.toLowerCase().replace(/_/g, '')}.com`;
+        
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 4000);
+          await fetch(url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal });
+          clearTimeout(timer);
+          live.push({ name, url, status: "LIVE (Reachable)" });
+        } catch (e) {
+          dead.push({ name, url, status: "DEAD / UNREACHABLE / MOCK", reason: e.message || "Network / DNS Failure" });
+        }
+      }
+
+      console.group("📊 DATA BROKER DOMAIN HEALTH AUDIT REPORT");
+      console.log(`Total Audited: ${brokerList.length}`);
+      console.log(`🟢 Active / Live Sites: ${live.length}`);
+      console.log(`🔴 Dead / Unreachable / Mock Sites: ${dead.length}`);
+      console.table(dead);
+      console.groupEnd();
+
+      return { total: brokerList.length, live, dead };
+    };
+  }, [dataBrokers]);
+
   // --- HASH ROUTING & POPSTATE BROWSER NAVIGATION CONTROLLER ---
   useEffect(() => {
     const handleHashChange = () => {
