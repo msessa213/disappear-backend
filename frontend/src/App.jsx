@@ -3976,7 +3976,264 @@ const handleEmergencyBurn = async () => {
                       )}
                     </div>
 
-                    {/* DUAL PHONE MANAGEMENT & INTERACTIVE SPAM CALL PROTECTION */}
+                    {/* INBOUND MOBILE SMS VAULT INBOX MODULE */}
+                    <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', position: 'relative', border: '1px solid var(--tiger-blue)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span className="tool-label" style={{ margin: 0, textAlign: 'left', fontWeight: 'bold' }}>INBOUND MOBILE SMS VAULT</span>
+                          <span style={{ background: 'rgba(0, 210, 255, 0.15)', color: '#00D2FF', border: '1px solid rgba(0, 210, 255, 0.3)', padding: '1px 6px', borderRadius: '4px', fontSize: '0.70rem', fontWeight: 'bold' }}>
+                            {smsInbox.length} MSG
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button
+                            type="button"
+                            className="main-button"
+                            style={{ padding: '6px 12px', fontSize: '0.75rem', fontWeight: 'bold', background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', border: 'none', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}
+                            onClick={() => setShowComposeSms(!showComposeSms)}
+                          >
+                            {showComposeSms ? "✕ CLOSE SMS" : "✉️ SEND NEW SMS"}
+                          </button>
+                          <button
+                            type="button"
+                            className="reset-btn"
+                            style={{ padding: '6px 12px', fontSize: '0.75rem', fontWeight: 'bold', color: '#00D2FF', borderColor: '#00D2FF' }}
+                            onClick={() => fetchSmsInbox()}
+                          >
+                            🔄 REFRESH
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Standalone Compose SMS Panel */}
+                      {showComposeSms && (
+                        <div style={{ background: '#05070D', border: '1px solid #10B981', padding: '12px', borderRadius: '8px', marginBottom: '14px', textAlign: 'left' }}>
+                          <div style={{ fontSize: '0.80rem', color: '#10B981', fontWeight: 'bold', marginBottom: '8px' }}>
+                            ✉️ DISPATCH STANDALONE SMS MESSAGE
+                          </div>
+                          
+                          <div style={{ marginBottom: '8px' }}>
+                            <label style={{ fontSize: '0.72rem', color: '#94A3B8', display: 'block', marginBottom: '3px', fontWeight: 'bold' }}>
+                              SELECT SENDER ALIAS LINE:
+                            </label>
+                            <select
+                              value={selectedSenderAlias}
+                              onChange={(e) => setSelectedSenderAlias(e.target.value)}
+                              style={{ width: '100%', padding: '6px 10px', fontSize: '0.80rem', background: '#030712', border: '1px solid #1e293b', color: '#00D2FF', borderRadius: '4px', fontWeight: 'bold', boxSizing: 'border-box' }}
+                            >
+                              <option value="">+1 (585) 580-2036 (Disappear System Line)</option>
+                              {phones.map((p, pIdx) => {
+                                const numVal = p.content || "";
+                                const labelVal = p.label ? `${p.label.toUpperCase()} (${numVal})` : numVal;
+                                return (
+                                  <option key={p.id || pIdx} value={numVal}>
+                                    📱 {labelVal}
+                                  </option>
+                                );
+                              })}
+                            </select>
+                          </div>
+
+                          <input
+                            type="text"
+                            placeholder="Recipient Phone (+18135551234)"
+                            value={composeSmsRecipient}
+                            onChange={(e) => setComposeSmsRecipient(e.target.value)}
+                            style={{ width: '100%', padding: '8px 10px', fontSize: '0.82rem', background: '#030712', border: '1px solid #1e293b', color: '#fff', borderRadius: '4px', marginBottom: '8px', boxSizing: 'border-box' }}
+                          />
+                          <textarea
+                            placeholder="Type your message..."
+                            value={composeSmsBody}
+                            onChange={(e) => setComposeSmsBody(e.target.value)}
+                            style={{ width: '100%', padding: '8px 10px', fontSize: '0.82rem', background: '#030712', border: '1px solid #1e293b', color: '#fff', borderRadius: '4px', marginBottom: '8px', height: '60px', boxSizing: 'border-box', resize: 'vertical' }}
+                          />
+                          <button
+                            className="main-button"
+                            type="button"
+                            style={{ padding: '8px 12px', fontSize: '0.80rem', width: '100%', fontWeight: 'bold' }}
+                            onClick={() => {
+                              handleSendSmsReply(composeSmsRecipient, composeSmsBody, selectedSenderAlias);
+                              setComposeSmsRecipient("");
+                              setComposeSmsBody("");
+                            }}
+                          >
+                            📤 SEND SMS
+                          </button>
+                        </div>
+                      )}
+
+                      {groupedSmsThreads.length === 0 ? (
+                        <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, textAlign: 'center', padding: '10px' }}>
+                          No incoming text messages received yet. Any SMS sent to your alias will appear here instantly.
+                        </p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '380px', overflowY: 'auto' }}>
+                          {groupedSmsThreads.map(({ phone, messages }) => {
+                            const formattedPhoneDisplay = phone.replace(/\+1([0-9]{3})([0-9]{3})([0-9]{4})/, "+1 ($1) $2-$3");
+                            const isGroupReplying = activeReplyId === `group_${phone}`;
+                            const isExpanded = Boolean(expandedSmsThreads[phone]);
+                            const newestMessage = messages[0];
+                            const newestSnippet = newestMessage ? (newestMessage.body || newestMessage.text || newestMessage.message || newestMessage.content || newestMessage.text_content || "No message snippet") : "No messages";
+
+                            return (
+                              <div key={`thread_${phone}`} style={{ background: '#090d16', border: '1px solid #1e293b', borderRadius: '8px', padding: '10px 12px', textAlign: 'left' }}>
+                                <div className="sms-thread-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                    <span style={{ fontSize: '0.82rem', color: '#00D2FF', fontWeight: 'bold' }}>📱 CONTACT: {formattedPhoneDisplay}</span>
+                                    <span style={{ fontSize: '0.65rem', background: '#1e293b', color: '#10B981', padding: '1px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                      {messages.length} {messages.length === 1 ? 'MSG' : 'MSGS'}
+                                    </span>
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                    <button
+                                      className="reset-btn"
+                                      type="button"
+                                      style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#00D2FF', borderColor: '#00D2FF', fontWeight: 'bold' }}
+                                      onClick={() => setExpandedSmsThreads(prev => ({ ...prev, [phone]: !prev[phone] }))}
+                                    >
+                                      {isExpanded ? "▲ COLLAPSE" : `▼ EXPAND (${messages.length})`}
+                                    </button>
+
+                                    <button
+                                      className="reset-btn"
+                                      type="button"
+                                      style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#10B981', borderColor: '#10B981', fontWeight: 'bold' }}
+                                      onClick={() => {
+                                        if (isGroupReplying) {
+                                          setActiveReplyId(null);
+                                        } else {
+                                          const cleanPhoneRecipient = phone.startsWith("+") ? phone : (phone ? `+${phone.replace(/\D/g, "")}` : "");
+                                          const targetAliasLine = newestMessage?.to_phone || "";
+                                          setActiveReplyId(`group_${phone}`);
+                                          setReplyRecipient(cleanPhoneRecipient);
+                                          setSelectedSenderAlias(targetAliasLine);
+                                          setReplyBody("");
+                                        }
+                                      }}
+                                    >
+                                      {isGroupReplying ? "✕ CLOSE" : "💬 REPLY"}
+                                    </button>
+
+                                    <button
+                                      className="reset-btn"
+                                      type="button"
+                                      title="Relay newest message in thread to physical mobile device"
+                                      style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#00D2FF', borderColor: '#00D2FF', fontWeight: 'bold' }}
+                                      onClick={() => handleRelaySmsToPersonalPhone(newestMessage)}
+                                    >
+                                      📲 RELAY
+                                    </button>
+
+                                    <button
+                                      className="reset-btn"
+                                      type="button"
+                                      style={{ padding: '2px 8px', fontSize: '0.68rem', color: '#EF4444', borderColor: '#EF4444', fontWeight: 'bold' }}
+                                      onClick={(e) => {
+                                        messages.forEach(msg => handleDeleteSmsMessage(msg.id, e));
+                                      }}
+                                    >
+                                      🗑️ DELETE
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* COLLAPSED PREVIEW SNIPPET */}
+                                {!isExpanded && (
+                                  <div 
+                                    style={{ background: '#030712', padding: '6px 10px', borderRadius: '4px', border: '1px solid #111', fontSize: '0.78rem', color: '#94A3B8', marginTop: '6px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                    onClick={() => setExpandedSmsThreads(prev => ({ ...prev, [phone]: true }))}
+                                  >
+                                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                      💬 {newestSnippet}
+                                    </span>
+                                    <span style={{ fontSize: '0.68rem', color: '#64748B', marginLeft: '8px', flexShrink: 0 }}>
+                                      {newestMessage?.timestamp || newestMessage?.created_at ? new Date(newestMessage.timestamp || newestMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently'}
+                                    </span>
+                                  </div>
+                                )}
+
+                                {/* EXPANDED FULL MESSAGE FEED (SORTED NEWEST FIRST) */}
+                                {isExpanded && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '8px 0' }}>
+                                    {messages.map((m, mIdx) => {
+                                      const smsBodyContent = m.body || m.text || m.message || m.content || m.text_content || "No message body";
+                                      const isOutbound = m.direction === 'outbound' || m.is_outbound;
+                                      return (
+                                        <div key={m.id || mIdx} style={{ background: isOutbound ? '#071828' : '#040b16', border: '1px solid #1e293b', borderRadius: '6px', padding: '8px 10px', textAlign: 'left' }}>
+                                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                            <span style={{ fontSize: '0.70rem', color: isOutbound ? '#10B981' : '#00D2FF', fontWeight: 'bold' }}>
+                                              {isOutbound ? '📤 SENT VIA ALIAS' : '📥 RECEIVED'} {m.to_phone ? `(${m.to_phone})` : ''}
+                                            </span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                              <span style={{ fontSize: '0.65rem', color: '#64748B' }}>
+                                                {m.timestamp || m.created_at ? new Date(m.timestamp || m.created_at).toLocaleString() : 'Recently'}
+                                              </span>
+                                              {!isOutbound && (
+                                                <button
+                                                  className="reset-btn"
+                                                  type="button"
+                                                  title="Forward SMS to physical personal phone number"
+                                                  style={{ padding: '1px 6px', fontSize: '0.65rem', color: '#10B981', borderColor: 'rgba(16,185,129,0.4)', fontWeight: 'bold' }}
+                                                  onClick={() => handleRelaySmsToPersonalPhone(m)}
+                                                >
+                                                  📲 RELAY
+                                                </button>
+                                              )}
+                                              <button
+                                                className="reset-btn"
+                                                type="button"
+                                                style={{ padding: '1px 5px', fontSize: '0.65rem', color: '#EF4444', borderColor: '#EF4444' }}
+                                                onClick={(e) => handleDeleteSmsMessage(m.id, e)}
+                                              >
+                                                🗑️
+                                              </button>
+                                            </div>
+                                          </div>
+                                          <div style={{ fontSize: '0.80rem', color: '#E2E8F0', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                            {smsBodyContent}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+
+                                {/* INLINE REPLY PANEL */}
+                                {isGroupReplying && (
+                                  <div style={{ background: '#030712', border: '1px solid #10B981', padding: '8px', borderRadius: '6px', marginBottom: '8px', marginTop: '8px' }}>
+                                    <textarea
+                                      placeholder={`Reply to ${formattedPhoneDisplay}...`}
+                                      value={replyBody}
+                                      onChange={(e) => setReplyBody(e.target.value)}
+                                      style={{ width: '100%', padding: '6px 10px', fontSize: '0.8rem', background: '#090d16', border: '1px solid #1e293b', color: '#fff', borderRadius: '4px', marginBottom: '6px', height: '45px', boxSizing: 'border-box', resize: 'vertical' }}
+                                    />
+                                    <button
+                                      className="main-button"
+                                      type="button"
+                                      style={{ padding: '6px 12px', fontSize: '0.75rem', width: '100%', background: 'linear-gradient(135deg, #10B981, #059669)', border: 'none', color: '#fff', fontWeight: 'bold', borderRadius: '4px' }}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        const targetAliasLine = newestMessage?.to_phone || selectedSenderAlias || "";
+                                        handleSendSmsReply(
+                                          phone.startsWith("+") ? phone : replyRecipient, 
+                                          replyBody, 
+                                          targetAliasLine
+                                        );
+                                      }}
+                                    >
+                                      📤 SEND REPLY NOW
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* DUAL PHONE MANAGEMENT & INTERACTIVE SPAM CALL PROTECTION (BOTTOM OF ALIASES TAB) */}
                     <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #00D2FF', background: 'linear-gradient(135deg, rgba(5, 12, 25, 0.95) 0%, rgba(2, 6, 15, 0.98) 100%)', borderRadius: '12px', padding: '18px', boxSizing: 'border-box' }}>
                       
                       {/* HEADER WITH INTERACTIVE SPAM FILTER TOGGLE */}
