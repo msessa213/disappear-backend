@@ -2686,7 +2686,8 @@ const handleEmergencyBurn = async () => {
                 style={{ 
                   maxWidth: '540px', 
                   width: '100%', 
-                  maxHeight: '85vh',
+                  maxHeight: '75vh',
+                  marginBottom: '40px',
                   overflowY: 'auto',
                   WebkitOverflowScrolling: 'touch',
                   touchAction: 'pan-y',
@@ -2700,7 +2701,7 @@ const handleEmergencyBurn = async () => {
                   boxSizing: 'border-box',
                   alignItems: 'stretch',
                   gap: 0,
-                  margin: 'auto 0'
+                  margin: 'auto 0 40px 0'
                 }} 
                 onClick={e => e.stopPropagation()}
               >
@@ -2716,8 +2717,10 @@ const handleEmergencyBurn = async () => {
                         maxWidth: 'max-content',
                         padding: '4px 10px', 
                         fontSize: '0.75rem', 
-                        color: '#94A3B8', 
-                        borderColor: 'rgba(148, 163, 184, 0.4)', 
+                        color: '#F87171', 
+                        borderColor: 'rgba(248, 113, 113, 0.6)', 
+                        background: 'rgba(248, 113, 113, 0.12)',
+                        boxShadow: '0 0 8px rgba(248, 113, 113, 0.25)',
                         fontFamily: 'monospace', 
                         fontWeight: 'bold', 
                         cursor: 'pointer', 
@@ -2745,7 +2748,9 @@ const handleEmergencyBurn = async () => {
                     display: 'flex', 
                     flexDirection: 'column', 
                     gap: '14px',
-                    textAlign: 'left'
+                    textAlign: 'left',
+                    paddingBottom: '60px',
+                    boxSizing: 'border-box'
                   }}
                 >
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -3313,12 +3318,12 @@ const handleEmergencyBurn = async () => {
                       fontSize: '0.80rem', 
                       fontWeight: 'bold', 
                       borderRadius: '8px', 
-                      border: dashboardTab === 'aliases' ? '1px solid #00D2FF' : '1px solid transparent', 
-                      background: dashboardTab === 'aliases' ? 'linear-gradient(135deg, rgba(0, 71, 171, 0.6), rgba(0, 210, 255, 0.3))' : 'transparent', 
-                      color: dashboardTab === 'aliases' ? '#FFFFFF' : '#94A3B8', 
+                      border: dashboardTab === 'aliases' ? '1px solid #00D2FF' : '1px solid #0047AB', 
+                      background: dashboardTab === 'aliases' ? 'linear-gradient(135deg, rgba(0, 71, 171, 0.8), rgba(0, 210, 255, 0.4))' : 'rgba(0, 71, 171, 0.22)', 
+                      color: dashboardTab === 'aliases' ? '#FFFFFF' : '#CBD5E1', 
                       cursor: 'pointer', 
                       transition: 'all 0.2s ease', 
-                      boxShadow: dashboardTab === 'aliases' ? '0 0 15px rgba(0, 210, 255, 0.4)' : 'none', 
+                      boxShadow: dashboardTab === 'aliases' ? '0 0 15px rgba(0, 210, 255, 0.4)' : '0 0 8px rgba(0, 71, 171, 0.3)', 
                       whiteSpace: 'nowrap' 
                     }} 
                     onClick={() => setDashboardTab('aliases')}
@@ -3334,12 +3339,12 @@ const handleEmergencyBurn = async () => {
                       fontSize: '0.80rem', 
                       fontWeight: 'bold', 
                       borderRadius: '8px', 
-                      border: dashboardTab === 'removals' ? '1px solid #00D2FF' : '1px solid transparent', 
-                      background: dashboardTab === 'removals' ? 'linear-gradient(135deg, rgba(0, 71, 171, 0.6), rgba(0, 210, 255, 0.3))' : 'transparent', 
-                      color: dashboardTab === 'removals' ? '#FFFFFF' : '#94A3B8', 
+                      border: dashboardTab === 'removals' ? '1px solid #00D2FF' : '1px solid #0047AB', 
+                      background: dashboardTab === 'removals' ? 'linear-gradient(135deg, rgba(0, 71, 171, 0.8), rgba(0, 210, 255, 0.4))' : 'rgba(0, 71, 171, 0.22)', 
+                      color: dashboardTab === 'removals' ? '#FFFFFF' : '#CBD5E1', 
                       cursor: 'pointer', 
                       transition: 'all 0.2s ease', 
-                      boxShadow: dashboardTab === 'removals' ? '0 0 15px rgba(0, 210, 255, 0.4)' : 'none', 
+                      boxShadow: dashboardTab === 'removals' ? '0 0 15px rgba(0, 210, 255, 0.4)' : '0 0 8px rgba(0, 71, 171, 0.3)', 
                       whiteSpace: 'nowrap' 
                     }} 
                     onClick={() => setDashboardTab('removals')}
@@ -3355,12 +3360,12 @@ const handleEmergencyBurn = async () => {
                       fontSize: '0.80rem', 
                       fontWeight: 'bold', 
                       borderRadius: '8px', 
-                      border: dashboardTab === 'info' ? '1px solid #00D2FF' : '1px solid transparent', 
-                      background: dashboardTab === 'info' ? 'linear-gradient(135deg, rgba(0, 71, 171, 0.6), rgba(0, 210, 255, 0.3))' : 'transparent', 
-                      color: dashboardTab === 'info' ? '#FFFFFF' : '#94A3B8', 
+                      border: dashboardTab === 'info' ? '1px solid #00D2FF' : '1px solid #0047AB', 
+                      background: dashboardTab === 'info' ? 'linear-gradient(135deg, rgba(0, 71, 171, 0.8), rgba(0, 210, 255, 0.4))' : 'rgba(0, 71, 171, 0.22)', 
+                      color: dashboardTab === 'info' ? '#FFFFFF' : '#CBD5E1', 
                       cursor: 'pointer', 
                       transition: 'all 0.2s ease', 
-                      boxShadow: dashboardTab === 'info' ? '0 0 15px rgba(0, 210, 255, 0.4)' : 'none', 
+                      boxShadow: dashboardTab === 'info' ? '0 0 15px rgba(0, 210, 255, 0.4)' : '0 0 8px rgba(0, 71, 171, 0.3)', 
                       whiteSpace: 'nowrap' 
                     }} 
                     onClick={() => setDashboardTab('info')}
@@ -3376,12 +3381,12 @@ const handleEmergencyBurn = async () => {
                       fontSize: '0.80rem', 
                       fontWeight: 'bold', 
                       borderRadius: '8px', 
-                      border: dashboardTab === 'account' ? '1px solid #00D2FF' : '1px solid transparent', 
-                      background: dashboardTab === 'account' ? 'linear-gradient(135deg, rgba(0, 71, 171, 0.6), rgba(0, 210, 255, 0.3))' : 'transparent', 
-                      color: dashboardTab === 'account' ? '#FFFFFF' : '#94A3B8', 
+                      border: dashboardTab === 'account' ? '1px solid #00D2FF' : '1px solid #0047AB', 
+                      background: dashboardTab === 'account' ? 'linear-gradient(135deg, rgba(0, 71, 171, 0.8), rgba(0, 210, 255, 0.4))' : 'rgba(0, 71, 171, 0.22)', 
+                      color: dashboardTab === 'account' ? '#FFFFFF' : '#CBD5E1', 
                       cursor: 'pointer', 
                       transition: 'all 0.2s ease', 
-                      boxShadow: dashboardTab === 'account' ? '0 0 15px rgba(0, 210, 255, 0.4)' : 'none', 
+                      boxShadow: dashboardTab === 'account' ? '0 0 15px rgba(0, 210, 255, 0.4)' : '0 0 8px rgba(0, 71, 171, 0.3)', 
                       whiteSpace: 'nowrap' 
                     }} 
                     onClick={() => setDashboardTab('account')}

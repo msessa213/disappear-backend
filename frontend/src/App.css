@@ -485,7 +485,8 @@ input[type="checkbox"] {
 }
 
 .modal-overlay .price-box {
-  max-height: min(88vh, calc(100% - 40px));
+  max-height: 75vh !important;
+  margin-bottom: 40px !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
