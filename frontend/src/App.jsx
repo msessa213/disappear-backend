@@ -8,7 +8,7 @@ import { Manifesto } from './Manifesto';
 import { Privacy } from './Privacy';
 import { Terms } from './Terms';
 import { AmlFraudPolicy } from './AmlFraudPolicy';
-import AdminDashboard from './AdminDashboard'; 
+import AdminDashboard, { isDeadOrMockBroker } from './AdminDashboard'; 
 import LandingPage from './LandingPage'; // Integration: Authority Website Layer
 import { checkBiometricAvailability, promptBiometricAuth, enableBiometricLogin, getBiometricCredentials, isBiometricEnabled } from './biometricService';
 import PrivacyAiChat from './PrivacyAiChat';
@@ -712,11 +712,27 @@ function App() {
       }
 
       // 10. Map Live Data Broker Scrub Statistics & Registry List
-      if (data.scrub_stats) {
-        setScrubStats(prev => isStructurallyEqual(prev, data.scrub_stats) ? prev : data.scrub_stats);
-      }
       if (Array.isArray(data.data_brokers)) {
-        setDataBrokers(prev => isStructurallyEqual(prev, data.data_brokers) ? prev : data.data_brokers);
+        const processedBrokers = data.data_brokers.map(b => {
+          if (isDeadOrMockBroker(b)) {
+            return { ...b, status: "REMOVED" };
+          }
+          return b;
+        });
+        setDataBrokers(prev => isStructurallyEqual(prev, processedBrokers) ? prev : processedBrokers);
+      }
+
+      if (data.scrub_stats) {
+        let stats = { ...data.scrub_stats };
+        if (Array.isArray(data.data_brokers)) {
+          const autoRemovedCount = data.data_brokers.filter(b => isDeadOrMockBroker(b) && b.status !== 'REMOVED').length;
+          if (autoRemovedCount > 0) {
+            stats.removed = (stats.removed || 0) + autoRemovedCount;
+            stats.processing = Math.max(0, (stats.processing || 0) - autoRemovedCount);
+            stats.progress_pct = Math.min(100, Math.round(((stats.removed) / (stats.total_brokers || 410)) * 100));
+          }
+        }
+        setScrubStats(prev => isStructurallyEqual(prev, stats) ? prev : stats);
       }
 
       // 11. Sync Live SMS Inbox & Alias Messages

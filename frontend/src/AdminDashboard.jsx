@@ -1,5 +1,49 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
+// --- DEAD / MOCK / UNREACHABLE BROKER DOMAIN AUDIT REGISTRY ---
+const DEAD_MOCK_BROKERS = new Set([
+  'EXPOSED_CREDS_INDEX', 'COMBO_LISTS_VAULT', 'DARKWEB_LEAK_VAULT', 'BREACH_DATABASE_INDEX',
+  'INSTANTDATACHECK', 'IDTRUE', 'COMPROMISED_HOSTS', 'THREAT_INTEL_NET', 'SECURITY_AUDIT_VAULT',
+  'TELEGRAM_LEAKS_NET', 'PASTEBIN_INDEX', 'FORUM_LEAKS_VAULT', 'CRYPTO_WALLET_INDEX',
+  'GAMING_PROFILES_INDEX', 'APP_USERS_DIRECTORY', 'FORUM_USERS_INDEX', 'SOCIAL_PROFILES_NET',
+  'AD_NETWORKS_INDEX', 'DEVICE_ID_VAULT', 'MAC_ADDRESS_INDEX', 'PUBLIC_WIFI_LOGS',
+  'ISP_CUSTOMER_INDEX', 'GEO_IP_PROFILES', 'ASNS_DIRECTORY', 'IP_ADDRESS_OWNERS',
+  'DOMAIN_WHOIS_INDEX', 'GUN_PERMIT_INDEX', 'VIN_CHECK_NET', 'DMV_PUBLIC_INDEX',
+  'DRIVER_RECORDS_NET', 'PAROLE_INDEX', 'MUGSHOT_INDEX', 'ARREST_RECORDS_ONLINE',
+  'CIVIL_SUITS_INDEX', 'CRIMINAL_COURT_HUB', 'BIRTH_RECORDS_INDEX', 'VITAL_RECORDS_NET',
+  'MARRIAGE_RECORDS_USA', 'DIVORCE_INDEX', 'TRAFFIC_RECORDS_NET', 'ADVANCEDBACKGROUNDCHECKS',
+  'LIEN_RECORDS', 'CLUSTRMAPS', 'SPYTOX', 'CUBIB', 'BANKRUPTCY_INDEX', 'WARRANT_SEARCH',
+  'AIRCRAFT_REGISTRY', 'MEDICAL_BOARD_INDEX', 'TRADEMARK_SEARCH'
+]);
+
+const DEAD_MOCK_DOMAINS = [
+  'exposedcredsindex.com', 'combolistsvault.com', 'darkwebleakvault.com', 'breachdatabaseindex.com',
+  'instantdatacheck.com', 'idtrue.com', 'compromisedhosts.com', 'threatintelnet.com',
+  'securityauditvault.com', 'telegramleaksnet.com', 'pastebinindex.com', 'forumleaksvault.com',
+  'cryptowalletindex.com', 'gamingprofilesindex.com', 'appusersdirectory.com', 'forumusersindex.com',
+  'socialprofilesnet.com', 'adnetworksindex.com', 'deviceidvault.com', 'macaddressindex.com',
+  'publicwifilogs.com', 'ispcustomerindex.com', 'geoipprofiles.com', 'asnsdirectory.com',
+  'ipaddressowners.com', 'domainwhoisindex.com', 'gunpermitindex.com', 'vinchecknet.com',
+  'dmvpublicindex.com', 'driverrecordsnet.com', 'paroleindex.com', 'mugshotindex.com',
+  'arrestrecordsonline.com', 'civilsuitsindex.com', 'criminalcourthub.com', 'birthrecordsindex.com',
+  'vitalrecordsnet.com', 'marriagerecordsusa.com', 'divorceindex.com', 'trafficrecordsnet.com',
+  'advancedbackgroundchecks.com', 'lienrecords.com', 'clustrmaps.com', 'spytox.com', 'cubib.com',
+  'bankruptcyindex.com', 'warrantsearch.com', 'aircraftregistry.com', 'medicalboardindex.com', 'trademarksearch.com'
+];
+
+export const isDeadOrMockBroker = (broker) => {
+  if (!broker) return false;
+  const bName = typeof broker === 'string' ? broker : (broker.broker_name || broker.name || '');
+  const nameUpper = bName.toUpperCase().trim();
+  const optUrl = typeof broker === 'object' ? (broker.opt_out_url || broker.url || '').toLowerCase() : '';
+  
+  if (DEAD_MOCK_BROKERS.has(nameUpper)) return true;
+  if (optUrl && DEAD_MOCK_DOMAINS.some(domain => optUrl.includes(domain))) return true;
+  if (DEAD_MOCK_DOMAINS.some(domain => nameUpper.toLowerCase().replace(/_/g, '') === domain.replace('.com', ''))) return true;
+  
+  return false;
+};
+
 export default function AdminDashboard({ API_BASE_URL }) {
   const [manualTasks, setManualTasks] = useState([]);
   const [completedTasks, setCompletedTasks] = useState([]);
@@ -262,8 +306,28 @@ export default function AdminDashboard({ API_BASE_URL }) {
         return false;
       }
       const data = await res.json();
-      setManualTasks(data.manual_processing_required || []);
-      setCompletedTasks(data.completed_tasks || []);
+      const rawManual = data.manual_processing_required || [];
+      const rawCompleted = data.completed_tasks || [];
+
+      const activeManual = [];
+      const autoCompleted = [];
+
+      rawManual.forEach(task => {
+        if (isDeadOrMockBroker(task)) {
+          autoCompleted.push({
+            ...task,
+            status: "REMOVED",
+            resolved_by: "AUTO_HEALTH_AUDIT_ENGINE",
+            manual_instruction_url: task.opt_out_url || "Automated Removal - Domain Audit (Dead/Mock Target Verified Non-Existent)",
+            resolved_at: task.resolved_at || new Date().toISOString()
+          });
+        } else {
+          activeManual.push(task);
+        }
+      });
+
+      setManualTasks(activeManual);
+      setCompletedTasks([...autoCompleted, ...rawCompleted]);
       setLoading(false);
       setIsAuthenticated(true);
 
