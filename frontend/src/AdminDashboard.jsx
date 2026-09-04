@@ -4,6 +4,7 @@ export default function AdminDashboard({ API_BASE_URL }) {
   const [manualTasks, setManualTasks] = useState([]);
   const [completedTasks, setCompletedTasks] = useState([]);
   const [verifications, setVerifications] = useState({});
+  const [actionLoadingTasks, setActionLoadingTasks] = useState({});
   const [adminKey, setAdminKey] = useState("");
   const [analystName, setAnalystName] = useState(localStorage.getItem("disappear_analyst_name") || "");
   const [filterMode, setFilterMode] = useState("ALL"); // 'ALL', 'UNASSIGNED', 'MY_TASKS', 'COMPLETED'
@@ -429,6 +430,19 @@ export default function AdminDashboard({ API_BASE_URL }) {
 
     handleSaveAnalystName(activeAnalyst);
 
+    // 1. INSTANT OPTIMISTIC UI STATE UPDATE
+    setActionLoadingTasks(prev => ({ ...prev, [taskId]: 'claiming' }));
+    setManualTasks(prev => prev.map(t => {
+      if (t.task_id === taskId) {
+        return {
+          ...t,
+          assigned_analyst: activeAnalyst,
+          status: t.status === 'REMOVED' ? 'REMOVED' : 'PROCESSING'
+        };
+      }
+      return t;
+    }));
+
     try {
       const res = await fetch(`${API_BASE_URL}/admin/ops/claim/${taskId}`, {
         method: "POST",
@@ -441,10 +455,28 @@ export default function AdminDashboard({ API_BASE_URL }) {
       if (res.ok) {
         fetchBacklog(adminKey);
       } else {
+        setManualTasks(prev => prev.map(t => {
+          if (t.task_id === taskId) {
+            return { ...t, assigned_analyst: null, status: 'MANUAL_PENDING' };
+          }
+          return t;
+        }));
         alert("Unable to claim task.");
       }
     } catch (e) {
       console.error("Claim error", e);
+      setManualTasks(prev => prev.map(t => {
+        if (t.task_id === taskId) {
+          return { ...t, assigned_analyst: null, status: 'MANUAL_PENDING' };
+        }
+        return t;
+      }));
+    } finally {
+      setActionLoadingTasks(prev => {
+        const next = { ...prev };
+        delete next[taskId];
+        return next;
+      });
     }
   };
 
@@ -455,6 +487,17 @@ export default function AdminDashboard({ API_BASE_URL }) {
   };
 
   const handleUnclaimTask = async (taskId) => {
+    const originalTask = manualTasks.find(t => t.task_id === taskId);
+
+    // 1. INSTANT OPTIMISTIC UI STATE UPDATE
+    setActionLoadingTasks(prev => ({ ...prev, [taskId]: 'unclaiming' }));
+    setManualTasks(prev => prev.map(t => {
+      if (t.task_id === taskId) {
+        return { ...t, assigned_analyst: null, status: 'MANUAL_PENDING' };
+      }
+      return t;
+    }));
+
     try {
       const res = await fetch(`${API_BASE_URL}/admin/ops/unclaim/${taskId}`, {
         method: "POST",
@@ -464,15 +507,42 @@ export default function AdminDashboard({ API_BASE_URL }) {
       });
       if (res.ok) {
         fetchBacklog(adminKey);
+      } else if (originalTask) {
+        setManualTasks(prev => prev.map(t => t.task_id === taskId ? originalTask : t));
       }
     } catch (e) {
       console.error("Unclaim error", e);
+      if (originalTask) {
+        setManualTasks(prev => prev.map(t => t.task_id === taskId ? originalTask : t));
+      }
+    } finally {
+      setActionLoadingTasks(prev => {
+        const next = { ...prev };
+        delete next[taskId];
+        return next;
+      });
     }
   };
 
   const handleResolve = async (taskId) => {
     const proofUrl = verifications[taskId] || "";
     const activeAnalyst = analystName.trim() || "STAFF_ANALYST";
+    const targetTask = manualTasks.find(t => t.task_id === taskId);
+    if (!targetTask) return;
+
+    // 1. INSTANT OPTIMISTIC UI STATE UPDATE
+    setActionLoadingTasks(prev => ({ ...prev, [taskId]: 'completing' }));
+
+    const optimisticCompleted = {
+      ...targetTask,
+      status: "REMOVED",
+      resolved_by: activeAnalyst,
+      manual_instruction_url: proofUrl || "Confirmed Deleted by Staff Analyst",
+      resolved_at: new Date().toISOString()
+    };
+
+    setManualTasks(prev => prev.filter(t => t.task_id !== taskId));
+    setCompletedTasks(prev => [optimisticCompleted, ...prev]);
 
     try {
       let res = await fetch(`${API_BASE_URL}/admin/ops/verify/${taskId}`, {
@@ -504,13 +574,23 @@ export default function AdminDashboard({ API_BASE_URL }) {
       }
 
       if (res.ok) {
-        alert(`Task #${taskId} successfully marked COMPLETE and verified!`);
         fetchBacklog(adminKey);
       } else {
+        setCompletedTasks(prev => prev.filter(t => t.task_id !== taskId));
+        setManualTasks(prev => [targetTask, ...prev]);
         alert("Error verifying task completion.");
       }
     } catch (e) {
       console.error("Resolve error", e);
+      setCompletedTasks(prev => prev.filter(t => t.task_id !== taskId));
+      setManualTasks(prev => [targetTask, ...prev]);
+      alert("Network error verifying task completion.");
+    } finally {
+      setActionLoadingTasks(prev => {
+        const next = { ...prev };
+        delete next[taskId];
+        return next;
+      });
     }
   };
 
@@ -1242,37 +1322,81 @@ export default function AdminDashboard({ API_BASE_URL }) {
                     {!isCompleted && (!task.assigned_analyst ? (
                       <button 
                         className="main-button" 
-                        style={{ height: '34px', padding: '0 14px', fontSize: '0.78rem', background: 'linear-gradient(135deg, #d97706, #b45309)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0 }}
+                        disabled={!!actionLoadingTasks[task.task_id]}
+                        style={{ 
+                          height: '34px', 
+                          padding: '0 14px', 
+                          fontSize: '0.78rem', 
+                          background: actionLoadingTasks[task.task_id] === 'claiming' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'linear-gradient(135deg, #d97706, #b45309)', 
+                          display: 'inline-flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          gap: '6px',
+                          boxSizing: 'border-box', 
+                          margin: 0,
+                          cursor: actionLoadingTasks[task.task_id] ? 'wait' : 'pointer'
+                        }}
                         onClick={() => handleClaimTask(task.task_id)}
                         title="Claim this task for yourself"
                       >
-                        🎯 CLAIM TASK
+                        {actionLoadingTasks[task.task_id] === 'claiming' ? (
+                          <>
+                            <span className="fast-spinner" style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#FFF', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+                            CLAIMING...
+                          </>
+                        ) : (
+                          "🎯 CLAIM TASK"
+                        )}
                       </button>
                     ) : isAssignedToMe ? (
                       <button 
                         className="reset-btn" 
-                        style={{ height: '34px', padding: '0 12px', fontSize: '0.75rem', color: '#fbbf24', borderColor: '#d97706', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0 }}
+                        disabled={!!actionLoadingTasks[task.task_id]}
+                        style={{ height: '34px', padding: '0 12px', fontSize: '0.75rem', color: '#fbbf24', borderColor: '#d97706', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box', margin: 0 }}
                         onClick={() => handleUnclaimTask(task.task_id)}
                       >
-                        ↩️ UNASSIGN / RELEASE TASK
+                        {actionLoadingTasks[task.task_id] === 'unclaiming' ? (
+                          <>
+                            <span className="fast-spinner" style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid rgba(251,191,36,0.4)', borderTopColor: '#fbbf24', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+                            RELEASING...
+                          </>
+                        ) : (
+                          "↩️ UNASSIGN / RELEASE TASK"
+                        )}
                       </button>
                     ) : (
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                         <button 
                           className="reset-btn" 
-                          style={{ height: '34px', padding: '0 10px', fontSize: '0.75rem', color: '#ff6b6b', borderColor: '#ef4444', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0 }}
+                          disabled={!!actionLoadingTasks[task.task_id]}
+                          style={{ height: '34px', padding: '0 10px', fontSize: '0.75rem', color: '#ff6b6b', borderColor: '#ef4444', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box', margin: 0 }}
                           onClick={() => handleUnclaimTask(task.task_id)}
                           title="Remove currently assigned associate and return task to unassigned queue"
                         >
-                          ❌ UNASSIGN ASSOCIATE
+                          {actionLoadingTasks[task.task_id] === 'unclaiming' ? (
+                            <>
+                              <span className="fast-spinner" style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid rgba(239,68,68,0.4)', borderTopColor: '#ef4444', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+                              UNASSIGNING...
+                            </>
+                          ) : (
+                            "❌ UNASSIGN ASSOCIATE"
+                          )}
                         </button>
                         <button 
                           className="reset-btn" 
-                          style={{ height: '34px', padding: '0 10px', fontSize: '0.75rem', color: '#60a5fa', borderColor: '#3b82f6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0 }}
+                          disabled={!!actionLoadingTasks[task.task_id]}
+                          style={{ height: '34px', padding: '0 10px', fontSize: '0.75rem', color: '#60a5fa', borderColor: '#3b82f6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box', margin: 0 }}
                           onClick={() => handleClaimTask(task.task_id)}
                           title="Re-assign task directly to yourself"
                         >
-                          ⚡ RE-ASSIGN TO ME
+                          {actionLoadingTasks[task.task_id] === 'claiming' ? (
+                            <>
+                              <span className="fast-spinner" style={{ display: 'inline-block', width: '12px', height: '12px', border: '2px solid rgba(96,165,250,0.4)', borderTopColor: '#60a5fa', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+                              RE-ASSIGNING...
+                            </>
+                          ) : (
+                            "⚡ RE-ASSIGN TO ME"
+                          )}
                         </button>
                       </div>
                     ))}
@@ -1384,8 +1508,35 @@ export default function AdminDashboard({ API_BASE_URL }) {
                       value={verifications[task.task_id] || ""}
                       onChange={(e) => setVerifications({...verifications, [task.task_id]: e.target.value})}
                     />
-                    <button className="reset-btn" style={{ borderColor: '#10b981', color: '#10b981', fontWeight: 'bold', height: '42px', padding: '0 18px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box', margin: 0, whiteSpace: 'nowrap' }} onClick={() => handleResolve(task.task_id)}>
-                      MARK COMPLETE
+                    <button 
+                      className="reset-btn" 
+                      disabled={actionLoadingTasks[task.task_id] === 'completing'}
+                      style={{ 
+                        borderColor: '#10b981', 
+                        color: '#10b981', 
+                        background: actionLoadingTasks[task.task_id] === 'completing' ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
+                        fontWeight: 'bold', 
+                        height: '42px', 
+                        padding: '0 18px', 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        gap: '8px',
+                        boxSizing: 'border-box', 
+                        margin: 0, 
+                        whiteSpace: 'nowrap',
+                        cursor: actionLoadingTasks[task.task_id] ? 'wait' : 'pointer'
+                      }} 
+                      onClick={() => handleResolve(task.task_id)}
+                    >
+                      {actionLoadingTasks[task.task_id] === 'completing' ? (
+                        <>
+                          <span className="fast-spinner" style={{ display: 'inline-block', width: '14px', height: '14px', border: '2px solid rgba(16,185,129,0.3)', borderTopColor: '#10b981', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+                          COMPLETING & VERIFYING...
+                        </>
+                      ) : (
+                        "MARK COMPLETE"
+                      )}
                     </button>
                   </div>
                 )}
