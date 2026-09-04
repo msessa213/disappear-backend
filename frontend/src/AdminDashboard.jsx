@@ -44,6 +44,51 @@ export const isDeadOrMockBroker = (broker) => {
   return false;
 };
 
+// --- SECURITY SANDBOX WRAPPER & PRE-FLIGHT DOMAIN INSPECTORS ---
+export const sanitizeOutboundUrl = (rawUrl, defaultDomainFallback = "") => {
+  if (!rawUrl || typeof rawUrl !== 'string') return "#";
+  const trimmed = rawUrl.trim();
+  
+  // Block dangerous execution protocols (javascript:, data:, vbscript:)
+  if (/^(javascript:|data:|vbscript:)/i.test(trimmed)) {
+    console.warn("Security Sandbox: Blocked unsafe execution protocol in outbound link:", trimmed);
+    return "#";
+  }
+
+  // Ensure valid http/https protocol
+  if (!/^https?:\/\//i.test(trimmed)) {
+    if (trimmed.includes('.')) {
+      return `https://${trimmed}`;
+    }
+    if (defaultDomainFallback) {
+      return `https://www.${defaultDomainFallback.toLowerCase().replace(/_/g, '')}.com/optout`;
+    }
+    return `https://www.google.com/search?q=${encodeURIComponent(trimmed)}+opt+out+form`;
+  }
+
+  return trimmed;
+};
+
+export const extractDomain = (url) => {
+  try {
+    const sanitized = sanitizeOutboundUrl(url);
+    if (sanitized === '#') return 'blocked-protocol';
+    const parsed = new URL(sanitized);
+    return parsed.hostname.replace(/^www\./, '');
+  } catch (e) {
+    return 'external-site';
+  }
+};
+
+export const safeOpenUrl = (rawUrl, defaultDomainFallback = "") => {
+  const safeUrl = sanitizeOutboundUrl(rawUrl, defaultDomainFallback);
+  if (safeUrl === "#") return;
+  const win = window.open(safeUrl, '_blank', 'noopener,noreferrer');
+  if (win) {
+    win.opener = null;
+  }
+};
+
 export default function AdminDashboard({ API_BASE_URL }) {
   const [manualTasks, setManualTasks] = useState([]);
   const [completedTasks, setCompletedTasks] = useState([]);
@@ -546,8 +591,8 @@ export default function AdminDashboard({ API_BASE_URL }) {
 
   const handleClaimAndLaunch = async (task) => {
     await handleClaimTask(task.task_id);
-    const targetUrl = task.opt_out_url || `https://www.google.com/search?q=${task.broker_name}+opt+out+form`;
-    window.open(targetUrl, '_blank');
+    const targetUrl = task.opt_out_url || `https://www.google.com/search?q=${encodeURIComponent(task.broker_name)}+opt+out+form`;
+    safeOpenUrl(targetUrl, task.broker_name);
   };
 
   const handleUnclaimTask = async (taskId) => {
@@ -1465,28 +1510,38 @@ export default function AdminDashboard({ API_BASE_URL }) {
                       </div>
                     ))}
 
-                    <a 
-                      href={task.opt_out_url || `https://www.${task.broker_name ? task.broker_name.toLowerCase().replace(/_/g, '') : 'broker'}.com/optout`} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="main-button" 
-                      style={{ textDecoration: 'none', height: '34px', padding: '0 14px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box', margin: 0 }}
-                      title="Open direct broker data removal form"
-                    >
-                      🌐 LAUNCH OPT-OUT FORM
-                    </a>
-
-                    {task.target_listing_url && (
+                    <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
                       <a 
-                        href={task.target_listing_url} 
+                        href={sanitizeOutboundUrl(task.opt_out_url || `https://www.${task.broker_name ? task.broker_name.toLowerCase().replace(/_/g, '') : 'broker'}.com/optout`, task.broker_name)} 
                         target="_blank" 
                         rel="noopener noreferrer" 
-                        className="reset-btn" 
-                        style={{ textDecoration: 'none', height: '34px', padding: '0 12px', fontSize: '0.78rem', color: '#00D2FF', borderColor: '#00D2FF', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box', margin: 0 }}
-                        title="Open customer's exact broker profile listing page"
+                        className="main-button" 
+                        style={{ textDecoration: 'none', height: '34px', padding: '0 14px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box', margin: 0 }}
+                        title={`🔒 SECURE SANDBOX LINK | Pre-Flight Domain Inspection: ${extractDomain(task.opt_out_url || task.broker_name)}`}
                       >
-                        🎯 LAUNCH TARGET LISTING
+                        🌐 LAUNCH OPT-OUT FORM
                       </a>
+                      <span style={{ fontSize: '0.62rem', color: '#64748B', fontFamily: 'monospace', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                        🔒 {extractDomain(task.opt_out_url || task.broker_name)}
+                      </span>
+                    </div>
+
+                    {task.target_listing_url && (
+                      <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                        <a 
+                          href={sanitizeOutboundUrl(task.target_listing_url)} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="reset-btn" 
+                          style={{ textDecoration: 'none', height: '34px', padding: '0 12px', fontSize: '0.78rem', color: '#00D2FF', borderColor: '#00D2FF', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxSizing: 'border-box', margin: 0 }}
+                          title={`🔒 SECURE SANDBOX LINK | Pre-Flight Domain Inspection: ${extractDomain(task.target_listing_url)}`}
+                        >
+                          🎯 LAUNCH TARGET LISTING
+                        </a>
+                        <span style={{ fontSize: '0.62rem', color: '#00D2FF', fontFamily: 'monospace', fontWeight: 'bold', opacity: 0.8, letterSpacing: '0.5px' }}>
+                          🔒 {extractDomain(task.target_listing_url)}
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1507,12 +1562,13 @@ export default function AdminDashboard({ API_BASE_URL }) {
                       <div style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: '0.85rem', marginTop: '4px' }}>
                         {task.target_listing_url ? (
                           <a 
-                            href={task.target_listing_url} 
+                            href={sanitizeOutboundUrl(task.target_listing_url)} 
                             target="_blank" 
                             rel="noopener noreferrer" 
                             style={{ color: '#38bdf8', textDecoration: 'underline', fontWeight: 'bold' }}
+                            title={`🔒 SECURE SANDBOX LINK | Destination Domain: ${extractDomain(task.target_listing_url)}`}
                           >
-                            {task.target_listing_url} ↗
+                            {task.target_listing_url} ↗ <span style={{ fontSize: '0.70rem', color: '#94A3B8', fontWeight: 'normal' }}>(🔒 {extractDomain(task.target_listing_url)})</span>
                           </a>
                         ) : (
                           <span style={{ color: '#94A3B8' }}>No direct profile listing URL saved yet.</span>
@@ -1557,9 +1613,15 @@ export default function AdminDashboard({ API_BASE_URL }) {
                 {isCompleted ? (
                   <div style={{ fontSize: '0.85rem', color: '#34d399', background: 'rgba(16,185,129,0.08)', padding: '10px 14px', borderRadius: '6px', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span><strong>PROOF / VERIFICATION:</strong> {task.manual_instruction_url || "Confirmed Deleted by Staff Analyst"}</span>
-                    {task.manual_instruction_url && task.manual_instruction_url.startsWith('http') && (
-                      <a href={task.manual_instruction_url} target="_blank" rel="noopener noreferrer" style={{ color: '#34d399', textDecoration: 'underline', fontWeight: 'bold' }}>
-                        VIEW PROOF LINK ↗
+                    {task.manual_instruction_url && (task.manual_instruction_url.startsWith('http') || task.manual_instruction_url.includes('.')) && (
+                      <a 
+                        href={sanitizeOutboundUrl(task.manual_instruction_url)} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        style={{ color: '#34d399', textDecoration: 'underline', fontWeight: 'bold' }}
+                        title={`🔒 SECURE SANDBOX LINK | Destination Domain: ${extractDomain(task.manual_instruction_url)}`}
+                      >
+                        VIEW PROOF LINK ↗ <span style={{ fontSize: '0.70rem', color: '#64748B', fontWeight: 'normal' }}>(🔒 {extractDomain(task.manual_instruction_url)})</span>
                       </a>
                     )}
                   </div>
