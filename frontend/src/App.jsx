@@ -1482,6 +1482,70 @@ function App() {
     return clean.trim();
   };
 
+  const extractEmailBodyText = (msg) => {
+    if (!msg) return "";
+    
+    // Check if both html and text exist, prefer the larger content
+    if (typeof msg.html === 'string' && typeof msg.text === 'string' && msg.html.length > msg.text.length) {
+      return msg.html;
+    }
+
+    const directProps = [
+      msg.body,
+      msg.text,
+      msg.message,
+      msg.content,
+      msg.text_content,
+      msg.html_content,
+      msg.html,
+      msg.email_body,
+      msg.body_text,
+      msg.body_html,
+      msg.raw_body,
+      msg.raw_text,
+      msg.raw,
+      msg.snippet,
+      msg.preview
+    ];
+    
+    for (const prop of directProps) {
+      if (typeof prop === 'string' && prop.trim()) {
+        return prop.trim();
+      }
+    }
+
+    const nestedObjs = [msg.data, msg.payload, msg.email, msg.details];
+    for (const obj of nestedObjs) {
+      if (obj && typeof obj === 'object') {
+        const nestedProps = [
+          obj.body,
+          obj.text,
+          obj.message,
+          obj.content,
+          obj.text_content,
+          obj.html_content,
+          obj.html,
+          obj.email_body,
+          obj.body_text,
+          obj.body_html,
+          obj.snippet,
+          obj.preview
+        ];
+        for (const prop of nestedProps) {
+          if (typeof prop === 'string' && prop.trim()) {
+            return prop.trim();
+          }
+        }
+      }
+    }
+
+    if (typeof msg === 'string' && msg.trim()) {
+      return msg.trim();
+    }
+
+    return "";
+  };
+
   const parseEmailMessageContent = (rawContent, msgAliasEmail) => {
     if (!rawContent) {
       return { bannerInfo: null, deactivateUrl: null, bodyText: "No email message body text available." };
@@ -1491,7 +1555,7 @@ function App() {
     if (typeof rawContent === 'string') {
       text = rawContent;
     } else if (typeof rawContent === 'object') {
-      text = rawContent.text || rawContent.body || rawContent.content || rawContent.message || rawContent.html || JSON.stringify(rawContent);
+      text = extractEmailBodyText(rawContent) || JSON.stringify(rawContent);
     } else {
       text = String(rawContent);
     }
@@ -1500,6 +1564,7 @@ function App() {
       return { bannerInfo: null, deactivateUrl: null, bodyText: "No email message body text available." };
     }
 
+    const originalText = text;
     let bannerText = null;
     let deactivateUrl = null;
 
@@ -1510,7 +1575,7 @@ function App() {
       text = text.replace(/<!--\s*banner-info\s*-->[\s\S]*?<!--\s*\/banner-info\s*-->/gi, '');
     }
 
-    // Strip all remaining HTML comments
+    // Strip HTML comments
     text = text.replace(/<!--[\s\S]*?-->/g, '');
 
     // 2. Extract deactivation URL if present
@@ -1538,15 +1603,13 @@ function App() {
           matchedBanner = matchedBanner.replace(urlInBanner[0], '').trim();
         }
         bannerText = matchedBanner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-        text = text.replace(plainBannerMatch[0], '');
       }
     }
 
-    const rawCleanText = text;
-
-    // 5. Clean text body if HTML or formatting tags are present
-    if (text.includes('<') && text.includes('>')) {
-      text = text
+    // 5. Convert HTML formatting tags into clean plain text line breaks if HTML tags exist
+    let parsedBody = text;
+    if (parsedBody.includes('<') && parsedBody.includes('>')) {
+      parsedBody = parsedBody
         .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
         .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
         .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '')
@@ -1566,19 +1629,20 @@ function App() {
         .trim();
     }
 
-    // Strip deactivation URLs from text body
+    // Strip deactivation URLs from body text if present
     if (deactivateUrl) {
-      text = text.replace(deactivateUrl, '').replace(/\(Deactivate alias:?\s*\)/gi, '').trim();
+      parsedBody = parsedBody.replace(deactivateUrl, '').replace(/\(Deactivate alias:?\s*\)/gi, '').trim();
     }
 
-    const finalText = (text && text.trim()) 
-      ? text.trim() 
-      : ((rawCleanText && rawCleanText.trim()) ? rawCleanText.trim() : "No email message body text recorded.");
+    // Always guarantee that body text falls back to originalText if cleaning produced empty string
+    const finalBodyText = (parsedBody && parsedBody.trim()) 
+      ? parsedBody.trim() 
+      : (originalText && originalText.trim() ? originalText.trim() : "No message body text recorded.");
 
     return {
       bannerInfo: bannerText || (msgAliasEmail ? `This message was forwarded to your encrypted alias ${msgAliasEmail}.` : null),
       deactivateUrl: deactivateUrl,
-      bodyText: finalText
+      bodyText: finalBodyText
     };
   };
 
@@ -3826,23 +3890,7 @@ const handleEmergencyBurn = async () => {
                       ) : (
                         <div className="cyber-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '480px', overflowY: 'auto', paddingRight: '4px' }}>
                           {aliasMessages.map((msg) => {
-                            const rawContent = 
-                              (msg.html && msg.text && msg.html.length > msg.text.length ? msg.html : null) ||
-                              msg.body || 
-                              msg.text || 
-                              msg.message || 
-                              msg.content || 
-                              msg.text_content || 
-                              msg.html_content || 
-                              msg.html || 
-                              msg.email_body || 
-                              msg.body_text || 
-                              msg.body_html || 
-                              msg.snippet || 
-                              msg.preview || 
-                              (msg.data && (msg.data.body || msg.data.text || msg.data.content || msg.data.message || msg.data.html)) || 
-                              (msg.payload && (msg.payload.body || msg.payload.text || msg.payload.content || msg.payload.html)) || 
-                              "";
+                            const rawContent = extractEmailBodyText(msg);
                             const { bannerInfo, deactivateUrl, bodyText } = parseEmailMessageContent(rawContent, msg.alias_email);
                             
                             return (
@@ -3850,14 +3898,14 @@ const handleEmergencyBurn = async () => {
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
                                   <div>
                                     <span style={{ fontSize: '0.84rem', color: '#FFFFFF', fontWeight: 'bold', display: 'block' }}>
-                                      FROM: {msg.sender || "Unknown Sender"}
+                                      FROM: {msg.sender || msg.from_email || msg.from || "Unknown Sender"}
                                     </span>
                                     <span style={{ fontSize: '0.74rem', color: '#00D2FF', fontFamily: 'monospace' }}>
-                                      TO ALIAS: {msg.alias_email || "Alias Node"}
+                                      TO ALIAS: {msg.alias_email || msg.to_email || msg.to || "Alias Node"}
                                     </span>
                                   </div>
                                   <span style={{ fontSize: '0.68rem', color: '#64748B' }}>
-                                    {msg.received_at ? new Date(msg.received_at).toLocaleString() : "Recently"}
+                                    {msg.received_at || msg.created_at || msg.timestamp ? new Date(msg.received_at || msg.created_at || msg.timestamp).toLocaleString() : "Recently"}
                                   </span>
                                 </div>
 
