@@ -1482,6 +1482,67 @@ function App() {
     return clean.trim();
   };
 
+  const extractSender = (msg) => {
+    if (!msg) return "Unknown Sender";
+
+    const directProps = [
+      msg.sender,
+      msg.sender_email,
+      msg.from_email,
+      msg.from,
+      msg.from_address,
+      msg.sender_address,
+      msg.from_name,
+      msg.sender_name,
+      msg.header_from,
+      msg.reply_to,
+      msg.reply_to_email,
+      msg.source_email
+    ];
+
+    for (const prop of directProps) {
+      if (typeof prop === 'string' && prop.trim() && prop.trim().toLowerCase() !== 'unknown sender') {
+        return prop.trim();
+      }
+    }
+
+    const nestedObjs = [msg.data, msg.payload, msg.email, msg.details, msg.headers];
+    for (const obj of nestedObjs) {
+      if (obj && typeof obj === 'object') {
+        const nestedProps = [
+          obj.sender,
+          obj.sender_email,
+          obj.from_email,
+          obj.from,
+          obj.from_address,
+          obj.sender_address,
+          obj.from_name,
+          obj.sender_name,
+          obj.header_from,
+          obj.reply_to
+        ];
+        for (const prop of nestedProps) {
+          if (typeof prop === 'string' && prop.trim() && prop.trim().toLowerCase() !== 'unknown sender') {
+            return prop.trim();
+          }
+        }
+      }
+    }
+
+    const rawText = typeof msg === 'string' ? msg : (msg.body || msg.text || msg.content || msg.message || msg.html || "");
+    if (typeof rawText === 'string') {
+      const fromMatch = rawText.match(/(?:From|Sender|Sent By):\s*([^\r\n<]+<[^>]+>|[^\r\n]+)/i);
+      if (fromMatch && fromMatch[1]) {
+        const cleanFrom = fromMatch[1].replace(/<[^>]+>/g, '').trim();
+        if (cleanFrom && cleanFrom.length > 2) {
+          return cleanFrom;
+        }
+      }
+    }
+
+    return "Unknown Sender";
+  };
+
   const extractEmailBodyText = (msg) => {
     if (!msg) return "";
     
@@ -1546,9 +1607,9 @@ function App() {
     return "";
   };
 
-  const parseEmailMessageContent = (rawContent, msgAliasEmail) => {
+  const parseEmailMessageContent = (rawContent) => {
     if (!rawContent) {
-      return { bannerInfo: null, deactivateUrl: null, bodyText: "No email message body text available." };
+      return { bodyText: "No email message body text recorded." };
     }
 
     let text = "";
@@ -1561,52 +1622,15 @@ function App() {
     }
 
     if (!text || !text.trim()) {
-      return { bannerInfo: null, deactivateUrl: null, bodyText: "No email message body text available." };
+      return { bodyText: "No email message body text recorded." };
     }
 
     const originalText = text;
-    let bannerText = null;
-    let deactivateUrl = null;
-
-    // 1. Check for HTML comment banners like <!--banner-info--> ... <!--/banner-info-->
-    const bannerCommentMatch = text.match(/<!--\s*banner-info\s*-->([\s\S]*?)<!--\s*\/banner-info\s*-->/i);
-    if (bannerCommentMatch) {
-      bannerText = bannerCommentMatch[1];
-      text = text.replace(/<!--\s*banner-info\s*-->[\s\S]*?<!--\s*\/banner-info\s*-->/gi, '');
-    }
 
     // Strip HTML comments
     text = text.replace(/<!--[\s\S]*?-->/g, '');
 
-    // 2. Extract deactivation URL if present
-    const deactivateMatch = (bannerText || text).match(/https?:\/\/[^\s<"']+(?:addy\.io|anonaddy)[^\s<"']*(?:deactivate|unsubscribe)[^\s<"']*/i);
-    if (deactivateMatch) {
-      deactivateUrl = deactivateMatch[0];
-    }
-
-    // 3. Clean raw HTML tags and URLs out of banner text
-    if (bannerText) {
-      bannerText = bannerText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-      if (deactivateUrl) {
-        bannerText = bannerText.replace(deactivateUrl, '').replace(/Deactivate alias:\s*/i, '').replace(/To deactivate this alias,\s*/i, '').trim();
-      }
-    }
-
-    // 4. Fallback check for plain text forwarding notices
-    if (!bannerText) {
-      const plainBannerMatch = text.match(/(This email was sent to [^\n\r]+)/i);
-      if (plainBannerMatch) {
-        let matchedBanner = plainBannerMatch[1];
-        const urlInBanner = matchedBanner.match(/https?:\/\/[^\s<"']+/i);
-        if (urlInBanner) {
-          deactivateUrl = urlInBanner[0];
-          matchedBanner = matchedBanner.replace(urlInBanner[0], '').trim();
-        }
-        bannerText = matchedBanner.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-      }
-    }
-
-    // 5. Convert HTML formatting tags into clean plain text line breaks if HTML tags exist
+    // Convert HTML formatting tags into clean plain text line breaks if HTML tags exist
     let parsedBody = text;
     if (parsedBody.includes('<') && parsedBody.includes('>')) {
       parsedBody = parsedBody
@@ -1629,19 +1653,12 @@ function App() {
         .trim();
     }
 
-    // Strip deactivation URLs from body text if present
-    if (deactivateUrl) {
-      parsedBody = parsedBody.replace(deactivateUrl, '').replace(/\(Deactivate alias:?\s*\)/gi, '').trim();
-    }
-
     // Always guarantee that body text falls back to originalText if cleaning produced empty string
     const finalBodyText = (parsedBody && parsedBody.trim()) 
       ? parsedBody.trim() 
-      : (originalText && originalText.trim() ? originalText.trim() : "No message body text recorded.");
+      : (originalText && originalText.trim() ? originalText.trim() : "No email message body text recorded.");
 
     return {
-      bannerInfo: bannerText || (msgAliasEmail ? `This message was forwarded to your encrypted alias ${msgAliasEmail}.` : null),
-      deactivateUrl: deactivateUrl,
       bodyText: finalBodyText
     };
   };
@@ -3890,18 +3907,20 @@ const handleEmergencyBurn = async () => {
                       ) : (
                         <div className="cyber-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '480px', overflowY: 'auto', paddingRight: '4px' }}>
                           {aliasMessages.map((msg) => {
+                            const actualSender = extractSender(msg);
+                            const actualAlias = msg.alias_email || msg.to_email || msg.to || msg.recipient || "Alias Node";
                             const rawContent = extractEmailBodyText(msg);
-                            const { bannerInfo, deactivateUrl, bodyText } = parseEmailMessageContent(rawContent, msg.alias_email);
+                            const { bodyText } = parseEmailMessageContent(rawContent);
                             
                             return (
                               <div key={msg.id} style={{ background: '#05070D', border: '1px solid #1e293b', padding: '14px', borderRadius: '10px', textAlign: 'left' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
                                   <div>
                                     <span style={{ fontSize: '0.84rem', color: '#FFFFFF', fontWeight: 'bold', display: 'block' }}>
-                                      FROM: {msg.sender || msg.from_email || msg.from || "Unknown Sender"}
+                                      FROM: {actualSender}
                                     </span>
                                     <span style={{ fontSize: '0.74rem', color: '#00D2FF', fontFamily: 'monospace' }}>
-                                      TO ALIAS: {msg.alias_email || msg.to_email || msg.to || "Alias Node"}
+                                      TO ALIAS: {actualAlias}
                                     </span>
                                   </div>
                                   <span style={{ fontSize: '0.68rem', color: '#64748B' }}>
@@ -3912,39 +3931,6 @@ const handleEmergencyBurn = async () => {
                                 {msg.subject && (
                                   <div style={{ fontSize: '0.80rem', color: '#FCD34D', fontWeight: 'bold', marginBottom: '8px' }}>
                                     SUBJECT: {msg.subject}
-                                  </div>
-                                )}
-
-                                {/* POLISHED ENCRYPTED RELAY HEADER BANNER */}
-                                {bannerInfo && (
-                                  <div style={{ 
-                                    background: 'linear-gradient(135deg, rgba(0, 71, 171, 0.2) 0%, rgba(5, 7, 13, 0.95) 100%)', 
-                                    border: '1px solid rgba(0, 210, 255, 0.3)', 
-                                    padding: '8px 12px', 
-                                    borderRadius: '6px', 
-                                    marginBottom: '10px', 
-                                    fontSize: '0.75rem', 
-                                    color: '#CBD5E1',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    flexWrap: 'wrap',
-                                    gap: '6px'
-                                  }}>
-                                    <div>
-                                      <span style={{ color: '#00D2FF', fontWeight: 'bold' }}>🛡️ ENCRYPTED ALIAS RELAY: </span>
-                                      <span>{bannerInfo}</span>
-                                    </div>
-                                    {deactivateUrl && (
-                                      <a 
-                                        href={deactivateUrl} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer" 
-                                        style={{ color: '#F87171', fontWeight: 'bold', textDecoration: 'underline', fontSize: '0.72rem', whiteSpace: 'nowrap' }}
-                                      >
-                                        Click here to deactivate this alias ✕
-                                      </a>
-                                    )}
                                   </div>
                                 )}
 
@@ -3973,8 +3959,8 @@ const handleEmergencyBurn = async () => {
                                     className="reset-btn"
                                     style={{ padding: '3px 10px', fontSize: '0.70rem', color: '#10B981', borderColor: '#10B981', fontWeight: 'bold' }}
                                     onClick={() => {
-                                      setReplyAliasEmail(msg.alias_email || (emails[0] ? emails[0].content : ""));
-                                      setReplyRecipientEmail(msg.sender || "");
+                                      setReplyAliasEmail(actualAlias !== "Alias Node" ? actualAlias : (emails[0] ? emails[0].content : ""));
+                                      setReplyRecipientEmail(actualSender !== "Unknown Sender" ? actualSender : "");
                                       setReplySubject(msg.subject ? (msg.subject.startsWith("Re:") ? msg.subject : `Re: ${msg.subject}`) : "Re: Your Message");
                                       setAliasReplyBody("");
                                       setShowAliasReplyModal(true);
