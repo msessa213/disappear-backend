@@ -1483,11 +1483,23 @@ function App() {
   };
 
   const parseEmailMessageContent = (rawContent, msgAliasEmail) => {
-    if (!rawContent || typeof rawContent !== 'string' || !rawContent.trim()) {
-      return { bannerInfo: null, deactivateUrl: null, bodyText: "No message body" };
+    if (!rawContent) {
+      return { bannerInfo: null, deactivateUrl: null, bodyText: "No email message body text available." };
     }
 
-    let text = rawContent;
+    let text = "";
+    if (typeof rawContent === 'string') {
+      text = rawContent;
+    } else if (typeof rawContent === 'object') {
+      text = rawContent.text || rawContent.body || rawContent.content || rawContent.message || rawContent.html || JSON.stringify(rawContent);
+    } else {
+      text = String(rawContent);
+    }
+
+    if (!text || !text.trim()) {
+      return { bannerInfo: null, deactivateUrl: null, bodyText: "No email message body text available." };
+    }
+
     let bannerText = null;
     let deactivateUrl = null;
 
@@ -1530,18 +1542,27 @@ function App() {
       }
     }
 
-    // 5. Clean text body if HTML
-    if (text.includes('<html') || text.includes('<div') || text.includes('<p>') || text.includes('<br')) {
+    const rawCleanText = text;
+
+    // 5. Clean text body if HTML or formatting tags are present
+    if (text.includes('<') && text.includes('>')) {
       text = text
         .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
         .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-        .replace(/<[^>]+>/g, ' ')
+        .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n\n')
+        .replace(/<\/div>/gi, '\n')
+        .replace(/<\/tr>/gi, '\n')
+        .replace(/<\/li>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
         .replace(/&nbsp;/gi, ' ')
         .replace(/&amp;/gi, '&')
         .replace(/&lt;/gi, '<')
         .replace(/&gt;/gi, '>')
         .replace(/&quot;/gi, '"')
-        .replace(/\s+/g, ' ')
+        .replace(/&#39;/gi, "'")
+        .replace(/\n\s*\n\s*\n+/g, '\n\n')
         .trim();
     }
 
@@ -1550,10 +1571,14 @@ function App() {
       text = text.replace(deactivateUrl, '').replace(/\(Deactivate alias:?\s*\)/gi, '').trim();
     }
 
+    const finalText = (text && text.trim()) 
+      ? text.trim() 
+      : ((rawCleanText && rawCleanText.trim()) ? rawCleanText.trim() : "No email message body text recorded.");
+
     return {
       bannerInfo: bannerText || (msgAliasEmail ? `This message was forwarded to your encrypted alias ${msgAliasEmail}.` : null),
       deactivateUrl: deactivateUrl,
-      bodyText: text || "No text content"
+      bodyText: finalText
     };
   };
 
@@ -3799,9 +3824,24 @@ const handleEmergencyBurn = async () => {
                           No email messages received in your alias vault yet. Incoming emails sent to your active aliases will appear here.
                         </p>
                       ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '350px', overflowY: 'auto' }}>
+                        <div className="cyber-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '450px', overflowY: 'auto', paddingRight: '4px' }}>
                           {aliasMessages.map((msg) => {
-                            const rawContent = msg.body || msg.text || msg.message || msg.content || msg.text_content || msg.snippet || (msg.data && (msg.data.body || msg.data.text || msg.data.content)) || (typeof msg.html === 'string' ? msg.html : '');
+                            const rawContent = 
+                              msg.body || 
+                              msg.text || 
+                              msg.message || 
+                              msg.content || 
+                              msg.text_content || 
+                              msg.html_content || 
+                              msg.html || 
+                              msg.email_body || 
+                              msg.body_text || 
+                              msg.body_html || 
+                              msg.snippet || 
+                              msg.preview || 
+                              (msg.data && (msg.data.body || msg.data.text || msg.data.content || msg.data.message || msg.data.html)) || 
+                              (msg.payload && (msg.payload.body || msg.payload.text || msg.payload.content || msg.payload.html)) || 
+                              "";
                             const { bannerInfo, deactivateUrl, bodyText } = parseEmailMessageContent(rawContent, msg.alias_email);
                             
                             return (
@@ -3859,8 +3899,22 @@ const handleEmergencyBurn = async () => {
                                   </div>
                                 )}
 
-                                {/* CLEAN EMAIL BODY CONTAINER */}
-                                <div style={{ background: '#020202', padding: '10px 12px', borderRadius: '6px', border: '1px solid #111', fontSize: '0.80rem', color: '#CBD5E1', marginBottom: '10px', whiteSpace: 'pre-wrap', maxHeight: '160px', overflowY: 'auto', lineHeight: '1.5' }}>
+                                {/* CLEAN SPACIOUS & SCROLLABLE EMAIL BODY CONTAINER */}
+                                <div className="cyber-scrollbar" style={{ 
+                                  background: '#020202', 
+                                  padding: '12px 14px', 
+                                  borderRadius: '8px', 
+                                  border: '1px solid #1e293b', 
+                                  fontSize: '0.82rem', 
+                                  color: '#E2E8F0', 
+                                  marginBottom: '10px', 
+                                  whiteSpace: 'pre-wrap', 
+                                  minHeight: '60px', 
+                                  maxHeight: '260px', 
+                                  overflowY: 'auto', 
+                                  lineHeight: '1.55', 
+                                  wordBreak: 'break-word' 
+                                }}>
                                   {bodyText}
                                 </div>
 
