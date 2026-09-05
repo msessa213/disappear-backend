@@ -1381,3 +1381,29 @@ input[type="checkbox"] {
   width: 100% !important;
   gap: 16px !important;
 }
+
+/* CYBERPUNK CUSTOM SCROLLBAR STYLING FOR LOG VIEWPORTS */
+.cyber-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #00D2FF #05070D;
+}
+
+.cyber-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.cyber-scrollbar::-webkit-scrollbar-track {
+  background: #05070D;
+  border-radius: 4px;
+}
+
+.cyber-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #00D2FF 0%, #10B981 100%);
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(0, 210, 255, 0.6);
+}
+
+.cyber-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #00D2FF;
+}

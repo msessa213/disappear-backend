@@ -1086,15 +1086,37 @@ function App() {
         setShowAdminLogin(false);
         setShowLegal(null);
       } else if (hash === '#vault') {
-        setShowLanding(false);
-        setShowPricing(false);
-        setShowCheckout(false);
-        setShowAdmin(false);
-        setShowAdminLogin(false);
-        setShowLegal(null);
-        setShowShield(true);
-        setShow2FA(false);
-        syncDefenseData();
+        const hasActiveSession = Boolean(
+          getSessionItem("disappear_session") === "active" || 
+          (typeof localStorage !== "undefined" && localStorage.getItem("disappear_session") === "active") || 
+          currentUserId
+        );
+        if (!hasActiveSession) {
+          try {
+            if (typeof window !== 'undefined' && window.history && window.history.replaceState) {
+              window.history.replaceState(null, "", window.location.pathname + "#login");
+            }
+            window.location.hash = "login";
+          } catch(e) {}
+          setShowLanding(false);
+          setShowPricing(false);
+          setShowCheckout(false);
+          setShowAdmin(false);
+          setShowAdminLogin(false);
+          setShowLegal(null);
+          setShowShield(false);
+          setShow2FA(true);
+        } else {
+          setShowLanding(false);
+          setShowPricing(false);
+          setShowCheckout(false);
+          setShowAdmin(false);
+          setShowAdminLogin(false);
+          setShowLegal(null);
+          setShowShield(true);
+          setShow2FA(false);
+          syncDefenseData();
+        }
       } else if (hash === '#login' || hash === '#2fa') {
         setShowLanding(false);
         setShowPricing(false);
@@ -1810,20 +1832,21 @@ function App() {
   }, []);
 
   const handleSecureLogout = () => {
+    // 1. Completely clear all sessionStorage items
     clearSessionStorage();
+
+    // 2. Completely clear all localStorage authentication tokens, session states & cached data
     try {
       if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem("disappear_user_id");
-        localStorage.removeItem("disappear_session");
-        localStorage.removeItem("disappear_user_email");
-        localStorage.removeItem("disappear_last_active");
-        localStorage.removeItem("user_id");
+        localStorage.clear();
       }
     } catch (e) {}
+
+    // 3. Purge all in-memory React application user state
     clearAllUserDataState();
     setCurrentUserId("");
 
-    // Unconditionally kill all active spinners, loaders, and action flags
+    // 4. Unconditionally kill all active spinners, loaders, and action flags
     setIsScanning(false);
     setIsGenerating(false);
     setIsEncrypting(false);
@@ -1835,7 +1858,7 @@ function App() {
     setIsCheckingAddyStatus(false);
     setIsRefreshingAliasData(false);
 
-    // Unconditionally route to Sign-In Screen (show2FA)
+    // 5. Unconditionally route to Sign-In Screen (show2FA)
     setShowShield(false);
     setShowAdmin(false);
     setShowAdminLogin(false);
@@ -1845,11 +1868,17 @@ function App() {
     setShowLanding(false);
     setShow2FA(true);
     
+    // 6. Destroy history stack and force hard replace so browser back button cannot re-enter protected view
     try {
-      window.location.hash = "login";
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
+      if (typeof window !== 'undefined') {
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(null, "", window.location.pathname + "#login");
+        }
+        window.location.hash = "login";
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }
     } catch (e) {}
 
     triggerToast("🚪 SESSION EXPIRED / LOGOUT COMPLETE");
@@ -4333,7 +4362,7 @@ const handleEmergencyBurn = async () => {
                         </div>
 
                         {isSpamFilterEnabled ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div className="cyber-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '360px', overflowY: 'auto', paddingRight: '4px' }}>
                             {/* LOG 1 */}
                             <div style={{ background: '#090d16', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '6px', padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
                               <div>
@@ -4548,66 +4577,69 @@ const handleEmergencyBurn = async () => {
                           <span style={{ fontSize: '0.68rem', color: '#94A3B8', fontFamily: 'monospace' }}>3 EXPOSURES PURGED</span>
                         </div>
 
-                        {/* EXPOSURE SOURCE ITEM 1: EMAIL BREACH SOURCE */}
-                        <div style={{ background: '#090d16', border: '1px solid rgba(16, 185, 129, 0.35)', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '6px' }}>
-                            <div>
-                              <span style={{ fontSize: '0.68rem', color: '#00D2FF', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block' }}>
-                                SPECIFIC INFO FOUND: EMAIL IDENTITY
-                              </span>
-                              <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#FFFFFF', fontFamily: 'monospace', marginTop: '2px' }}>
-                                {targetProfile.email || getSessionItem("disappear_user_email") || "user@disappear.app"}
+                        {/* SCROLLABLE BREACH SOURCE CONTAINER */}
+                        <div className="cyber-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '380px', overflowY: 'auto', paddingRight: '4px' }}>
+                          {/* EXPOSURE SOURCE ITEM 1: EMAIL BREACH SOURCE */}
+                          <div style={{ background: '#090d16', border: '1px solid rgba(16, 185, 129, 0.35)', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '6px' }}>
+                              <div>
+                                <span style={{ fontSize: '0.68rem', color: '#00D2FF', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block' }}>
+                                  SPECIFIC INFO FOUND: EMAIL IDENTITY
+                                </span>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#FFFFFF', fontFamily: 'monospace', marginTop: '2px' }}>
+                                  {targetProfile.email || getSessionItem("disappear_user_email") || "user@disappear.app"}
+                                </div>
                               </div>
+                              <span style={{ fontSize: '0.65rem', color: '#10B981', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                                🟢 AUTOMATICALLY NEUTRALIZED & PURGED
+                              </span>
                             </div>
-                            <span style={{ fontSize: '0.65rem', color: '#10B981', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                              🟢 AUTOMATICALLY NEUTRALIZED & PURGED
-                            </span>
+                            <div style={{ fontSize: '0.74rem', color: '#CBD5E1', display: 'flex', flexDirection: 'column', gap: '2px', borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: '6px', marginTop: '2px' }}>
+                              <div><strong style={{ color: '#94A3B8' }}>Site / Source Location:</strong> <span style={{ color: '#F59E0B', fontFamily: 'monospace' }}>BreachedForums Archive #8192 (DarkNet Index)</span></div>
+                              <div><strong style={{ color: '#94A3B8' }}>Neutralization Method:</strong> Continuous alias masking & automated record purge request executed.</div>
+                            </div>
                           </div>
-                          <div style={{ fontSize: '0.74rem', color: '#CBD5E1', display: 'flex', flexDirection: 'column', gap: '2px', borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: '6px', marginTop: '2px' }}>
-                            <div><strong style={{ color: '#94A3B8' }}>Site / Source Location:</strong> <span style={{ color: '#F59E0B', fontFamily: 'monospace' }}>BreachedForums Archive #8192 (DarkNet Index)</span></div>
-                            <div><strong style={{ color: '#94A3B8' }}>Neutralization Method:</strong> Continuous alias cloaking & automated record purge request executed.</div>
-                          </div>
-                        </div>
 
-                        {/* EXPOSURE SOURCE ITEM 2: PHONE LEAK SOURCE */}
-                        <div style={{ background: '#090d16', border: '1px solid rgba(16, 185, 129, 0.35)', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '6px' }}>
-                            <div>
-                              <span style={{ fontSize: '0.68rem', color: '#00D2FF', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block' }}>
-                                SPECIFIC INFO FOUND: PHONE HANDLE
-                              </span>
-                              <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#FFFFFF', fontFamily: 'monospace', marginTop: '2px' }}>
-                                {(targetProfile.phone || destinationPhone || "+15550192831").replace(/(\+\d{1,2}\s?\d{3})\d{3}(\d{4})/, '$1-***-$2')}
+                          {/* EXPOSURE SOURCE ITEM 2: PHONE LEAK SOURCE */}
+                          <div style={{ background: '#090d16', border: '1px solid rgba(16, 185, 129, 0.35)', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '6px' }}>
+                              <div>
+                                <span style={{ fontSize: '0.68rem', color: '#00D2FF', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block' }}>
+                                  SPECIFIC INFO FOUND: PHONE HANDLE
+                                </span>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#FFFFFF', fontFamily: 'monospace', marginTop: '2px' }}>
+                                  {(targetProfile.phone || destinationPhone || "+15550192831").replace(/(\+\d{1,2}\s?\d{3})\d{3}(\d{4})/, '$1-***-$2')}
+                                </div>
                               </div>
+                              <span style={{ fontSize: '0.65rem', color: '#10B981', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                                🟢 AUTOMATICALLY NEUTRALIZED & PURGED
+                              </span>
                             </div>
-                            <span style={{ fontSize: '0.65rem', color: '#10B981', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                              🟢 AUTOMATICALLY NEUTRALIZED & PURGED
-                            </span>
+                            <div style={{ fontSize: '0.74rem', color: '#CBD5E1', display: 'flex', flexDirection: 'column', gap: '2px', borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: '6px', marginTop: '2px' }}>
+                              <div><strong style={{ color: '#94A3B8' }}>Site / Source Location:</strong> <span style={{ color: '#F59E0B', fontFamily: 'monospace' }}>LeakBase Alpha DB (Tor Hidden Service v3)</span></div>
+                              <div><strong style={{ color: '#94A3B8' }}>Neutralization Method:</strong> Real-time SMS relay shielding active & automated removal dispatch verified.</div>
+                            </div>
                           </div>
-                          <div style={{ fontSize: '0.74rem', color: '#CBD5E1', display: 'flex', flexDirection: 'column', gap: '2px', borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: '6px', marginTop: '2px' }}>
-                            <div><strong style={{ color: '#94A3B8' }}>Site / Source Location:</strong> <span style={{ color: '#F59E0B', fontFamily: 'monospace' }}>LeakBase Alpha DB (Tor Hidden Service v3)</span></div>
-                            <div><strong style={{ color: '#94A3B8' }}>Neutralization Method:</strong> Real-time SMS relay shielding active & automated removal dispatch verified.</div>
-                          </div>
-                        </div>
 
-                        {/* EXPOSURE SOURCE ITEM 3: MASKED CREDENTIAL HASH SOURCE */}
-                        <div style={{ background: '#090d16', border: '1px solid rgba(16, 185, 129, 0.35)', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '6px' }}>
-                            <div>
-                              <span style={{ fontSize: '0.68rem', color: '#00D2FF', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block' }}>
-                                SPECIFIC INFO FOUND: MASKED CREDENTIAL HASH
-                              </span>
-                              <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#FFFFFF', fontFamily: 'monospace', marginTop: '2px' }}>
-                                SHA256:4f8b9e21...8a90
+                          {/* EXPOSURE SOURCE ITEM 3: MASKED CREDENTIAL HASH SOURCE */}
+                          <div style={{ background: '#090d16', border: '1px solid rgba(16, 185, 129, 0.35)', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '6px' }}>
+                              <div>
+                                <span style={{ fontSize: '0.68rem', color: '#00D2FF', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block' }}>
+                                  SPECIFIC INFO FOUND: MASKED CREDENTIAL HASH
+                                </span>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#FFFFFF', fontFamily: 'monospace', marginTop: '2px' }}>
+                                  SHA256:4f8b9e21...8a90
+                                </div>
                               </div>
+                              <span style={{ fontSize: '0.65rem', color: '#10B981', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                                🟢 AUTOMATICALLY NEUTRALIZED & PURGED
+                              </span>
                             </div>
-                            <span style={{ fontSize: '0.65rem', color: '#10B981', background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                              🟢 AUTOMATICALLY NEUTRALIZED & PURGED
-                            </span>
-                          </div>
-                          <div style={{ fontSize: '0.74rem', color: '#CBD5E1', display: 'flex', flexDirection: 'column', gap: '2px', borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: '6px', marginTop: '2px' }}>
-                            <div><strong style={{ color: '#94A3B8' }}>Site / Source Location:</strong> <span style={{ color: '#F59E0B', fontFamily: 'monospace' }}>ComboList-2026-HQ (Telegram Scraper Vault)</span></div>
-                            <div><strong style={{ color: '#94A3B8' }}>Neutralization Method:</strong> Automated DMCA & public pastebin scrubber executed. Record purged.</div>
+                            <div style={{ fontSize: '0.74rem', color: '#CBD5E1', display: 'flex', flexDirection: 'column', gap: '2px', borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: '6px', marginTop: '2px' }}>
+                              <div><strong style={{ color: '#94A3B8' }}>Site / Source Location:</strong> <span style={{ color: '#F59E0B', fontFamily: 'monospace' }}>ComboList-2026-HQ (Telegram Scraper Vault)</span></div>
+                              <div><strong style={{ color: '#94A3B8' }}>Neutralization Method:</strong> Automated DMCA & public pastebin scrubber executed. Record purged.</div>
+                            </div>
                           </div>
                         </div>
                       </div>
