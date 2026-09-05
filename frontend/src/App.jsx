@@ -3824,9 +3824,10 @@ const handleEmergencyBurn = async () => {
                           No email messages received in your alias vault yet. Incoming emails sent to your active aliases will appear here.
                         </p>
                       ) : (
-                        <div className="cyber-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '450px', overflowY: 'auto', paddingRight: '4px' }}>
+                        <div className="cyber-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '480px', overflowY: 'auto', paddingRight: '4px' }}>
                           {aliasMessages.map((msg) => {
                             const rawContent = 
+                              (msg.html && msg.text && msg.html.length > msg.text.length ? msg.html : null) ||
                               msg.body || 
                               msg.text || 
                               msg.message || 
@@ -3899,7 +3900,7 @@ const handleEmergencyBurn = async () => {
                                   </div>
                                 )}
 
-                                {/* CLEAN SPACIOUS & SCROLLABLE EMAIL BODY CONTAINER */}
+                                {/* FULL SPACIOUS & SCROLLABLE EMAIL BODY CONTAINER */}
                                 <div className="cyber-scrollbar" style={{ 
                                   background: '#020202', 
                                   padding: '12px 14px', 
@@ -3909,8 +3910,8 @@ const handleEmergencyBurn = async () => {
                                   color: '#E2E8F0', 
                                   marginBottom: '10px', 
                                   whiteSpace: 'pre-wrap', 
-                                  minHeight: '60px', 
-                                  maxHeight: '260px', 
+                                  minHeight: '80px', 
+                                  maxHeight: '400px', 
                                   overflowY: 'auto', 
                                   lineHeight: '1.55', 
                                   wordBreak: 'break-word' 
@@ -4416,7 +4417,7 @@ const handleEmergencyBurn = async () => {
                         </div>
 
                         {isSpamFilterEnabled ? (
-                          <div className="cyber-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '360px', overflowY: 'auto', paddingRight: '4px' }}>
+                          <div className="cyber-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '8px', minHeight: '140px', maxHeight: '420px', overflowY: 'auto', paddingRight: '6px' }}>
                             {/* LOG 1 */}
                             <div style={{ background: '#090d16', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '6px', padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
                               <div>
@@ -4632,7 +4633,7 @@ const handleEmergencyBurn = async () => {
                         </div>
 
                         {/* SCROLLABLE BREACH SOURCE CONTAINER */}
-                        <div className="cyber-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '380px', overflowY: 'auto', paddingRight: '4px' }}>
+                        <div className="cyber-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '12px', minHeight: '180px', maxHeight: '440px', overflowY: 'auto', paddingRight: '6px' }}>
                           {/* EXPOSURE SOURCE ITEM 1: EMAIL BREACH SOURCE */}
                           <div style={{ background: '#090d16', border: '1px solid rgba(16, 185, 129, 0.35)', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '6px' }}>
@@ -5894,31 +5895,39 @@ const handleEmergencyBurn = async () => {
         <div 
           className="modal-overlay" 
           style={{ 
-            zIndex: 60000, 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 70000, 
             display: 'flex', 
             alignItems: 'flex-start', 
             justifyContent: 'center', 
-            padding: 'max(24px, env(safe-area-inset-top, 24px)) 12px max(24px, env(safe-area-inset-bottom, 24px)) 12px', 
+            padding: 'max(24px, env(safe-area-inset-top, 24px)) 14px max(40px, env(safe-area-inset-bottom, 40px)) 14px', 
             overflowY: 'auto',
+            background: 'rgba(2, 6, 15, 0.88)',
+            backdropFilter: 'blur(6px)',
             WebkitOverflowScrolling: 'touch',
             touchAction: 'pan-y'
           }} 
           onClick={() => setShowAliasReplyModal(false)}
         >
           <div 
-            className="price-box" 
+            className="price-box cyber-scrollbar" 
             style={{ 
-              maxWidth: '540px', 
+              maxWidth: '560px', 
               width: '100%', 
-              maxHeight: 'calc(100vh - 60px)', 
+              maxHeight: 'calc(100vh - 90px)', 
               overflowY: 'auto', 
               WebkitOverflowScrolling: 'touch',
               touchAction: 'pan-y',
               textAlign: 'left', 
               boxSizing: 'border-box',
               padding: '24px',
-              margin: 'auto 0',
-              border: '1px solid var(--tiger-blue)'
+              margin: '20px 0 60px 0',
+              border: '1px solid var(--tiger-blue)',
+              boxShadow: '0 12px 48px rgba(0,0,0,0.95), 0 0 30px rgba(0, 210, 255, 0.3)'
             }} 
             onClick={e => e.stopPropagation()}
           >
