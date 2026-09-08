@@ -3953,7 +3953,7 @@ const handleEmergencyBurn = async () => {
                           {aliasMessages.map((msg) => {
                             const actualSender = extractSender(msg);
                             const actualAlias = msg.alias_email || msg.to_email || msg.to || msg.recipient || "Alias Node";
-                            const rawContent = extractEmailBodyText(msg);
+                            const rawContent = extractEmailBodyText(msg) || msg;
                             const { bodyText } = parseEmailMessageContent(rawContent);
                             
                             return (

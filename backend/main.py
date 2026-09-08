@@ -3298,28 +3298,38 @@ def dispatch_alias_forwarding_email(recipient_real_email: str, alias_email: str,
 
 
 def flatten_and_unwrap_payload(raw_data: Any) -> dict:
-    """Unwraps nested webhook envelopes (e.g. Addy.io {"event": "...", "data": {...}}, SendGrid, Mailgun, AWS SES)
-    into a single merged dictionary so top-level and inner properties are all accessible.
+    """Unwraps nested webhook envelopes (Addy.io {"event": "...", "data": {...}}, SendGrid, Mailgun, Postmark, AWS SES)
+    into a single merged dictionary where all provider keys are normalized and accessible.
     """
     if not isinstance(raw_data, dict):
         return {}
+
+    merged = {}
     
-    merged = dict(raw_data)
-    
-    nested_keys = ["data", "email", "message", "payload", "event_data", "record", "body", "envelope", "details"]
+    for k, v in raw_data.items():
+        if v is not None:
+            norm_k = str(k).lower().replace("-", "_")
+            merged[norm_k] = v
+            merged[str(k)] = v
+
+    nested_keys = ["data", "email", "message", "payload", "event_data", "record", "body", "envelope", "details", "mail"]
     for key in nested_keys:
         val = raw_data.get(key)
         if isinstance(val, dict):
             for k, v in val.items():
-                if k not in merged or not merged[k]:
-                    merged[k] = v
+                if v is not None:
+                    norm_k = str(k).lower().replace("-", "_")
+                    if norm_k not in merged or not merged[norm_k]:
+                        merged[norm_k] = v
+                    if k not in merged or not merged[k]:
+                        merged[k] = v
 
     return merged
 
 
 def extract_true_sender_from_payload(data: dict) -> str:
     """Extracts the true sender email/address from incoming webhook data or email headers.
-    Inspects headers like X-Original-From, Sender, Reply-To, Header-From, and nested header dicts/lists,
+    Inspects headers like X-Original-From, Sender, Reply-To, Header-From, and nested provider dicts/lists,
     bypassing generic relay envelope addresses (e.g., addy.io, anonaddy.me).
     """
     if not isinstance(data, dict):
@@ -3327,15 +3337,23 @@ def extract_true_sender_from_payload(data: dict) -> str:
 
     unwrapped = flatten_and_unwrap_payload(data)
 
-    headers_raw = unwrapped.get("headers") or unwrapped.get("header") or data.get("headers") or {}
+    headers_raw = (
+        unwrapped.get("headers") or 
+        unwrapped.get("header") or 
+        unwrapped.get("message_headers") or 
+        data.get("headers") or {}
+    )
     parsed_headers = {}
 
     if isinstance(headers_raw, dict):
         parsed_headers = {str(k).lower().replace("-", "_"): str(v) for k, v in headers_raw.items()}
     elif isinstance(headers_raw, list):
         for h in headers_raw:
-            if isinstance(h, dict) and "name" in h and "value" in h:
-                parsed_headers[str(h["name"]).lower().replace("-", "_")] = str(h["value"])
+            if isinstance(h, dict):
+                k = h.get("name") or h.get("Name") or h.get("key")
+                v = h.get("value") or h.get("Value") or h.get("val")
+                if k and v:
+                    parsed_headers[str(k).lower().replace("-", "_")] = str(v)
             elif isinstance(h, str) and ":" in h:
                 parts = h.split(":", 1)
                 parsed_headers[parts[0].strip().lower().replace("-", "_")] = parts[1].strip()
@@ -3345,7 +3363,6 @@ def extract_true_sender_from_payload(data: dict) -> str:
                 parts = line.split(":", 1)
                 parsed_headers[parts[0].strip().lower().replace("-", "_")] = parts[1].strip()
 
-    # Direct and nested candidate fields in strict priority order
     candidates = [
         unwrapped.get("x_original_from"),
         unwrapped.get("x-original-from"),
@@ -3353,26 +3370,32 @@ def extract_true_sender_from_payload(data: dict) -> str:
         parsed_headers.get("x_original_from"),
         unwrapped.get("reply_to"),
         unwrapped.get("reply-to"),
+        unwrapped.get("Reply-To"),
         parsed_headers.get("reply_to"),
         parsed_headers.get("sender"),
-        unwrapped.get("sender_name") or unwrapped.get("from_name") or unwrapped.get("display_name"),
+        unwrapped.get("fromname"),
+        unwrapped.get("from_name"),
+        unwrapped.get("sender_name"),
+        unwrapped.get("display_name"),
         unwrapped.get("header_from"),
         parsed_headers.get("from"),
         unwrapped.get("sender_email"),
         unwrapped.get("from_email"),
         unwrapped.get("sender"),
         unwrapped.get("from"),
+        unwrapped.get("From"),
+        unwrapped.get("source"),
         unwrapped.get("source_email"),
         unwrapped.get("envelope", {}).get("from") if isinstance(unwrapped.get("envelope"), dict) else None,
     ]
 
     relay_domains = ["addy.io", "anonaddy.me", "anonaddy.com"]
 
-    # First pass: check for email from a non-relay domain or display name
     for cand in candidates:
         if cand:
             cand_str = str(cand).strip()
-            if not cand_str or cand_str.lower() in ["unknown sender", "inbound sender", "inbound sender (via addy relay)"]:
+            lower = cand_str.lower()
+            if not cand_str or lower in ["unknown sender", "inbound sender", "inbound sender (via addy relay)", "unknown@sender.com"]:
                 continue
             match = re.search(r'[\w\.-]+@[\w\.-]+', cand_str)
             if match:
@@ -3383,8 +3406,11 @@ def extract_true_sender_from_payload(data: dict) -> str:
             elif "@" not in cand_str and len(cand_str) > 2:
                 return cand_str
 
-    # Second pass: search raw body text or raw text headers for "From: Name <email@domain.com>"
-    raw_body = str(unwrapped.get("text") or unwrapped.get("body_text") or unwrapped.get("plain") or unwrapped.get("body") or "")
+    raw_body = str(
+        unwrapped.get("text") or unwrapped.get("body_text") or unwrapped.get("plain") or 
+        unwrapped.get("body_plain") or unwrapped.get("stripped_text") or unwrapped.get("textbody") or 
+        unwrapped.get("body") or ""
+    )
     if raw_body:
         from_match = re.search(r'(?:From|Sender|X-Original-From|Reply-To):\s*([^\r\n<]+<[^>]+>|[\w\.-]+@[\w\.-]+)', raw_body, re.IGNORECASE)
         if from_match and from_match.group(1):
@@ -3392,11 +3418,11 @@ def extract_true_sender_from_payload(data: dict) -> str:
             if "addy.io" not in match_str.lower() and "anonaddy" not in match_str.lower():
                 return match_str
 
-    # Third pass: return best non-empty candidate even if relay domain
     for cand in candidates:
         if cand:
             cand_str = str(cand).strip()
-            if cand_str and cand_str.lower() not in ["unknown sender", "inbound sender"]:
+            lower = cand_str.lower()
+            if cand_str and lower not in ["unknown sender", "inbound sender", "inbound sender (via addy relay)", "unknown@sender.com"]:
                 return cand_str
 
     return "unknown@sender.com"
@@ -3429,7 +3455,7 @@ def strip_email_relay_wrapper(body_text: str) -> str:
 
 
 def extract_true_body_from_payload(data: dict) -> tuple:
-    """Extracts plain text and HTML body content from incoming webhook payloads across all nested keys.
+    """Extracts plain text and HTML body content from incoming webhook payloads across all provider keys.
     Strips relay notification wrappers to return clean, inner message payload.
     """
     if not isinstance(data, dict):
@@ -3441,7 +3467,10 @@ def extract_true_body_from_payload(data: dict) -> tuple:
         unwrapped.get("text"),
         unwrapped.get("body_text"),
         unwrapped.get("plain"),
-        unwrapped.get("text_content"),
+        unwrapped.get("body_plain"),
+        unwrapped.get("stripped_text"),
+        unwrapped.get("textbody"),
+        unwrapped.get("text_body"),
         unwrapped.get("body"),
         unwrapped.get("content"),
         unwrapped.get("message"),
@@ -3456,12 +3485,16 @@ def extract_true_body_from_payload(data: dict) -> tuple:
         unwrapped.get("html"),
         unwrapped.get("body_html"),
         unwrapped.get("html_content"),
+        unwrapped.get("body_html"),
+        unwrapped.get("stripped_html"),
+        unwrapped.get("htmlbody"),
+        unwrapped.get("html_body"),
         unwrapped.get("raw_html")
     ]
 
     raw_text = ""
     for cand in text_candidates:
-        if isinstance(cand, str) and cand.strip():
+        if isinstance(cand, str) and cand.strip() and cand.strip() != "No email message body text recorded.":
             raw_text = cand.strip()
             break
 
