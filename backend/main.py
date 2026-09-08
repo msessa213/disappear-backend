@@ -467,6 +467,11 @@ except Exception as idx_err:
 try:
     with engine.connect() as conn:
         conn.execute(text("DELETE FROM shield_profiles_v3 WHERE id = 'user_9685'"))
+        conn.execute(text(
+            "INSERT INTO shield_profiles_v3 (id, first_name, last_name, email, phone, address, dob, kyc_status, addy_verified, created_at) "
+            "SELECT 'user_7956', 'Michael', 'Sessa', 'mike803@verizon.net', '+18138105237', '4017 Arroyo Ln, Tampa, FL 33624', '1980-04-08', 'APPROVED', 1, CURRENT_TIMESTAMP "
+            "WHERE NOT EXISTS (SELECT 1 FROM shield_profiles_v3 WHERE id = 'user_7956' OR LOWER(email) = 'mike803@verizon.net')"
+        ))
         conn.execute(text("UPDATE shield_profiles_v3 SET id = 'user_7956', first_name = 'Michael', last_name = 'Sessa', address = '4017 Arroyo Ln, Tampa, FL 33624', phone = '+18138105237' WHERE LOWER(email) = 'mike803@verizon.net'"))
         conn.execute(text("UPDATE shield_aliases_v3 SET user_id = 'user_7956' WHERE content IN ('+18884317375', '+18137558466', '+18137917531', '+18134375531', '+17274850017', 'kdkq0hm9@anonaddy.me', 'f8hpm3cl@anonaddy.me') OR user_id = 'user_mike803' OR user_id = 'mike803@verizon.net'"))
         
@@ -3254,10 +3259,16 @@ async def get_aliases(x_user_id: Optional[str] = Header(None), user_id: Optional
 def dispatch_alias_forwarding_email(recipient_real_email: str, alias_email: str, sender_email: str, subject: str, body_text: str) -> bool:
     """Helper to dispatch email forwarding to real customer email or routing outbound alias messages"""
     import smtplib
+    import os
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
 
-    sender = "forwarder@disappearco.com"
+    smtp_host = os.getenv("SMTP_HOST") or os.getenv("MAIL_HOST") or ""
+    smtp_port = int(os.getenv("SMTP_PORT") or os.getenv("MAIL_PORT") or 587)
+    smtp_user = os.getenv("SMTP_USER") or os.getenv("MAIL_USERNAME") or ""
+    smtp_pass = os.getenv("SMTP_PASS") or os.getenv("MAIL_PASSWORD") or ""
+
+    sender = smtp_user if smtp_user else f"forwarder@{alias_email.split('@')[-1] if '@' in alias_email else 'disappearco.com'}"
     formatted_subject = f"[ALIAS {alias_email.upper()}] {subject}"
     
     html_content = f"""
@@ -3281,20 +3292,38 @@ def dispatch_alias_forwarding_email(recipient_real_email: str, alias_email: str,
     </html>
     """
 
-    try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = formatted_subject
-        msg["From"] = f"Disappear Forwarder <{sender}>"
-        msg["To"] = recipient_real_email
-        msg.attach(MIMEText(body_text or "", "plain"))
-        msg.attach(MIMEText(html_content, "html"))
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = formatted_subject
+    msg["From"] = f"Disappear Forwarder <{sender}>"
+    msg["To"] = recipient_real_email
+    msg.attach(MIMEText(body_text or "", "plain"))
+    msg.attach(MIMEText(html_content, "html"))
 
+    if smtp_host and smtp_user and smtp_pass:
+        try:
+            if smtp_port == 465:
+                with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=10.0) as server:
+                    server.login(smtp_user, smtp_pass)
+                    server.sendmail(sender, [recipient_real_email], msg.as_string())
+            else:
+                with smtplib.SMTP(smtp_host, smtp_port, timeout=10.0) as server:
+                    server.starttls()
+                    server.login(smtp_user, smtp_pass)
+                    server.sendmail(sender, [recipient_real_email], msg.as_string())
+            logger.info(f"✅ FORWARDING_SMTP_SUCCESS: Dispatched email for {alias_email} to {recipient_real_email}")
+            return True
+        except Exception as ex:
+            logger.warning(f"Configured SMTP forwarding failed: {ex}")
+
+    try:
         with smtplib.SMTP("127.0.0.1", 25, timeout=5) as server:
             server.sendmail(sender, [recipient_real_email], msg.as_string())
+        logger.info(f"✅ FORWARDING_LOCAL_SMTP_SUCCESS: Dispatched email for {alias_email} to {recipient_real_email}")
         return True
     except Exception as ex:
         logger.info(f"Local forwarding notice for {recipient_real_email}: {ex}")
-        return False
+
+    return False
 
 
 def flatten_and_unwrap_payload(raw_data: Any) -> dict:
@@ -3336,6 +3365,7 @@ def extract_true_sender_from_payload(data: dict) -> str:
         return "unknown@sender.com"
 
     unwrapped = flatten_and_unwrap_payload(data)
+    relay_domains = ["addy.io", "anonaddy.me", "anonaddy.com"]
 
     headers_raw = (
         unwrapped.get("headers") or 
@@ -3567,6 +3597,9 @@ async def handle_inbound_email_webhook(request: Request, bg_tasks: BackgroundTas
         if not profile:
             profile = db.query(DBProfile).filter(DBProfile.email.ilike(recipient_alias)).first()
 
+        if not profile:
+            profile = db.query(DBProfile).first()
+
         user_id = profile.id if profile else (alias.user_id if alias else "UNBOUND_ALIAS")
 
         import uuid
@@ -3608,7 +3641,7 @@ async def handle_inbound_email_webhook(request: Request, bg_tasks: BackgroundTas
 
 
 async def sync_addy_activity_background(profile_id: str, profile_email: str, alias_emails: list):
-    """Background task to pull Addy alias activity asynchronously without inserting synthetic placeholder messages."""
+    """Background task to pull Addy alias activity asynchronously and ensure verified recipients are attached."""
     raw_key = (os.getenv("ADDY_API_KEY") or os.getenv("ADDY_KEY") or os.getenv("ADDY_IO_KEY") or os.getenv("ANONADDY_API_KEY") or "").strip()
     if not raw_key:
         raw_key = "addy_io_dPdJs2PJZQLQV87dSP14P7di8YuLQOE06tDlidRlf6d08223"
@@ -3623,9 +3656,40 @@ async def sync_addy_activity_background(profile_id: str, profile_email: str, ali
             "Accept": "application/json",
             "Content-Type": "application/json"
         }
-        async with httpx.AsyncClient(timeout=3.0) as client:
+        async with httpx.AsyncClient(timeout=6.0) as client:
+            rec_id = None
+            if profile_email and "@" in profile_email:
+                rec_res = await client.get("https://app.addy.io/api/v1/recipients", headers=headers)
+                if rec_res.status_code == 200:
+                    for r in rec_res.json().get("data", []):
+                        if r.get("email", "").lower() == profile_email.lower() and r.get("email_verified_at"):
+                            rec_id = r.get("id")
+                            break
+                    if not rec_id:
+                        for r in rec_res.json().get("data", []):
+                            if r.get("email_verified_at"):
+                                rec_id = r.get("id")
+                                break
+
             res = await client.get("https://app.addy.io/api/v1/aliases", headers=headers)
             if res.status_code == 200:
+                addy_aliases = res.json().get("data", [])
+                target_aliases = [e.lower() for e in (alias_emails or []) if e]
+                for a in addy_aliases:
+                    a_email = a.get("email", "").lower()
+                    if target_aliases and a_email not in target_aliases:
+                        continue
+                    current_recs = [r.get("id") for r in a.get("recipients", []) if r.get("id")]
+                    if rec_id and not current_recs:
+                        try:
+                            await client.patch(
+                                f"https://app.addy.io/api/v1/aliases/{a.get('id')}",
+                                headers=headers,
+                                json={"recipient_ids": [rec_id]}
+                            )
+                            logger.info(f"Auto-attached verified recipient {rec_id} to alias {a_email}")
+                        except Exception as patch_err:
+                            logger.warning(f"Failed auto-attaching recipient to {a_email}: {patch_err}")
                 logger.info(f"Addy API activity sync successful for user {profile_id}")
     except Exception as ex:
         logger.warning(f"Addy activity background sync notice: {ex}")
@@ -3873,7 +3937,18 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
                     )
                     
                     if addy_response.status_code < 400:
-                        content = addy_response.json().get("data", {}).get("email")
+                        alias_data = addy_response.json().get("data", {})
+                        content = alias_data.get("email")
+                        created_alias_id = alias_data.get("id")
+                        if created_alias_id and recipient_id:
+                            try:
+                                await client.patch(
+                                    f"https://app.addy.io/api/v1/aliases/{created_alias_id}",
+                                    headers=headers,
+                                    json={"recipient_ids": [recipient_id]}
+                                )
+                            except Exception as patch_err:
+                                logger.warning(f"Addy recipient patch notice: {patch_err}")
                     else:
                         last_addy_error = f"Status {addy_response.status_code}: {addy_response.text}"
                         logger.error(f"ADDY_IO_ERROR: {last_addy_error}")
