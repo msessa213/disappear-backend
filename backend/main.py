@@ -3703,40 +3703,12 @@ async def sync_addy_activity_background(profile_id: str, profile_email: str, ali
                                 logger.info(f"Auto-attached verified recipient {rec_id} to alias {a_email}")
                             except Exception as patch_err:
                                 logger.warning(f"Failed auto-attaching recipient to {a_email}: {patch_err}")
-
-                        # Check forwarding activity and sync message log
-                        fwd_count = a.get("emails_forwarded", 0)
-                        last_fwd = a.get("last_forwarded")
-                        if fwd_count > 0 and last_fwd:
-                            try:
-                                dt = datetime.strptime(last_fwd, "%Y-%m-%d %H:%M:%S")
-                            except Exception:
-                                dt = datetime.utcnow()
-
-                            fwd_msg_id = f"msg_fwd_{a.get('id')[:8]}_{int(dt.timestamp())}"
-                            existing = db_bg.query(DBAliasMessage).filter(DBAliasMessage.id == fwd_msg_id).first()
-                            if not existing:
-                                new_msg = DBAliasMessage(
-                                    id=fwd_msg_id,
-                                    user_id=profile_id,
-                                    alias_email=a_email,
-                                    sender_email="Addy.io Secure Relay",
-                                    recipient_email=profile_email or a_email,
-                                    subject=f"🛡️ Inbound Transmission Forwarded ({a_email})",
-                                    body_text=f"Encrypted inbound email transmission received on alias {a_email} and forwarded securely to your destination inbox ({profile_email or 'recipient'}).",
-                                    body_html=f"<div style='color: #e2e8f0;'>Encrypted inbound email transmission received on alias <strong>{a_email}</strong> and forwarded securely to your destination inbox (<strong>{profile_email or 'recipient'}</strong>).</div>",
-                                    direction="INBOUND",
-                                    forwarded=True,
-                                    created_at=dt
-                                )
-                                db_bg.add(new_msg)
-                                db_bg.commit()
                 finally:
                     db_bg.close()
 
                 logger.info(f"Addy API recipient sync successful for user {profile_id}")
-    except Exception as ex:
-        logger.warning(f"Addy recipient background sync notice: {ex}")
+    except Exception as e:
+        logger.warning(f"Addy activity background sync notice: {e}")
 
 
 @app.get("/aliases/messages")
@@ -3763,19 +3735,18 @@ async def get_alias_messages(bg_tasks: BackgroundTasks, user_id: Optional[str] =
         user_aliases = db.query(DBAlias).filter(DBAlias.user_id.in_(query_user_ids)).all()
         alias_emails = [a.content.lower() for a in user_aliases if a.content and "@" in a.content]
 
-        # Purge legacy synthetic placeholder rows from DBAliasMessage table
+        # Purge synthetic placeholder rows from DBAliasMessage table
         try:
             db.query(DBAliasMessage).filter(
-                and_(
+                or_(
                     DBAliasMessage.sender_email.ilike("%Inbound Sender%"),
-                    DBAliasMessage.body_text.ilike("%Inbound message received by alias (Total Forwarded:%")
+                    DBAliasMessage.sender_email.ilike("%Addy.io%"),
+                    DBAliasMessage.sender_email.ilike("%Relay%"),
+                    DBAliasMessage.subject.ilike("%Inbound Transmission%"),
+                    DBAliasMessage.body_text.ilike("%Encrypted inbound%")
                 )
             ).delete(synchronize_session=False)
             db.commit()
-        except Exception as p_err:
-            db.rollback()
-        except Exception as p_err:
-            db.rollback()
         except Exception as p_err:
             db.rollback()
 

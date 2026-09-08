@@ -1495,7 +1495,7 @@ function App() {
       if (!val || typeof val !== 'string') return true;
       const lower = val.trim().toLowerCase();
       if (!lower || lower === 'unknown sender' || lower === 'inbound sender' || lower === 'unknown@sender.com') return true;
-      if (lower.includes('inbound sender') || lower.includes('via addy relay')) return true;
+      if (lower.includes('inbound sender') || lower.includes('via addy relay') || lower.includes('addy.io secure relay') || lower.includes('inbound forwarded transmission')) return true;
       
       if (aliasEmail) {
         const match = lower.match(/[\w\.-]+@[\w\.-]+/);
@@ -1526,7 +1526,6 @@ function App() {
       if (typeof prop === 'string' && prop.trim()) {
         const str = prop.trim();
         if (!isGeneric(str)) return str;
-        if (str.includes("Addy.io") || str.includes("Relay")) return str;
       }
     }
 
@@ -1552,7 +1551,6 @@ function App() {
           if (typeof prop === 'string' && prop.trim()) {
             const str = prop.trim();
             if (!isGeneric(str)) return str;
-            if (str.includes("Addy.io") || str.includes("Relay")) return str;
           }
         }
       }
@@ -1569,8 +1567,8 @@ function App() {
       }
     }
 
-    if (msg.sender_email && msg.sender_email.trim()) return msg.sender_email.trim();
-    return "Encrypted Inbound Sender";
+    if (msg.sender_email && msg.sender_email.trim() && !isGeneric(msg.sender_email)) return msg.sender_email.trim();
+    return "External Inbound Sender";
   };
 
   const extractEmailBodyText = (msg) => {
@@ -3955,7 +3953,13 @@ const handleEmergencyBurn = async () => {
                         const validAliasMessages = (aliasMessages || []).filter(msg => {
                           if (!msg) return false;
                           const body = String(msg.body_text || msg.body || msg.text || "").toLowerCase();
+                          const sender = String(msg.sender_email || msg.sender || "").toLowerCase();
+                          const subj = String(msg.subject || "").toLowerCase();
                           if (body.includes("inbound message received by alias (total forwarded:")) return false;
+                          if (body.includes("encrypted inbound email transmission received on alias")) return false;
+                          if (body.includes("encrypted inbound transmission received by alias")) return false;
+                          if (sender.includes("addy.io secure relay") || sender.includes("inbound sender")) return false;
+                          if (subj.includes("inbound transmission forwarded")) return false;
                           return true;
                         });
 
