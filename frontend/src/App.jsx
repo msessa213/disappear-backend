@@ -1489,23 +1489,37 @@ function App() {
   const extractSender = (msg) => {
     if (!msg) return "Unknown Sender";
 
+    const isGeneric = (val) => {
+      if (!val || typeof val !== 'string') return true;
+      const lower = val.trim().toLowerCase();
+      return (
+        lower === 'unknown sender' ||
+        lower === 'inbound sender' ||
+        lower.includes('inbound sender (via addy relay)') ||
+        lower.includes('inbound sender') ||
+        lower === 'unknown@sender.com'
+      );
+    };
+
     const directProps = [
-      msg.sender,
+      msg.x_original_from,
+      msg.reply_to,
+      msg.header_from,
+      msg.sender_name,
+      msg.from_name,
+      msg.display_name,
       msg.sender_email,
       msg.from_email,
+      msg.sender,
       msg.from,
       msg.from_address,
       msg.sender_address,
-      msg.from_name,
-      msg.sender_name,
-      msg.header_from,
-      msg.reply_to,
       msg.reply_to_email,
       msg.source_email
     ];
 
     for (const prop of directProps) {
-      if (typeof prop === 'string' && prop.trim() && prop.trim().toLowerCase() !== 'unknown sender') {
+      if (typeof prop === 'string' && !isGeneric(prop)) {
         return prop.trim();
       }
     }
@@ -1514,33 +1528,42 @@ function App() {
     for (const obj of nestedObjs) {
       if (obj && typeof obj === 'object') {
         const nestedProps = [
-          obj.sender,
+          obj.x_original_from,
+          obj.reply_to,
+          obj.header_from,
+          obj.sender_name,
+          obj.from_name,
+          obj.display_name,
           obj.sender_email,
           obj.from_email,
+          obj.sender,
           obj.from,
           obj.from_address,
           obj.sender_address,
-          obj.from_name,
-          obj.sender_name,
-          obj.header_from,
           obj.reply_to
         ];
         for (const prop of nestedProps) {
-          if (typeof prop === 'string' && prop.trim() && prop.trim().toLowerCase() !== 'unknown sender') {
+          if (typeof prop === 'string' && !isGeneric(prop)) {
             return prop.trim();
           }
         }
       }
     }
 
-    const rawText = typeof msg === 'string' ? msg : (msg.body || msg.text || msg.content || msg.message || msg.html || "");
-    if (typeof rawText === 'string') {
-      const fromMatch = rawText.match(/(?:From|Sender|Sent By):\s*([^\r\n<]+<[^>]+>|[^\r\n]+)/i);
+    const rawText = typeof msg === 'string' ? msg : (msg.body_text || msg.body || msg.text || msg.content || msg.message || msg.html || "");
+    if (typeof rawText === 'string' && rawText) {
+      const fromMatch = rawText.match(/(?:From|Sender|X-Original-From|Reply-To):\s*([^\r\n<]+<[^>]+>|[\w\.-]+@[\w\.-]+|[^\r\n]+)/i);
       if (fromMatch && fromMatch[1]) {
         const cleanFrom = fromMatch[1].replace(/<[^>]+>/g, '').trim();
-        if (cleanFrom && cleanFrom.length > 2) {
+        if (cleanFrom && cleanFrom.length > 2 && !isGeneric(cleanFrom)) {
           return cleanFrom;
         }
+      }
+    }
+
+    for (const prop of directProps) {
+      if (typeof prop === 'string' && prop.trim() && prop.trim().toLowerCase() !== 'unknown sender') {
+        return prop.trim();
       }
     }
 
@@ -1549,22 +1572,18 @@ function App() {
 
   const extractEmailBodyText = (msg) => {
     if (!msg) return "";
-    
-    // Check if both html and text exist, prefer the larger content
-    if (typeof msg.html === 'string' && typeof msg.text === 'string' && msg.html.length > msg.text.length) {
-      return msg.html;
-    }
+    if (typeof msg === 'string') return msg.trim();
 
     const directProps = [
-      msg.body,
+      msg.body_text,
       msg.text,
+      msg.body,
       msg.message,
       msg.content,
       msg.text_content,
       msg.html_content,
       msg.html,
       msg.email_body,
-      msg.body_text,
       msg.body_html,
       msg.raw_body,
       msg.raw_text,
@@ -1574,38 +1593,40 @@ function App() {
     ];
     
     for (const prop of directProps) {
-      if (typeof prop === 'string' && prop.trim()) {
+      if (typeof prop === 'string' && prop.trim() && prop.trim() !== "No email message body text recorded.") {
         return prop.trim();
       }
     }
 
-    const nestedObjs = [msg.data, msg.payload, msg.email, msg.details];
+    const nestedObjs = [msg.data, msg.payload, msg.email, msg.details, msg.record, msg.body];
     for (const obj of nestedObjs) {
       if (obj && typeof obj === 'object') {
         const nestedProps = [
-          obj.body,
+          obj.body_text,
           obj.text,
+          obj.body,
           obj.message,
           obj.content,
           obj.text_content,
           obj.html_content,
           obj.html,
           obj.email_body,
-          obj.body_text,
           obj.body_html,
           obj.snippet,
           obj.preview
         ];
         for (const prop of nestedProps) {
-          if (typeof prop === 'string' && prop.trim()) {
+          if (typeof prop === 'string' && prop.trim() && prop.trim() !== "No email message body text recorded.") {
             return prop.trim();
           }
         }
       }
     }
 
-    if (typeof msg === 'string' && msg.trim()) {
-      return msg.trim();
+    for (const prop of directProps) {
+      if (typeof prop === 'string' && prop.trim()) {
+        return prop.trim();
+      }
     }
 
     return "";

@@ -3297,6 +3297,26 @@ def dispatch_alias_forwarding_email(recipient_real_email: str, alias_email: str,
         return False
 
 
+def flatten_and_unwrap_payload(raw_data: Any) -> dict:
+    """Unwraps nested webhook envelopes (e.g. Addy.io {"event": "...", "data": {...}}, SendGrid, Mailgun, AWS SES)
+    into a single merged dictionary so top-level and inner properties are all accessible.
+    """
+    if not isinstance(raw_data, dict):
+        return {}
+    
+    merged = dict(raw_data)
+    
+    nested_keys = ["data", "email", "message", "payload", "event_data", "record", "body", "envelope", "details"]
+    for key in nested_keys:
+        val = raw_data.get(key)
+        if isinstance(val, dict):
+            for k, v in val.items():
+                if k not in merged or not merged[k]:
+                    merged[k] = v
+
+    return merged
+
+
 def extract_true_sender_from_payload(data: dict) -> str:
     """Extracts the true sender email/address from incoming webhook data or email headers.
     Inspects headers like X-Original-From, Sender, Reply-To, Header-From, and nested header dicts/lists,
@@ -3305,63 +3325,79 @@ def extract_true_sender_from_payload(data: dict) -> str:
     if not isinstance(data, dict):
         return "unknown@sender.com"
 
-    headers = data.get("headers") or data.get("header") or {}
+    unwrapped = flatten_and_unwrap_payload(data)
+
+    headers_raw = unwrapped.get("headers") or unwrapped.get("header") or data.get("headers") or {}
     parsed_headers = {}
 
-    if isinstance(headers, dict):
-        parsed_headers = {str(k).lower().replace("-", "_"): str(v) for k, v in headers.items()}
-    elif isinstance(headers, list):
-        for h in headers:
+    if isinstance(headers_raw, dict):
+        parsed_headers = {str(k).lower().replace("-", "_"): str(v) for k, v in headers_raw.items()}
+    elif isinstance(headers_raw, list):
+        for h in headers_raw:
             if isinstance(h, dict) and "name" in h and "value" in h:
                 parsed_headers[str(h["name"]).lower().replace("-", "_")] = str(h["value"])
             elif isinstance(h, str) and ":" in h:
                 parts = h.split(":", 1)
                 parsed_headers[parts[0].strip().lower().replace("-", "_")] = parts[1].strip()
-    elif isinstance(headers, str):
-        for line in headers.splitlines():
+    elif isinstance(headers_raw, str):
+        for line in headers_raw.splitlines():
             if ":" in line:
                 parts = line.split(":", 1)
                 parsed_headers[parts[0].strip().lower().replace("-", "_")] = parts[1].strip()
 
-    # Priority order of header/field lookups for the true sender
+    # Direct and nested candidate fields in strict priority order
     candidates = [
-        data.get("x_original_from"),
-        data.get("x-original-from"),
-        data.get("X-Original-From"),
+        unwrapped.get("x_original_from"),
+        unwrapped.get("x-original-from"),
+        unwrapped.get("X-Original-From"),
         parsed_headers.get("x_original_from"),
-        data.get("reply_to"),
-        data.get("reply-to"),
+        unwrapped.get("reply_to"),
+        unwrapped.get("reply-to"),
         parsed_headers.get("reply_to"),
         parsed_headers.get("sender"),
-        data.get("sender_name") or data.get("from_name"),
-        data.get("header_from"),
+        unwrapped.get("sender_name") or unwrapped.get("from_name") or unwrapped.get("display_name"),
+        unwrapped.get("header_from"),
         parsed_headers.get("from"),
-        data.get("sender_email"),
-        data.get("from_email"),
-        data.get("sender"),
-        data.get("from"),
-        data.get("envelope", {}).get("from") if isinstance(data.get("envelope"), dict) else None,
+        unwrapped.get("sender_email"),
+        unwrapped.get("from_email"),
+        unwrapped.get("sender"),
+        unwrapped.get("from"),
+        unwrapped.get("source_email"),
+        unwrapped.get("envelope", {}).get("from") if isinstance(unwrapped.get("envelope"), dict) else None,
     ]
 
     relay_domains = ["addy.io", "anonaddy.me", "anonaddy.com"]
 
-    # First pass: return candidate if it contains an email from a non-relay domain
+    # First pass: check for email from a non-relay domain or display name
     for cand in candidates:
         if cand:
             cand_str = str(cand).strip()
+            if not cand_str or cand_str.lower() in ["unknown sender", "inbound sender", "inbound sender (via addy relay)"]:
+                continue
             match = re.search(r'[\w\.-]+@[\w\.-]+', cand_str)
             if match:
                 email_addr = match.group(0).lower()
                 domain = email_addr.split("@")[-1]
                 if domain not in relay_domains:
                     return cand_str
-            elif "@" not in cand_str and len(cand_str) > 2 and cand_str.lower() != "unknown sender":
+            elif "@" not in cand_str and len(cand_str) > 2:
                 return cand_str
 
-    # Second pass: fallback to any non-empty candidate string
+    # Second pass: search raw body text or raw text headers for "From: Name <email@domain.com>"
+    raw_body = str(unwrapped.get("text") or unwrapped.get("body_text") or unwrapped.get("plain") or unwrapped.get("body") or "")
+    if raw_body:
+        from_match = re.search(r'(?:From|Sender|X-Original-From|Reply-To):\s*([^\r\n<]+<[^>]+>|[\w\.-]+@[\w\.-]+)', raw_body, re.IGNORECASE)
+        if from_match and from_match.group(1):
+            match_str = from_match.group(1).strip()
+            if "addy.io" not in match_str.lower() and "anonaddy" not in match_str.lower():
+                return match_str
+
+    # Third pass: return best non-empty candidate even if relay domain
     for cand in candidates:
-        if cand and str(cand).strip().lower() != "unknown sender":
-            return str(cand).strip()
+        if cand:
+            cand_str = str(cand).strip()
+            if cand_str and cand_str.lower() not in ["unknown sender", "inbound sender"]:
+                return cand_str
 
     return "unknown@sender.com"
 
@@ -3392,6 +3428,62 @@ def strip_email_relay_wrapper(body_text: str) -> str:
     return text
 
 
+def extract_true_body_from_payload(data: dict) -> tuple:
+    """Extracts plain text and HTML body content from incoming webhook payloads across all nested keys.
+    Strips relay notification wrappers to return clean, inner message payload.
+    """
+    if not isinstance(data, dict):
+        return ("", "")
+
+    unwrapped = flatten_and_unwrap_payload(data)
+
+    text_candidates = [
+        unwrapped.get("text"),
+        unwrapped.get("body_text"),
+        unwrapped.get("plain"),
+        unwrapped.get("text_content"),
+        unwrapped.get("body"),
+        unwrapped.get("content"),
+        unwrapped.get("message"),
+        unwrapped.get("raw_body"),
+        unwrapped.get("raw_text"),
+        unwrapped.get("email_body"),
+        unwrapped.get("snippet"),
+        unwrapped.get("preview")
+    ]
+
+    html_candidates = [
+        unwrapped.get("html"),
+        unwrapped.get("body_html"),
+        unwrapped.get("html_content"),
+        unwrapped.get("raw_html")
+    ]
+
+    raw_text = ""
+    for cand in text_candidates:
+        if isinstance(cand, str) and cand.strip():
+            raw_text = cand.strip()
+            break
+
+    raw_html = ""
+    for cand in html_candidates:
+        if isinstance(cand, str) and cand.strip():
+            raw_html = cand.strip()
+            break
+
+    if not raw_text and raw_html:
+        clean = re.sub(r'<style[^>]*>[\s\S]*?</style>', '', raw_html, flags=re.IGNORECASE)
+        clean = re.sub(r'<script[^>]*>[\s\S]*?</script>', '', clean, flags=re.IGNORECASE)
+        clean = re.sub(r'<br\s*/?>', '\n', clean, flags=re.IGNORECASE)
+        clean = re.sub(r'</p>', '\n\n', clean, flags=re.IGNORECASE)
+        clean = re.sub(r'</div>', '\n', clean, flags=re.IGNORECASE)
+        clean = re.sub(r'<[^>]+>', '', clean)
+        raw_text = clean.strip()
+
+    cleaned_text = strip_email_relay_wrapper(raw_text)
+    return (cleaned_text, raw_html)
+
+
 @app.post("/api/email/inbound")
 @app.post("/v1/email/inbound")
 async def handle_inbound_email_webhook(request: Request, bg_tasks: BackgroundTasks, db: Session = Depends(get_db)):
@@ -3405,12 +3497,12 @@ async def handle_inbound_email_webhook(request: Request, bg_tasks: BackgroundTas
             form = await request.form()
             data = {k: v for k, v in form.items()}
         
-        recipient_raw = str(data.get("recipient") or data.get("to") or data.get("envelope", {}).get("to") or "").strip().lower()
+        unwrapped = flatten_and_unwrap_payload(data)
+
+        recipient_raw = str(unwrapped.get("recipient") or unwrapped.get("to") or unwrapped.get("alias_email") or unwrapped.get("alias") or unwrapped.get("envelope", {}).get("to") or "").strip().lower()
         sender_raw = extract_true_sender_from_payload(data)
-        subject = str(data.get("subject") or "Encrypted Alias Transmission").strip()
-        raw_body_text = str(data.get("text") or data.get("body_text") or data.get("plain") or "").strip()
-        body_text = strip_email_relay_wrapper(raw_body_text)
-        body_html = str(data.get("html") or data.get("body_html") or "").strip()
+        subject = str(unwrapped.get("subject") or "Encrypted Alias Transmission").strip()
+        body_text, body_html = extract_true_body_from_payload(data)
 
         match = re.search(r'[\w\.-]+@[\w\.-]+', recipient_raw)
         recipient_alias = match.group(0).lower() if match else recipient_raw
@@ -3443,8 +3535,8 @@ async def handle_inbound_email_webhook(request: Request, bg_tasks: BackgroundTas
             sender_email=sender_raw,
             recipient_email=profile.email if profile else recipient_alias,
             subject=subject,
-            body_text=body_text[:5000],
-            body_html=body_html[:10000],
+            body_text=body_text[:10000] if body_text else "No email message body text recorded.",
+            body_html=body_html[:20000] if body_html else "",
             direction="INBOUND",
             forwarded=bool(profile and profile.email)
         )
