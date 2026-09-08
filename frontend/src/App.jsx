@@ -3944,88 +3944,101 @@ const handleEmergencyBurn = async () => {
                         </div>
                       </div>
 
-                      {aliasMessages.length === 0 ? (
-                        <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, textAlign: 'center', padding: '12px' }}>
-                          No email messages received in your alias vault yet. Incoming emails sent to your active aliases will appear here.
-                        </p>
-                      ) : (
-                        <div className="cyber-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '480px', overflowY: 'auto', paddingRight: '4px' }}>
-                          {aliasMessages.map((msg) => {
-                            const actualSender = extractSender(msg);
-                            const actualAlias = msg.alias_email || msg.to_email || msg.to || msg.recipient || "Alias Node";
-                            const rawContent = extractEmailBodyText(msg) || msg;
-                            const { bodyText } = parseEmailMessageContent(rawContent);
-                            
-                            return (
-                              <div key={msg.id} style={{ background: '#05070D', border: '1px solid #1e293b', padding: '14px', borderRadius: '10px', textAlign: 'left' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
-                                  <div>
-                                    <span style={{ fontSize: '0.84rem', color: '#FFFFFF', fontWeight: 'bold', display: 'block' }}>
-                                      FROM: {actualSender}
-                                    </span>
-                                    <span style={{ fontSize: '0.74rem', color: '#00D2FF', fontFamily: 'monospace' }}>
-                                      TO ALIAS: {actualAlias}
+                      {(() => {
+                        const validAliasMessages = (aliasMessages || []).filter(msg => {
+                          if (!msg) return false;
+                          const sender = String(msg.sender_email || msg.sender || "").toLowerCase();
+                          const body = String(msg.body_text || msg.body || msg.text || "").toLowerCase();
+                          const id = String(msg.id || "");
+                          if (id.startsWith("msg_addy_")) return false;
+                          if (sender.includes("inbound sender")) return false;
+                          if (body.includes("inbound message received by alias")) return false;
+                          return true;
+                        });
+
+                        return validAliasMessages.length === 0 ? (
+                          <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, textAlign: 'center', padding: '12px' }}>
+                            No email messages received in your alias vault yet. Incoming emails sent to your active aliases will appear here.
+                          </p>
+                        ) : (
+                          <div className="cyber-scrollbar" style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '480px', overflowY: 'auto', paddingRight: '4px' }}>
+                            {validAliasMessages.map((msg) => {
+                              const actualSender = extractSender(msg);
+                              const actualAlias = msg.alias_email || msg.to_email || msg.to || msg.recipient || "Alias Node";
+                              const rawContent = extractEmailBodyText(msg) || msg;
+                              const { bodyText } = parseEmailMessageContent(rawContent);
+                              
+                              return (
+                                <div key={msg.id} style={{ background: '#05070D', border: '1px solid #1e293b', padding: '14px', borderRadius: '10px', textAlign: 'left' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                                    <div>
+                                      <span style={{ fontSize: '0.84rem', color: '#FFFFFF', fontWeight: 'bold', display: 'block' }}>
+                                        FROM: {actualSender}
+                                      </span>
+                                      <span style={{ fontSize: '0.74rem', color: '#00D2FF', fontFamily: 'monospace' }}>
+                                        TO ALIAS: {actualAlias}
+                                      </span>
+                                    </div>
+                                    <span style={{ fontSize: '0.68rem', color: '#64748B' }}>
+                                      {msg.received_at || msg.created_at || msg.timestamp ? new Date(msg.received_at || msg.created_at || msg.timestamp).toLocaleString() : "Recently"}
                                     </span>
                                   </div>
-                                  <span style={{ fontSize: '0.68rem', color: '#64748B' }}>
-                                    {msg.received_at || msg.created_at || msg.timestamp ? new Date(msg.received_at || msg.created_at || msg.timestamp).toLocaleString() : "Recently"}
-                                  </span>
-                                </div>
 
-                                {msg.subject && (
-                                  <div style={{ fontSize: '0.80rem', color: '#FCD34D', fontWeight: 'bold', marginBottom: '8px' }}>
-                                    SUBJECT: {msg.subject}
+                                  {msg.subject && (
+                                    <div style={{ fontSize: '0.80rem', color: '#FCD34D', fontWeight: 'bold', marginBottom: '8px' }}>
+                                      SUBJECT: {msg.subject}
+                                    </div>
+                                  )}
+
+                                  {/* FULL SPACIOUS & SCROLLABLE EMAIL BODY CONTAINER */}
+                                  <div className="cyber-scrollbar" style={{ 
+                                    background: '#020202', 
+                                    padding: '12px 14px', 
+                                    borderRadius: '8px', 
+                                    border: '1px solid #1e293b', 
+                                    fontSize: '0.82rem', 
+                                    color: '#E2E8F0', 
+                                    marginBottom: '10px', 
+                                    whiteSpace: 'pre-wrap', 
+                                    minHeight: '80px', 
+                                    maxHeight: '400px', 
+                                    overflowY: 'auto', 
+                                    lineHeight: '1.55', 
+                                    wordBreak: 'break-word' 
+                                  }}>
+                                    {bodyText}
                                   </div>
-                                )}
 
-                                {/* FULL SPACIOUS & SCROLLABLE EMAIL BODY CONTAINER */}
-                                <div className="cyber-scrollbar" style={{ 
-                                  background: '#020202', 
-                                  padding: '12px 14px', 
-                                  borderRadius: '8px', 
-                                  border: '1px solid #1e293b', 
-                                  fontSize: '0.82rem', 
-                                  color: '#E2E8F0', 
-                                  marginBottom: '10px', 
-                                  whiteSpace: 'pre-wrap', 
-                                  minHeight: '80px', 
-                                  maxHeight: '400px', 
-                                  overflowY: 'auto', 
-                                  lineHeight: '1.55', 
-                                  wordBreak: 'break-word' 
-                                }}>
-                                  {bodyText}
+                                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                    <button
+                                      type="button"
+                                      className="reset-btn"
+                                      style={{ padding: '3px 10px', fontSize: '0.70rem', color: '#10B981', borderColor: '#10B981', fontWeight: 'bold' }}
+                                      onClick={() => {
+                                        setReplyAliasEmail(actualAlias !== "Alias Node" ? actualAlias : (emails[0] ? emails[0].content : ""));
+                                        setReplyRecipientEmail(actualSender !== "Unknown Sender" ? actualSender : "");
+                                        setReplySubject(msg.subject ? (msg.subject.startsWith("Re:") ? msg.subject : `Re: ${msg.subject}`) : "Re: Your Message");
+                                        setAliasReplyBody("");
+                                        setShowAliasReplyModal(true);
+                                      }}
+                                    >
+                                      💬 REPLY VIA ALIAS
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="reset-btn"
+                                      style={{ padding: '3px 10px', fontSize: '0.70rem', color: '#EF4444', borderColor: '#EF4444', fontWeight: 'bold' }}
+                                      onClick={(e) => handleDeleteAliasMessage(msg.id, e)}
+                                    >
+                                      🗑️ DELETE
+                                    </button>
+                                  </div>
                                 </div>
-
-                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                                  <button
-                                    type="button"
-                                    className="reset-btn"
-                                    style={{ padding: '3px 10px', fontSize: '0.70rem', color: '#10B981', borderColor: '#10B981', fontWeight: 'bold' }}
-                                    onClick={() => {
-                                      setReplyAliasEmail(actualAlias !== "Alias Node" ? actualAlias : (emails[0] ? emails[0].content : ""));
-                                      setReplyRecipientEmail(actualSender !== "Unknown Sender" ? actualSender : "");
-                                      setReplySubject(msg.subject ? (msg.subject.startsWith("Re:") ? msg.subject : `Re: ${msg.subject}`) : "Re: Your Message");
-                                      setAliasReplyBody("");
-                                      setShowAliasReplyModal(true);
-                                    }}
-                                  >
-                                    💬 REPLY VIA ALIAS
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="reset-btn"
-                                    style={{ padding: '3px 10px', fontSize: '0.70rem', color: '#EF4444', borderColor: '#EF4444', fontWeight: 'bold' }}
-                                    onClick={(e) => handleDeleteAliasMessage(msg.id, e)}
-                                  >
-                                    🗑️ DELETE
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* MOBILE SMS PROTECTION MODULE */}
