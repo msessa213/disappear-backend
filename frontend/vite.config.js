@@ -12,10 +12,10 @@ export default defineConfig({
   },
   plugins: [react()],
   server: {
-    host: '0.0.0.0', // Required for Docker to map the port to your browser
-    port: 3000,      // Matches the port in your docker-compose.yml
+    host: '0.0.0.0',
+    port: 3000,
     watch: {
-      usePolling: true, // Ensures changes save instantly inside Docker
+      ignored: ['**/android/**', '**/ios/**', '**/dist/**', '**/.git/**'],
     },
   },
   build: {
