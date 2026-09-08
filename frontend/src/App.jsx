@@ -3956,13 +3956,8 @@ const handleEmergencyBurn = async () => {
                       {(() => {
                         const validAliasMessages = (aliasMessages || []).filter(msg => {
                           if (!msg) return false;
-                          const sender = String(msg.sender_email || msg.sender || "").toLowerCase();
                           const body = String(msg.body_text || msg.body || msg.text || "").toLowerCase();
-                          const id = String(msg.id || "");
-                          if (id.startsWith("msg_fwd_") || id.startsWith("msg_addy_")) return false;
-                          if (sender.includes("inbound forwarded transmission") || sender.includes("inbound sender")) return false;
-                          if (body.includes("encrypted inbound transmission received by alias")) return false;
-                          if (body.includes("inbound message received by alias")) return false;
+                          if (body.includes("inbound message received by alias (total forwarded:")) return false;
                           return true;
                         });
 

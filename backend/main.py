@@ -3692,10 +3692,10 @@ async def sync_addy_activity_background(profile_id: str, profile_email: str, ali
                     current_recs = [r.get("id") for r in a.get("recipients", []) if r.get("id")]
                     if rec_id and not current_recs:
                         try:
-                            await client.patch(
-                                f"https://app.addy.io/api/v1/aliases/{a.get('id')}",
+                            await client.post(
+                                "https://app.addy.io/api/v1/alias-recipients",
                                 headers=headers,
-                                json={"recipient_ids": [rec_id]}
+                                json={"alias_id": a.get("id"), "recipient_ids": [rec_id]}
                             )
                             logger.info(f"Auto-attached verified recipient {rec_id} to alias {a_email}")
                         except Exception as patch_err:
@@ -3958,10 +3958,10 @@ async def generate_alias(request: Request, alias_req: AliasRequest, user_id: Opt
                         created_alias_id = alias_data.get("id")
                         if created_alias_id and recipient_id:
                             try:
-                                await client.patch(
-                                    f"https://app.addy.io/api/v1/aliases/{created_alias_id}",
+                                await client.post(
+                                    "https://app.addy.io/api/v1/alias-recipients",
                                     headers=headers,
-                                    json={"recipient_ids": [recipient_id]}
+                                    json={"alias_id": created_alias_id, "recipient_ids": [recipient_id]}
                                 )
                             except Exception as patch_err:
                                 logger.warning(f"Addy recipient patch notice: {patch_err}")
