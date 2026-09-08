@@ -2084,12 +2084,16 @@ function App() {
     const startPolling = () => {
       if (showShield && !document.hidden) {
         syncDefenseData();
+        fetchAliasMessages();
+        fetchSmsInbox();
         if (!interval) {
           interval = setInterval(() => {
             if (!document.hidden) {
               syncDefenseData();
+              fetchAliasMessages();
+              fetchSmsInbox();
             }
-          }, 10000);
+          }, 8000);
         }
       }
     };
@@ -3952,12 +3956,8 @@ const handleEmergencyBurn = async () => {
                       {(() => {
                         const validAliasMessages = (aliasMessages || []).filter(msg => {
                           if (!msg) return false;
-                          const sender = String(msg.sender_email || msg.sender || "").toLowerCase();
                           const body = String(msg.body_text || msg.body || msg.text || "").toLowerCase();
-                          const id = String(msg.id || "");
-                          if (id.startsWith("msg_addy_")) return false;
-                          if (sender.includes("inbound sender")) return false;
-                          if (body.includes("inbound message received by alias")) return false;
+                          if (body.includes("inbound message received by alias (total forwarded:")) return false;
                           return true;
                         });
 
