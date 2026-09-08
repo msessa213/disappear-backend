@@ -3297,6 +3297,101 @@ def dispatch_alias_forwarding_email(recipient_real_email: str, alias_email: str,
         return False
 
 
+def extract_true_sender_from_payload(data: dict) -> str:
+    """Extracts the true sender email/address from incoming webhook data or email headers.
+    Inspects headers like X-Original-From, Sender, Reply-To, Header-From, and nested header dicts/lists,
+    bypassing generic relay envelope addresses (e.g., addy.io, anonaddy.me).
+    """
+    if not isinstance(data, dict):
+        return "unknown@sender.com"
+
+    headers = data.get("headers") or data.get("header") or {}
+    parsed_headers = {}
+
+    if isinstance(headers, dict):
+        parsed_headers = {str(k).lower().replace("-", "_"): str(v) for k, v in headers.items()}
+    elif isinstance(headers, list):
+        for h in headers:
+            if isinstance(h, dict) and "name" in h and "value" in h:
+                parsed_headers[str(h["name"]).lower().replace("-", "_")] = str(h["value"])
+            elif isinstance(h, str) and ":" in h:
+                parts = h.split(":", 1)
+                parsed_headers[parts[0].strip().lower().replace("-", "_")] = parts[1].strip()
+    elif isinstance(headers, str):
+        for line in headers.splitlines():
+            if ":" in line:
+                parts = line.split(":", 1)
+                parsed_headers[parts[0].strip().lower().replace("-", "_")] = parts[1].strip()
+
+    # Priority order of header/field lookups for the true sender
+    candidates = [
+        data.get("x_original_from"),
+        data.get("x-original-from"),
+        data.get("X-Original-From"),
+        parsed_headers.get("x_original_from"),
+        data.get("reply_to"),
+        data.get("reply-to"),
+        parsed_headers.get("reply_to"),
+        parsed_headers.get("sender"),
+        data.get("sender_name") or data.get("from_name"),
+        data.get("header_from"),
+        parsed_headers.get("from"),
+        data.get("sender_email"),
+        data.get("from_email"),
+        data.get("sender"),
+        data.get("from"),
+        data.get("envelope", {}).get("from") if isinstance(data.get("envelope"), dict) else None,
+    ]
+
+    relay_domains = ["addy.io", "anonaddy.me", "anonaddy.com"]
+
+    # First pass: return candidate if it contains an email from a non-relay domain
+    for cand in candidates:
+        if cand:
+            cand_str = str(cand).strip()
+            match = re.search(r'[\w\.-]+@[\w\.-]+', cand_str)
+            if match:
+                email_addr = match.group(0).lower()
+                domain = email_addr.split("@")[-1]
+                if domain not in relay_domains:
+                    return cand_str
+            elif "@" not in cand_str and len(cand_str) > 2 and cand_str.lower() != "unknown sender":
+                return cand_str
+
+    # Second pass: fallback to any non-empty candidate string
+    for cand in candidates:
+        if cand and str(cand).strip().lower() != "unknown sender":
+            return str(cand).strip()
+
+    return "unknown@sender.com"
+
+
+def strip_email_relay_wrapper(body_text: str) -> str:
+    """Strips out relay notification wrappers (e.g. 'Encrypted inbound transmission received by alias...', Addy banners)
+    to extract the actual inner message body/payload.
+    """
+    if not body_text:
+        return ""
+    text = str(body_text).strip()
+
+    wrapper_patterns = [
+        r'^Encrypted inbound transmission received by alias [^\n]+',
+        r'Encrypted inbound transmission received by alias [^\n]+',
+        r'This message was forwarded to your encrypted alias [^\n]+',
+        r'This email was sent to your alias [^\n]+',
+        r'You received this email because it was sent to an alias created on [^\n]+',
+        r'---+\s*Forwarded message\s*---+',
+        r'---------- Forwarded message ---------',
+        r'\[Addy\.io Relay Notice\]:[^\n]+',
+        r'<!--\s*addy-banner\s*-->[\s\S]*?<!--\s*/addy-banner\s*-->',
+    ]
+
+    for pattern in wrapper_patterns:
+        text = re.sub(pattern, '', text, flags=re.IGNORECASE).strip()
+
+    return text
+
+
 @app.post("/api/email/inbound")
 @app.post("/v1/email/inbound")
 async def handle_inbound_email_webhook(request: Request, bg_tasks: BackgroundTasks, db: Session = Depends(get_db)):
@@ -3311,9 +3406,10 @@ async def handle_inbound_email_webhook(request: Request, bg_tasks: BackgroundTas
             data = {k: v for k, v in form.items()}
         
         recipient_raw = str(data.get("recipient") or data.get("to") or data.get("envelope", {}).get("to") or "").strip().lower()
-        sender_raw = str(data.get("sender") or data.get("from") or data.get("envelope", {}).get("from") or "unknown@sender.com").strip().lower()
+        sender_raw = extract_true_sender_from_payload(data)
         subject = str(data.get("subject") or "Encrypted Alias Transmission").strip()
-        body_text = str(data.get("text") or data.get("body_text") or data.get("plain") or "").strip()
+        raw_body_text = str(data.get("text") or data.get("body_text") or data.get("plain") or "").strip()
+        body_text = strip_email_relay_wrapper(raw_body_text)
         body_html = str(data.get("html") or data.get("body_html") or "").strip()
 
         match = re.search(r'[\w\.-]+@[\w\.-]+', recipient_raw)
@@ -3409,7 +3505,12 @@ async def sync_addy_activity_background(profile_id: str, profile_email: str, ali
                         if last_fwd and fwd_count > 0 and (not user_alias_set or email_addr in user_alias_set):
                             clean_time = last_fwd.replace(" ", "_").replace(":", "-")
                             msg_id = f"msg_addy_{alias_id}_{clean_time}"
-                            existing = db.query(DBAliasMessage).filter(DBAliasMessage.id == msg_id).first()
+                            existing = db.query(DBAliasMessage).filter(
+                                or_(
+                                    DBAliasMessage.id == msg_id,
+                                    DBAliasMessage.alias_email == email_addr
+                                )
+                            ).first()
                             if not existing:
                                 try:
                                     dt = datetime.strptime(last_fwd, "%Y-%m-%d %H:%M:%S")
@@ -3419,10 +3520,10 @@ async def sync_addy_activity_background(profile_id: str, profile_email: str, ali
                                     id=msg_id,
                                     user_id=profile_id,
                                     alias_email=email_addr,
-                                    sender_email="Inbound Sender (via Addy Relay)",
+                                    sender_email="Inbound Sender",
                                     recipient_email=profile_email,
                                     subject=f"Inbound Transmission ({email_addr})",
-                                    body_text=f"Encrypted inbound transmission received by alias {email_addr} (Total Forwarded: {fwd_count}). Forwarded securely to {profile_email}.",
+                                    body_text=f"Inbound message received by alias {email_addr} (Forwarded to {profile_email}).",
                                     direction="INBOUND",
                                     forwarded=True,
                                     created_at=dt

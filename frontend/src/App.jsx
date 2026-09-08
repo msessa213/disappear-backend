@@ -1653,10 +1653,29 @@ function App() {
         .trim();
     }
 
+    // Strip relay notification wrappers and system placeholder text
+    parsedBody = parsedBody
+      .replace(/^Encrypted inbound transmission received by alias [^\n]+/gi, '')
+      .replace(/Encrypted inbound transmission received by alias [^\n]+/gi, '')
+      .replace(/This message was forwarded to your encrypted alias [^\n]+/gi, '')
+      .replace(/This email was sent to your alias [^\n]+/gi, '')
+      .replace(/You received this email because it was sent to an alias created on [^\n]+/gi, '')
+      .replace(/---\s*Forwarded message\s*---/gi, '')
+      .replace(/---------- Forwarded message ---------/gi, '')
+      .replace(/\[Addy\.io Relay Notice\]:[^\n]+/gi, '')
+      .replace(/<!--\s*addy-banner\s*-->[\s\S]*?<!--\s*\/addy-banner\s*-->/gi, '')
+      .trim();
+
     // Always guarantee that body text falls back to originalText if cleaning produced empty string
-    const finalBodyText = (parsedBody && parsedBody.trim()) 
+    const cleanedText = (parsedBody && parsedBody.trim()) 
       ? parsedBody.trim() 
       : (originalText && originalText.trim() ? originalText.trim() : "No email message body text recorded.");
+
+    // Final pass strip if originalText contained the relay wrapper header
+    const finalBodyText = cleanedText
+      .replace(/^Encrypted inbound transmission received by alias [^\n]+/gi, '')
+      .replace(/Encrypted inbound transmission received by alias [^\n]+/gi, '')
+      .trim() || "No email message body text recorded.";
 
     return {
       bodyText: finalBodyText
