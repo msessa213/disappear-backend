@@ -32,10 +32,14 @@ const isCapacitorNative = typeof window !== 'undefined' && (
   window.location.protocol === 'ionic:'
 );
 
-// Only use LOCAL_API if explicitly running on local Vite dev server (port 5173 on non-Capacitor web)
-const isExplicitLocalDev = !isCapacitorNative && typeof window !== 'undefined' && 
-  (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') && 
-  window.location.port === '5173';
+// Dynamic local dev detection across all ports (3000, 5173, 8000) and local hostnames
+const isExplicitLocalDev = !isCapacitorNative && typeof window !== 'undefined' && (
+  window.location.hostname === '127.0.0.1' || 
+  window.location.hostname === 'localhost' || 
+  window.location.hostname.startsWith('192.168.') || 
+  window.location.hostname.startsWith('10.') || 
+  window.location.hostname.endsWith('.local')
+);
 
 const API_BASE_URL = isCapacitorNative 
   ? PROD_API 
@@ -664,10 +668,10 @@ function App() {
       
       setSessionItem("disappear_last_active", Date.now().toString());
       
-      if (activeUserId === "undefined") {
+      if (activeUserId === "undefined" || activeUserId === "null") {
           removeSessionItem("disappear_user_id");
           removeSessionItem("disappear_session");
-          window.location.reload();
+          handleSecureLogout();
           return;
       }
       
