@@ -3389,13 +3389,23 @@ def extract_true_sender_from_payload(data: dict) -> str:
         unwrapped.get("envelope", {}).get("from") if isinstance(unwrapped.get("envelope"), dict) else None,
     ]
 
-    relay_domains = ["addy.io", "anonaddy.me", "anonaddy.com"]
+    recipient_raw = str(
+        unwrapped.get("recipient") or 
+        unwrapped.get("to") or 
+        unwrapped.get("alias_email") or 
+        unwrapped.get("alias") or 
+        unwrapped.get("envelope", {}).get("to") or ""
+    ).strip().lower()
+    match_recip = re.search(r'[\w\.-]+@[\w\.-]+', recipient_raw)
+    recip_email = match_recip.group(0).lower() if match_recip else recipient_raw
 
     for cand in candidates:
         if cand:
             cand_str = str(cand).strip()
             lower = cand_str.lower()
             if not cand_str or lower in ["unknown sender", "inbound sender", "inbound sender (via addy relay)", "unknown@sender.com"]:
+                continue
+            if recip_email and recip_email in lower:
                 continue
             match = re.search(r'[\w\.-]+@[\w\.-]+', cand_str)
             if match:

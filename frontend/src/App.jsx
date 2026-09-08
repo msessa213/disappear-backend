@@ -1489,16 +1489,20 @@ function App() {
   const extractSender = (msg) => {
     if (!msg) return "Unknown Sender";
 
+    const aliasEmail = String(msg.alias_email || msg.to_email || msg.to || msg.recipient || "").trim().toLowerCase();
+
     const isGeneric = (val) => {
       if (!val || typeof val !== 'string') return true;
       const lower = val.trim().toLowerCase();
-      return (
-        lower === 'unknown sender' ||
-        lower === 'inbound sender' ||
-        lower.includes('inbound sender (via addy relay)') ||
-        lower.includes('inbound sender') ||
-        lower === 'unknown@sender.com'
-      );
+      if (!lower || lower === 'unknown sender' || lower === 'inbound sender' || lower === 'unknown@sender.com') return true;
+      if (lower.includes('inbound sender') || lower.includes('via addy relay')) return true;
+      
+      if (aliasEmail) {
+        const match = lower.match(/[\w\.-]+@[\w\.-]+/);
+        if (match && match[0] === aliasEmail) return true;
+        if (lower === aliasEmail) return true;
+      }
+      return false;
     };
 
     const directProps = [
@@ -1562,12 +1566,13 @@ function App() {
     }
 
     for (const prop of directProps) {
-      if (typeof prop === 'string' && prop.trim() && prop.trim().toLowerCase() !== 'unknown sender') {
-        return prop.trim();
+      if (typeof prop === 'string' && prop.trim()) {
+        const str = prop.trim();
+        if (!isGeneric(str)) return str;
       }
     }
 
-    return "Unknown Sender";
+    return "Inbound Sender (Encrypted Relay)";
   };
 
   const extractEmailBodyText = (msg) => {
