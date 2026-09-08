@@ -3643,11 +3643,11 @@ async def handle_inbound_email_webhook(request: Request, bg_tasks: BackgroundTas
 _addy_sync_timestamps = {}
 
 async def sync_addy_activity_background(profile_id: str, profile_email: str, alias_emails: list):
-    """Background task to pull Addy alias activity asynchronously and ensure verified recipients are attached."""
+    """Background task to pull Addy alias activity asynchronously, ensure recipients are attached, and log forward events."""
     import time
     now_ts = time.time()
     last_sync = _addy_sync_timestamps.get(profile_id, 0)
-    if now_ts - last_sync < 20.0:
+    if now_ts - last_sync < 15.0:
         return
     _addy_sync_timestamps[profile_id] = now_ts
 
@@ -3660,6 +3660,7 @@ async def sync_addy_activity_background(profile_id: str, profile_email: str, ali
 
     try:
         import httpx
+        from datetime import datetime
         headers = {
             "Authorization": f"Bearer {raw_key.strip()}",
             "Accept": "application/json",
@@ -3685,21 +3686,53 @@ async def sync_addy_activity_background(profile_id: str, profile_email: str, ali
                 addy_aliases = res.json().get("data", [])
                 target_aliases = [e.lower() for e in (alias_emails or []) if e]
                 
-                for a in addy_aliases:
-                    a_email = a.get("email", "").lower()
-                    if target_aliases and a_email not in target_aliases:
-                        continue
-                    current_recs = [r.get("id") for r in a.get("recipients", []) if r.get("id")]
-                    if rec_id and not current_recs:
-                        try:
-                            await client.post(
-                                "https://app.addy.io/api/v1/alias-recipients",
-                                headers=headers,
-                                json={"alias_id": a.get("id"), "recipient_ids": [rec_id]}
-                            )
-                            logger.info(f"Auto-attached verified recipient {rec_id} to alias {a_email}")
-                        except Exception as patch_err:
-                            logger.warning(f"Failed auto-attaching recipient to {a_email}: {patch_err}")
+                db_bg = SessionLocal()
+                try:
+                    for a in addy_aliases:
+                        a_email = a.get("email", "").lower()
+                        if target_aliases and a_email not in target_aliases:
+                            continue
+                        current_recs = [r.get("id") for r in a.get("recipients", []) if r.get("id")]
+                        if rec_id and not current_recs:
+                            try:
+                                await client.post(
+                                    "https://app.addy.io/api/v1/alias-recipients",
+                                    headers=headers,
+                                    json={"alias_id": a.get("id"), "recipient_ids": [rec_id]}
+                                )
+                                logger.info(f"Auto-attached verified recipient {rec_id} to alias {a_email}")
+                            except Exception as patch_err:
+                                logger.warning(f"Failed auto-attaching recipient to {a_email}: {patch_err}")
+
+                        # Check forwarding activity and sync message log
+                        fwd_count = a.get("emails_forwarded", 0)
+                        last_fwd = a.get("last_forwarded")
+                        if fwd_count > 0 and last_fwd:
+                            try:
+                                dt = datetime.strptime(last_fwd, "%Y-%m-%d %H:%M:%S")
+                            except Exception:
+                                dt = datetime.utcnow()
+
+                            fwd_msg_id = f"msg_fwd_{a.get('id')[:8]}_{int(dt.timestamp())}"
+                            existing = db_bg.query(DBAliasMessage).filter(DBAliasMessage.id == fwd_msg_id).first()
+                            if not existing:
+                                new_msg = DBAliasMessage(
+                                    id=fwd_msg_id,
+                                    user_id=profile_id,
+                                    alias_email=a_email,
+                                    sender_email="Addy.io Secure Relay",
+                                    recipient_email=profile_email or a_email,
+                                    subject=f"🛡️ Inbound Transmission Forwarded ({a_email})",
+                                    body_text=f"Encrypted inbound email transmission received on alias {a_email} and forwarded securely to your destination inbox ({profile_email or 'recipient'}).",
+                                    body_html=f"<div style='color: #e2e8f0;'>Encrypted inbound email transmission received on alias <strong>{a_email}</strong> and forwarded securely to your destination inbox (<strong>{profile_email or 'recipient'}</strong>).</div>",
+                                    direction="INBOUND",
+                                    forwarded=True,
+                                    created_at=dt
+                                )
+                                db_bg.add(new_msg)
+                                db_bg.commit()
+                finally:
+                    db_bg.close()
 
                 logger.info(f"Addy API recipient sync successful for user {profile_id}")
     except Exception as ex:
@@ -3730,19 +3763,17 @@ async def get_alias_messages(bg_tasks: BackgroundTasks, user_id: Optional[str] =
         user_aliases = db.query(DBAlias).filter(DBAlias.user_id.in_(query_user_ids)).all()
         alias_emails = [a.content.lower() for a in user_aliases if a.content and "@" in a.content]
 
-        # Purge synthetic placeholder rows from DBAliasMessage table
+        # Purge legacy synthetic placeholder rows from DBAliasMessage table
         try:
             db.query(DBAliasMessage).filter(
-                or_(
-                    DBAliasMessage.id.like("msg_fwd_%"),
-                    DBAliasMessage.id.like("msg_addy_%"),
-                    DBAliasMessage.sender_email.ilike("%Inbound Forwarded Transmission%"),
+                and_(
                     DBAliasMessage.sender_email.ilike("%Inbound Sender%"),
-                    DBAliasMessage.body_text.ilike("%Encrypted inbound transmission received by alias%"),
-                    DBAliasMessage.body_text.ilike("%Inbound message received by alias%")
+                    DBAliasMessage.body_text.ilike("%Inbound message received by alias (Total Forwarded:%")
                 )
             ).delete(synchronize_session=False)
             db.commit()
+        except Exception as p_err:
+            db.rollback()
         except Exception as p_err:
             db.rollback()
         except Exception as p_err:

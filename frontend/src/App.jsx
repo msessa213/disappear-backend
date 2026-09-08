@@ -1523,8 +1523,10 @@ function App() {
     ];
 
     for (const prop of directProps) {
-      if (typeof prop === 'string' && !isGeneric(prop)) {
-        return prop.trim();
+      if (typeof prop === 'string' && prop.trim()) {
+        const str = prop.trim();
+        if (!isGeneric(str)) return str;
+        if (str.includes("Addy.io") || str.includes("Relay")) return str;
       }
     }
 
@@ -1547,8 +1549,10 @@ function App() {
           obj.reply_to
         ];
         for (const prop of nestedProps) {
-          if (typeof prop === 'string' && !isGeneric(prop)) {
-            return prop.trim();
+          if (typeof prop === 'string' && prop.trim()) {
+            const str = prop.trim();
+            if (!isGeneric(str)) return str;
+            if (str.includes("Addy.io") || str.includes("Relay")) return str;
           }
         }
       }
@@ -1565,14 +1569,8 @@ function App() {
       }
     }
 
-    for (const prop of directProps) {
-      if (typeof prop === 'string' && prop.trim()) {
-        const str = prop.trim();
-        if (!isGeneric(str)) return str;
-      }
-    }
-
-    return "Inbound Sender (Encrypted Relay)";
+    if (msg.sender_email && msg.sender_email.trim()) return msg.sender_email.trim();
+    return "Encrypted Inbound Sender";
   };
 
   const extractEmailBodyText = (msg) => {
