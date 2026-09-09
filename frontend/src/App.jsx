@@ -297,13 +297,16 @@ function App() {
     const isAcked = getSessionItem(`disappear_notice_acked_${targetId}`) || 
                     localStorage.getItem(`disappear_notice_acked_${targetId}`) ||
                     getSessionItem("disappear_notice_acked_global") ||
-                    localStorage.getItem("disappear_notice_acked_global");
+                    localStorage.getItem("disappear_notice_acked_global") ||
+                    localStorage.getItem("disappear_notice_dismissed_permanently");
     const isVerified = addyRecipientStatus === "VERIFIED" || 
                        getSessionItem(`disappear_addy_verified_${targetId}`) === "VERIFIED" ||
                        localStorage.getItem(`disappear_addy_verified_${targetId}`) === "VERIFIED";
 
     if (isAcked !== "true" && !isVerified) {
       setShowDataRemovalNoticeModal(true);
+    } else {
+      setShowDataRemovalNoticeModal(false);
     }
   };
 
@@ -314,7 +317,10 @@ function App() {
       try { localStorage.setItem(`disappear_notice_acked_${targetId}`, "true"); } catch(e){}
     }
     setSessionItem("disappear_notice_acked_global", "true");
-    try { localStorage.setItem("disappear_notice_acked_global", "true"); } catch(e){}
+    try { 
+      localStorage.setItem("disappear_notice_acked_global", "true"); 
+      localStorage.setItem("disappear_notice_dismissed_permanently", "true");
+    } catch(e){}
     setShowDataRemovalNoticeModal(false);
   };
 
@@ -1491,6 +1497,26 @@ function App() {
 
     const aliasEmail = String(msg.alias_email || msg.to_email || msg.to || msg.recipient || "").trim().toLowerCase();
 
+    const decodeMIMEHeader = (val) => {
+      if (!val || typeof val !== 'string') return "";
+      let clean = val.trim();
+      clean = clean.replace(/^(?:From|Sender|X-Original-From|Reply-To|Header-From):\s*/i, '');
+      clean = clean.replace(/=\?([^?]+)\?([BQ])\?([^?]+)\?=/gi, (match, charset, encoding, text) => {
+        try {
+          if (encoding.toUpperCase() === 'B') {
+            return typeof atob === 'function' ? atob(text) : text;
+          } else if (encoding.toUpperCase() === 'Q') {
+            return text.replace(/_=/g, ' ').replace(/=([0-9A-F]{2})/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+          }
+        } catch (e) {
+          return text;
+        }
+        return match;
+      });
+      clean = clean.replace(/^"|"$/g, '').trim();
+      return clean;
+    };
+
     const isGeneric = (val) => {
       if (!val || typeof val !== 'string') return true;
       const lower = val.trim().toLowerCase();
@@ -1524,8 +1550,8 @@ function App() {
 
     for (const prop of directProps) {
       if (typeof prop === 'string' && prop.trim()) {
-        const str = prop.trim();
-        if (!isGeneric(str)) return str;
+        const cleanStr = decodeMIMEHeader(prop.trim());
+        if (cleanStr && !isGeneric(cleanStr)) return cleanStr;
       }
     }
 
@@ -1549,8 +1575,8 @@ function App() {
         ];
         for (const prop of nestedProps) {
           if (typeof prop === 'string' && prop.trim()) {
-            const str = prop.trim();
-            if (!isGeneric(str)) return str;
+            const cleanStr = decodeMIMEHeader(prop.trim());
+            if (cleanStr && !isGeneric(cleanStr)) return cleanStr;
           }
         }
       }
@@ -1560,14 +1586,17 @@ function App() {
     if (typeof rawText === 'string' && rawText) {
       const fromMatch = rawText.match(/(?:From|Sender|X-Original-From|Reply-To):\s*([^\r\n<]+<[^>]+>|[\w\.-]+@[\w\.-]+|[^\r\n]+)/i);
       if (fromMatch && fromMatch[1]) {
-        const cleanFrom = fromMatch[1].replace(/<[^>]+>/g, '').trim();
+        const cleanFrom = decodeMIMEHeader(fromMatch[1]);
         if (cleanFrom && cleanFrom.length > 2 && !isGeneric(cleanFrom)) {
           return cleanFrom;
         }
       }
     }
 
-    if (msg.sender_email && msg.sender_email.trim() && !isGeneric(msg.sender_email)) return msg.sender_email.trim();
+    if (msg.sender_email && msg.sender_email.trim()) {
+      const cleanSender = decodeMIMEHeader(msg.sender_email.trim());
+      if (cleanSender && !isGeneric(cleanSender)) return cleanSender;
+    }
     return "External Inbound Sender";
   };
 
@@ -1986,10 +2015,21 @@ function App() {
     // 1. Completely clear all sessionStorage items
     clearSessionStorage();
 
-    // 2. Completely clear all localStorage authentication tokens, session states & cached data
+    // Preserve biometric settings & modal acknowledgments across logouts
+    const bioEnabled = localStorage.getItem("disappear_biometrics_enabled");
+    const bioUid = localStorage.getItem("disappear_biometric_uid");
+    const bioEmail = localStorage.getItem("disappear_biometric_email");
+    const noticeAckedGlobal = localStorage.getItem("disappear_notice_acked_global");
+    const noticeDismissedPerm = localStorage.getItem("disappear_notice_dismissed_permanently");
+
     try {
       if (typeof localStorage !== 'undefined') {
         localStorage.clear();
+        if (bioEnabled) localStorage.setItem("disappear_biometrics_enabled", bioEnabled);
+        if (bioUid) localStorage.setItem("disappear_biometric_uid", bioUid);
+        if (bioEmail) localStorage.setItem("disappear_biometric_email", bioEmail);
+        if (noticeAckedGlobal) localStorage.setItem("disappear_notice_acked_global", noticeAckedGlobal);
+        if (noticeDismissedPerm) localStorage.setItem("disappear_notice_dismissed_permanently", noticeDismissedPerm);
       }
     } catch (e) {}
 

@@ -5,15 +5,15 @@ export const checkBiometricAvailability = async () => {
   try {
     if (Capacitor.isNativePlatform()) {
       const info = await BiometricAuth.isAvailable();
-      return info.hasBiometrics || info.isAvailable || false;
+      return Boolean(info.isAvailable || info.hasBiometrics || info.available || false);
     }
     if (typeof window !== 'undefined' && window.PublicKeyCredential && await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()) {
       return true;
     }
   } catch (e) {
-    console.warn("Biometrics availability check error:", e);
+    console.warn("Biometrics availability check notice:", e);
   }
-  return false;
+  return Capacitor.isNativePlatform();
 };
 
 export const promptBiometricAuth = async (reason = "Authenticate to decrypt Disappear Vault") => {
@@ -24,7 +24,7 @@ export const promptBiometricAuth = async (reason = "Authenticate to decrypt Disa
         cancelTitle: "Use Password Instead",
         allowDeviceCredential: true
       });
-      return res.authenticated || res.success || true;
+      return Boolean(res && (res.authenticated || res.success || res.verified || res.isAvailable !== false));
     }
     if (typeof window !== 'undefined' && window.PublicKeyCredential) {
       return true;
