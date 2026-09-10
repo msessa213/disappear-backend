@@ -289,6 +289,7 @@ try:
             try:
                 conn.execute(text("SET default_transaction_read_only = off;"))
                 conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS addy_verified BOOLEAN DEFAULT FALSE;"))
+                conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS notice_acknowledged BOOLEAN DEFAULT FALSE;"))
             except Exception:
                 pass
     Base.metadata.create_all(bind=engine)
@@ -297,6 +298,10 @@ try:
             if engine.dialect.name != "postgresql":
                 try:
                     conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN addy_verified BOOLEAN DEFAULT 0;"))
+                except Exception:
+                    pass
+                try:
+                    conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN notice_acknowledged BOOLEAN DEFAULT 0;"))
                 except Exception:
                     pass
     except Exception:
@@ -810,6 +815,10 @@ class CreditRefillRequest(BaseModel):
     pack_type: Optional[str] = "250_credits"
 
 
+class NoticeAckRequest(BaseModel):
+    user_id: str
+
+
 class RegistrationRequest(BaseModel):
     first_name: str
     middle_name: Optional[str] = ""
@@ -960,7 +969,8 @@ async def login_agent(request: Request, login_req: LoginRequest, db: Session = D
         "first_name": profile.first_name or "Agent",
         "email": profile.email,
         "addy_verified": bool(getattr(profile, 'addy_verified', False)),
-        "addy_status": "VERIFIED" if bool(getattr(profile, 'addy_verified', False)) else "PENDING_VERIFICATION"
+        "addy_status": "VERIFIED" if bool(getattr(profile, 'addy_verified', False)) else "PENDING_VERIFICATION",
+        "notice_acknowledged": bool(getattr(profile, 'notice_acknowledged', False))
     }
 
 
@@ -2654,7 +2664,8 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
                 "uptime": "99.998%",
                 "active_nodes": total_used,
                 "addy_verified": is_addy_verified,
-                "addy_status": "VERIFIED" if is_addy_verified else "PENDING_VERIFICATION"
+                "addy_status": "VERIFIED" if is_addy_verified else "PENDING_VERIFICATION",
+                "notice_acknowledged": bool(getattr(profile, 'notice_acknowledged', False))
             },
             "recent_audit": logs,
             "map_nodes": map_nodes,
@@ -2725,6 +2736,32 @@ async def get_target_emails(user_id: Optional[str] = Query(None), db: Session = 
         "slots": allowed_extras,
         "used": len(emails)
     }
+
+@app.post("/profile/acknowledge-target-notice")
+async def acknowledge_target_notice(req: NoticeAckRequest, db: Session = Depends(get_db)):
+    """Permanently records that the user has reviewed and acknowledged the Data Removal Target Notice."""
+    user_id = req.user_id.strip() if req.user_id else ""
+    if not user_id:
+        raise HTTPException(status_code=400, detail="USER_ID_REQUIRED")
+    
+    profile = db.query(DBProfile).filter(
+        or_(
+            DBProfile.id == user_id,
+            DBProfile.email.ilike(user_id)
+        )
+    ).first()
+    
+    if profile:
+        profile.notice_acknowledged = True
+        try:
+            db.commit()
+            logger.info(f"Target notice acknowledged and saved to DB for user {profile.id}")
+            return {"status": "SUCCESS", "notice_acknowledged": True}
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Failed to commit notice_acknowledged to DB: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+    return {"status": "NOT_FOUND"}
 
 @app.post("/profile/emails")
 async def add_target_email(req: TargetEmailRequest, user_id: Optional[str] = Query(None), db: Session = Depends(get_db)):

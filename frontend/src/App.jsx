@@ -291,19 +291,23 @@ function App() {
     }, 1200);
   };
 
-  const checkAndShowNoticeModal = (uid) => {
+  const checkAndShowNoticeModal = (uid, profileData = null) => {
     const targetId = uid || currentUserId || getSessionItem("disappear_user_id") || getSessionItem("disappear_user_email");
     if (!targetId) return;
-    const isAcked = getSessionItem(`disappear_notice_acked_${targetId}`) || 
-                    localStorage.getItem(`disappear_notice_acked_${targetId}`) ||
-                    getSessionItem("disappear_notice_acked_global") ||
-                    localStorage.getItem("disappear_notice_acked_global") ||
-                    localStorage.getItem("disappear_notice_dismissed_permanently");
-    const isVerified = addyRecipientStatus === "VERIFIED" || 
+
+    const isAcked = (profileData && Boolean(profileData.notice_acknowledged)) ||
+                    getSessionItem(`disappear_notice_acked_${targetId}`) === "true" || 
+                    localStorage.getItem(`disappear_notice_acked_${targetId}`) === "true" ||
+                    getSessionItem("disappear_notice_acked_global") === "true" ||
+                    localStorage.getItem("disappear_notice_acked_global") === "true" ||
+                    localStorage.getItem("disappear_notice_dismissed_permanently") === "true";
+
+    const isVerified = (profileData && Boolean(profileData.addy_verified || profileData.addy_status === "VERIFIED")) ||
+                       addyRecipientStatus === "VERIFIED" || 
                        getSessionItem(`disappear_addy_verified_${targetId}`) === "VERIFIED" ||
                        localStorage.getItem(`disappear_addy_verified_${targetId}`) === "VERIFIED";
 
-    if (isAcked !== "true" && !isVerified) {
+    if (!isAcked && !isVerified) {
       setShowDataRemovalNoticeModal(true);
     } else {
       setShowDataRemovalNoticeModal(false);
@@ -315,6 +319,12 @@ function App() {
     if (targetId) {
       setSessionItem(`disappear_notice_acked_${targetId}`, "true");
       try { localStorage.setItem(`disappear_notice_acked_${targetId}`, "true"); } catch(e){}
+      // Persist acknowledgment to PostgreSQL/SQLite database
+      secureRequest(`${API_BASE_URL}/profile/acknowledge-target-notice`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: targetId })
+      }).catch(err => console.warn("Notice ack DB persist notice:", err));
     }
     setSessionItem("disappear_notice_acked_global", "true");
     try { 
@@ -725,9 +735,25 @@ function App() {
           }
           if (data.profile) {
               const isVerified = Boolean(data.profile.addy_verified || data.profile.addy_status === "VERIFIED");
+              const isAcked = Boolean(data.profile.notice_acknowledged);
               setAddyRecipientStatus(isVerified ? "VERIFIED" : "PENDING_VERIFICATION");
               if (activeUserId) {
                   setSessionItem(`disappear_addy_verified_${activeUserId}`, isVerified ? "VERIFIED" : "PENDING_VERIFICATION");
+                  if (isVerified) {
+                      try { localStorage.setItem(`disappear_addy_verified_${activeUserId}`, "VERIFIED"); } catch(e){}
+                  }
+                  if (isAcked) {
+                      setSessionItem(`disappear_notice_acked_${activeUserId}`, "true");
+                      setSessionItem("disappear_notice_acked_global", "true");
+                      try { 
+                          localStorage.setItem(`disappear_notice_acked_${activeUserId}`, "true"); 
+                          localStorage.setItem("disappear_notice_acked_global", "true");
+                          localStorage.setItem("disappear_notice_dismissed_permanently", "true");
+                      } catch(e){}
+                  }
+              }
+              if (isVerified || isAcked) {
+                  setShowDataRemovalNoticeModal(false);
               }
           }
       }
@@ -2021,6 +2047,9 @@ function App() {
     const bioEmail = localStorage.getItem("disappear_biometric_email");
     const noticeAckedGlobal = localStorage.getItem("disappear_notice_acked_global");
     const noticeDismissedPerm = localStorage.getItem("disappear_notice_dismissed_permanently");
+    const activeUserId = currentUserId || getSessionItem("disappear_user_id");
+    const userNoticeAcked = activeUserId ? localStorage.getItem(`disappear_notice_acked_${activeUserId}`) : null;
+    const userAddyVerified = activeUserId ? localStorage.getItem(`disappear_addy_verified_${activeUserId}`) : null;
 
     try {
       if (typeof localStorage !== 'undefined') {
@@ -2030,6 +2059,8 @@ function App() {
         if (bioEmail) localStorage.setItem("disappear_biometric_email", bioEmail);
         if (noticeAckedGlobal) localStorage.setItem("disappear_notice_acked_global", noticeAckedGlobal);
         if (noticeDismissedPerm) localStorage.setItem("disappear_notice_dismissed_permanently", noticeDismissedPerm);
+        if (activeUserId && userNoticeAcked) localStorage.setItem(`disappear_notice_acked_${activeUserId}`, userNoticeAcked);
+        if (activeUserId && userAddyVerified) localStorage.setItem(`disappear_addy_verified_${activeUserId}`, userAddyVerified);
       }
     } catch (e) {}
 
@@ -2595,12 +2626,30 @@ const handleEmergencyBurn = async () => {
           setCurrentUserId(data.user_id);
           enableBiometricLogin(data.user_id, data.email || emailToUse);
         }
+        const isVerified = Boolean(data.addy_verified || data.addy_status === "VERIFIED");
+        const isAcked = Boolean(data.notice_acknowledged);
+        if (isVerified) {
+          setAddyRecipientStatus("VERIFIED");
+          if (data.user_id) {
+            setSessionItem(`disappear_addy_verified_${data.user_id}`, "VERIFIED");
+            try { localStorage.setItem(`disappear_addy_verified_${data.user_id}`, "VERIFIED"); } catch(e){}
+          }
+        }
+        if (isAcked && data.user_id) {
+          setSessionItem(`disappear_notice_acked_${data.user_id}`, "true");
+          setSessionItem("disappear_notice_acked_global", "true");
+          try { 
+            localStorage.setItem(`disappear_notice_acked_${data.user_id}`, "true"); 
+            localStorage.setItem("disappear_notice_acked_global", "true");
+            localStorage.setItem("disappear_notice_dismissed_permanently", "true");
+          } catch(e){}
+        }
         window.location.hash = "vault";
         setShow2FA(false); 
         setShowLanding(false);
         setShowShield(true); 
         setProgress(100);
-        checkAndShowNoticeModal(data.user_id);
+        checkAndShowNoticeModal(data.user_id, data);
         triggerToast(`WELCOME BACK, ${(data.first_name || 'OPERATIVE').toUpperCase()}`);
         syncDefenseData(data.user_id);
       } else {
@@ -2636,7 +2685,7 @@ const handleEmergencyBurn = async () => {
           setProgress(100);
           checkAndShowNoticeModal(targetUid);
           triggerToast("BIOMETRICS VERIFIED — VAULT UNLOCKED");
-          syncDefenseData();
+          syncDefenseData(targetUid);
           return;
         }
         if (loginEmail && loginPassword) {
@@ -6187,6 +6236,7 @@ const handleEmergencyBurn = async () => {
             </div>
 
             {/* --- PROMINENT ADDY.IO EMAIL VERIFICATION CALLOUT BANNER --- */}
+            {addyRecipientStatus !== "VERIFIED" && (
             <div style={{
               background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(217, 119, 6, 0.28) 100%)',
               border: '2px solid #F59E0B',
@@ -6232,6 +6282,7 @@ const handleEmergencyBurn = async () => {
                 </button>
               </div>
             </div>
+            )}
 
             <div style={{ padding: '14px', background: 'rgba(0, 210, 255, 0.08)', border: '1px solid rgba(0, 210, 255, 0.3)', borderRadius: '8px', marginBottom: '18px' }}>
               <p style={{ fontSize: '0.88rem', color: '#F8FAFC', margin: 0, lineHeight: '1.5' }}>

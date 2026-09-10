@@ -94,6 +94,7 @@ class DBProfile(Base):
     kyc_status = Column(String, default="PENDING")
     aml_flagged = Column(Boolean, default=False)
     addy_verified = Column(Boolean, default=False)
+    notice_acknowledged = Column(Boolean, default=False)
     daily_spend_limit = Column(Integer, default=2000)
     password_hash = Column(String, nullable=True)
     referral_code = Column(String, unique=True, index=True, nullable=True)
