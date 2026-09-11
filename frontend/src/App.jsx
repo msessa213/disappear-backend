@@ -936,14 +936,25 @@ function App() {
         setReferralData(prev => isStructurallyEqual(prev, data.referrals) ? prev : data.referrals);
       }
 
-      // 10. Map Live Data Broker Scrub Statistics & Registry List
+      // 10. Map Live Data Broker Scrub Statistics & Registry List (Deduplicated & Tombstoned)
       if (Array.isArray(data.data_brokers)) {
-        const processedBrokers = data.data_brokers.map(b => {
-          if (isDeadOrMockBroker(b)) {
-            return { ...b, status: "REMOVED" };
+        const brokerMap = new Map();
+        data.data_brokers.forEach(b => {
+          if (!b || !b.broker_name) return;
+          const key = b.broker_name.trim().toUpperCase();
+          const isMock = isDeadOrMockBroker(b);
+          const effectiveStatus = (isMock || b.status === "REMOVED") ? "REMOVED" : b.status;
+          const existing = brokerMap.get(key);
+          if (!existing) {
+            brokerMap.set(key, { ...b, status: effectiveStatus });
+          } else {
+            // Once REMOVED, permanently keep REMOVED status
+            if (effectiveStatus === "REMOVED" || existing.status === "REMOVED") {
+              brokerMap.set(key, { ...existing, status: "REMOVED" });
+            }
           }
-          return b;
         });
+        const processedBrokers = Array.from(brokerMap.values());
         setDataBrokers(prev => isStructurallyEqual(prev, processedBrokers) ? prev : processedBrokers);
       }
 
@@ -5683,16 +5694,16 @@ const handleEmergencyBurn = async () => {
                             }
 
                             return (
-                              <div key={b.id || bIdx} style={{ background: '#0a0f1d', border: '1px solid #1e293b', borderRadius: '6px', padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ textAlign: 'left' }}>
-                                  <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: '#FFFFFF', letterSpacing: '0.5px', display: 'block' }}>
+                              <div key={b.id || bIdx} style={{ background: '#0a0f1d', border: '1px solid #1e293b', borderRadius: '6px', padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                                <div style={{ textAlign: 'left', minWidth: '160px', flex: 1, wordBreak: 'break-word' }}>
+                                  <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: '#FFFFFF', letterSpacing: '0.5px', display: 'block', wordBreak: 'break-word' }}>
                                     {b.broker_name.toUpperCase()}
                                   </span>
                                   <span style={{ fontSize: '0.68rem', color: '#94A3B8' }}>
                                     {b.removal_type === "AUTOMATED" ? "🤖 AUTOMATED DIRECT OPT-OUT" : "👤 HUMAN ANALYST DISPATCH"}
                                   </span>
                                 </div>
-                                <span style={{ fontSize: '0.68rem', color: badgeColor, background: badgeBg, border: `1px solid ${badgeBorder}`, padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                                <span style={{ fontSize: '0.68rem', color: badgeColor, background: badgeBg, border: `1px solid ${badgeBorder}`, padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>
                                   {statusText}
                                 </span>
                               </div>
@@ -5733,11 +5744,11 @@ const handleEmergencyBurn = async () => {
                         ) : (
                           auditLog.map((item, idx) => (
                             <div key={item.id || idx} style={{ background: '#0a0f1d', border: '1px solid #1e293b', padding: '8px 12px', borderRadius: '6px', textAlign: 'left' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                <span style={{ fontSize: '0.78rem', color: '#00D2FF', fontWeight: 'bold' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '6px', marginBottom: '4px' }}>
+                                <span style={{ fontSize: '0.78rem', color: '#00D2FF', fontWeight: 'bold', wordBreak: 'break-word', flex: 1, minWidth: '180px' }}>
                                   {item.action || item.action_type || "SECURITY_EVENT"}
                                 </span>
-                                <span style={{ fontSize: '0.68rem', color: '#64748B' }}>
+                                <span style={{ fontSize: '0.68rem', color: '#64748B', whiteSpace: 'nowrap', flexShrink: 0 }}>
                                   {item.timestamp ? new Date(item.timestamp).toLocaleString() : "Recently"}
                                 </span>
                               </div>

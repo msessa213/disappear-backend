@@ -43,10 +43,12 @@ def process_scrub_queue():
             task.status = "REMOVED"
             task.timestamp = datetime.utcnow()
             
-            # Add audit entry to the purge log
+            # Add verified audit entry to the purge log strictly linked to user_id
+            ref_code = f"HASH_{task.id:04X}"
             db.add(DBPurgeLog(
-                action_type="AUTOMATED_BROKER_REMOVED",
-                node_id=f"TASK_{task.id}_{task.broker_name}"
+                user_id=task.user_id,
+                action_type=f"DATA_BROKER_REMOVAL_VERIFIED [{task.broker_name}] ({ref_code})",
+                node_id=f"{task.user_id}_WORKER_{task.id}"
             ))
             
             db.commit()

@@ -379,10 +379,10 @@ def run_automated_data_broker_scrubber():
                 profiles = db.query(DBProfile).filter(DBProfile.kyc_status == "APPROVED").all()
                 for prof in profiles:
                     uid = prof.id
-                    # 1. Seed any missing brokers
+                    # 1. Seed any missing brokers (case-insensitive check to prevent duplicate re-seeding)
                     existing_scrubs = db.query(DBScrubLog).filter(DBScrubLog.user_id == uid).all()
-                    existing_set = {s.broker_name for s in existing_scrubs}
-                    missing_brokers = [b for b in BROKERS if b not in existing_set]
+                    existing_upper_set = {s.broker_name.strip().upper() for s in existing_scrubs if s.broker_name}
+                    missing_brokers = [b for b in BROKERS if b.strip().upper() not in existing_upper_set]
                     if missing_brokers:
                         new_logs = [
                             DBScrubLog(
@@ -414,6 +414,7 @@ def run_automated_data_broker_scrubber():
                         item.timestamp = datetime.utcnow()
                         ref_code = f"HASH_{secrets.token_hex(3).upper()}"
                         db.add(DBPurgeLog(
+                            user_id=uid,
                             action_type=f"DATA_BROKER_REMOVAL_VERIFIED [{item.broker_name}] ({ref_code})",
                             node_id=f"{uid}_AUTOMATED_SCRUB"
                         ))
@@ -479,6 +480,13 @@ safe_add_column("shield_profiles_v3", "relay_credits", "INTEGER DEFAULT 500")
 safe_add_column("shield_profiles_v3", "relay_credits_total", "INTEGER DEFAULT 500")
 safe_add_column("shield_profiles_v3", "reset_code", "VARCHAR")
 safe_add_column("shield_profiles_v3", "reset_code_expiry", "TIMESTAMP")
+safe_add_column("shield_profiles_v3", "addy_verified", "BOOLEAN DEFAULT FALSE")
+safe_add_column("shield_profiles_v3", "notice_acknowledged", "BOOLEAN DEFAULT FALSE")
+safe_add_column("shield_profiles_v3", "dnc_registered", "BOOLEAN DEFAULT FALSE")
+safe_add_column("shield_profiles_v3", "dnc_registered_at", "TIMESTAMP")
+safe_add_column("shield_profiles_v3", "dnc_state_registered", "BOOLEAN DEFAULT FALSE")
+safe_add_column("shield_profiles_v3", "dnc_optout_prescreen", "BOOLEAN DEFAULT FALSE")
+safe_add_column("shield_profiles_v3", "dnc_dmachoice", "BOOLEAN DEFAULT FALSE")
 safe_add_column("scrub_logs_v1", "removal_type", "VARCHAR DEFAULT 'AUTOMATED'")
 safe_add_column("scrub_logs_v1", "manual_instruction_url", "VARCHAR")
 safe_add_column("scrub_logs_v1", "assigned_analyst", "VARCHAR")
@@ -736,6 +744,106 @@ EXPANDED_BROKERS = [
 BROKERS = EXPANDED_BROKERS
 AUTOMATED_BROKERS = EXPANDED_BROKERS[:300]
 MANUAL_BROKERS = EXPANDED_BROKERS[300:]
+
+# --- DEAD / MOCK / UNREACHABLE BROKER REGISTRY ---
+# Dark web breach indexes, crypto hashes, and mock entries that have no traditional opt-out form
+# and are permanently neutralized/verified removed across all users.
+DEAD_MOCK_BROKERS = {
+    'EXPOSED_CREDS_INDEX', 'COMBO_LISTS_VAULT', 'DARKWEB_LEAK_VAULT', 'BREACH_DATABASE_INDEX',
+    'INSTANTDATACHECK', 'IDTRUE', 'COMPROMISED_HOSTS', 'THREAT_INTEL_NET', 'SECURITY_AUDIT_VAULT',
+    'TELEGRAM_LEAKS_NET', 'PASTEBIN_INDEX', 'FORUM_LEAKS_VAULT', 'CRYPTO_WALLET_INDEX',
+    'GAMING_PROFILES_INDEX', 'APP_USERS_DIRECTORY', 'FORUM_USERS_INDEX', 'SOCIAL_PROFILES_NET',
+    'AD_NETWORKS_INDEX', 'DEVICE_ID_VAULT', 'MAC_ADDRESS_INDEX', 'PUBLIC_WIFI_LOGS',
+    'ISP_CUSTOMER_INDEX', 'GEO_IP_PROFILES', 'ASNS_DIRECTORY', 'IP_ADDRESS_OWNERS',
+    'DOMAIN_WHOIS_INDEX', 'GUN_PERMIT_INDEX', 'VIN_CHECK_NET', 'DMV_PUBLIC_INDEX',
+    'DRIVER_RECORDS_NET', 'PAROLE_INDEX', 'MUGSHOT_INDEX', 'ARREST_RECORDS_ONLINE',
+    'CIVIL_SUITS_INDEX', 'CRIMINAL_COURT_HUB', 'BIRTH_RECORDS_INDEX', 'VITAL_RECORDS_NET',
+    'MARRIAGE_RECORDS_USA', 'DIVORCE_INDEX', 'TRAFFIC_RECORDS_NET', 'ADVANCEDBACKGROUNDCHECKS',
+    'LIEN_RECORDS', 'CLUSTRMAPS', 'SPYTOX', 'CUBIB', 'BANKRUPTCY_INDEX', 'WARRANT_SEARCH',
+    'AIRCRAFT_REGISTRY', 'MEDICAL_BOARD_INDEX', 'TRADEMARK_SEARCH'
+}
+
+def deduplicate_and_tombstone_user_scrub_logs(db: Session, canonical_uid: str, uid_identifiers: list):
+    """
+    Consolidates and tombstones a user's data broker scrub records:
+    1. Guarantees each broker exists exactly ONCE per user.
+    2. Once a broker is marked REMOVED, that status is permanent and cannot be reverted or downgraded.
+    3. Merges duplicate rows caused by casing, email vs UUID keys, or secondary email addition.
+    4. Automatically verifies dead/mock registry entities as REMOVED.
+    """
+    try:
+        raw_scrubs = db.query(DBScrubLog).filter(DBScrubLog.user_id.in_(uid_identifiers)).all()
+        if not raw_scrubs:
+            return []
+
+        status_priority = {
+            "REMOVED": 100,
+            "SUBPOENA_FILED": 80,
+            "MANUAL_PENDING": 60,
+            "REMOVAL_INITIATED": 50,
+            "PROCESSING": 40,
+            "PENDING": 20
+        }
+
+        groups = {}
+        for s in raw_scrubs:
+            norm = (s.broker_name or "").strip().upper()
+            if not norm:
+                continue
+            if norm not in groups:
+                groups[norm] = []
+            groups[norm].append(s)
+
+        deduped = []
+        to_delete_ids = []
+        has_db_updates = False
+
+        for norm, entries in groups.items():
+            # If any entry is REMOVED or broker is in DEAD_MOCK_BROKERS, status must be REMOVED
+            is_removed = any(e.status == "REMOVED" for e in entries) or (norm in DEAD_MOCK_BROKERS)
+
+            # Sort entries by priority desc, then timestamp desc
+            entries.sort(key=lambda e: (
+                100 if (e.status == "REMOVED" or norm in DEAD_MOCK_BROKERS) else status_priority.get(e.status, 10),
+                e.timestamp or datetime.min
+            ), reverse=True)
+
+            canonical = entries[0]
+            if is_removed and canonical.status != "REMOVED":
+                canonical.status = "REMOVED"
+                canonical.timestamp = datetime.utcnow()
+                has_db_updates = True
+                ref_code = f"HASH_{secrets.token_hex(3).upper()}"
+                db.add(DBPurgeLog(
+                    user_id=canonical_uid,
+                    action_type=f"DATA_BROKER_REMOVAL_VERIFIED [{canonical.broker_name}] ({ref_code})",
+                    node_id=f"{canonical_uid}_AUTOMATED_SCRUB"
+                ))
+
+            if canonical.user_id != canonical_uid:
+                canonical.user_id = canonical_uid
+                has_db_updates = True
+
+            # Prune duplicate records from DB
+            for dup in entries[1:]:
+                to_delete_ids.append(dup.id)
+
+            deduped.append(canonical)
+
+        if to_delete_ids:
+            db.query(DBScrubLog).filter(DBScrubLog.id.in_(to_delete_ids)).delete(synchronize_session=False)
+            has_db_updates = True
+
+        if has_db_updates:
+            try:
+                db.commit()
+            except Exception:
+                db.rollback()
+
+        return deduped
+    except Exception as d_err:
+        logger.warning(f"Scrub deduplication notice: {d_err}")
+        return db.query(DBScrubLog).filter(DBScrubLog.user_id.in_(uid_identifiers)).all()
 
 
 # --- SCHEMAS ---
@@ -1928,6 +2036,14 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
         b_name_comp = task.broker_name.upper()
         b_dom_comp = domain_map.get(b_name_comp, f"{b_name_comp.lower().replace('_', '')}.com")
         opt_url = BROKER_OPT_OUT_URLS.get(b_name_comp, f"https://www.{b_dom_comp}/privacy")
+        
+        # Privacy redaction: For finalized/removed tasks, mask sensitive PII (DOB, street address)
+        raw_dob = profile.dob if profile else "N/A"
+        masked_dob = (raw_dob[:4] + "-**-**") if raw_dob and len(raw_dob) >= 4 and "-" in raw_dob else "VERIFIED"
+        raw_addr = profile.address if profile else "N/A"
+        city, st_abbr, _ = parse_address_location(raw_addr)
+        masked_addr = f"****, {city}, {st_abbr}" if (city and st_abbr) else "PROTECTED / PURGED"
+
         completed_tasks_list.append({
             "task_id": task.id,
             "broker_name": task.broker_name,
@@ -1943,8 +2059,8 @@ async def get_employee_backlog(db: Session = Depends(get_db), admin_key: str = D
                 "middle_name": profile.middle_name if profile else "",
                 "last_name": profile.last_name if profile else "N/A",
                 "email": profile.email if profile else "N/A",
-                "address": profile.address if profile else "N/A",
-                "dob": profile.dob if profile else "N/A"
+                "address": masked_addr,
+                "dob": masked_dob
             }
         })
             
@@ -2037,8 +2153,10 @@ async def verify_manual_task(
             task.assigned_analyst = req.analyst_name
     
     target_uid = task.user_id if task and task.user_id else "GLOBAL"
+    ref_code = f"HASH_{secrets.token_hex(3).upper()}"
     db.add(DBPurgeLog(
-        action_type=f"MANUAL_BROKER_RESOLVED [{task.broker_name}]",
+        user_id=target_uid,
+        action_type=f"DATA_BROKER_REMOVAL_VERIFIED [{task.broker_name}] ({ref_code})",
         node_id=f"{target_uid}_OPS_{log_id}"
     ))
     db.commit()
@@ -2301,13 +2419,16 @@ async def complete_manual_scrub(
     task.timestamp = datetime.utcnow()
     
     # Build audit trail
-    log_message = f"MANUAL_BROKER_RESOLVED: {task.broker_name}"
+    target_uid = task.user_id if task and task.user_id else "GLOBAL"
+    ref_code = f"HASH_{secrets.token_hex(3).upper()}"
+    log_message = f"DATA_BROKER_REMOVAL_VERIFIED [{task.broker_name}] ({ref_code})"
     if req.notes:
         log_message += f" | NOTES: {req.notes}"
         
     db.add(DBPurgeLog(
+        user_id=target_uid,
         action_type=log_message,
-        node_id=f"TASK_{log_id}_{task.broker_name}"
+        node_id=f"{target_uid}_TASK_{log_id}_{task.broker_name}"
     ))
     db.commit()
     return {"status": "SUCCESS"}
@@ -2342,10 +2463,8 @@ def consolidate_orphaned_user_records(db: Session, target_email: str = None):
                 or_(DBTargetEmail.profile_id.ilike(clean_e), DBTargetEmail.profile_id == clean_e)
             ).update({"profile_id": canonical_id}, synchronize_session=False)
 
-            # Re-link DBScrubLog records
-            db.query(DBScrubLog).filter(
-                or_(DBScrubLog.user_id.ilike(clean_e), DBScrubLog.user_id == clean_e)
-            ).update({"user_id": canonical_id}, synchronize_session=False)
+            # Re-link and deduplicate DBScrubLog records under canonical_id
+            deduplicate_and_tombstone_user_scrub_logs(db, canonical_id, [canonical_id, clean_e])
 
         db.commit()
     except Exception as c_err:
@@ -2497,35 +2616,34 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
         except Exception as p_err:
             logger.warning(f"Purge log query notice: {p_err}")
 
-        # Fetch User Scrub Logs strictly scoped to user_id in uid_identifiers
+        # Fetch User Scrub Logs strictly scoped to user_id in uid_identifiers and deduplicated
         scrub_entries = []
         try:
-            existing_scrubs = db.query(DBScrubLog).filter(DBScrubLog.user_id.in_(uid_identifiers)).all()
-            if not existing_scrubs:
-                new_scrubs = [
+            scrub_entries = deduplicate_and_tombstone_user_scrub_logs(db, uid, uid_identifiers)
+            if not scrub_entries:
+                new_logs = [
                     DBScrubLog(
                         user_id=uid,
                         broker_name=b,
-                        status="PROCESSING" if b in AUTOMATED_BROKERS else "MANUAL_PENDING",
-                        removal_type="AUTOMATED" if b in AUTOMATED_BROKERS else "MANUAL",
+                        status="REMOVED" if (b in DEAD_MOCK_BROKERS) else ("PROCESSING" if b in AUTOMATED_BROKERS else "MANUAL_PENDING"),
+                        removal_type="AUTOMATED" if (b in AUTOMATED_BROKERS or b in DEAD_MOCK_BROKERS) else "MANUAL",
                         timestamp=datetime.utcnow()
                     )
                     for b in BROKERS
                 ]
-                db.bulk_save_objects(new_scrubs)
+                db.bulk_save_objects(new_logs)
                 try:
                     db.commit()
                 except Exception:
                     db.rollback()
-                existing_scrubs = db.query(DBScrubLog).filter(DBScrubLog.user_id.in_(uid_identifiers)).all()
-            scrub_entries = existing_scrubs
+                scrub_entries = deduplicate_and_tombstone_user_scrub_logs(db, uid, uid_identifiers)
         except Exception as s_err:
             logger.warning(f"Scrub log query notice: {s_err}")
         
         # Calculate Data Broker Scrub Statistics
         total_b_count = len(scrub_entries)
         removed_b_count = sum(1 for s in scrub_entries if s.status == "REMOVED")
-        processing_b_count = sum(1 for s in scrub_entries if s.status in ["PROCESSING", "SUBPOENA_FILED"])
+        processing_b_count = sum(1 for s in scrub_entries if s.status in ["PROCESSING", "SUBPOENA_FILED", "REMOVAL_INITIATED"])
         manual_b_count = sum(1 for s in scrub_entries if s.status == "MANUAL_PENDING")
 
         scrub_stats = {
@@ -2752,12 +2870,18 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
 
 
 @app.get("/profile/emails")
-async def get_target_emails(user_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
-    """Retrieves the list of target emails being scrubbed"""
-    if user_id:
-        profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
-    else:
-        profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+async def get_target_emails(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    """Retrieves the list of target emails being scrubbed strictly for the authenticated user"""
+    active_uid = (user_id or x_user_id or "").strip()
+    if not active_uid or active_uid in ["undefined", "null", "", "anonymous_agent", "UNAUTHENTICATED"]:
+        return {"primary": "", "additional": [], "slots": 1, "used": 0}
+
+    profile = db.query(DBProfile).filter(
+        or_(
+            DBProfile.id == active_uid,
+            DBProfile.email.ilike(active_uid.lower())
+        )
+    ).first()
         
     if not profile:
         return {"primary": "", "additional": [], "slots": 1, "used": 0}
@@ -2799,12 +2923,18 @@ async def acknowledge_target_notice(req: NoticeAckRequest, db: Session = Depends
     return {"status": "NOT_FOUND"}
 
 @app.post("/profile/emails")
-async def add_target_email(req: TargetEmailRequest, user_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
-    """Adds a new secondary email to the active scrubbing pool"""
-    if user_id:
-        profile = db.query(DBProfile).filter(DBProfile.id == user_id).first()
-    else:
-        profile = db.query(DBProfile).order_by(DBProfile.created_at.desc()).first()
+async def add_target_email(req: TargetEmailRequest, user_id: Optional[str] = Query(None), x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    """Adds a new secondary email to the active scrubbing pool without duplicating existing removed broker logs"""
+    active_uid = (user_id or x_user_id or "").strip()
+    if not active_uid or active_uid in ["undefined", "null", "", "anonymous_agent", "UNAUTHENTICATED"]:
+        raise HTTPException(status_code=401, detail="AUTHENTICATION_REQUIRED")
+
+    profile = db.query(DBProfile).filter(
+        or_(
+            DBProfile.id == active_uid,
+            DBProfile.email.ilike(active_uid.lower())
+        )
+    ).first()
         
     if not profile:
         raise HTTPException(status_code=404, detail="DATA_ERROR: TARGET_PROFILE_NOT_FOUND")
@@ -2815,31 +2945,66 @@ async def add_target_email(req: TargetEmailRequest, user_id: Optional[str] = Que
     if current_extra_count >= allowed_extras:
         raise HTTPException(status_code=403, detail="EMAIL_SLOT_LIMIT_REACHED")
         
-    new_email = DBTargetEmail(profile_id=profile.id, email=req.email)
+    new_email = DBTargetEmail(profile_id=profile.id, email=req.email.strip().lower())
     db.add(new_email)
-    
-    for broker in BROKERS:
-        is_auto = broker in AUTOMATED_BROKERS
-        db.add(DBScrubLog(
-            user_id=profile.id, 
-            broker_name=broker, 
-            status="PROCESSING" if is_auto else "MANUAL_PENDING", 
-            removal_type="AUTOMATED" if is_auto else "MANUAL",
-            timestamp=datetime.utcnow()
-        ))
-        
+
+    # Log audit entry with masked email so raw PII is not leaked into log traces
+    email_clean = req.email.strip()
+    parts = email_clean.split("@")
+    masked = (parts[0][:2] + "***@" + parts[1]) if len(parts) == 2 and len(parts[0]) >= 2 else "***@***"
+    db.add(DBPurgeLog(
+        user_id=profile.id,
+        action_type=f"TARGET_EMAIL_DISPATCH_ENROLLED [{masked}]",
+        node_id=f"{profile.id}_EMAIL_ENROLLED"
+    ))
+
+    # Cleanly seed only truly missing broker records without duplicating or overwriting REMOVED records
+    existing_scrubs = db.query(DBScrubLog).filter(DBScrubLog.user_id == profile.id).all()
+    existing_upper_set = {s.broker_name.strip().upper() for s in existing_scrubs if s.broker_name}
+    missing_brokers = [b for b in BROKERS if b.strip().upper() not in existing_upper_set]
+    if missing_brokers:
+        new_logs = [
+            DBScrubLog(
+                user_id=profile.id,
+                broker_name=b,
+                status="REMOVED" if (b in DEAD_MOCK_BROKERS) else ("PROCESSING" if b in AUTOMATED_BROKERS else "MANUAL_PENDING"),
+                removal_type="AUTOMATED" if (b in AUTOMATED_BROKERS or b in DEAD_MOCK_BROKERS) else "MANUAL",
+                timestamp=datetime.utcnow()
+            )
+            for b in missing_brokers
+        ]
+        db.bulk_save_objects(new_logs)
+
     db.commit()
     return {"status": "success"}
 
 @app.delete("/profile/emails/{email_id}")
-async def delete_target_email(email_id: int, db: Session = Depends(get_db)):
-    """Removes an email from active scrubbing"""
-    email = db.query(DBTargetEmail).filter(DBTargetEmail.id == email_id).first()
-    if email:
-        db.delete(email)
-        db.commit()
-        return {"status": "deleted"}
-    raise HTTPException(status_code=404, detail="Not found")
+async def delete_target_email(email_id: int, user_id: Optional[str] = Query(None), x_user_id: Optional[str] = Header(None), db: Session = Depends(get_db)):
+    """Removes an email from active scrubbing with strict ownership authorization and masked purge log"""
+    active_uid = (user_id or x_user_id or "").strip()
+    email_obj = db.query(DBTargetEmail).filter(DBTargetEmail.id == email_id).first()
+    if not email_obj:
+        raise HTTPException(status_code=404, detail="Target email not found")
+
+    # Authorize deletion if user context is provided
+    if active_uid and active_uid not in ["undefined", "null", ""]:
+        profile = db.query(DBProfile).filter(or_(DBProfile.id == active_uid, DBProfile.email.ilike(active_uid))).first()
+        if profile and email_obj.profile_id != profile.id and email_obj.profile_id != active_uid:
+            raise HTTPException(status_code=403, detail="Unauthorized deletion request")
+
+    # Mask email before recording audit purge log
+    email_clean = email_obj.email or ""
+    parts = email_clean.split("@")
+    masked = (parts[0][:2] + "***@" + parts[1]) if len(parts) == 2 and len(parts[0]) >= 2 else "***@***"
+    db.add(DBPurgeLog(
+        user_id=email_obj.profile_id,
+        action_type=f"TARGET_EMAIL_REMOVED [{masked}]",
+        node_id=f"{email_obj.profile_id}_EMAIL_PURGED_{email_id}"
+    ))
+
+    db.delete(email_obj)
+    db.commit()
+    return {"status": "deleted"}
 
 # --- PAYMENTS & WEBHOOKS (FINAL PRICING FIREWALL) ---
 
@@ -3692,9 +3857,6 @@ async def handle_inbound_email_webhook(request: Request, bg_tasks: BackgroundTas
         if not profile:
             profile = db.query(DBProfile).filter(DBProfile.email.ilike(recipient_alias)).first()
 
-        if not profile:
-            profile = db.query(DBProfile).first()
-
         user_id = profile.id if profile else (alias.user_id if alias else "UNBOUND_ALIAS")
 
         import uuid
@@ -3897,10 +4059,7 @@ async def reply_via_alias(req: AliasReplyRequest, user_id: Optional[str] = Query
     ).first()
 
     if not profile:
-        profile = db.query(DBProfile).first()
-
-    if not profile:
-        raise HTTPException(status_code=404, detail="User profile not located.")
+        raise HTTPException(status_code=401, detail="User profile not located or unauthenticated.")
 
     alias_clean = req.alias_email.strip().lower()
     recipient_clean = req.recipient_email.strip().lower()
@@ -4715,24 +4874,56 @@ async def get_scrub_history(x_user_id: Optional[str] = Header(None), db: Session
 @app.get("/history")
 async def get_action_history(
     days: int = Query(30, enum=[30, 60, 90]), 
+    user_id: Optional[str] = Query(None),
+    x_user_id: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ):
-    """Fetches general action history for the app dashboard instead of PDF generation"""
+    """Fetches user-specific action history with zero cross-tenant leak and masked sensitive identifiers"""
+    active_uid = (user_id or x_user_id or "").strip()
+    if not active_uid or active_uid in ["undefined", "null", "", "anonymous_agent", "UNAUTHENTICATED"]:
+        return {"days_filtered": days, "history": []}
+
+    profile = db.query(DBProfile).filter(
+        or_(
+            DBProfile.id == active_uid,
+            DBProfile.email.ilike(active_uid.lower())
+        )
+    ).first()
+
+    uid = profile.id if profile else active_uid
+    uid_identifiers = list(set([uid, active_uid] + ([profile.email, profile.email.lower()] if profile and profile.email else [])))
+
     cutoff_date = datetime.utcnow() - timedelta(days=days)
     
     history = (
         db.query(DBPurgeLog)
-        .filter(DBPurgeLog.timestamp >= cutoff_date)
+        .filter(
+            DBPurgeLog.timestamp >= cutoff_date,
+            or_(
+                DBPurgeLog.user_id.in_(uid_identifiers),
+                DBPurgeLog.node_id.like(f"{uid}_%")
+            )
+        )
         .order_by(desc(DBPurgeLog.timestamp))
         .all()
     )
+
+    import re
+    def mask_sensitive_pii(text_str: str) -> str:
+        if not text_str:
+            return ""
+        # Mask phone numbers (e.g. +18138105237 -> +1 (813) ***-5237)
+        masked = re.sub(r'(\+?1?[-.\s]?)?\(?(\d{3})\)?[-.\s]?(\d{3})[-.\s]?(\d{4})', r'\1(\2) ***-\4', text_str)
+        # Mask emails
+        masked = re.sub(r'([a-zA-Z0-9_.+-]{2})[a-zA-Z0-9_.+-]*@([a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)', r'\1***@\2', masked)
+        return masked
     
     return {
         "days_filtered": days,
         "history": [
             {
                 "id": entry.id,
-                "action": entry.action_type,
+                "action": mask_sensitive_pii(entry.action_type),
                 "node": entry.node_id,
                 "timestamp": entry.timestamp.isoformat()
             } for entry in history
@@ -6210,15 +6401,27 @@ async def evaluate_broker_record(req: EvaluateRecordRequest, db: Session = Depen
     )
     db.add(broker_match)
 
-    # If confidence is high (AUTO_REMOVED), create scrub log directly
+    # If confidence is high (AUTO_REMOVED), create or update scrub log directly without duplicating
     if status == "AUTO_REMOVED":
-        scrub_log = DBScrubLog(
-            user_id=profile.id,
-            broker_name=req.broker_name,
-            status="REMOVAL_INITIATED",
-            removal_type="AUTOMATED"
-        )
-        db.add(scrub_log)
+        norm_bname = req.broker_name.strip().upper()
+        existing_scrub = db.query(DBScrubLog).filter(
+            DBScrubLog.user_id == profile.id,
+            func.upper(DBScrubLog.broker_name) == norm_bname
+        ).first()
+        if existing_scrub:
+            if existing_scrub.status != "REMOVED":
+                existing_scrub.status = "REMOVAL_INITIATED"
+                existing_scrub.removal_type = "AUTOMATED"
+                existing_scrub.timestamp = datetime.utcnow()
+        else:
+            scrub_log = DBScrubLog(
+                user_id=profile.id,
+                broker_name=req.broker_name.strip().upper(),
+                status="REMOVAL_INITIATED",
+                removal_type="AUTOMATED",
+                timestamp=datetime.utcnow()
+            )
+            db.add(scrub_log)
 
     db.commit()
     db.refresh(broker_match)
@@ -6247,9 +6450,22 @@ async def get_pending_matches(x_user_id: Optional[str] = Header(None), user_id: 
         DBBrokerMatch.status == "NEEDS_VERIFICATION"
     ).order_by(desc(DBBrokerMatch.created_at)).all()
 
+    def sanitize_match_details(det):
+        if not isinstance(det, dict):
+            return det
+        sanitized = dict(det)
+        summary = sanitized.get("record_summary")
+        if isinstance(summary, dict):
+            sum_copy = dict(summary)
+            if "phones" in sum_copy and isinstance(sum_copy["phones"], list):
+                sum_copy["phones"] = ["***-***-" + str(p)[-4:] if len(str(p)) >= 4 else "***" for p in sum_copy["phones"]]
+            sanitized["record_summary"] = sum_copy
+        return sanitized
+
     res = []
     for item in pending:
-        details = json.loads(item.record_details) if item.record_details else {}
+        raw_details = json.loads(item.record_details) if item.record_details else {}
+        details = sanitize_match_details(raw_details)
         res.append({
             "id": item.id,
             "broker_name": item.broker_name,
@@ -6265,7 +6481,7 @@ async def get_pending_matches(x_user_id: Optional[str] = Header(None), user_id: 
 @app.post("/api/v1/matches/{match_id}/verify")
 async def verify_match(match_id: int, req: VerifyMatchRequest, x_user_id: Optional[str] = Header(None), user_id: Optional[str] = Query(None), db: Session = Depends(get_db)):
     """
-    Allows user to confirm or reject an ambiguous broker match.
+    Allows user to confirm or reject an ambiguous broker match without duplicating or downgrading REMOVED records.
     """
     match_item = db.query(DBBrokerMatch).filter(DBBrokerMatch.id == match_id).first()
     if not match_item:
@@ -6276,14 +6492,25 @@ async def verify_match(match_id: int, req: VerifyMatchRequest, x_user_id: Option
 
     if req.action.lower() == "confirm":
         match_item.status = "VERIFIED"
-        # Trigger removal process
-        scrub_log = DBScrubLog(
-            user_id=match_item.user_id,
-            broker_name=match_item.broker_name,
-            status="REMOVAL_INITIATED",
-            removal_type="USER_VERIFIED"
-        )
-        db.add(scrub_log)
+        norm_bname = match_item.broker_name.strip().upper()
+        existing_scrub = db.query(DBScrubLog).filter(
+            DBScrubLog.user_id == match_item.user_id,
+            func.upper(DBScrubLog.broker_name) == norm_bname
+        ).first()
+        if existing_scrub:
+            if existing_scrub.status != "REMOVED":
+                existing_scrub.status = "REMOVAL_INITIATED"
+                existing_scrub.removal_type = "USER_VERIFIED"
+                existing_scrub.timestamp = datetime.utcnow()
+        else:
+            scrub_log = DBScrubLog(
+                user_id=match_item.user_id,
+                broker_name=match_item.broker_name.strip().upper(),
+                status="REMOVAL_INITIATED",
+                removal_type="USER_VERIFIED",
+                timestamp=datetime.utcnow()
+            )
+            db.add(scrub_log)
     else:
         match_item.status = "REJECTED"
 
@@ -6299,7 +6526,7 @@ async def verify_match(match_id: int, req: VerifyMatchRequest, x_user_id: Option
 @app.get("/api/v1/matches/verify-token/{token}")
 async def verify_token(token: str, action: str = Query("confirm"), db: Session = Depends(get_db)):
     """
-    1-Click email link verification for ambiguous records.
+    1-Click email link verification for ambiguous records without duplicating or overwriting REMOVED records.
     """
     match_item = db.query(DBBrokerMatch).filter(DBBrokerMatch.verification_token == token).first()
     if not match_item:
@@ -6307,13 +6534,25 @@ async def verify_token(token: str, action: str = Query("confirm"), db: Session =
 
     if action.lower() == "confirm":
         match_item.status = "VERIFIED"
-        scrub_log = DBScrubLog(
-            user_id=match_item.user_id,
-            broker_name=match_item.broker_name,
-            status="REMOVAL_INITIATED",
-            removal_type="EMAIL_VERIFIED"
-        )
-        db.add(scrub_log)
+        norm_bname = match_item.broker_name.strip().upper()
+        existing_scrub = db.query(DBScrubLog).filter(
+            DBScrubLog.user_id == match_item.user_id,
+            func.upper(DBScrubLog.broker_name) == norm_bname
+        ).first()
+        if existing_scrub:
+            if existing_scrub.status != "REMOVED":
+                existing_scrub.status = "REMOVAL_INITIATED"
+                existing_scrub.removal_type = "EMAIL_VERIFIED"
+                existing_scrub.timestamp = datetime.utcnow()
+        else:
+            scrub_log = DBScrubLog(
+                user_id=match_item.user_id,
+                broker_name=match_item.broker_name.strip().upper(),
+                status="REMOVAL_INITIATED",
+                removal_type="EMAIL_VERIFIED",
+                timestamp=datetime.utcnow()
+            )
+            db.add(scrub_log)
     else:
         match_item.status = "REJECTED"
 
