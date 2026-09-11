@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, Request, Response, File, Up
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-from sqlalchemy import desc, text, or_
+from sqlalchemy import desc, text, or_, and_
 from sqlalchemy.orm import Session
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -5775,6 +5775,8 @@ async def get_user_sms_inbox(user_id: Optional[str] = None, x_user_id: Optional[
         return {"status": "success", "inbox": inbox}
     except Exception as ex:
         logger.error(f"get_user_sms_inbox unexpected error: {ex}")
+        return {"status": "error", "inbox": [], "message": str(ex)}
+
 class VoiceCallRequest(BaseModel):
     user_id: str
     to_phone: str

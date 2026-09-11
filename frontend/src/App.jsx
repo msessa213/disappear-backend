@@ -291,11 +291,11 @@ function App() {
       });
       if (res.ok) {
         const d = await res.json();
-        setDncRegistered(Boolean(d.dnc_registered));
-        setDncRegisteredAt(d.dnc_registered_at || null);
-        setDncStateRegistered(Boolean(d.dnc_state_registered));
-        setDncOptoutPrescreen(Boolean(d.dnc_optout_prescreen));
-        setDncDmaChoice(Boolean(d.dnc_dmachoice));
+        setDncRegistered(Boolean(d?.dnc_registered));
+        setDncRegisteredAt(d?.dnc_registered_at || null);
+        setDncStateRegistered(Boolean(d?.dnc_state_registered));
+        setDncOptoutPrescreen(Boolean(d?.dnc_optout_prescreen));
+        setDncDmaChoice(Boolean(d?.dnc_dmachoice));
         triggerToast(newStatus ? "✅ REGISTRY PROTECTION SAVED TO VAULT" : "STATUS UPDATED");
       } else {
         triggerToast("❌ FAILED TO UPDATE REGISTRY STATUS");
@@ -332,12 +332,12 @@ function App() {
       });
       if (res.ok) {
         const d = await res.json();
-        triggerToast(`✅ ${d.message || 'DISPATCH LOGGED TO VAULT'}`);
+        triggerToast(`✅ ${d?.message || 'DISPATCH LOGGED TO VAULT'}`);
         if (registryType === "state") setDncStateRegistered(true);
         if (registryType === "optout_prescreen" || registryType === "prescreen") setDncOptoutPrescreen(true);
         if (registryType === "dmachoice" || registryType === "dma") setDncDmaChoice(true);
         
-        const urlToOpen = d.url || targetUrl;
+        const urlToOpen = d?.url || targetUrl;
         if (urlToOpen) {
           window.open(urlToOpen, "_blank", "noopener,noreferrer");
         }
@@ -771,7 +771,7 @@ function App() {
       const res = await secureRequest(`${API_BASE_URL}/api/v1/sms-inbox/${activeUserId}`);
       if (res.ok) {
         const data = await res.json();
-        updateSmsInboxSafely(data.inbox || []);
+        updateSmsInboxSafely((data && Array.isArray(data.inbox)) ? data.inbox : []);
       }
     } catch (e) {
       console.error("SMS Inbox error", e);
