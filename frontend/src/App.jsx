@@ -4999,28 +4999,28 @@ const handleEmergencyBurn = async () => {
                     </div>
 
                     {/* NATIONAL & STATE DO NOT CALL REGISTRY CARD (BELOW SPAM CALLS) */}
-                    <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #10B981', background: 'linear-gradient(135deg, rgba(6, 20, 25, 0.95) 0%, rgba(2, 6, 15, 0.98) 100%)', borderRadius: '12px', boxSizing: 'border-box', marginTop: '16px' }}>
+                    <div className="masking-tool" style={{ width: '100%', maxWidth: '600px', border: '1px solid #10B981', background: 'linear-gradient(135deg, rgba(6, 20, 25, 0.95) 0%, rgba(2, 6, 15, 0.98) 100%)', borderRadius: '12px', padding: '14px 16px', boxSizing: 'border-box', marginTop: '14px' }}>
                       
                       {/* HEADER */}
-                      <div className="dnc-card-header">
+                      <div className="dnc-card-header" style={{ marginBottom: '10px', paddingBottom: '8px' }}>
                         <div>
-                          <span className="tool-label" style={{ margin: 0, fontSize: '0.92rem', display: 'block', fontWeight: 'bold', letterSpacing: '0.5px', color: '#10B981' }}>
+                          <span className="tool-label" style={{ margin: 0, fontSize: '0.86rem', display: 'block', fontWeight: 'bold', letterSpacing: '0.5px', color: '#10B981' }}>
                             🏛️ NATIONAL DO NOT CALL REGISTRY & LEGAL SHIELD
                           </span>
-                          <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>Federal Trade Commission (FTC) & TCPA Statutory Protection</span>
+                          <span style={{ fontSize: '0.68rem', color: '#94A3B8' }}>Federal Trade Commission (FTC) & TCPA Statutory Protection</span>
                         </div>
                         
                         <span style={{ 
-                          fontSize: '0.68rem', 
+                          fontSize: '0.65rem', 
                           fontWeight: 'bold', 
-                          padding: '3px 8px', 
+                          padding: '2px 8px', 
                           borderRadius: '4px', 
                           border: `1px solid ${dncRegistered ? 'rgba(16, 185, 129, 0.4)' : 'rgba(148, 163, 184, 0.3)'}`,
                           background: dncRegistered ? 'rgba(16, 185, 129, 0.12)' : 'rgba(148, 163, 184, 0.1)',
                           color: dncRegistered ? '#10B981' : '#94A3B8',
                           whiteSpace: 'nowrap'
                         }}>
-                          {dncRegistered ? "🟢 FEDERALLY PROTECTED (LIFETIME)" : "⚪ UNREGISTERED • ACTION RECOMMENDED"}
+                          {dncRegistered ? "🟢 FEDERALLY PROTECTED" : "⚪ UNREGISTERED • ACTION RECOMMENDED"}
                         </span>
                       </div>
 
@@ -5030,13 +5030,13 @@ const handleEmergencyBurn = async () => {
                         const formattedRealPhone = rawRealPhone.replace(/\+1([0-9]{3})([0-9]{3})([0-9]{4})/, "+1 ($1) $2-$3");
 
                         return (
-                          <div style={{ background: '#050a14', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', padding: '14px', marginBottom: '14px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
-                            <div className="dnc-phone-header">
+                          <div style={{ background: '#050a14', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', padding: '10px 12px', marginBottom: '10px', textAlign: 'left', width: '100%', boxSizing: 'border-box' }}>
+                            <div className="dnc-phone-header" style={{ marginBottom: '6px' }}>
                               <div>
-                                <span style={{ fontSize: '0.68rem', color: '#94A3B8', fontWeight: 'bold', textTransform: 'uppercase', display: 'block' }}>
+                                <span style={{ fontSize: '0.66rem', color: '#94A3B8', fontWeight: 'bold', textTransform: 'uppercase', display: 'block' }}>
                                   REAL PRIMARY PHONE (CALLER-ID TARGET):
                                 </span>
-                                <span style={{ fontSize: '0.95rem', color: '#10B981', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                                <span style={{ fontSize: '0.88rem', color: '#10B981', fontFamily: 'monospace', fontWeight: 'bold' }}>
                                   {formattedRealPhone}
                                 </span>
                               </div>
@@ -5044,7 +5044,7 @@ const handleEmergencyBurn = async () => {
                                 <button
                                   type="button"
                                   className="reset-btn"
-                                  style={{ padding: '4px 10px', fontSize: '0.70rem', color: '#00D2FF', borderColor: 'rgba(0, 210, 255, 0.4)', fontWeight: 'bold', cursor: 'pointer' }}
+                                  style={{ padding: '3px 8px', fontSize: '0.68rem', color: '#00D2FF', borderColor: 'rgba(0, 210, 255, 0.4)', fontWeight: 'bold', cursor: 'pointer' }}
                                   onClick={() => {
                                     navigator.clipboard.writeText(rawRealPhone);
                                     triggerToast("PHONE NUMBER COPIED 📋");
@@ -5056,8 +5056,8 @@ const handleEmergencyBurn = async () => {
                                   type="button"
                                   className="reset-btn"
                                   style={{ 
-                                    padding: '4px 12px', 
-                                    fontSize: '0.70rem', 
+                                    padding: '3px 10px', 
+                                    fontSize: '0.68rem', 
                                     fontWeight: 'bold', 
                                     color: dncRegistered ? '#EF4444' : '#10B981', 
                                     borderColor: dncRegistered ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)', 
@@ -5066,28 +5066,28 @@ const handleEmergencyBurn = async () => {
                                   disabled={isTogglingDnc}
                                   onClick={() => handleToggleDnc("federal", !dncRegistered)}
                                 >
-                                  {isTogglingDnc ? "⏳ SAVING..." : (dncRegistered ? "✕ MARK UNREGISTERED" : "✓ MARK AS REGISTERED")}
+                                  {isTogglingDnc ? "⏳ SAVING..." : (dncRegistered ? "✕ UNREGISTER" : "✓ MARK REGISTERED")}
                                 </button>
                               </div>
                             </div>
 
                             {/* 1-TAP CALL HERO BUTTON */}
-                            <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '6px', padding: '12px', marginTop: '10px', marginBottom: '10px', width: '100%', boxSizing: 'border-box' }}>
-                              <div className="dnc-call-header">
+                            <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '6px', padding: '8px 10px', marginTop: '8px', marginBottom: '8px', width: '100%', boxSizing: 'border-box' }}>
+                              <div className="dnc-call-header" style={{ marginBottom: '6px' }}>
                                 <div>
-                                  <span style={{ fontSize: '0.76rem', color: '#FFFFFF', fontWeight: 'bold', display: 'block' }}>
+                                  <span style={{ fontSize: '0.74rem', color: '#FFFFFF', fontWeight: 'bold', display: 'block' }}>
                                     ⚡ EFFORTLESS 1-TAP ENROLLMENT (15 SECONDS)
                                   </span>
-                                  <span style={{ fontSize: '0.70rem', color: '#94A3B8' }}>
-                                    Uses your real phone SIM so FTC automated system verifies your caller-ID.
+                                  <span style={{ fontSize: '0.67rem', color: '#94A3B8' }}>
+                                    Uses real phone SIM so FTC automated system verifies caller-ID.
                                   </span>
                                 </div>
                                 <a
                                   href="tel:18883821222"
                                   className="main-button"
                                   style={{
-                                    padding: '8px 16px',
-                                    fontSize: '0.80rem',
+                                    padding: '6px 14px',
+                                    fontSize: '0.74rem',
                                     fontWeight: 'bold',
                                     background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
                                     border: 'none',
@@ -5099,7 +5099,7 @@ const handleEmergencyBurn = async () => {
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     gap: '6px',
-                                    boxShadow: '0 0 12px rgba(16, 185, 129, 0.35)',
+                                    boxShadow: '0 0 10px rgba(16, 185, 129, 0.35)',
                                     whiteSpace: 'nowrap'
                                   }}
                                   onClick={() => {
@@ -5109,59 +5109,59 @@ const handleEmergencyBurn = async () => {
                                   📞 CALL FTC (1-888-382-1222)
                                 </a>
                               </div>
-                              <p style={{ fontSize: '0.72rem', color: '#A7F3D0', margin: 0, lineHeight: '1.45', wordBreak: 'break-word' }}>
-                                💡 <strong>How It Works:</strong> Tapping the green button dials the FTC from your device using your real phone carrier line. The automated voice reads your number and says <em>"To register this phone, press 1."</em> Press <strong>1</strong> and you are permanently registered with zero typing or email confirmation needed!
+                              <p style={{ fontSize: '0.68rem', color: '#A7F3D0', margin: 0, lineHeight: '1.4', wordBreak: 'break-word' }}>
+                                💡 <strong>How It Works:</strong> Dials FTC automated line. Voice prompt states: <em>"To register this phone, press 1."</em> Press <strong>1</strong> and you are permanently registered with zero typing or forms!
                               </p>
                             </div>
 
                             {/* STEP-BY-STEP CUSTOMER PROCESS GUIDE (ZERO CONFUSION) */}
-                            <div style={{ background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(0, 210, 255, 0.25)', borderRadius: '6px', padding: '12px 14px', marginTop: '10px', marginBottom: '12px', width: '100%', boxSizing: 'border-box' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '6px' }}>
-                                <span style={{ fontSize: '0.74rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+                            <div style={{ background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(0, 210, 255, 0.25)', borderRadius: '6px', padding: '8px 10px', marginTop: '8px', marginBottom: '8px', width: '100%', boxSizing: 'border-box' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '4px' }}>
+                                <span style={{ fontSize: '0.70rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '0.5px' }}>
                                   📋 STEP-BY-STEP REGISTRATION PROCESS (WHAT TO DO)
                                 </span>
-                                <span style={{ fontSize: '0.65rem', color: '#10B981', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                                  ⚡ ESTIMATED TIME: 15 SECONDS
+                                <span style={{ fontSize: '0.62rem', color: '#10B981', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '1px 6px', borderRadius: '4px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                                  ⚡ ~15 SECONDS
                                 </span>
                               </div>
 
                               <div className="dnc-process-grid">
                                 {/* STEP 1 */}
-                                <div style={{ background: 'rgba(0, 0, 0, 0.35)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '6px', padding: '10px', width: '100%', boxSizing: 'border-box' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                                    <span style={{ background: '#10B981', color: '#050a14', fontSize: '0.65rem', fontWeight: '900', width: '20px', height: '20px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>1</span>
-                                    <strong style={{ fontSize: '0.72rem', color: '#FFFFFF' }}>Tap Call Button</strong>
+                                <div style={{ background: 'rgba(0, 0, 0, 0.35)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '6px', padding: '6px 8px', width: '100%', boxSizing: 'border-box' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                    <span style={{ background: '#10B981', color: '#050a14', fontSize: '0.60rem', fontWeight: '900', width: '18px', height: '18px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>1</span>
+                                    <strong style={{ fontSize: '0.68rem', color: '#FFFFFF' }}>Tap Call Button</strong>
                                   </div>
-                                  <p style={{ fontSize: '0.68rem', color: '#94A3B8', margin: 0, lineHeight: '1.45', wordBreak: 'break-word' }}>
-                                    Tap <strong>CALL FTC (1-888-382-1222)</strong> directly from your phone. FTC automated IVR requires calling from your physical device so caller-ID verifies you own the number.
+                                  <p style={{ fontSize: '0.65rem', color: '#94A3B8', margin: 0, lineHeight: '1.35', wordBreak: 'break-word' }}>
+                                    Tap <strong>CALL FTC</strong> above from your device so automated caller-ID verifies you own the number.
                                   </p>
                                 </div>
 
                                 {/* STEP 2 */}
-                                <div style={{ background: 'rgba(0, 0, 0, 0.35)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '6px', padding: '10px', width: '100%', boxSizing: 'border-box' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                                    <span style={{ background: '#00D2FF', color: '#050a14', fontSize: '0.65rem', fontWeight: '900', width: '20px', height: '20px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>2</span>
-                                    <strong style={{ fontSize: '0.72rem', color: '#FFFFFF' }}>Press "1" on Keypad</strong>
+                                <div style={{ background: 'rgba(0, 0, 0, 0.35)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '6px', padding: '6px 8px', width: '100%', boxSizing: 'border-box' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                    <span style={{ background: '#00D2FF', color: '#050a14', fontSize: '0.60rem', fontWeight: '900', width: '18px', height: '18px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>2</span>
+                                    <strong style={{ fontSize: '0.68rem', color: '#FFFFFF' }}>Press "1" on Keypad</strong>
                                   </div>
-                                  <p style={{ fontSize: '0.68rem', color: '#94A3B8', margin: 0, lineHeight: '1.45', wordBreak: 'break-word' }}>
-                                    The automated voice reads your phone number and prompts: <em>"To register this phone, press 1."</em> Press <strong>1</strong> to confirm. Hang up immediately—no passwords or forms needed.
+                                  <p style={{ fontSize: '0.65rem', color: '#94A3B8', margin: 0, lineHeight: '1.35', wordBreak: 'break-word' }}>
+                                    Voice reads your number and prompts: <em>"press 1"</em>. Press <strong>1</strong> to confirm, then hang up.
                                   </p>
                                 </div>
 
                                 {/* STEP 3 */}
-                                <div style={{ background: 'rgba(0, 0, 0, 0.35)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '6px', padding: '10px', width: '100%', boxSizing: 'border-box' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                                    <span style={{ background: '#F59E0B', color: '#050a14', fontSize: '0.65rem', fontWeight: '900', width: '20px', height: '20px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>3</span>
-                                    <strong style={{ fontSize: '0.72rem', color: '#FFFFFF' }}>Mark As Registered</strong>
+                                <div style={{ background: 'rgba(0, 0, 0, 0.35)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '6px', padding: '6px 8px', width: '100%', boxSizing: 'border-box' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                    <span style={{ background: '#F59E0B', color: '#050a14', fontSize: '0.60rem', fontWeight: '900', width: '18px', height: '18px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>3</span>
+                                    <strong style={{ fontSize: '0.68rem', color: '#FFFFFF' }}>Mark Registered</strong>
                                   </div>
-                                  <p style={{ fontSize: '0.68rem', color: '#94A3B8', margin: 0, lineHeight: '1.45', wordBreak: 'break-word' }}>
-                                    Click <strong>"✓ MARK AS REGISTERED"</strong> above to store your permanent timestamp. Telemarketers have 31 days to purge your number before facing $500–$1,500 statutory fines per call.
+                                  <p style={{ fontSize: '0.65rem', color: '#94A3B8', margin: 0, lineHeight: '1.35', wordBreak: 'break-word' }}>
+                                    Click <strong>"✓ MARK REGISTERED"</strong> above. Telemarketers must purge within 31 days ($500–$1,500 fines/call).
                                   </p>
                                 </div>
                               </div>
                             </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', fontSize: '0.72rem', color: '#64748B' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px', fontSize: '0.68rem', color: '#64748B' }}>
                               <span>
                                 Prefer Web? <a href="https://www.donotcall.gov/register.html" target="_blank" rel="noopener noreferrer" style={{ color: '#00D2FF', textDecoration: 'underline', fontWeight: 'bold' }}>Register at donotcall.gov ↗</a>
                               </span>
@@ -5173,46 +5173,46 @@ const handleEmergencyBurn = async () => {
                         );
                       })()}
 
-                      {/* OTHER ESSENTIAL NATIONAL & STATE REGISTRIES */}
-                      <div style={{ textAlign: 'left', marginBottom: '14px', width: '100%', boxSizing: 'border-box' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '4px' }}>
-                          <span style={{ fontSize: '0.70rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                      {/* OTHER ESSENTIAL NATIONAL & STATE REGISTRIES (COMPACT SLEEK ROWS) */}
+                      <div style={{ textAlign: 'left', marginBottom: '10px', width: '100%', boxSizing: 'border-box' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
+                          <span style={{ fontSize: '0.68rem', color: '#00D2FF', fontWeight: 'bold', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
                             ADDITIONAL CONSUMER PRIVACY & OPT-OUT REGISTRIES
                           </span>
-                          <span style={{ fontSize: '0.65rem', color: '#94A3B8' }}>STATE & CREDIT BUREAU SHIELDS</span>
+                          <span style={{ fontSize: '0.62rem', color: '#94A3B8' }}>STATE & CREDIT BUREAU SHIELDS</span>
                         </div>
 
-                        <div className="dnc-registries-grid">
+                        <div className="dnc-compact-registries">
                           
                           {/* 1. STATE DO NOT CALL REGISTRY (FLORIDA / STATE LEVEL) */}
-                          <div style={{ background: '#080d1a', border: `1px solid ${dncStateRegistered ? 'rgba(16, 185, 129, 0.35)' : 'rgba(0, 210, 255, 0.25)'}`, borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', width: '100%', boxSizing: 'border-box' }}>
-                            <div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap', gap: '4px' }}>
+                          <div className={`dnc-registry-row ${dncStateRegistered ? 'active' : ''}`}>
+                            <div className="dnc-registry-info">
+                              <div className="dnc-registry-title-row">
                                 <span style={{ fontSize: '0.74rem', color: '#FFFFFF', fontWeight: 'bold' }}>
-                                  🌴 FLORIDA STATE DO NOT CALL (FDACS)
+                                  🌴 FLORIDA STATE DNC (FDACS)
                                 </span>
-                                <span style={{ fontSize: '0.62rem', color: dncStateRegistered ? '#10B981' : '#94A3B8', background: dncStateRegistered ? 'rgba(16, 185, 129, 0.12)' : 'rgba(148, 163, 184, 0.1)', padding: '1px 6px', borderRadius: '3px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                                <span style={{ fontSize: '0.60rem', color: dncStateRegistered ? '#10B981' : '#94A3B8', background: dncStateRegistered ? 'rgba(16, 185, 129, 0.12)' : 'rgba(148, 163, 184, 0.1)', padding: '1px 5px', borderRadius: '3px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
                                   {dncStateRegistered ? "🟢 ACTIVE" : "⚪ PENDING"}
                                 </span>
                               </div>
-                              <p style={{ fontSize: '0.68rem', color: '#94A3B8', margin: '0 0 8px 0', lineHeight: '1.4', wordBreak: 'break-word' }}>
-                                State-enforced protection under Florida Telemarketing Act (F.S. § 501.059) carrying fines up to <strong>$10,000 per unsolicited call</strong>.
-                              </p>
+                              <span style={{ fontSize: '0.66rem', color: '#94A3B8', lineHeight: '1.3' }}>
+                                Florida Telemarketing Act (F.S. § 501.059) • Up to $10,000 fine per unsolicited call.
+                              </span>
                             </div>
-                            <div className="dnc-card-actions">
+                            <div className="dnc-registry-actions">
                               <button
                                 type="button"
-                                className="main-button"
-                                style={{ background: 'linear-gradient(135deg, #00D2FF 0%, #0072FF 100%)', border: 'none', color: '#ffffff', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                                className="main-button dnc-compact-btn"
+                                style={{ background: 'linear-gradient(135deg, #00D2FF 0%, #0072FF 100%)', border: 'none', color: '#ffffff', fontWeight: 'bold' }}
                                 disabled={isInitiatingRegistry}
                                 onClick={() => handleInitiateRegistryDispatch("state", "https://www.fdacs.gov/Consumer-Resources/Florida-Do-Not-Call")}
                               >
-                                ⚡ INITIATE STATE DISPATCH
+                                ⚡ DISPATCH ↗
                               </button>
                               <button
                                 type="button"
-                                className="reset-btn"
-                                style={{ fontWeight: 'bold', color: dncStateRegistered ? '#10B981' : '#94A3B8', borderColor: dncStateRegistered ? '#10B981' : '#334155', cursor: 'pointer', borderRadius: '4px' }}
+                                className="reset-btn dnc-compact-btn"
+                                style={{ fontWeight: 'bold', color: dncStateRegistered ? '#10B981' : '#94A3B8', borderColor: dncStateRegistered ? '#10B981' : '#334155' }}
                                 disabled={isTogglingDnc}
                                 onClick={() => handleToggleDnc("state", !dncStateRegistered)}
                               >
@@ -5222,34 +5222,34 @@ const handleEmergencyBurn = async () => {
                           </div>
 
                           {/* 2. OPTOUTPRESCREEN (CREDIT & INSURANCE PRE-APPROVALS) */}
-                          <div style={{ background: '#080d1a', border: `1px solid ${dncOptoutPrescreen ? 'rgba(16, 185, 129, 0.35)' : 'rgba(0, 210, 255, 0.25)'}`, borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', width: '100%', boxSizing: 'border-box' }}>
-                            <div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap', gap: '4px' }}>
+                          <div className={`dnc-registry-row ${dncOptoutPrescreen ? 'active' : ''}`}>
+                            <div className="dnc-registry-info">
+                              <div className="dnc-registry-title-row">
                                 <span style={{ fontSize: '0.74rem', color: '#FFFFFF', fontWeight: 'bold' }}>
                                   💳 OPTOUTPRESCREEN.COM (FCRA)
                                 </span>
-                                <span style={{ fontSize: '0.62rem', color: dncOptoutPrescreen ? '#10B981' : '#94A3B8', background: dncOptoutPrescreen ? 'rgba(16, 185, 129, 0.12)' : 'rgba(148, 163, 184, 0.1)', padding: '1px 6px', borderRadius: '3px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                                <span style={{ fontSize: '0.60rem', color: dncOptoutPrescreen ? '#10B981' : '#94A3B8', background: dncOptoutPrescreen ? 'rgba(16, 185, 129, 0.12)' : 'rgba(148, 163, 184, 0.1)', padding: '1px 5px', borderRadius: '3px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
                                   {dncOptoutPrescreen ? "🟢 ACTIVE" : "⚪ PENDING"}
                                 </span>
                               </div>
-                              <p style={{ fontSize: '0.68rem', color: '#94A3B8', margin: '0 0 8px 0', lineHeight: '1.4', wordBreak: 'break-word' }}>
-                                Official FCRA joint opt-out (Equifax, Experian, TransUnion, Innovis). Permanently stops unsolicited pre-approved credit cards & loans.
-                              </p>
+                              <span style={{ fontSize: '0.66rem', color: '#94A3B8', lineHeight: '1.3' }}>
+                                FCRA joint opt-out (Equifax, Experian, TransUnion, Innovis) • Permanently stops loan/card offers.
+                              </span>
                             </div>
-                            <div className="dnc-card-actions">
+                            <div className="dnc-registry-actions">
                               <button
                                 type="button"
-                                className="main-button"
-                                style={{ background: 'linear-gradient(135deg, #00D2FF 0%, #0072FF 100%)', border: 'none', color: '#ffffff', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                                className="main-button dnc-compact-btn"
+                                style={{ background: 'linear-gradient(135deg, #00D2FF 0%, #0072FF 100%)', border: 'none', color: '#ffffff', fontWeight: 'bold' }}
                                 disabled={isInitiatingRegistry}
                                 onClick={() => handleInitiateRegistryDispatch("optout_prescreen", "https://www.optoutprescreen.com")}
                               >
-                                ⚡ INITIATE PRESCREEN DISPATCH
+                                ⚡ DISPATCH ↗
                               </button>
                               <button
                                 type="button"
-                                className="reset-btn"
-                                style={{ fontWeight: 'bold', color: dncOptoutPrescreen ? '#10B981' : '#94A3B8', borderColor: dncOptoutPrescreen ? '#10B981' : '#334155', cursor: 'pointer', borderRadius: '4px' }}
+                                className="reset-btn dnc-compact-btn"
+                                style={{ fontWeight: 'bold', color: dncOptoutPrescreen ? '#10B981' : '#94A3B8', borderColor: dncOptoutPrescreen ? '#10B981' : '#334155' }}
                                 disabled={isTogglingDnc}
                                 onClick={() => handleToggleDnc("prescreen", !dncOptoutPrescreen)}
                               >
@@ -5259,34 +5259,34 @@ const handleEmergencyBurn = async () => {
                           </div>
 
                           {/* 3. DMACHOICE (NATIONAL DIRECT MAIL & MARKETING LISTS) */}
-                          <div style={{ background: '#080d1a', border: `1px solid ${dncDmaChoice ? 'rgba(16, 185, 129, 0.35)' : 'rgba(0, 210, 255, 0.25)'}`, borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', width: '100%', boxSizing: 'border-box' }}>
-                            <div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap', gap: '4px' }}>
+                          <div className={`dnc-registry-row ${dncDmaChoice ? 'active' : ''}`}>
+                            <div className="dnc-registry-info">
+                              <div className="dnc-registry-title-row">
                                 <span style={{ fontSize: '0.74rem', color: '#FFFFFF', fontWeight: 'bold' }}>
                                   📬 DMACHOICE.ORG (DIRECT MAIL)
                                 </span>
-                                <span style={{ fontSize: '0.62rem', color: dncDmaChoice ? '#10B981' : '#94A3B8', background: dncDmaChoice ? 'rgba(16, 185, 129, 0.12)' : 'rgba(148, 163, 184, 0.1)', padding: '1px 6px', borderRadius: '3px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                                <span style={{ fontSize: '0.60rem', color: dncDmaChoice ? '#10B981' : '#94A3B8', background: dncDmaChoice ? 'rgba(16, 185, 129, 0.12)' : 'rgba(148, 163, 184, 0.1)', padding: '1px 5px', borderRadius: '3px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
                                   {dncDmaChoice ? "🟢 ACTIVE" : "⚪ PENDING"}
                                 </span>
                               </div>
-                              <p style={{ fontSize: '0.68rem', color: '#94A3B8', margin: '0 0 8px 0', lineHeight: '1.4', wordBreak: 'break-word' }}>
-                                Association of National Advertisers (ANA). Purges your home address & phone from commercial retail catalogs & marketing databases.
-                              </p>
+                              <span style={{ fontSize: '0.66rem', color: '#94A3B8', lineHeight: '1.3' }}>
+                                Association of National Advertisers (ANA) • Purges address & phone from commercial catalog lists.
+                              </span>
                             </div>
-                            <div className="dnc-card-actions">
+                            <div className="dnc-registry-actions">
                               <button
                                 type="button"
-                                className="main-button"
-                                style={{ background: 'linear-gradient(135deg, #00D2FF 0%, #0072FF 100%)', border: 'none', color: '#ffffff', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                                className="main-button dnc-compact-btn"
+                                style={{ background: 'linear-gradient(135deg, #00D2FF 0%, #0072FF 100%)', border: 'none', color: '#ffffff', fontWeight: 'bold' }}
                                 disabled={isInitiatingRegistry}
                                 onClick={() => handleInitiateRegistryDispatch("dmachoice", "https://www.dmachoice.org")}
                               >
-                                ⚡ INITIATE DMA DISPATCH
+                                ⚡ DISPATCH ↗
                               </button>
                               <button
                                 type="button"
-                                className="reset-btn"
-                                style={{ fontWeight: 'bold', color: dncDmaChoice ? '#10B981' : '#94A3B8', borderColor: dncDmaChoice ? '#10B981' : '#334155', cursor: 'pointer', borderRadius: '4px' }}
+                                className="reset-btn dnc-compact-btn"
+                                style={{ fontWeight: 'bold', color: dncDmaChoice ? '#10B981' : '#94A3B8', borderColor: dncDmaChoice ? '#10B981' : '#334155' }}
                                 disabled={isTogglingDnc}
                                 onClick={() => handleToggleDnc("dmachoice", !dncDmaChoice)}
                               >
@@ -5299,13 +5299,13 @@ const handleEmergencyBurn = async () => {
                       </div>
 
                       {/* TCPA VIOLATION LEGAL NOTICE & REPORTING FOOTER */}
-                      <div className="dnc-footer-legal" style={{ background: 'rgba(252, 211, 77, 0.06)', border: '1px dashed rgba(252, 211, 77, 0.3)', borderRadius: '6px', padding: '10px 12px', textAlign: 'left' }}>
+                      <div className="dnc-footer-legal" style={{ background: 'rgba(252, 211, 77, 0.06)', border: '1px dashed rgba(252, 211, 77, 0.3)', borderRadius: '6px', padding: '6px 10px', textAlign: 'left' }}>
                         <div>
-                          <span style={{ fontSize: '0.72rem', color: '#FCD34D', fontWeight: 'bold', display: 'block', marginBottom: '2px' }}>
+                          <span style={{ fontSize: '0.68rem', color: '#FCD34D', fontWeight: 'bold', display: 'block', marginBottom: '2px' }}>
                             ⚖️ TCPA LEGAL RECOURSE & REPORTING
                           </span>
-                          <span style={{ fontSize: '0.68rem', color: '#94A3B8', wordBreak: 'break-word' }}>
-                            Under 47 U.S.C. § 227, illegal calls after 31 days of registration carry statutory damages of $500–$1,500 per call.
+                          <span style={{ fontSize: '0.65rem', color: '#94A3B8', wordBreak: 'break-word' }}>
+                            Under 47 U.S.C. § 227, illegal calls after 31 days carry statutory damages of $500–$1,500 per call.
                           </span>
                         </div>
                         <a
@@ -5313,7 +5313,7 @@ const handleEmergencyBurn = async () => {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="reset-btn"
-                          style={{ padding: '6px 12px', fontSize: '0.68rem', color: '#FCD34D', borderColor: 'rgba(252, 211, 77, 0.4)', textDecoration: 'none', fontWeight: 'bold', whiteSpace: 'nowrap' }}
+                          style={{ padding: '4px 10px', fontSize: '0.66rem', color: '#FCD34D', borderColor: 'rgba(252, 211, 77, 0.4)', textDecoration: 'none', fontWeight: 'bold', whiteSpace: 'nowrap' }}
                         >
                           REPORT VIOLATION ↗
                         </a>

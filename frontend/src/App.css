@@ -662,6 +662,64 @@ input[type="checkbox"] {
   box-sizing: border-box;
 }
 
+.dnc-compact-registries {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dnc-registry-row {
+  background: #080d1a;
+  border: 1px solid rgba(0, 210, 255, 0.22);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.dnc-registry-row.active {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.04);
+}
+
+.dnc-registry-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+  text-align: left;
+}
+
+.dnc-registry-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dnc-registry-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.dnc-compact-btn {
+  padding: 4px 9px !important;
+  font-size: 0.67rem !important;
+  border-radius: 4px !important;
+  white-space: nowrap !important;
+  line-height: 1.25 !important;
+  cursor: pointer;
+}
+
 .spam-routing-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -783,6 +841,30 @@ input[type="checkbox"] {
   .dnc-registries-grid,
   .spam-routing-grid {
     grid-template-columns: 1fr !important;
+  }
+  .dnc-process-grid {
+    gap: 6px !important;
+  }
+  .dnc-compact-registries {
+    gap: 6px !important;
+  }
+  .dnc-registry-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 7px 9px !important;
+    gap: 6px !important;
+  }
+  .dnc-registry-actions {
+    display: flex !important;
+    width: 100% !important;
+    gap: 6px !important;
+  }
+  .dnc-registry-actions button {
+    flex: 1 1 50% !important;
+    padding: 5px 6px !important;
+    font-size: 0.65rem !important;
+    justify-content: center !important;
+    text-align: center !important;
   }
   .dnc-card-header {
     flex-direction: column !important;
