@@ -290,6 +290,11 @@ try:
                 conn.execute(text("SET default_transaction_read_only = off;"))
                 conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS addy_verified BOOLEAN DEFAULT FALSE;"))
                 conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS notice_acknowledged BOOLEAN DEFAULT FALSE;"))
+                conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS dnc_registered BOOLEAN DEFAULT FALSE;"))
+                conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS dnc_registered_at TIMESTAMP;"))
+                conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS dnc_state_registered BOOLEAN DEFAULT FALSE;"))
+                conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS dnc_optout_prescreen BOOLEAN DEFAULT FALSE;"))
+                conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN IF NOT EXISTS dnc_dmachoice BOOLEAN DEFAULT FALSE;"))
             except Exception:
                 pass
     Base.metadata.create_all(bind=engine)
@@ -302,6 +307,26 @@ try:
                     pass
                 try:
                     conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN notice_acknowledged BOOLEAN DEFAULT 0;"))
+                except Exception:
+                    pass
+                try:
+                    conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN dnc_registered BOOLEAN DEFAULT 0;"))
+                except Exception:
+                    pass
+                try:
+                    conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN dnc_registered_at TIMESTAMP;"))
+                except Exception:
+                    pass
+                try:
+                    conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN dnc_state_registered BOOLEAN DEFAULT 0;"))
+                except Exception:
+                    pass
+                try:
+                    conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN dnc_optout_prescreen BOOLEAN DEFAULT 0;"))
+                except Exception:
+                    pass
+                try:
+                    conn.execute(text("ALTER TABLE shield_profiles_v3 ADD COLUMN dnc_dmachoice BOOLEAN DEFAULT 0;"))
                 except Exception:
                     pass
     except Exception:
@@ -970,7 +995,12 @@ async def login_agent(request: Request, login_req: LoginRequest, db: Session = D
         "email": profile.email,
         "addy_verified": bool(getattr(profile, 'addy_verified', False)),
         "addy_status": "VERIFIED" if bool(getattr(profile, 'addy_verified', False)) else "PENDING_VERIFICATION",
-        "notice_acknowledged": bool(getattr(profile, 'notice_acknowledged', False))
+        "notice_acknowledged": bool(getattr(profile, 'notice_acknowledged', False)),
+        "dnc_registered": bool(getattr(profile, 'dnc_registered', False)),
+        "dnc_registered_at": profile.dnc_registered_at.isoformat() if getattr(profile, 'dnc_registered_at', None) else None,
+        "dnc_state_registered": bool(getattr(profile, 'dnc_state_registered', False)),
+        "dnc_optout_prescreen": bool(getattr(profile, 'dnc_optout_prescreen', False)),
+        "dnc_dmachoice": bool(getattr(profile, 'dnc_dmachoice', False))
     }
 
 
@@ -2665,7 +2695,12 @@ async def sync(user_id: Optional[str] = Query(None), x_user_id: Optional[str] = 
                 "active_nodes": total_used,
                 "addy_verified": is_addy_verified,
                 "addy_status": "VERIFIED" if is_addy_verified else "PENDING_VERIFICATION",
-                "notice_acknowledged": bool(getattr(profile, 'notice_acknowledged', False))
+                "notice_acknowledged": bool(getattr(profile, 'notice_acknowledged', False)),
+                "dnc_registered": bool(getattr(profile, 'dnc_registered', False)),
+                "dnc_registered_at": profile.dnc_registered_at.isoformat() if getattr(profile, 'dnc_registered_at', None) else None,
+                "dnc_state_registered": bool(getattr(profile, 'dnc_state_registered', False)),
+                "dnc_optout_prescreen": bool(getattr(profile, 'dnc_optout_prescreen', False)),
+                "dnc_dmachoice": bool(getattr(profile, 'dnc_dmachoice', False))
             },
             "recent_audit": logs,
             "map_nodes": map_nodes,
@@ -3393,6 +3428,22 @@ def flatten_and_unwrap_payload(raw_data: Any) -> dict:
     return merged
 
 
+def decode_addy_relay_sender(val: str) -> Optional[str]:
+    """Decodes Addy-encoded forward address (+user=domain.com@) to original sender email."""
+    if not val or not isinstance(val, str):
+        return None
+    match = re.search(r'\+([a-zA-Z0-9._%+-]+)=([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})@', val)
+    if match:
+        decoded_email = f"{match.group(1)}@{match.group(2)}"
+        name_match = re.match(r'^([^<]+)<[^>]+>', val.strip())
+        if name_match:
+            name_str = name_match.group(1).strip().replace('"', '')
+            if name_str and not any(r in name_str.lower() for r in ["via addy", "anonaddy", "relay"]):
+                return f"{name_str} <{decoded_email}>"
+        return decoded_email
+    return None
+
+
 def extract_true_sender_from_payload(data: dict) -> str:
     """Extracts the true sender email/address from incoming webhook data or email headers.
     Inspects headers like X-Original-From, Sender, Reply-To, Header-From, and nested provider dicts/lists,
@@ -3472,6 +3523,9 @@ def extract_true_sender_from_payload(data: dict) -> str:
             lower = cand_str.lower()
             if not cand_str or lower in ["unknown sender", "inbound sender", "inbound sender (via addy relay)", "unknown@sender.com"]:
                 continue
+            decoded_relay = decode_addy_relay_sender(cand_str)
+            if decoded_relay:
+                return decoded_relay
             if recip_email and recip_email in lower:
                 continue
             match = re.search(r'[\w\.-]+@[\w\.-]+', cand_str)
@@ -3492,6 +3546,9 @@ def extract_true_sender_from_payload(data: dict) -> str:
         from_match = re.search(r'(?:From|Sender|X-Original-From|Reply-To):\s*([^\r\n<]+<[^>]+>|[\w\.-]+@[\w\.-]+)', raw_body, re.IGNORECASE)
         if from_match and from_match.group(1):
             match_str = from_match.group(1).strip()
+            decoded_body_relay = decode_addy_relay_sender(match_str)
+            if decoded_body_relay:
+                return decoded_body_relay
             if "addy.io" not in match_str.lower() and "anonaddy" not in match_str.lower():
                 return match_str
 
@@ -3523,6 +3580,7 @@ def strip_email_relay_wrapper(body_text: str) -> str:
         r'---------- Forwarded message ---------',
         r'\[Addy\.io Relay Notice\]:[^\n]+',
         r'<!--\s*addy-banner\s*-->[\s\S]*?<!--\s*/addy-banner\s*-->',
+        r'^(?:[-=\s]*Forwarded message[-=\s]*)?\s*(?:From:\s*[^\n]+\n+)(?:(?:Date|Sent):\s*[^\n]+\n+)?(?:Subject:\s*[^\n]+\n+)?(?:To:\s*[^\n]+\n+)?\s*',
     ]
 
     for pattern in wrapper_patterns:
@@ -5235,7 +5293,8 @@ async def twilio_incoming_voice(
             logger.warning(f"Voice call audit log notice: {db_err}")
 
     logger.info(f"TWILIO_VOICE_FORWARD: Forwarding call from {From} to real phone {forward_phone}")
-    twiml = f'<Response><Dial>{forward_phone}</Dial></Response>'
+    dial_caller_id = To if To else forward_phone
+    twiml = f'<Response><Dial callerId="{dial_caller_id}" timeout="30">{forward_phone}</Dial></Response>'
     return Response(content=twiml, media_type="application/xml")
 
 
@@ -5269,6 +5328,348 @@ async def update_user_phone(req: PhoneUpdateRequest, db: Session = Depends(get_d
     return {"status": "success", "user_id": uid, "phone": clean_phone}
 
 
+class DNCToggleRequest(BaseModel):
+    user_id: Optional[str] = None
+    registry_type: str = "federal"  # "federal", "state", "optout_prescreen", "dmachoice"
+    registered: bool = True
+
+
+@app.post("/api/v1/dnc/toggle")
+@app.post("/api/dnc/toggle")
+async def toggle_dnc_registration(
+    req: DNCToggleRequest,
+    user_id: Optional[str] = Query(None),
+    x_user_id: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    """Toggles or updates the user's Do Not Call & consumer opt-out registry statuses"""
+    active_uid = (req.user_id or user_id or x_user_id or "").strip()
+    profile = None
+    if active_uid:
+        profile = db.query(DBProfile).filter(or_(DBProfile.id == active_uid, DBProfile.email == active_uid)).first()
+    if not profile:
+        profile = db.query(DBProfile).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    reg_type = (req.registry_type or "federal").lower().strip()
+    phone_label = profile.phone or "PRIMARY_DEVICE"
+    if reg_type in ["federal", "national", "dnc"]:
+        profile.dnc_registered = bool(req.registered)
+        profile.dnc_registered_at = datetime.utcnow() if req.registered else None
+        db.add(DBPurgeLog(
+            user_id=profile.id,
+            action_type=f"FEDERAL_DNC_REGISTRATION [{'ENROLLED' if req.registered else 'UNENROLLED'}] for primary phone {phone_label}",
+            node_id=f"{profile.id}_DNC"
+        ))
+    elif reg_type in ["state", "state_dnc"]:
+        profile.dnc_state_registered = bool(req.registered)
+        db.add(DBPurgeLog(
+            user_id=profile.id,
+            action_type=f"STATE_DNC_REGISTRATION [{'ENROLLED' if req.registered else 'UNENROLLED'}] for phone {phone_label}",
+            node_id=f"{profile.id}_STATE_DNC"
+        ))
+    elif reg_type in ["prescreen", "optout_prescreen"]:
+        profile.dnc_optout_prescreen = bool(req.registered)
+        db.add(DBPurgeLog(
+            user_id=profile.id,
+            action_type=f"OPTOUT_PRESCREEN_STATUS [{'ENROLLED' if req.registered else 'UNENROLLED'}]",
+            node_id=f"{profile.id}_PRESCREEN"
+        ))
+    elif reg_type in ["dmachoice", "dma"]:
+        profile.dnc_dmachoice = bool(req.registered)
+        db.add(DBPurgeLog(
+            user_id=profile.id,
+            action_type=f"DMACHOICE_OPT_OUT [{'ENROLLED' if req.registered else 'UNENROLLED'}]",
+            node_id=f"{profile.id}_DMA"
+        ))
+
+    db.commit()
+    logger.info(f"DNC_STATUS_UPDATED: user={profile.id} type={reg_type} registered={req.registered}")
+    return {
+        "status": "success",
+        "user_id": profile.id,
+        "phone": profile.phone or "",
+        "dnc_registered": bool(getattr(profile, 'dnc_registered', False)),
+        "dnc_registered_at": profile.dnc_registered_at.isoformat() if getattr(profile, 'dnc_registered_at', None) else None,
+        "dnc_state_registered": bool(getattr(profile, 'dnc_state_registered', False)),
+        "dnc_optout_prescreen": bool(getattr(profile, 'dnc_optout_prescreen', False)),
+        "dnc_dmachoice": bool(getattr(profile, 'dnc_dmachoice', False))
+    }
+
+
+@app.get("/api/v1/dnc/status")
+@app.get("/api/dnc/status")
+async def get_dnc_status(
+    user_id: Optional[str] = Query(None),
+    x_user_id: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    """Retrieves current Do Not Call & consumer opt-out registry statuses"""
+    active_uid = (user_id or x_user_id or "").strip()
+    profile = None
+    if active_uid:
+        profile = db.query(DBProfile).filter(or_(DBProfile.id == active_uid, DBProfile.email == active_uid)).first()
+    if not profile:
+        profile = db.query(DBProfile).first()
+    if not profile:
+        return {
+            "status": "success",
+            "dnc_registered": False,
+            "dnc_registered_at": None,
+            "dnc_state_registered": False,
+            "dnc_optout_prescreen": False,
+            "dnc_dmachoice": False
+        }
+
+    st_code = "FL"
+    if profile and profile.address:
+        addr = profile.address.upper()
+        for k in STATE_DNC_REGISTRIES.keys():
+            if f" {k} " in f" {addr} " or f",{k}" in addr or f", {k}" in addr:
+                st_code = k
+                break
+    if profile and profile.phone and st_code == "FL":
+        digits = "".join(filter(str.isdigit, profile.phone))
+        ac = digits[1:4] if digits.startswith("1") and len(digits) >= 11 else digits[:3]
+        if ac in TEXAS_AREA_CODES:
+            st_code = "TX"
+        elif ac in PA_AREA_CODES:
+            st_code = "PA"
+            
+    st_info = STATE_DNC_REGISTRIES.get(st_code, STATE_DNC_REGISTRIES["FL"])
+
+    return {
+        "status": "success",
+        "user_id": profile.id,
+        "phone": profile.phone or "",
+        "dnc_registered": bool(getattr(profile, 'dnc_registered', False)),
+        "dnc_registered_at": profile.dnc_registered_at.isoformat() if getattr(profile, 'dnc_registered_at', None) else None,
+        "dnc_state_registered": bool(getattr(profile, 'dnc_state_registered', False)),
+        "dnc_optout_prescreen": bool(getattr(profile, 'dnc_optout_prescreen', False)),
+        "dnc_dmachoice": bool(getattr(profile, 'dnc_dmachoice', False)),
+        "state_info": {
+            "state_code": st_code,
+            "name": st_info["name"],
+            "agency": st_info["agency"],
+            "statute": st_info["statute"],
+            "url": st_info["url"],
+            "fine": st_info["fine"]
+        }
+    }
+
+
+STATE_DNC_REGISTRIES = {
+    "FL": {
+        "name": "Florida",
+        "agency": "Florida Department of Agriculture and Consumer Services (FDACS)",
+        "statute": "Florida Telemarketing Act (F.S. § 501.059)",
+        "url": "https://www.fdacs.gov/Consumer-Resources/Florida-Do-Not-Call",
+        "fine": "$10,000 per violation"
+    },
+    "TX": {
+        "name": "Texas",
+        "agency": "Texas Public Utility Commission (Texas No Call)",
+        "statute": "Texas Utilities Code Title 2, Subchapter C",
+        "url": "https://www.texasnocall.com",
+        "fine": "$1,000 per violation"
+    },
+    "PA": {
+        "name": "Pennsylvania",
+        "agency": "Pennsylvania Office of Attorney General",
+        "statute": "PA Telemarketer Registration Act (73 P.S. § 2241)",
+        "url": "https://www.attorneygeneral.gov/protect-yourself/do-not-call-list/",
+        "fine": "$1,000 to $3,000 per violation"
+    },
+    "CA": {
+        "name": "California",
+        "agency": "California Department of Justice / Attorney General",
+        "statute": "California Consumer Privacy & Telemarketing Regulations",
+        "url": "https://oag.ca.gov/privacy",
+        "fine": "$2,500 to $7,500 per violation"
+    },
+    "CO": {
+        "name": "Colorado",
+        "agency": "Colorado Public Utilities Commission",
+        "statute": "Colorado No-Call List (C.R.S. § 6-1-901)",
+        "url": "https://www.coloradono-call.gov",
+        "fine": "$2,000 per violation"
+    },
+    "IN": {
+        "name": "Indiana",
+        "agency": "Indiana Attorney General Telephone Privacy Division",
+        "statute": "Indiana Telephone Privacy Act (IC 24-4.7)",
+        "url": "https://www.in.gov/attorneygeneral/consumer-protection-division/telephone-privacy/",
+        "fine": "$10,000 to $25,000 per violation"
+    },
+    "MO": {
+        "name": "Missouri",
+        "agency": "Missouri Attorney General No Call Unit",
+        "statute": "Missouri Telemarketing Law (RSMo § 407.1070)",
+        "url": "https://ago.mo.gov/get-help/missouri-no-call/",
+        "fine": "$5,000 per violation"
+    },
+    "TN": {
+        "name": "Tennessee",
+        "agency": "Tennessee Public Utility Commission",
+        "statute": "Tennessee Do Not Call Act (T.C.A. § 65-4-401)",
+        "url": "https://www.tn.gov/tpuc/tennessee-do-not-call.html",
+        "fine": "$2,000 per violation"
+    }
+}
+
+FLORIDA_AREA_CODES = {"813", "727", "407", "305", "954", "561", "239", "352", "904", "850", "321", "772"}
+TEXAS_AREA_CODES = {"512", "737", "214", "469", "972", "713", "281", "832", "210", "830"}
+PA_AREA_CODES = {"215", "267", "412", "724", "610", "484", "717"}
+
+
+class DNCInitiateRequest(BaseModel):
+    user_id: Optional[str] = None
+    registry_type: str  # "state", "optout_prescreen", "dmachoice"
+    state_code: Optional[str] = None
+
+
+@app.post("/api/v1/dnc/initiate")
+@app.post("/api/dnc/initiate")
+async def initiate_consumer_registry_dispatch(
+    req: DNCInitiateRequest,
+    user_id: Optional[str] = Query(None),
+    x_user_id: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
+):
+    """Initiates official state-specific Do Not Call, OptOutPrescreen, or DMAchoice opt-out dispatch with audit and scrub logging"""
+    active_uid = (req.user_id or user_id or x_user_id or "").strip()
+    profile = None
+    if active_uid:
+        profile = db.query(DBProfile).filter(or_(DBProfile.id == active_uid, DBProfile.email == active_uid)).first()
+    if not profile:
+        profile = db.query(DBProfile).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+
+    reg_type = (req.registry_type or "state").lower().strip()
+    phone_clean = profile.phone or ""
+    now = datetime.utcnow()
+    
+    st_code = (req.state_code or "").upper().strip()
+    if not st_code:
+        addr = (profile.address or "").upper()
+        for k in STATE_DNC_REGISTRIES.keys():
+            if f" {k} " in f" {addr} " or f",{k}" in addr or f", {k}" in addr:
+                st_code = k
+                break
+    if not st_code and phone_clean:
+        digits = "".join(filter(str.isdigit, phone_clean))
+        ac = digits[1:4] if digits.startswith("1") and len(digits) >= 11 else digits[:3]
+        if ac in FLORIDA_AREA_CODES:
+            st_code = "FL"
+        elif ac in TEXAS_AREA_CODES:
+            st_code = "TX"
+        elif ac in PA_AREA_CODES:
+            st_code = "PA"
+    if not st_code or st_code not in STATE_DNC_REGISTRIES:
+        st_code = "FL"
+
+    st_info = STATE_DNC_REGISTRIES[st_code]
+
+    if reg_type in ["state", "state_dnc"]:
+        profile.dnc_state_registered = True
+        
+        db.add(DBPurgeLog(
+            user_id=profile.id,
+            action_type=f"STATE_DNC_DISPATCH [{st_info['agency']} | Law: {st_info['statute']} | Phone: {phone_clean or 'PRIMARY'} | Max Penalty: {st_info['fine']}]",
+            node_id=f"{profile.id}_STATE_{st_code}"
+        ))
+        
+        broker_title = f"State Registry ({st_info['name']} FDACS)" if st_code == "FL" else f"State Registry ({st_info['name']})"
+        existing_scrub = db.query(DBScrubLog).filter(
+            DBScrubLog.user_id == profile.id,
+            DBScrubLog.broker_name == broker_title
+        ).first()
+        if not existing_scrub:
+            db.add(DBScrubLog(
+                user_id=profile.id,
+                broker_name=broker_title,
+                status="PROCESSING",
+                removal_type="STATE_REGISTRY",
+                manual_instruction_url=st_info["url"],
+                timestamp=now
+            ))
+        db.commit()
+        return {
+            "status": "success",
+            "registry": "state",
+            "state_code": st_code,
+            "agency": st_info["agency"],
+            "url": st_info["url"],
+            "message": f"State Do Not Call dispatch logged for {st_info['name']}"
+        }
+
+    elif reg_type in ["prescreen", "optout_prescreen"]:
+        profile.dnc_optout_prescreen = True
+        
+        db.add(DBPurgeLog(
+            user_id=profile.id,
+            action_type="FCRA_PRESCREEN_DISPATCH [OptOutPrescreen.com | Equifax, Experian, TransUnion, Innovis | Pre-Approved Offers]",
+            node_id=f"{profile.id}_PRESCREEN"
+        ))
+        
+        existing_scrub = db.query(DBScrubLog).filter(
+            DBScrubLog.user_id == profile.id,
+            DBScrubLog.broker_name == "OptOutPrescreen (Credit Bureaus)"
+        ).first()
+        if not existing_scrub:
+            db.add(DBScrubLog(
+                user_id=profile.id,
+                broker_name="OptOutPrescreen (Credit Bureaus)",
+                status="PROCESSING",
+                removal_type="FCRA_OPTOUT",
+                manual_instruction_url="https://www.optoutprescreen.com",
+                timestamp=now
+            ))
+        db.commit()
+        return {
+            "status": "success",
+            "registry": "optout_prescreen",
+            "agency": "OptOutPrescreen (Equifax, Experian, TransUnion, Innovis)",
+            "url": "https://www.optoutprescreen.com",
+            "message": "OptOutPrescreen dispatch logged to vault"
+        }
+
+    elif reg_type in ["dmachoice", "dma"]:
+        profile.dnc_dmachoice = True
+        
+        db.add(DBPurgeLog(
+            user_id=profile.id,
+            action_type="DMACHOICE_DISPATCH [DMAchoice.org | Association of National Advertisers (ANA) | Direct Mail Lists]",
+            node_id=f"{profile.id}_DMA"
+        ))
+        
+        existing_scrub = db.query(DBScrubLog).filter(
+            DBScrubLog.user_id == profile.id,
+            DBScrubLog.broker_name == "DMAchoice (National Mail Lists)"
+        ).first()
+        if not existing_scrub:
+            db.add(DBScrubLog(
+                user_id=profile.id,
+                broker_name="DMAchoice (National Mail Lists)",
+                status="PROCESSING",
+                removal_type="DIRECT_MAIL_OPTOUT",
+                manual_instruction_url="https://www.dmachoice.org",
+                timestamp=now
+            ))
+        db.commit()
+        return {
+            "status": "success",
+            "registry": "dmachoice",
+            "agency": "DMAchoice (Association of National Advertisers)",
+            "url": "https://www.dmachoice.org",
+            "message": "DMAchoice dispatch logged to vault"
+        }
+
+    return {"status": "error", "message": "Unknown registry type"}
+
+
 @app.get("/sms-inbox/{user_id}")
 @app.get("/sms-inbox")
 @app.get("/api/sms-inbox/{user_id}")
@@ -5294,7 +5695,7 @@ async def get_user_sms_inbox(user_id: Optional[str] = None, x_user_id: Optional[
 
         alias_map = {("".join(filter(str.isdigit, a.content or ""))[-4:] if a.content else ""): a.content for a in user_aliases if a.content}
 
-        # Fetch all recent SMS logs strictly scoped to this user
+        # Fetch all recent SMS logs strictly scoped to this user (excluding voice calls)
         all_sms_logs = db.query(DBPurgeLog).filter(
             or_(
                 DBPurgeLog.user_id == target_uid,
@@ -5302,10 +5703,14 @@ async def get_user_sms_inbox(user_id: Optional[str] = None, x_user_id: Optional[
                 DBPurgeLog.node_id.like(f"{target_uid}_%"),
                 DBPurgeLog.node_id.like(f"{active_uid}_%")
             ),
-            or_(
-                DBPurgeLog.action_type.ilike("%SMS_%"),
-                DBPurgeLog.action_type.ilike("%SMS%"),
-                DBPurgeLog.action_type.ilike("%From%")
+            and_(
+                or_(
+                    DBPurgeLog.action_type.ilike("%SMS_%"),
+                    DBPurgeLog.action_type.ilike("%SMS%")
+                ),
+                ~DBPurgeLog.action_type.ilike("%VOICE_CALL%"),
+                ~DBPurgeLog.action_type.ilike("%CALL_FORWARDED%"),
+                ~DBPurgeLog.node_id.ilike("%VOICE_CALL%")
             )
         ).order_by(desc(DBPurgeLog.timestamp)).limit(150).all()
 
@@ -5321,6 +5726,10 @@ async def get_user_sms_inbox(user_id: Optional[str] = None, x_user_id: Optional[
                 continue
 
             msg = log.action_type or ""
+            # Strictly ignore any voice call logs
+            if "VOICE_CALL" in msg.upper() or "CALL_FORWARDED" in msg.upper() or "VOICE_CALL" in nid.upper():
+                continue
+
             if msg.startswith("SMS_RECEIVED "):
                 msg = msg.replace("SMS_RECEIVED ", "")
             elif msg.startswith("SMS_SENT "):
